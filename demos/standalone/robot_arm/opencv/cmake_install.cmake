@@ -1,4 +1,4 @@
-# Install script for directory: /nishome/bwi/catkin_ws/src/robot_arm/opencv
+# Install script for directory: /home/maxwell/git_ws/src/bwi_experimental/robot_arm/opencv
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -38,7 +38,7 @@ ELSE(CMAKE_INSTALL_COMPONENT)
   SET(CMAKE_INSTALL_MANIFEST "install_manifest.txt")
 ENDIF(CMAKE_INSTALL_COMPONENT)
 
-FILE(WRITE "/nishome/bwi/catkin_ws/src/robot_arm/opencv/${CMAKE_INSTALL_MANIFEST}" "")
+FILE(WRITE "/home/maxwell/git_ws/src/bwi_experimental/robot_arm/opencv/${CMAKE_INSTALL_MANIFEST}" "")
 FOREACH(file ${CMAKE_INSTALL_MANIFEST_FILES})
-  FILE(APPEND "/nishome/bwi/catkin_ws/src/robot_arm/opencv/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
+  FILE(APPEND "/home/maxwell/git_ws/src/bwi_experimental/robot_arm/opencv/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
 ENDFOREACH(file)

@@ -91,14 +91,10 @@ void toolpos_cb(const geometry_msgs::PoseStamped &msg){
 	cur_x = current.pose.position.x;
 	cur_y = current.pose.position.y;
 	cur_z = current.pose.position.z;
-	//ROS_INFO("Grav free effort, delta efforts: %f %f", total_grav_free_effort, total_delta);
-	//if(total_grav_free_effort > 0.5){
+
+
 	if(total_delta > 0.7){	
 		poc = true;
-	}
-	else{
-		//poc = false;
-		//initPosition = false;
 	}
 	if(setOrigin && poc){
 		b_origin_x = cur_x;
@@ -122,9 +118,6 @@ void toolpos_cb(const geometry_msgs::PoseStamped &msg){
 			origin_z = b_origin_z - cur_z;
 		else
 			origin_z = cur_z - b_origin_z;
-		//origin_x = abs(b_origin_x) + cur_x;
-		//origin_y = abs(b_origin_y) + cur_y;
-		//origin_z = abs(b_origin_z) + cur_z;
 	}
 
 	if(poc){
@@ -145,15 +138,11 @@ void toolpos_cb(const geometry_msgs::PoseStamped &msg){
 
 }
 
+//checks fingers position - used for object holding assurance
 void fingers_cb(const jaco_msgs::FingerPosition input){
 	f1 = input.finger1;
 	f2 = input.finger2;
 }
-//distance callback - moved inside node 
-/*
-void distance_cb(const std_msgs::Float32 &msg){
-	drawDistance = msg.data;
-}*/
 
 //joint effort callback 
 void joint_effort_cb(const sensor_msgs::JointStateConstPtr& input){
@@ -193,6 +182,8 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input)
 
 
 //Invokes the arm_pose server to grab object
+//Several predefined poses - "grab" for obtaining an object from human
+//"horizontal" to orient the joints in the horizontal writing position
 void getWriteReady(string position){
 	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	
@@ -243,6 +234,8 @@ void getWriteReady(string position){
 	ac.waitForResult();
 }
 
+//This function is useful after moving joints to a new position - it allows the joints to settle and the force sensors to aclimate to the new position
+//.7 seconds seems to be the maximum amount of time needed for this in application
 void clearMsgs(){
 	ros::Time start = ros::Time::now();
 	ros::Duration timeout = ros::Duration(.7);
@@ -254,6 +247,18 @@ void clearMsgs(){
 	}
 }
 
+void clearMsgs(double duration){
+	ros::Time start = ros::Time::now();
+	ros::Duration timeout = ros::Duration(duration);
+	ros::Rate r2(5);
+	//clears out old effort msgs
+	while( (ros::Time::now() - start) < timeout){
+		ros::spinOnce();
+		r2.sleep();
+	}
+}
+
+//Used for debugging force changes. Outputs both the deltas and gravityFree into a file for analysis
 void writeToFile(vector<double> gravFree, vector<double> deltas){
 	fstream filestr;
 
@@ -283,7 +288,7 @@ int openFull(){
 	ac.waitForResult();
  
 }
-//lifts end effector
+//lifts end effector .01 m
 void lift(){
 	ros::Rate r(100);
 	ros::spinOnce();
@@ -438,6 +443,7 @@ int forceFeltDrop(){
 
 //pubs velocity raw commands.
 //currently only implemented for retracting
+//Legacy
 void sendRawVelocity(double xin, double yin, double zin){
 	double duration = 1.0;
 	ros::Rate r(100);
@@ -461,13 +467,14 @@ void sendRawVelocity(double xin, double yin, double zin){
 }
 
 //draws a square with velocity pubs
+//Legacy. (first drawing method made!)
 void drawSquare(){
 	sendRawVelocity(0.015,0.1,0);
 	sendRawVelocity(0.015,0.0,-0.1);
 	sendRawVelocity(0.015,-0.1,0);
 	sendRawVelocity(0.015,0.0,0.1);
 }
-
+//Legacy
 void drawSquareHorizontal(){
 	sendRawVelocity(0.00,0.1,-0.04);
 	sendRawVelocity(0.1,0.0,-0.015);
@@ -478,6 +485,7 @@ void drawSquareHorizontal(){
 }
 
 //Sends an velocity-x command to draw a line as long as passed in
+//Useful debugging tool and first step in establishing own reference frame
 void drawDistanceLine(double targetDistance){
 	
 	float vel_speed = .05;
@@ -532,18 +540,13 @@ void drawDistanceLine(double targetDistance){
 //establishes contact assuming that the SAFETY FORCE CONTROL is enabled via the driver
 //todo: take an orientation as a string
 //Approaches the target - touches it once
+//Two types of precision - use "double" precision if the end effector is high above the surface (ie first contact)
+//Use "single" precision if the end effector is .04m or less (ie lift from drawing)
 void establish_contact(string precision){
 	double timeout_duration = 30.0;
 	bool hitSurface = false;
 	
-	ros::Time start = ros::Time::now();
-	ros::Duration timeout = ros::Duration(.5);
-	ros::Rate r2(5);
-	//clears out old effort msgs
-	while( (ros::Time::now() - start) < timeout){
-		ros::spinOnce();
-		r2.sleep();
-	}
+	clearMsgs();
 	geometry_msgs::TwistStamped T; 
 	
 	//"double" precision requires two surface touches. 
@@ -573,7 +576,7 @@ void establish_contact(string precision){
 			r.sleep();
 
 			if (heard_efforts){
-				if (total_delta > .7){
+				if (total_delta > .7){ // <<----------------------------hard coded force value
 					//ROS_INFO("Efforts: %f", total_delta);
 					//heard_efforts = false;
 					hitSurface = true;
@@ -582,15 +585,12 @@ void establish_contact(string precision){
 			}	
 		}
 	}
-	start = ros::Time::now();
-	while( (ros::Time::now() - start) < timeout){
-		ros::spinOnce();
-		r2.sleep();
-	}
+	clearMsgs();
+	ros::Rate r2(100);
 	if(hitSurface){ //approach slowly
 		if(debug)
 			ROS_INFO("Efforts: %f", total_grav_free_effort);
-		while(total_grav_free_effort < 1.9){
+		while(total_grav_free_effort < 1.9){ // <<------------------------hard coded force value
 			//ROS_INFO("Efforts: %f", total_delta);
 			ros::spinOnce();
 			T.twist.linear.x=0.0;
@@ -617,6 +617,8 @@ void establish_contact(string precision){
 
 	}
 }
+
+//caller function for the write-tofile debug function for the force efforts
 void output_static_efforts(){
 	geometry_msgs::TwistStamped T; 
 	double timeout_duration = 5.0;
@@ -722,6 +724,7 @@ void establish_contact(double v_x, double v_y, double v_z){
 		
 }
 
+//debug function for reference frame - outputs current position based on origin set
 void checkOrigin(){
 	ros::Rate r(1000);
 	cout << "Current x_origin: " << b_origin_x << endl;
@@ -738,9 +741,9 @@ void checkOrigin(){
 
 }
 
-
-//go to point on coordinate system
-//assumes origin has been set (implicit)
+//Meat and potatos of whole operation - 
+//go to point on a newly established coordinate system
+//assumes origin has been set
 //overloaded gotoPoint that will use a static force to draw rather than detect
 void gotoPoint(double x_coord, double y_coord, bool staticForce){
 	
@@ -893,7 +896,7 @@ void gotoPoint(double x_coord, double y_coord){
 	ros::Duration timeout = ros::Duration(.20);
 	ros::Time start = ros::Time::now();
 	ros::Rate r3(100);
-// relative tolerance : (vel + .02)
+
 	while(drawDistance < (initDis - (initDis * .1))){	//.1 as percentage should be paramaratized
 
 		ros::spinOnce();
@@ -917,14 +920,7 @@ void gotoPoint(double x_coord, double y_coord){
 			delta_z += .0006;
 			r3.sleep();
 		}
-		/*if(total_grav_free_effort < .5){
-			delta_z += .0002;
-			r3.sleep();
-		}
-		else if (total_grav_free_effort > .1){
-			delta_z -= .0002;
-			r3.sleep();
-		}*/
+
 		if(delta_z < -.015)
 			delta_z = -.015;
 		T.twist.linear.x= delta_x;
@@ -961,16 +957,14 @@ void gotoPoint(double x_coord, double y_coord){
 	r3.sleep();
 	
 	ros::Time s = ros::Time::now();
-	ros::Duration t = ros::Duration(.05);
 	//clears out old effort msgs
-	while((ros::Time::now() - s) < t){
-		ros::spinOnce();
-		//r4.sleep();
-	}
+	clearMsgs(.05);
 	}
 	
 }
 //Touches end effector to each corner of the drawing board
+//Hardcoded for a demo in the lab with the arm attached to table.
+//Used in 'Final Demo'
 void establish_bounds(){
 	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	
@@ -1041,14 +1035,15 @@ void establish_bounds(){
 	clearMsgs();
 }
 
+//Function parses a .cdcode file and calls the goToPoint function to move end effector to the destination coordinate
 void drawFromCD(std::string inputName)
 {
 	vector <vector <string> > data;
-	std::string fullFile = "src/robot_arm/" + inputName + ".cdcode";
+	std::string fullFile = "src/robot_arm/bwi_experimental/opencv/drawing_files" + inputName + ".cdcode";
 	ifstream infile( fullFile.c_str() );
 	if(!infile){
 		cout << endl << "ERROR: Could not file file with that name." << endl;
-		cout << "I look for files in the catkin_ws/src/robot_arm/ folder. Ensure that the file exists." << endl << endl;
+		cout << "I look for files in the /src/robot_arm/opencv/drawing_code folder. Ensure that the file exists." << endl << endl;
 	}
 	while (infile)
 	{
@@ -1116,14 +1111,15 @@ void drawFromCD(std::string inputName)
 
 //reads and draws from file, but adds a given offset to every point.
 //useful for demo drawing several files on one area without having to erase
+//otherwise works in same way as previous function
 void drawFromCD(std::string inputName, float xOffset, float yOffset, float scale)
 {
 	vector <vector <string> > data;
-	std::string fullFile = "src/robot_arm/" + inputName + ".cdcode";
+	std::string fullFile = "src/robot_arm/opencv/drawing_code" + inputName + ".cdcode";
 	ifstream infile( fullFile.c_str() );
 	if(!infile){
 		cout << endl << "ERROR: Could not file file with that name." << endl;
-		cout << "I look for files in the catkin_ws/src/robot_arm/ folder. Ensure that the file exists." << endl << endl;
+		cout << "I look for files in the catkin_ws/src/robot_arm/opencv/drawing_code folder. Ensure that the file exists." << endl << endl;
 	}
 	while (infile)
 	{
@@ -1199,7 +1195,7 @@ void drawTriangle(double sideLength){
 	gotoPoint(basex, basey);
 	lift();
 }
-//Alternative drawSquare. uses input and gotoPoint rather than rawVelocities
+//Alternative drawSquare. uses input and gotoPoint rather than rawVelocities - prefered square method
 void drawSquareHorizontal(double length){
 	double basex = origin_x;
 	double basey = origin_y;
@@ -1262,10 +1258,7 @@ void drawGeometricShapes(){
 			ros::Rate r2(10);
 			poc = false;
 			//clears out old effort msgs
-			while( (ros::Time::now() - start) < timeout){
-				ros::spinOnce();
-				r2.sleep();
-			}
+			clearMsgs();
 			traveling = true;
 			gotoPoint(.2, .038);
 			gotoPoint(.190123, .03361);
@@ -1300,13 +1293,10 @@ void eraseBoard(){
 	lift();
 }
 
-void eraseBoard2(){
-	
-}
 void displayIntro(){
-		cout << endl << "****Welcome to the Anakin Arm Drawing Program****" << endl;
+		cout << endl << "****Welcome to the BWI Drawing Arm Project program****" << endl;
 		cout << "Written by Maxwell Svetlik, in conjuction with Jivko Sinapov" << endl;
-		cout << "Latest update: December 9, 2014 3:32pm. Press 'u' in the main menu for a list of updates." << endl << endl;
+		cout << "Latest update: December 26, 2014 2:34pm. Press 'u' in the main menu for a list of updates." << endl << endl;
 		cout << "Full demos include grabbing the pen, drawing and returning the pen." << endl;
 		cout << "Partial demos assume the end effector is holding a pen." << endl;
 }
@@ -1350,8 +1340,6 @@ void subfunctionsMenu(){
 		cin >> input;
 		if(input == 0)
 			break;
-		else if(input == 5)
-			output_static_efforts();
 		else if(input == 1){
 			establish_contact("double");
 			//establish_contact(0.00f,0.00f,-0.06f);
@@ -1498,6 +1486,9 @@ int main(int argc, char **argv)
 			establish_contact("double");
 			poc = true;
 			setOrigin = true;
+
+			//could possibly use the clearMsgs function
+			//but should test it in this instance - might need 1.0 seconds rather than the .7 in the clearMsgs 
 			ros::Time start = ros::Time::now();
 			ros::Duration timeout = ros::Duration(1.0);
 			ros::Rate r2(50);
@@ -1634,6 +1625,8 @@ int main(int argc, char **argv)
 			cout << "12/07/14 - The arm now checks if it has successfully grabbed anything in the openFingersAndWait function" << endl;
 			cout << "12/08/14 - Edited force feedback for drawing" << endl;
 			cout << "12/10/14 - Rehaul of demo" << endl;
+			cout << "12/23/14 - Added additional comments. General code cleanup.";
+			cout << "1/14/15  - Consolidated drawing code into folder, updated code to reflect changes.";
 			cout << endl;
 		}
 		else if(ansChoice == "d" || ansChoice == "v"){

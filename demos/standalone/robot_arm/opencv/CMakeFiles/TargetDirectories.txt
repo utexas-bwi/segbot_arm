@@ -1,4 +1,0 @@
-/nishome/bwi/catkin_ws/src/robot_arm/opencv/CMakeFiles/canny.dir
-/nishome/bwi/catkin_ws/src/robot_arm/opencv/CMakeFiles/findContours.dir
-/nishome/bwi/catkin_ws/src/robot_arm/opencv/CMakeFiles/thresh.dir
-/nishome/bwi/catkin_ws/src/robot_arm/opencv/CMakeFiles/transforms.dir

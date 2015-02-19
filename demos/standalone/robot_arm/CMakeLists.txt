@@ -7,8 +7,11 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   std_msgs
   jaco_msgs
+  pcl_ros
+  pcl_conversions
   actionlib
 )
+find_package(OpenCV REQUIRED)
 
 catkin_package(
 #  INCLUDE_DIRS include
@@ -23,6 +26,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${openCV_INCLUDE_DIRS}
 )
 
 #add_executable (ground_based_rgbd_people_detector MACOSX_BUNDLE src/main_ground_based_people_detection.cpp)
@@ -50,6 +54,3 @@ target_link_libraries(drawShapes ${catkin_LIBRARIES})
 add_executable (draw src/draw.cpp)
 target_link_libraries(draw ${catkin_LIBRARIES})
 
-#distance publisher
-add_executable (distance_pub src/distPub.cpp)
-target_link_libraries(distance_pub ${catkin_LIBRARIES})

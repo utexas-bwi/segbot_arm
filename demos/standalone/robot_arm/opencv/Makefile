@@ -36,10 +36,10 @@ CMAKE_COMMAND = /usr/bin/cmake
 RM = /usr/bin/cmake -E remove -f
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /nishome/bwi/catkin_ws/src/robot_arm/opencv
+CMAKE_SOURCE_DIR = /home/maxwell/git_ws/src/bwi_experimental/robot_arm/opencv
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /nishome/bwi/catkin_ws/src/robot_arm/opencv
+CMAKE_BINARY_DIR = /home/maxwell/git_ws/src/bwi_experimental/robot_arm/opencv
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -66,9 +66,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /nishome/bwi/catkin_ws/src/robot_arm/opencv/CMakeFiles /nishome/bwi/catkin_ws/src/robot_arm/opencv/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/maxwell/git_ws/src/bwi_experimental/robot_arm/opencv/CMakeFiles /home/maxwell/git_ws/src/bwi_experimental/robot_arm/opencv/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /nishome/bwi/catkin_ws/src/robot_arm/opencv/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/maxwell/git_ws/src/bwi_experimental/robot_arm/opencv/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -96,19 +96,6 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named canny
-
-# Build rule for target.
-canny: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 canny
-.PHONY : canny
-
-# fast build rule for target.
-canny/fast:
-	$(MAKE) -f CMakeFiles/canny.dir/build.make CMakeFiles/canny.dir/build
-.PHONY : canny/fast
-
-#=============================================================================
 # Target rules for targets named findContours
 
 # Build rule for target.
@@ -122,19 +109,6 @@ findContours/fast:
 .PHONY : findContours/fast
 
 #=============================================================================
-# Target rules for targets named thresh
-
-# Build rule for target.
-thresh: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 thresh
-.PHONY : thresh
-
-# fast build rule for target.
-thresh/fast:
-	$(MAKE) -f CMakeFiles/thresh.dir/build.make CMakeFiles/thresh.dir/build
-.PHONY : thresh/fast
-
-#=============================================================================
 # Target rules for targets named transforms
 
 # Build rule for target.
@@ -146,30 +120,6 @@ transforms: cmake_check_build_system
 transforms/fast:
 	$(MAKE) -f CMakeFiles/transforms.dir/build.make CMakeFiles/transforms.dir/build
 .PHONY : transforms/fast
-
-canny.o: canny.cpp.o
-.PHONY : canny.o
-
-# target to build an object file
-canny.cpp.o:
-	$(MAKE) -f CMakeFiles/canny.dir/build.make CMakeFiles/canny.dir/canny.cpp.o
-.PHONY : canny.cpp.o
-
-canny.i: canny.cpp.i
-.PHONY : canny.i
-
-# target to preprocess a source file
-canny.cpp.i:
-	$(MAKE) -f CMakeFiles/canny.dir/build.make CMakeFiles/canny.dir/canny.cpp.i
-.PHONY : canny.cpp.i
-
-canny.s: canny.cpp.s
-.PHONY : canny.s
-
-# target to generate assembly for a file
-canny.cpp.s:
-	$(MAKE) -f CMakeFiles/canny.dir/build.make CMakeFiles/canny.dir/canny.cpp.s
-.PHONY : canny.cpp.s
 
 findContours.o: findContours.cpp.o
 .PHONY : findContours.o
@@ -219,54 +169,22 @@ htransformp.cpp.s:
 	$(MAKE) -f CMakeFiles/transforms.dir/build.make CMakeFiles/transforms.dir/htransformp.cpp.s
 .PHONY : htransformp.cpp.s
 
-thresh.o: thresh.cpp.o
-.PHONY : thresh.o
-
-# target to build an object file
-thresh.cpp.o:
-	$(MAKE) -f CMakeFiles/thresh.dir/build.make CMakeFiles/thresh.dir/thresh.cpp.o
-.PHONY : thresh.cpp.o
-
-thresh.i: thresh.cpp.i
-.PHONY : thresh.i
-
-# target to preprocess a source file
-thresh.cpp.i:
-	$(MAKE) -f CMakeFiles/thresh.dir/build.make CMakeFiles/thresh.dir/thresh.cpp.i
-.PHONY : thresh.cpp.i
-
-thresh.s: thresh.cpp.s
-.PHONY : thresh.s
-
-# target to generate assembly for a file
-thresh.cpp.s:
-	$(MAKE) -f CMakeFiles/thresh.dir/build.make CMakeFiles/thresh.dir/thresh.cpp.s
-.PHONY : thresh.cpp.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
 	@echo "... all (the default if no target is provided)"
 	@echo "... clean"
 	@echo "... depend"
-	@echo "... canny"
 	@echo "... edit_cache"
 	@echo "... findContours"
 	@echo "... rebuild_cache"
-	@echo "... thresh"
 	@echo "... transforms"
-	@echo "... canny.o"
-	@echo "... canny.i"
-	@echo "... canny.s"
 	@echo "... findContours.o"
 	@echo "... findContours.i"
 	@echo "... findContours.s"
 	@echo "... htransformp.o"
 	@echo "... htransformp.i"
 	@echo "... htransformp.s"
-	@echo "... thresh.o"
-	@echo "... thresh.i"
-	@echo "... thresh.s"
 .PHONY : help
 
 

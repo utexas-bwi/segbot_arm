@@ -74,16 +74,20 @@ void writeToFile(  vector<vector<Point> > points, string cmdCode){
   double valx, valy;
   double delta_x, delta_y, distance;
   int lastIndexDrawn = 0;
-  std::string fileDir = fileName + ".cdcode";
+  bool printedCMD = false; //used to track if the CMD code has been printed - only gets printed if there are contour points that haven't been filtered out
+  std::string fileDir = "drawing_files/" + fileName + ".cdcode";
     ofstream filestr(fileDir.c_str());
      for(int r = 0; r < points.size(); r++){
-      filestr << cmdCode;
       for(int g = 0; g < points[r].size(); g++){
 		  if(g != 0 || g < points[r].size() - 1){
 			  	delta_x = points[r][g].x - points[r][g - lastIndexDrawn].x;
 				delta_y = points[r][g].y - points[r][g - lastIndexDrawn].y;
 				distance = sqrt((delta_x * delta_x) + (delta_y * delta_y));
 				if(distance >= (.008 * PIXELS_PER_METER)){
+          if(!printedCMD){
+            filestr << cmdCode;
+            printedCMD = true;
+          }
 					lastIndexDrawn = 1;
 					valx = points[r][g].x / PIXELS_PER_METER;
 					valy = points[r][g].y / PIXELS_PER_METER;
@@ -100,7 +104,9 @@ void writeToFile(  vector<vector<Point> > points, string cmdCode){
          filestr << " X:" << valx << " Y:" << valy;
 		 }
       }
-      filestr << endl;
+      if(printedCMD) //only produce CRLF if a CMDcode was printed 
+        filestr << endl;
+      printedCMD = false;
     }
    filestr.close();
 }
