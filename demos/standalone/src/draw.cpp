@@ -1039,11 +1039,11 @@ void establish_bounds(){
 void drawFromCD(std::string inputName)
 {
 	vector <vector <string> > data;
-	std::string fullFile = "src/robot_arm/bwi_experimental/opencv/drawing_files" + inputName + ".cdcode";
+	std::string fullFile = "/home/bwi/catkin_ws/src/segbot_arm/demos/standalone/opencv/drawing_files/" + inputName + ".cdcode";
 	ifstream infile( fullFile.c_str() );
 	if(!infile){
 		cout << endl << "ERROR: Could not file file with that name." << endl;
-		cout << "I look for files in the /src/robot_arm/opencv/drawing_code folder. Ensure that the file exists." << endl << endl;
+		cout << "I look for files in the /home/bwi/catkin_ws/src/segbot_arm/demos/standalone/opencv/drawing_files/ folder. Ensure that the file exists." << endl << endl;
 	}
 	while (infile)
 	{
@@ -1115,11 +1115,11 @@ void drawFromCD(std::string inputName)
 void drawFromCD(std::string inputName, float xOffset, float yOffset, float scale)
 {
 	vector <vector <string> > data;
-	std::string fullFile = "src/robot_arm/opencv/drawing_code" + inputName + ".cdcode";
+	std::string fullFile = "/home/bwi/catkin_ws/src/segbot_arm/demos/standalone/opencv/drawing_files/" + inputName + ".cdcode";
 	ifstream infile( fullFile.c_str() );
 	if(!infile){
 		cout << endl << "ERROR: Could not file file with that name." << endl;
-		cout << "I look for files in the catkin_ws/src/robot_arm/opencv/drawing_code folder. Ensure that the file exists." << endl << endl;
+		cout << "I look for files in the /home/bwi/catkin_ws/src/segbot_arm/demos/standalone/opencv/drawing_files/ folder. Ensure that the file exists." << endl << endl;
 	}
 	while (infile)
 	{
@@ -1382,6 +1382,14 @@ void subfunctionsMenu(){
 
 int main(int argc, char **argv)
 {
+	    char the_path[256];
+
+    getcwd(the_path, 255);
+    strcat(the_path, "/");
+    strcat(the_path, argv[0]);
+
+    printf("%s\n", the_path);
+    
     ros::init(argc, argv, "draw");
     ros::NodeHandle n;
     int receivedUtensil = 0; //change back to 1 for grabby

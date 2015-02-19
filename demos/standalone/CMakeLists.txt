@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-project(robot_arm)
+project(mico_standalone_demos)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
