@@ -8,9 +8,9 @@
 #define PI 3.14159265
 #define TOOL_POS_RATE .025	//Speed in which /mico_arm_driver/out/tool_position topic is updated. Used in calculating future distances
 							//NOTE: tool_position refresh rate set in paramaters of launch file. As that changes, this value should be updated.
-#define BASE_VELOCITY .09	//Base velocity. distance / time = 1 / 10 seconds = .1 meters a second.
-#define BASE_VELOCITY_SHORT .06	//slower velocity for smaller distances. higher accuracy
-#define TRAVEL_VELOCITY .11
+#define BASE_VELOCITY .05	//Base velocity. distance / time = 1 / 10 seconds = .1 meters a second.
+#define BASE_VELOCITY_SHORT .05	//slower velocity for smaller distances. higher accuracy
+#define TRAVEL_VELOCITY .10
 //subscriber msgs
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
@@ -406,7 +406,7 @@ int openFingersAndWait(){
 	}
 	//This checks if the fingers missed their target
 	ros::spinOnce();
-	if(f1 > 6950 || f2 > 6950){
+	if(f1 > 7400 || f2 > 7000){
 		if(debug)
 			cout << "Finger 1: " << f1 << " Finger 2: " << f2 << endl;
 		openFingersAndWait();
