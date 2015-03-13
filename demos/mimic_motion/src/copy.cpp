@@ -15,6 +15,7 @@
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 
+#define PI 3.14159265
 
 using namespace std;
 
@@ -27,10 +28,12 @@ sensor_msgs::JointState current_effort;
 jaco_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 
+ros::Publisher pub_velocity;
+ 
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
   current_state = *input;
-  //ROS_INFO_STREAM(current_state);
+  ROS_INFO_STREAM(current_state);
 }
 
 
@@ -53,7 +56,7 @@ void fingers_cb (const jaco_msgs::FingerPosition msg) {
 }
 
 
-void movePose() {
+void movePose(float d_z) {
   actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 
   jaco_msgs::ArmPoseGoal goalPose;
@@ -61,14 +64,18 @@ void movePose() {
   // Set goal pose coordinates
 
   goalPose.pose.header.frame_id = "mico_api_origin";
+  
+  ROS_INFO_STREAM(current_pose);
 
   goalPose.pose.pose.position.x = current_pose.pose.position.x;
   goalPose.pose.pose.position.y = current_pose.pose.position.y;
-  goalPose.pose.pose.position.z = current_pose.pose.position.z - 0.1;
+  goalPose.pose.pose.position.z = current_pose.pose.position.z + d_z;
   goalPose.pose.pose.orientation.x = current_pose.pose.orientation.x;
   goalPose.pose.pose.orientation.y = current_pose.pose.orientation.y;
   goalPose.pose.pose.orientation.z = current_pose.pose.orientation.z;
   goalPose.pose.pose.orientation.w = current_pose.pose.orientation.w;
+
+	ROS_INFO_STREAM(goalPose);
 
   ac.waitForServer();
   ROS_DEBUG("Waiting for server.");
@@ -97,8 +104,42 @@ void moveFinger(int finger_value) {
     ac.waitForResult();
 }
 
-int main(int argc, char **argv) {
+void moveArmVelocity() {
+	double timeoutSeconds = 8.0;
+	int rateHertz = 100;
+	geometry_msgs::TwistStamped velocityMsg;
+	
+	double linearAngleX = 0;
+	double linearVelX;
+	double linearAngleZ = 0;
+	double linearVelZ;
+	double magnitude = 0.2;
+	
+	ros::Rate r(rateHertz);
+	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
+		
+		linearAngleX += (2*PI)/(timeoutSeconds * rateHertz);
+		linearVelX = magnitude * sin(linearAngleX);
+		linearAngleZ += (2*PI)/(timeoutSeconds * rateHertz);
+		linearVelZ = magnitude * cos(linearAngleZ);
+		
+		velocityMsg.twist.linear.x = -linearVelX;
+		velocityMsg.twist.linear.y = 0.0;
+		velocityMsg.twist.linear.z = linearVelZ;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		ROS_INFO("linearVelZ = %f", linearVelZ);
+		ROS_INFO("linearVelX = %f", linearVelX);
+		pub_velocity.publish(velocityMsg);
+		
+		r.sleep();
+	}
+}
 
+int main(int argc, char **argv) {
   // Intialize ROS with this node name
   ros::init(argc, argv, "mimic_motion");
 
@@ -115,8 +156,11 @@ int main(int argc, char **argv) {
 
   //subscriber for fingers
   ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+  
+  //publish velocities
+  pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 
-  unsigned int finger_open_close_toggle = 0;
+  /*unsigned int finger_open_close_toggle = 0;
   while (ros::ok()) {
       ros::spinOnce();
       ros::Duration(5).sleep();
@@ -129,8 +173,22 @@ int main(int argc, char **argv) {
           ROS_INFO("Closing...");
       }
       finger_open_close_toggle++;
+  }*/
+  
+  for (int i = 0; i < 20; i ++){
+	  ros::spinOnce();
+      ros::Duration(0.05).sleep();
   }
-//  movePose();
+  
+  //movePose(0.05);
+  
+   /*for (int i = 0; i < 20; i ++){
+	  ros::spinOnce();
+      ros::Duration(0.05).sleep();
+  }*/
+  
+  moveArmVelocity();
+  //movePose(-0.05);
 //  moveFinger(int finger_value);
   return 0;
 }
