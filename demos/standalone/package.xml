@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>mico_standalone_demos</name>
+  <name>segbot_arm_demos</name>
   <version>0.1.4</version>
   <description>The BWI Drawing Arm project</description>
 
@@ -44,8 +44,12 @@
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>jaco_msgs</build_depend>
+  <build_depend>jaco_driver</build_depend>
   <build_depend>libpcl-all-dev</build_depend>
+  <build_depend>image_transport</build_depend>
+  <run_depend>image_transport</run_depend>
   <run_depend>roscpp</run_depend>
+  <run_depend>jaco_driver</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>jaco_msgs</run_depend>
