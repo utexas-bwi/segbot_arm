@@ -25,19 +25,20 @@ Subscribes to kinect pc data, downsamples, and publishes.
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
-#include <opencv2/highgui/highgui.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
+//#include <opencv2/highgui/highgui.hpp> //not supported in opcv3
+//#include "opencv2/imgproc/imgproc.hpp"
 
 
 ros::Publisher pub;
 bool capture;
+bool seg = true;
 void 
 cloud_cb (const sensor_msgs::ImageConstPtr& input)
 {
   // Create a container for the data.
-  //sensor_msgs::PointCloud2 output;
+  sensor_msgs::PointCloud2 output;
 
- cv_bridge::CvImagePtr cv_ptr;
+ /*cv_bridge::CvImagePtr cv_ptr;
     try
     {
       cv_ptr = cv_bridge::toCvCopy(input, sensor_msgs::image_encodings::BGR8);
@@ -46,13 +47,13 @@ cloud_cb (const sensor_msgs::ImageConstPtr& input)
     {
       ROS_ERROR("cv_bridge exception: %s", e.what());
       return;
-    }
+    }*/
  
 //SEGMENTATION BELOW
-  /*
+  if(seg){
  
  // Do data processing here...
-  output = *input;
+  //output = *input;
 
 
   //pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
@@ -142,12 +143,13 @@ cloud_cb (const sensor_msgs::ImageConstPtr& input)
   }
 
   pcl::toROSMsg(*cloud_final, output);
-  */
+  }
+  /*else{
 
 
   cv::Mat src_gray;
   /// Convert it to gray
-  cvtColor( cv_ptr->image, src_gray, CV_BGR2GRAY );
+  cvtColor( cv_ptr->image, src_gray, cv::COLOR_RGB2GRAY );
 
   /// Reduce the noise so we avoid false circle detection
   GaussianBlur( src_gray, src_gray, cv::Size(9, 9), 2, 2 );
@@ -155,7 +157,7 @@ cloud_cb (const sensor_msgs::ImageConstPtr& input)
   std::vector<cv::Vec3f> circles;
 
   /// Apply the Hough Transform to find the circles
-  HoughCircles( src_gray, circles, CV_HOUGH_GRADIENT, 2, 20, 85, 100, 0, 30 );
+  HoughCircles( src_gray, circles, cv::HOUGH_GRADIENT, 2, 20, 85, 100, 0, 30 );
 
 
    cv::Point ur, ul, lr, ll;
@@ -211,11 +213,13 @@ cloud_cb (const sensor_msgs::ImageConstPtr& input)
 
 
    cv::waitKey(30);
-
+*/
 
   // Publish the data.
-  //pub.publish (output);
+  pub.publish (output);
+  
 }
+
 
 int
 main (int argc, char** argv)
@@ -226,11 +230,11 @@ main (int argc, char** argv)
   image_transport::ImageTransport it_(nh);
   image_transport::Subscriber image_sub_;
   image_transport::Publisher image_pub_;
-
+  
   image_sub_ = it_.subscribe("camera/rgb/image_color", 1, cloud_cb);
 
   //allows user to trigger image capture
-  std::cout << "Please enter '1' to capture the next image that contains two circles, one in diagonal corners." << std::endl;
+  /*std::cout << "Please enter '1' to capture the next image that contains two circles, one in diagonal corners." << std::endl;
   char in = '0';
   while(ros::ok() && in != '1'){
   	std::cin >> in;
@@ -239,11 +243,11 @@ main (int argc, char** argv)
   	ros::spinOnce();
   }
   std::cout << "Capturing the next available image." << std::endl;
-
+*/
   // Create a ROS subscriber for the input point cloud
   //ros::Subscriber sub = nh.subscribe ("camera/rgb/image_color", 1, cloud_cb);
   // Create a ROS publisher for the output point cloud
-  //pub = nh.advertise<sensor_msgs::PointCloud2> ("segmented", 1);
+  pub = nh.advertise<sensor_msgs::PointCloud2> ("segmented", 1);
 
   // Spin
   ros::spin ();
