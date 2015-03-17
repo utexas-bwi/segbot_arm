@@ -44,16 +44,10 @@
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>jaco_msgs</build_depend>
-  <build_depend>jaco_driver</build_depend>
-  <build_depend>libpcl-all-dev</build_depend>
-  <build_depend>image_transport</build_depend>
-  <run_depend>image_transport</run_depend>
   <run_depend>roscpp</run_depend>
-  <run_depend>jaco_driver</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>jaco_msgs</run_depend>
-  <run_depend>pcl_ros</run_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- You can specify that this package is a metapackage here: -->
