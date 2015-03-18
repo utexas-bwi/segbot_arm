@@ -59,6 +59,8 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
   pcl::VoxelGrid<pcl::PointXYZRGB> vg;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB>);
   vg.setInputCloud (cur_cloud);
+  vg.setFilterFieldName("z");
+  vg.setFilterLimits(0.01, 1.5);
   vg.setLeafSize (0.015f, 0.015f, 0.015f);
   vg.filter (*cloud_filtered);
   std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size ()  << " data points." << std::endl; //* 
