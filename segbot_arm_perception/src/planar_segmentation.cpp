@@ -3,8 +3,10 @@ This ROS service analyzes pointcloud data on the camera/depth topic
 Current implementation:
 requests: boolean excludePlane -: true if the returned clouds should be all points excluding the planes (useful for object recognition on a plane, for instance).
                                       if false, only clouds containing planes will be returned
+          int numberOfPlanes   -: defines the maximum number of returned planes. Note that the order is descriminated based on cloud (point) size. 
+                                  ie numberOfPlanes = 3 will return up to three of the largest planes. If 0, returns all of the planes detected.
 TODO: 
-requests: plane orientation (vertical, horizontal)
+requests: plane orientation (vertical, horizontal) (check within each cluster if the average z height is ~ equal or very spread)
           plane size
           number of planes returned
 
@@ -81,7 +83,7 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
 
   //This codeblock is useful if breaking up the pointcloud based on size or something iterative
   int i=0, nr_points = (int) cloud_filtered->points.size ();
-  while (cloud_filtered->points.size () != 0)
+  while (cloud_filtered->points.size() != 0 && (req.numberOfPlanes > (cloud_cont.size()) || !req.numberOfPlanes))
   {
     // Segment the largest planar component from the remaining cloud
     seg.setInputCloud (cloud_filtered);
