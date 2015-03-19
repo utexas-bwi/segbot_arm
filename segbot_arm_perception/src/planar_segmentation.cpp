@@ -8,6 +8,8 @@ requests: plane orientation (vertical, horizontal)
           plane size
           number of planes returned
 
+
+Filter out clouds that are sparsely populated and very spread out. Likely not a plane.
 */
 
 
@@ -53,7 +55,7 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_final (new pcl::PointCloud<pcl::PointXYZRGB> ());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>), cloud_f (new pcl::PointCloud<pcl::PointXYZRGB>);
-  std::cout << "PointCloud before filtering has: " << cur_cloud->points.size () << " data points." << std::endl; //*
+  ROS_INFO("PointCloud before filtering has: %lu data points.",cur_cloud->points.size());
 
   // Create the filtering object: downsample the dataset using a leaf size of 1cm
   pcl::VoxelGrid<pcl::PointXYZRGB> vg;
@@ -63,7 +65,7 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
   vg.setFilterLimits(0.01, 1.5);
   vg.setLeafSize (0.015f, 0.015f, 0.015f);
   vg.filter (*cloud_filtered);
-  std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size ()  << " data points." << std::endl; //* 
+  ROS_INFO("PointCloud after filtering has: %lu data points.",cloud_filtered->points.size());
 
   // Create the segmentation object for the planar model and set all the parameters
   pcl::SACSegmentation<pcl::PointXYZRGB> seg;
@@ -76,6 +78,8 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
   seg.setMaxIterations (1000);
   seg.setDistanceThreshold (0.01);
 
+
+  //This codeblock is useful if breaking up the pointcloud based on size or something iterative
   int i=0, nr_points = (int) cloud_filtered->points.size ();
   while (cloud_filtered->points.size () != 0)
   {
@@ -84,7 +88,11 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
     seg.segment (*inliers, *coefficients);
     if (inliers->indices.size () == 0)
     {
-      std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
+      ROS_INFO("Could not estimate a planar model for the given dataset.");
+      break;
+    }
+    else if(inliers->indices.size() <= 5){ //added due to high number of low count planes
+      ROS_INFO("Plane size below threshold. Skipping.");
       break;
     }
 
@@ -108,36 +116,6 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
     extract.filter (*cloud_f);
     *cloud_filtered = *cloud_f;
   }
-  /*
-  cloud_final = cloud_plane; //this captures the table. 2nd largest contiguous segment
-  // Creating the KdTree object for the search method of the extraction
-  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
-  tree->setInputCloud (cloud_filtered);
-
-  std::vector<pcl::PointIndices> cluster_indices;
-  pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-  ec.setClusterTolerance (0.0105);
-  ec.setMinClusterSize (1000);
-  ec.setMaxClusterSize (1000000);
-  ec.setSearchMethod (tree);
-  ec.setInputCloud (cloud_filtered);
-  ec.extract (cluster_indices);*/
-
-  /*int j = 0;
-  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
-  {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
-    for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
-      cloud_cluster->points.push_back (cloud_filtered->points[*pit]); //*
-    cloud_cluster->width = cloud_cluster->points.size ();
-    cloud_cluster->height = 1;
-    cloud_cluster->is_dense = true;
-
-    std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
-    //*cloud_final += *cloud_cluster;
-
-    j++;
-  }*/
     res.clouds = cloud_cont;
 }
 
@@ -146,7 +124,6 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
   // Initialize ROS
   ros::init (argc, argv, "planar_segmentation_service");
   ros::NodeHandle n;
-
   ros::Subscriber sub = n.subscribe ("/camera/depth_registered/points", 3, depth_cb);
   ros::ServiceServer service = n.advertiseService("PlanarSegmentation", seg_cb);
   ros::spin ();
