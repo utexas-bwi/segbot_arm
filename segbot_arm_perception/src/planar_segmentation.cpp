@@ -1,7 +1,7 @@
 /*
 This ROS service analyzes pointcloud data on the camera/depth topic
 Current implementation:
-requests: boolean exludePlane -: true if the returned clouds should be all points exclude the planes (useful for object recognition on a plane, for instance).
+requests: boolean excludePlane -: true if the returned clouds should be all points excluding the planes (useful for object recognition on a plane, for instance).
                                       if false, only clouds containing planes will be returned
 TODO: 
 requests: plane orientation (vertical, horizontal)
@@ -59,7 +59,7 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
 
   // Create the filtering object: downsample the dataset using a leaf size of 1cm
   pcl::VoxelGrid<pcl::PointXYZRGB> vg;
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
   vg.setInputCloud (cur_cloud);
   vg.setFilterFieldName("z");
   vg.setFilterLimits(0.01, 1.5);
@@ -84,9 +84,9 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
   while (cloud_filtered->points.size () != 0)
   {
     // Segment the largest planar component from the remaining cloud
-    seg.setInputCloud (cloud_filtered);
-    seg.segment (*inliers, *coefficients);
-    if (inliers->indices.size () == 0)
+    seg.setInputCloud(cloud_filtered);
+    seg.segment(*inliers, *coefficients);
+    if(inliers->indices.size() == 0)
     {
       ROS_INFO("Could not estimate a planar model for the given dataset.");
       break;
@@ -98,9 +98,9 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
 
     // Extract the planar inliers from the input cloud
     pcl::ExtractIndices<pcl::PointXYZRGB> extract;
-    extract.setInputCloud (cloud_filtered);
-    extract.setIndices (inliers);
-    extract.setNegative (false);
+    extract.setInputCloud(cloud_filtered);
+    extract.setIndices(inliers);
+    extract.setNegative(true);
 
     // Get the points associated with the planar surface
     extract.filter (cloud_plane);
@@ -112,8 +112,8 @@ bool seg_cb (segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm
     cloud_cont.push_back(output);
 
     // Remove the planar inliers, extract the rest
-    extract.setNegative (true);
-    extract.filter (*cloud_f);
+    extract.setNegative(req.excludePlane);
+    extract.filter(*cloud_f);
     *cloud_filtered = *cloud_f;
   }
     res.clouds = cloud_cont;
