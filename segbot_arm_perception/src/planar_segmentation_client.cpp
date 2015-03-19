@@ -22,6 +22,7 @@ int main(int argc, char **argv)
       std::vector<sensor_msgs::PointCloud2> res = srv_msg.response.clouds;
       for(int i = 0; i < res.size(); i++){
         pub.publish(res.at(i));
+        std::cin >> in;    //cycle through all the pointclouds. Useful for visualizing in rviz
       }
     }
     else
