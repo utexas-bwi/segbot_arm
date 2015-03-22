@@ -8,7 +8,16 @@
 #include <actionlib/client/simple_action_client.h>
 #include "jaco_msgs/JointAngles.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
+#include "jaco_msgs/ArmPoseAction.h"
 
+
+#include <iostream>
+#include <fstream>
+
+
+std::ofstream je;
+std::ofstream js;
+std::ofstream ja;
 
 /*joint state message example:
  * 
@@ -37,7 +46,7 @@ static std::vector<vector<float> > trajectory;
 bool g_caught_sigint=false;
 
 bool recording = false;
-int state = 1;
+int state = 3;
 int max_num_points = 100;
 
 
@@ -49,7 +58,7 @@ void sig_handler(int sig)
   exit(1);
 };
 
-void callBack(const sensor_msgs::JointStateConstPtr &msg)
+/*void callBack(const sensor_msgs::JointStateConstPtr &msg)
 {
 	ros::Rate r(100);
 	if (recording){
@@ -64,7 +73,7 @@ void callBack(const sensor_msgs::JointStateConstPtr &msg)
 		trajectory.push_back(temp);
 	}
 	r.sleep();
-}
+}*/
 
 void playback(){
 		actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
@@ -112,8 +121,61 @@ void threadCallback(){
 	ros::NodeHandle n;
 	
 	//subscribers	
-	ros::Subscriber sub = n.subscribe("mico_arm_driver/out/joint_angles", 10, callBack);
+	//ros::Subscriber sub = n.subscribe("mico_arm_driver/out/joint_angles", 10, callBack);
   		
+}
+void je_callBack(const sensor_msgs::JointStateConstPtr &msg){
+		std::cout << "Efforts: " << msg->effort[0] << msg->effort[1] << msg->effort[2] << msg->effort[3] << msg->effort[4] << msg->effort[5] << std::endl;
+}
+/*void js_callBack(const jaco_msgs::JointAnglesPtr &msg){
+		std::string data;
+		for (int i = 0; i < 6; i ++){
+			data += msg->velocity[i];
+			data += " ";
+		}		
+		js << data;
+}*/
+void ja_callBack(const jaco_msgs::JointAnglesPtr &msg){
+		std::cout << "Angles: " << msg->joint1 << msg->joint2 << msg->joint3 << msg->joint4 << msg->joint5 << msg->joint6 << std::endl;
+}
+//quick function to send a jointstate goal and note the efforts
+//used for verification of kinematic model
+void recordEfforts(){
+
+		const char *je_path="/home/bwi/max_arm_exp/je.txt";
+		const char *js_path="/home/bwi/max_arm_exp/js.txt";
+		const char *ja_path="/home/bwi/max_arm_exp/ja.txt";
+
+		std::ofstream je(je_path); //open in constructor
+		//std::ofstream js(js_path); //open in constructor
+		std::ofstream ja(ja_path); //open in constructor
+
+
+		actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	
+		jaco_msgs::ArmPoseGoal goalPose;
+		ros::spinOnce();
+		//Only moving in 2d space, orientation stays
+		goalPose.pose.header.frame_id = "mico_api_origin";
+		goalPose.pose.pose.position.x = 0.151496844;	
+		goalPose.pose.pose.position.y = -0.3651103675;				
+		goalPose.pose.pose.position.z = 0.3085489869;			
+		goalPose.pose.pose.orientation.x = 0.20792265145;		
+		goalPose.pose.pose.orientation.y = 0.68410680388;		
+		goalPose.pose.pose.orientation.z = -0.232979253411;		
+		goalPose.pose.pose.orientation.w = 0.659156066027;
+		ac.waitForServer();
+		ROS_DEBUG("Waiting for server.");
+		//finally, send goal and wait
+		ROS_INFO("Sending goal.");
+		ac.sendGoal(goalPose);
+		while(ac.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
+			//ROS_INFO("Still trying");
+			ros::spinOnce();
+		}
+		ac.waitForResult();
+		je.close();
+		ja.close();
 }
 
 
@@ -133,7 +195,10 @@ int main(int argc, char** argv)
 	ros::NodeHandle n;
 	
 	//subscribers	
-	ros::Subscriber sub = n.subscribe("/mico_arm_driver/out/joint_state", 10, callBack);
+	//ros::Subscriber sub = n.subscribe("/mico_arm_driver/out/joint_state", 10, callBack);
+	ros::Subscriber je_sub = n.subscribe("mico_arm_driver/out/joint_efforts", 10, je_callBack);
+	//ros::Subscriber js_sub = n.subscribe("mico_arm_driver/out/joint_state", 10, js_callBack);
+	ros::Subscriber ja_sub = n.subscribe("mico_arm_driver/out/joint_angles", 10, ja_callBack);
 	
 	/*cout << endl << "1 - Record Tracjectories" << endl;
 	cin >> input;*/
@@ -170,6 +235,9 @@ int main(int argc, char** argv)
 				state = 3;
 				cout << "Trajectory recorded" << endl;
 			}*/
+		}
+		if (state == 3){
+			recordEfforts();
 		}
 	}
 			
