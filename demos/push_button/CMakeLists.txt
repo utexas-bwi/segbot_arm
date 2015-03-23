@@ -106,11 +106,11 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(push_button src/plan.cpp)
+#add_executable(push_button src/plan.cpp)
 
-target_link_libraries(
-  push_button ${CATKIN_LIBRARIES} ${PCL_LIBRARIES}
-)
+#target_link_libraries(
+#  push_button ${CATKIN_LIBRARIES} ${PCL_LIBRARIES}
+#)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

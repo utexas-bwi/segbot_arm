@@ -7,6 +7,7 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/passthrough.h>
 #include <pcl/visualization/cloud_viewer.h>
 
 #include <ros/ros.h>
@@ -22,12 +23,13 @@ pressEntertoContinue()
 
 
 int
-zFilter (plc::PointCloud<pcl::PointXYZ> inputPointCloud)
+zFilter (pcl::PointCloud<pcl::PointXYZ> inputPointCloud)
 {
     pcl::PassThrough<pcl::PointXYZ> pass;
-    pass.setInputCloiud(inputPointCloud);
+    pass.setInputCloud(inputPointCloud);
     pass.setFilterFieldName("z");
-    pass.setFilterLimit(0.0, );
+    pass.setFilterLimits(0.0,0.0,1.0 );
+    return 0;
 }
 
 
