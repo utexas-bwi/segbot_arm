@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -14,7 +15,7 @@
 #include <ros/package.h>
 
 int
-pressEntertoContinue()
+pressEntertoContinue (void)
 {
     std::cout << "Press ENTER to continue..." << std::endl;
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -22,14 +23,47 @@ pressEntertoContinue()
 }
 
 
-int
-zFilter (pcl::PointCloud<pcl::PointXYZ> inputPointCloud)
+std::vector<float>
+findZRange (pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud)
 {
+    // TODO need to check for empty pointcloud case
+    std::vector<float> z_range(2); // min = [0], max = [1]
+    int i;
+
+    for (i = 0; i < input_cloud->points.size(); i++)
+    {
+        if (i == 0)
+        {
+            z_range[0] = input_cloud->points[i].z;
+            z_range[1] = input_cloud->points[i].z;
+        }
+        if (input_cloud->points[i].z < z_range[0]) // Min
+        {
+            z_range[0] = input_cloud->points[i].z;
+        }
+        if (input_cloud->points[i].z > z_range[1]) // Max
+        {
+            z_range[1] = input_cloud->points[i].z;
+        }
+    }
+    std::cout << "range = [" << z_range[0] << ", " << z_range[1] << "]" << endl;
+    return z_range;
+}
+
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr
+zFilter (pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, float min_ratio, float max_ratio)
+{
+    std::vector<float> z_range = findZRange(input_cloud);
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PassThrough<pcl::PointXYZ> pass;
-    pass.setInputCloud(inputPointCloud);
+
+    pass.setInputCloud(input_cloud);
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(0.0,0.0,1.0 );
-    return 0;
+    pass.setFilterLimits(min_ratio * z_range[0], max_ratio * z_range[1]);
+    pass.filter(*filtered_cloud);
+    return filtered_cloud;
 }
 
 
@@ -63,6 +97,27 @@ main (int argc, char** argv)
     std::string pathNameWrite = "/nishome/bwi/catkin_ws/src/segbot_arm/demos/push_button/src/table_scene_lms400_downsampled.pcd";
     writer.write<pcl::PointXYZ> (pathNameWrite, *cloud_filtered, false);
 
+
+
+
+    // std::cerr << "Start Cloud Viewer..." << std::endl;
+    // std::cerr << "Original point cloud" << std::endl;
+    // pcl::visualization::CloudViewer viewer ("plane segmentation");
+    // viewer.showCloud (cloud_filtered);
+    // while (!viewer.wasStopped ());
+    // pressEntertoContinue();
+    // Apply z-filter
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered2(new pcl::PointCloud<pcl::PointXYZ>);
+    cloud_filtered2 = zFilter(cloud_filtered, 0.70, 1);
+    std::cerr << "Start Cloud Viewer..." << std::endl;
+    std::cerr << "z-filtered point cloud" << std::endl;
+    pcl::visualization::CloudViewer viewer2 ("plane segmentation");
+    viewer2.showCloud (cloud_filtered2);
+    while (!viewer2.wasStopped ());
+    return 0;
+
+
+
     pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
     pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
     // Create the segmentation object
@@ -74,13 +129,6 @@ main (int argc, char** argv)
     seg.setMethodType (pcl::SAC_RANSAC);
     seg.setMaxIterations (1000);
     seg.setDistanceThreshold (0.01);
-
-    std::cerr << "Start Cloud Viewer..." << std::endl;
-    std::cerr << "Original point cloud" << std::endl;
-
-    // pcl::visualization::CloudViewer viewer ("plane segmentation");
-    // viewer.showCloud (cloud_filtered);
-    // while (!viewer.wasStopped ());
 
     // Create the filtering object
     pcl::ExtractIndices<pcl::PointXYZ> extract;
@@ -105,6 +153,7 @@ main (int argc, char** argv)
         extract.filter (*cloud_p);
         std::cerr << "PointCloud representing the planar component: " << cloud_p->width * cloud_p->height << " data points." << std::endl;
 
+        // Start visualizing the current plane
         std::cerr << "Start Cloud Viewer..." << std::endl;
         pcl::visualization::CloudViewer viewer ("plane segmentation");
         viewer.showCloud (cloud_p);
