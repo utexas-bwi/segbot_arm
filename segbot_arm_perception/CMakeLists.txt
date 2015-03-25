@@ -109,6 +109,10 @@ target_link_libraries(planar_segmentation ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_executable(planar_segmentation_client src/planar_segmentation_client.cpp)
 target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
+
+add_executable(button_detection_node src/button_detection_node.cpp)
+target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(segbot_arm_perception_node segbot_arm_perception_generate_messages_cpp)
