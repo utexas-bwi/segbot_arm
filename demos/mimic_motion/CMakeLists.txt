@@ -111,6 +111,11 @@ include_directories(
 add_executable(copy src/copy.cpp)
 target_link_libraries(copy ${catkin_LIBRARIES} )
 
+## Declare a cpp executable
+add_executable(push_button_demo src/push_button_demo.cpp)
+target_link_libraries(push_button_demo ${catkin_LIBRARIES} )
+
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(mimic_motion_node mimic_motion_generate_messages_cpp)

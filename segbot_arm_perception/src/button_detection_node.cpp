@@ -25,6 +25,7 @@
 #include <pcl/io/openni_grabber.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/common/time.h>
+#include <pcl/common/common.h>
 
 #include <pcl/filters/crop_box.h>
 #include <pcl/filters/passthrough.h>
@@ -50,8 +51,11 @@ bool new_cloud_available_flag = false;
 PointCloudT::Ptr cloud (new PointCloudT);
 PointCloudT::Ptr cloud_plane (new PointCloudT);
 PointCloudT::Ptr cloud_blobs (new PointCloudT);
+PointCloudT::Ptr empty_cloud (new PointCloudT);
 std::vector<PointCloudT::Ptr > clusters;
 std::vector<PointCloudT::Ptr > clusters_on_plane;
+
+
 sensor_msgs::PointCloud2 cloud_ros;
 
 //true if Ctrl-C is pressed
@@ -136,6 +140,11 @@ int main (int argc, char** argv)
 	
 	//debugging publisher
 	ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("button_detection_node/cloud", 10);
+	
+	//button position publisher
+	ros::Publisher pose_pub = nh.advertise<geometry_msgs::PoseStamped>("button_detection_node/pose", 10);
+	  
+	 tf::TransformListener listener;
 	  
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
@@ -156,16 +165,29 @@ int main (int argc, char** argv)
 		{
 			new_cloud_available_flag = false;
 			
-			//Step 1: z-filter
+			//Step 1: z-filter and voxel filter
 			
 			// Create the filtering object
 			pcl::PassThrough<PointT> pass;
 			pass.setInputCloud (cloud);
 			pass.setFilterFieldName ("z");
 			pass.setFilterLimits (0.0, 1.15);
-
 			pass.filter (*cloud);
 			
+			ROS_INFO("Before voxel grid filter: %i points",(int)cloud->points.size());
+			
+			 // Create the filtering object: downsample the dataset using a leaf size of 1cm
+			pcl::VoxelGrid<PointT> vg;
+			pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>);
+			vg.setInputCloud (cloud);
+			vg.setLeafSize (0.005f, 0.005f, 0.005f);
+			vg.filter (*cloud_filtered);
+			
+			ROS_INFO("After voxel grid filter: %i points",(int)cloud_filtered->points.size());
+
+			//pcl::toROSMsg(*cloud_filtered,cloud_ros);
+			//cloud_ros.header.frame_id = cloud->header.frame_id;
+			//cloud_pub.publish(cloud_ros);	
 			
 			
 			//Step 2: plane fitting
@@ -186,11 +208,11 @@ int main (int argc, char** argv)
 			pcl::ExtractIndices<PointT> extract;
 			
 			// Segment the largest planar component from the remaining cloud
-			seg.setInputCloud (cloud);
+			seg.setInputCloud (cloud_filtered);
 			seg.segment (*inliers, *coefficients);
 			
 			// Extract the plane
-			extract.setInputCloud (cloud);
+			extract.setInputCloud (cloud_filtered);
 			extract.setIndices (inliers);
 			extract.setNegative (false);
 			extract.filter (*cloud_plane);
@@ -233,7 +255,7 @@ int main (int argc, char** argv)
 			double max_red = 0.0;
 			for (unsigned int i = 0; i < clusters_on_plane.size(); i ++){
 				double red_i = computeAvgRedValue(clusters_on_plane.at(i));
-				ROS_INFO("Cluster %i: %i points, red_value = %f",i,(int)clusters_on_plane.at(i)->points.size(),red_i);
+				//ROS_INFO("Cluster %i: %i points, red_value = %f",i,(int)clusters_on_plane.at(i)->points.size(),red_i);
 				
 				if (red_i > max_red){
 					max_red = red_i;
@@ -241,12 +263,68 @@ int main (int argc, char** argv)
 				}
 			}
 			
-			//publish  cloud
 			
-			pcl::toROSMsg(*clusters_on_plane.at(max_index),cloud_ros);
-			cloud_ros.header.frame_id = cloud->header.frame_id;
-			cloud_pub.publish(cloud_ros);	
+			//float area = pcl::calculatePolygonArea(*clusters_on_plane.at(max_index));
+			ROS_INFO("Button found: %i points with red_value = %f",(int)clusters_on_plane.at(max_index)->points.size(),max_red);
 			
+			
+			//publish  cloud if we think it's a button
+			
+			if (max_red > 170 && max_red < 220 && 
+					clusters_on_plane.at(max_index)->points.size() < 360 && clusters_on_plane.at(max_index)->points.size() > 280){
+			
+				pcl::toROSMsg(*clusters_on_plane.at(max_index),cloud_ros);
+				cloud_ros.header.frame_id = cloud->header.frame_id;
+				cloud_pub.publish(cloud_ros);	
+				
+				Eigen::Vector4f centroid;
+				pcl::compute3DCentroid(*clusters_on_plane.at(max_index), centroid);
+			
+				//transforms the pose into /map frame
+				geometry_msgs::Pose pose_i;
+				pose_i.position.x=centroid(0);
+				pose_i.position.y=centroid(1);
+				pose_i.position.z=centroid(2);
+				pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
+				
+				geometry_msgs::PoseStamped stampedPose;
+
+				stampedPose.header.frame_id = cloud->header.frame_id;
+				stampedPose.header.stamp = ros::Time(0);
+				stampedPose.pose = pose_i;
+						
+				geometry_msgs::PoseStamped stampOut;
+				listener.waitForTransform(cloud->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0)); 
+				listener.transformPose("mico_api_origin", stampedPose, stampOut);
+			
+				stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
+				pose_pub.publish(stampOut);
+			}
+			else {
+				pcl::toROSMsg(*empty_cloud,cloud_ros);
+				cloud_ros.header.frame_id = cloud->header.frame_id;
+				cloud_pub.publish(cloud_ros);	
+				
+				//transforms the pose into /map frame
+				geometry_msgs::Pose pose_i;
+				pose_i.position.x=1000;
+				pose_i.position.y=1000;
+				pose_i.position.z=1000;
+				pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
+				
+				geometry_msgs::PoseStamped stampedPose;
+
+				stampedPose.header.frame_id = cloud->header.frame_id;
+				stampedPose.header.stamp = ros::Time(0);
+				stampedPose.pose = pose_i;
+						
+				geometry_msgs::PoseStamped stampOut;
+				listener.waitForTransform(cloud->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0)); 
+				listener.transformPose("mico_api_origin", stampedPose, stampOut);
+			
+				stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
+				pose_pub.publish(stampOut);
+			}
 			
 			
 			//unlock mutex
