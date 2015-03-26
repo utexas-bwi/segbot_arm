@@ -110,7 +110,7 @@ void moveFinger(int finger_value) {
 }
 
 void pushButton() {
-	double timeoutSeconds = 2.0;
+	double timeoutSeconds = 1.75;
 	int rateHertz = 100;
 	geometry_msgs::TwistStamped velocityMsg;
 	
@@ -139,10 +139,10 @@ void pushButton() {
 	}
 	
 
-	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
+	for(int i = 0; i < (int)3.0 * rateHertz; i++) {
 		
 		
-		velocityMsg.twist.linear.x = -0.1;
+		velocityMsg.twist.linear.x = -0.13;
 		velocityMsg.twist.linear.y = 0.0;
 		velocityMsg.twist.linear.z = 0.1;
 		
@@ -175,9 +175,9 @@ void moveAboveButton(){
   
  
 
-	goalPose.pose.pose.position.x = current_button_pose.pose.position.x+0.1;
-	goalPose.pose.pose.position.y = current_button_pose.pose.position.y-0.04;
-	goalPose.pose.pose.position.z = current_button_pose.pose.position.z + 0.15;
+	goalPose.pose.pose.position.x = current_button_pose.pose.position.x+0.09;
+	goalPose.pose.pose.position.y = current_button_pose.pose.position.y-0.03;
+	goalPose.pose.pose.position.z = current_button_pose.pose.position.z + 0.125;
 	
 	
 	//goalPose.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0);//vertcal pose (fingers down, palm aligned with the x direction

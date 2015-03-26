@@ -263,15 +263,20 @@ int main (int argc, char** argv)
 				}
 			}
 			
+			PointT min;
+			PointT max;
+			pcl::getMinMax3D(*clusters_on_plane.at(max_index),min,max);
+			
+			double volume = (max.x-min.x)*(max.y-min.y)*(max.z-min.z);
 			
 			//float area = pcl::calculatePolygonArea(*clusters_on_plane.at(max_index));
-			ROS_INFO("Button found: %i points with red_value = %f",(int)clusters_on_plane.at(max_index)->points.size(),max_red);
+			ROS_INFO("Button found: %i points with red_value = %f, volume = %f",(int)clusters_on_plane.at(max_index)->points.size(),max_red,volume);
 			
 			
 			//publish  cloud if we think it's a button
 			
-			if (max_red > 170 && max_red < 220 && 
-					clusters_on_plane.at(max_index)->points.size() < 360 && clusters_on_plane.at(max_index)->points.size() > 280){
+			if (max_red > 170 && max_red < 250 && 
+					clusters_on_plane.at(max_index)->points.size() < 360 && clusters_on_plane.at(max_index)->points.size() > 80){
 			
 				pcl::toROSMsg(*clusters_on_plane.at(max_index),cloud_ros);
 				cloud_ros.header.frame_id = cloud->header.frame_id;
@@ -305,25 +310,7 @@ int main (int argc, char** argv)
 				cloud_ros.header.frame_id = cloud->header.frame_id;
 				cloud_pub.publish(cloud_ros);	
 				
-				//transforms the pose into /map frame
-				geometry_msgs::Pose pose_i;
-				pose_i.position.x=1000;
-				pose_i.position.y=1000;
-				pose_i.position.z=1000;
-				pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
 				
-				geometry_msgs::PoseStamped stampedPose;
-
-				stampedPose.header.frame_id = cloud->header.frame_id;
-				stampedPose.header.stamp = ros::Time(0);
-				stampedPose.pose = pose_i;
-						
-				geometry_msgs::PoseStamped stampOut;
-				listener.waitForTransform(cloud->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0)); 
-				listener.transformPose("mico_api_origin", stampedPose, stampOut);
-			
-				stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
-				pose_pub.publish(stampOut);
 			}
 			
 			
