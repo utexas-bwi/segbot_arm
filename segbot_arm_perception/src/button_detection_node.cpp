@@ -301,11 +301,11 @@ int main (int argc, char** argv)
             }
 
 
-			PointT min;
-			PointT max;
-			pcl::getMinMax3D(*clusters_on_plane.at(max_index),min,max);
+			// PointT min;
+			// PointT max;
+			// pcl::getMinMax3D(*clusters_on_plane.at(max_index),min,max);
 
-			double volume = (max.x-min.x)*(max.y-min.y)*(max.z-min.z);
+			// double volume = (max.x-min.x)*(max.y-min.y)*(max.z-min.z);
 
 			//float area = pcl::calculatePolygonArea(*clusters_on_plane.at(max_index));
 //			ROS_INFO("Button found: %i points with red_value = %f, volume = %f",(int)clusters_on_plane.at(max_index)->points.size(),max_red,volume);
@@ -313,9 +313,9 @@ int main (int argc, char** argv)
 
 			//publish  cloud if we think it's a button
 			/*max_red > 170 && max_red < 250 && */
-            if ((clusters_on_plane.at(max_index)->points.size()) < 360 &&
-                (clusters_on_plane.at(max_index)->points.size()) > 80 &&
-                (max_index >= 0)) {
+            if ((max_index >= 0) &&
+                (clusters_on_plane.at(max_index)->points.size()) < 360 &&
+                (clusters_on_plane.at(max_index)->points.size()) > 80) {
 
 				pcl::toROSMsg(*clusters_on_plane.at(max_index),cloud_ros);
 				cloud_ros.header.frame_id = cloud->header.frame_id;
