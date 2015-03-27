@@ -44,7 +44,7 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
 // Select mode
-const bool save_pl_mode = true;
+const bool save_pl_mode = false;
 
 // Mutex: //
 boost::mutex cloud_mutex;
@@ -313,7 +313,9 @@ int main (int argc, char** argv)
 
 			//publish  cloud if we think it's a button
 			/*max_red > 170 && max_red < 250 && */
-            if (clusters_on_plane.at(max_index)->points.size() < 360 && clusters_on_plane.at(max_index)->points.size() > 80){
+            if ((clusters_on_plane.at(max_index)->points.size()) < 360 &&
+                (clusters_on_plane.at(max_index)->points.size()) > 80 &&
+                (max_index >= 0)) {
 
 				pcl::toROSMsg(*clusters_on_plane.at(max_index),cloud_ros);
 				cloud_ros.header.frame_id = cloud->header.frame_id;
