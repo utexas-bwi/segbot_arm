@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
   roscpp
+  rospy
   sensor_msgs
   geometry_msgs
   message_generation
@@ -111,8 +112,12 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(push_button src/plan.cpp)
+add_executable(push_button src/push_button.cpp)
 target_link_libraries(   push_button ${CATKIN_LIBRARIES} ${PCL_LIBRARIES} )
+add_executable(analyse_red_button src/analyze_red_button.cpp)
+target_link_libraries(   analyse_red_button ${CATKIN_LIBRARIES} ${PCL_LIBRARIES} )
+
+
 
 #add_executable(button_detection_node src/button_detection_node.cpp)
 #target_link_libraries(   button_detection_node ${CATKIN_LIBRARIES} ${PCL_LIBRARIES} )

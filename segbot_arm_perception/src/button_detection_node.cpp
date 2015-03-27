@@ -106,6 +106,25 @@ double computeAvgRedValue(PointCloudT::Ptr in){
 	return total_red;
 }
 
+int countRedVoxels(PointCloudT::Ptr in) {
+    int total_red = 0;
+
+    for (int i = 0; i < in->points.size(); i++) {
+        unsigned int r, g, b;
+        r = in->points[i].r;
+        g = in->points[i].g;
+        b = in->points[i].b;
+        // Look for mostly red values points
+        // These values are hand-picked using lab lighting samples
+        if (r > 200 && (g + b) < 50) {
+            total_red++;
+        }
+    }
+
+    return total_red;
+}
+
+
 void computeClusters(PointCloudT::Ptr in, double tolerance){
 	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 	tree->setInputCloud (in);
@@ -256,11 +275,11 @@ int main (int argc, char** argv)
 
 
 			//Step 4: detect the button among the remaining clusters
-
-
 			int max_index = -1;
+/*
 			double max_red = 0.0;
-			for (unsigned int i = 0; i < clusters_on_plane.size(); i ++){
+            // Find the max red value
+			for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
 				double red_i = computeAvgRedValue(clusters_on_plane.at(i));
 				//ROS_INFO("Cluster %i: %i points, red_value = %f",i,(int)clusters_on_plane.at(i)->points.size(),red_i);
 
@@ -269,6 +288,18 @@ int main (int argc, char** argv)
 					max_index = i;
 				}
 			}
+*/
+
+            int max_num_red = 0;
+            // Alternatively, find the blob with most red voxels
+			for (unsigned int i = 0; i < clusters_on_plane.size(); i++) {
+                int red_num_i = countRedVoxels(clusters_on_plane.at(i));
+                if (red_num_i > max_num_red) {
+                    max_num_red = red_num_i;
+                    max_index = i;
+                }
+            }
+
 
 			PointT min;
 			PointT max;
@@ -277,12 +308,12 @@ int main (int argc, char** argv)
 			double volume = (max.x-min.x)*(max.y-min.y)*(max.z-min.z);
 
 			//float area = pcl::calculatePolygonArea(*clusters_on_plane.at(max_index));
-			ROS_INFO("Button found: %i points with red_value = %f, volume = %f",(int)clusters_on_plane.at(max_index)->points.size(),max_red,volume);
+//			ROS_INFO("Button found: %i points with red_value = %f, volume = %f",(int)clusters_on_plane.at(max_index)->points.size(),max_red,volume);
 
 
 			//publish  cloud if we think it's a button
-			if (max_red > 170 && max_red < 250 &&
-                clusters_on_plane.at(max_index)->points.size() < 360 && clusters_on_plane.at(max_index)->points.size() > 80){
+			/*max_red > 170 && max_red < 250 && */
+            if (clusters_on_plane.at(max_index)->points.size() < 360 && clusters_on_plane.at(max_index)->points.size() > 80){
 
 				pcl::toROSMsg(*clusters_on_plane.at(max_index),cloud_ros);
 				cloud_ros.header.frame_id = cloud->header.frame_id;
