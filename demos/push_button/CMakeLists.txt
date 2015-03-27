@@ -5,16 +5,21 @@ project(push_button)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  std_msgs
+  pcl_conversions
   pcl_ros
+  roscpp
+  sensor_msgs
+  geometry_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 find_package(PCL 1.7 REQUIRED)
 
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -107,10 +112,10 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(push_button src/plan.cpp)
+target_link_libraries(   push_button ${CATKIN_LIBRARIES} ${PCL_LIBRARIES} )
 
-target_link_libraries(
-  push_button ${CATKIN_LIBRARIES} ${PCL_LIBRARIES}
-)
+#add_executable(button_detection_node src/button_detection_node.cpp)
+#target_link_libraries(   button_detection_node ${CATKIN_LIBRARIES} ${PCL_LIBRARIES} )
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

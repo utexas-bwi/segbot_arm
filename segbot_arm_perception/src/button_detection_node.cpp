@@ -1,8 +1,8 @@
 #include <signal.h>
 #include <vector>
 #include <string>
+#include <sys/stat.h>
 #include <ros/ros.h>
-
 #include <ros/package.h>
 
 #include <sensor_msgs/PointCloud2.h>
@@ -61,6 +61,12 @@ sensor_msgs::PointCloud2 cloud_ros;
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
+
+// Check if a file exist or not
+bool file_exist(std::string& name) {
+    struct stat buffer;
+    return (stat (name.c_str(), &buffer) == 0);
+}
 
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
@@ -316,8 +322,17 @@ int main (int argc, char** argv)
                         std::stringstream ss;
                         ss << "red_button_" << button_cloud_count <<  ".pcd";
                         std::string pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
-                        ROS_INFO("Saving %s...", pathNameWrite.c_str());
+                        // Changing file name until it doesn't overlap with existing point clouds
+                        while (file_exist(pathNameWrite)) {
+                            button_cloud_count++;
+                            ss.str("");
+                            ss << "red_button_" << button_cloud_count <<  ".pcd";
+                            pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
+                        }
+
+                        ROS_INFO("Saving %s...", ss.str().c_str());
                         writer.write<PointT>(pathNameWrite, *clusters_on_plane.at(max_index), false);
+                        button_cloud_count++;
                     }
                 }
 			}

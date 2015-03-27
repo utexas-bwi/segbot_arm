@@ -125,7 +125,7 @@ void threadCallback(){
   		
 }
 void je_callBack(const sensor_msgs::JointStateConstPtr &msg){
-		std::cout << "Efforts: " << msg->effort[0] << msg->effort[1] << msg->effort[2] << msg->effort[3] << msg->effort[4] << msg->effort[5] << std::endl;
+		std::cout << "Efforts: " << msg->effort[0] << std::endl;//<< msg->effort[1] << msg->effort[2] << msg->effort[3] << msg->effort[4] << msg->effort[5] << std::endl;
 }
 /*void js_callBack(const jaco_msgs::JointAnglesPtr &msg){
 		std::string data;
@@ -136,7 +136,7 @@ void je_callBack(const sensor_msgs::JointStateConstPtr &msg){
 		js << data;
 }*/
 void ja_callBack(const jaco_msgs::JointAnglesPtr &msg){
-		std::cout << "Angles: " << msg->joint1 << msg->joint2 << msg->joint3 << msg->joint4 << msg->joint5 << msg->joint6 << std::endl;
+		//std::cout << "Angles: " << msg->joint1 << std::endl; //<< msg->joint2 << msg->joint3 << msg->joint4 << msg->joint5 << msg->joint6 << std::endl;
 }
 //quick function to send a jointstate goal and note the efforts
 //used for verification of kinematic model
@@ -167,13 +167,8 @@ void recordEfforts(){
 		ac.waitForServer();
 		ROS_DEBUG("Waiting for server.");
 		//finally, send goal and wait
-		ROS_INFO("Sending goal.");
+		//ROS_INFO("Sending goal.");
 		ac.sendGoal(goalPose);
-		while(ac.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
-			//ROS_INFO("Still trying");
-			ros::spinOnce();
-		}
-		ac.waitForResult();
 		je.close();
 		ja.close();
 }
@@ -209,7 +204,7 @@ int main(int argc, char** argv)
 	
 	
 	while (ros::ok()){
-		
+		signal(SIGINT, sig_handler);	
 		if (state == 1){
 			cout << "Enter 1 to output joint positions for 5 seconds." << endl;
 			cin >> input;
