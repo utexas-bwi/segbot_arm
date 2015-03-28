@@ -4,18 +4,12 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include "segbot_arm_perception/PlanarSegmentation.h"
-
 #include <sensor_msgs/PointCloud2.h>
-
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
 
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
 
 #include <pcl_ros/impl/transforms.hpp>
-
-// PCL specific includes
 #include <pcl/point_cloud.h>
 #include <pcl/common/common.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -23,6 +17,13 @@
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
 #include <pcl_ros/transforms.h>
+
+
+/* Author: Maxwell Svetlik
+ * Current state: finds centroid and transforms frame
+ * Todo: find closest point to end effector, transform frame, approach
+ * will require format of drawing demo code for drawing. 
+ * /
 
 
 //true if Ctrl-C is pressed
@@ -80,19 +81,19 @@ int main (int argc, char** argv)
 					target.position.y=centroid(1);
 					target.position.z=centroid(2);
 					target.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
-					std::cout << target.position.x << " " << target.position.y << " " << target.position.z << std::endl;
-					/*geometry_msgs::PoseStamped stampedPose;
+					geometry_msgs::PoseStamped pose_in;
 
-					stampedPose.header.frame_id = cloud->header.frame_id;
-					stampedPose.header.stamp = ros::Time(0);
-					stampedPose.pose = pose_i;
+					pose_in.header.frame_id = cloud_plane->header.frame_id;
+					pose_in.header.stamp = ros::Time(0);
+					pose_in.pose = target;
 
-					geometry_msgs::PoseStamped stampOut;
-					listener.waitForTransform(cloud->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
-					listener.transformPose("mico_api_origin", stampedPose, stampOut);
+					geometry_msgs::PoseStamped pose_out;
+					listener.waitForTransform(cloud_plane->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
+					listener.transformPose("mico_api_origin", pose_in, pose_out);
 
-					stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
-					pose_pub.publish(stampOut);*/
+					pose_out.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
+					std::cout << pose_out.pose.position.x << " " << pose_out.pose.position.y << " " << pose_out.pose.position.z << std::endl;
+					//pose_pub.publish(pose_out);
 				}
 				else
 					std::cout << "The service returned 0 point clouds." << std::endl;
