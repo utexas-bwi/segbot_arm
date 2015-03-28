@@ -8,7 +8,10 @@ requests: boolean excludePlane -: true if the returned clouds should be all poin
 TODO: 
 requests: plane orientation(vertical, horizontal)(check within each cluster if the average z height is ~ equal or very spread)
           plan size        (simple check, but not sure if useful. When will someone know how big the expected cloud should be?)
-
+		  
+response:		  
+		  change reponse type from vector of clouds to vector of cloud pointers (for processing)
+		  add in a parallel vector for the coefficients of the clouds returned
 
 Filter out clouds that are sparsely populated and very spread out. Likely not a plane.
 */
