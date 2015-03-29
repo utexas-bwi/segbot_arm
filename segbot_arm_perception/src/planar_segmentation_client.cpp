@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 #include "segbot_arm_perception/PlanarSegmentation.h"
-#include <vector>;
+#include <vector>
 
 int main(int argc, char **argv)
 {
@@ -24,6 +24,8 @@ int main(int argc, char **argv)
       ROS_INFO("Got %lu clouds. Publishing to /segmented_pc", res.size());
       for(int i = 0; i < res.size(); i++){
         std::cin >> in;    //cycle through all the pointclouds. Useful for visualizing in rviz
+        std::cout << "Coefficients for this cloud: xyzw " << srv_msg.response.coefficients.at(i).x << " " << srv_msg.response.coefficients.at(i).y;
+        std::cout << " " << srv_msg.response.coefficients.at(i).z << " " << srv_msg.response.coefficients.at(i).w;
         pub.publish(res.at(i));
       }
     }

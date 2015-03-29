@@ -7,21 +7,21 @@ requests: boolean excludePlane -: true if the returned clouds should be all poin
                                   ie numberOfPlanes = 3 will return up to three of the largest planes. If 0, returns all of the planes detected.
 TODO: 
 requests: plane orientation(vertical, horizontal)(check within each cluster if the average z height is ~ equal or very spread)
-          plan size        (simple check, but not sure if useful. When will someone know how big the expected cloud should be?)
+          plane size        (simple check, but not sure if useful. When will someone know how big the expected cloud should be?)
 		  
 response:		  
-		  change reponse type from vector of clouds to vector of cloud pointers (for processing)
-		  add in a parallel vector for the coefficients of the clouds returned
 
 Filter out clouds that are sparsely populated and very spread out. Likely not a plane.
 */
 
 
 #include <ros/ros.h>
+#include <std_msgs/Float32MultiArray.h>
 #include <vector>
 #include "segbot_arm_perception/PlanarSegmentation.h"
 // PCL specific includes
 #include <sensor_msgs/PointCloud2.h>
+#include <geometry_msgs/Quaternion.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -53,9 +53,9 @@ bool seg_cb(segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm_
 {
   // Create a container for the data.
   sensor_msgs::PointCloud2 output;
+  geometry_msgs::Quaternion coefficient_quat;
   std::vector<sensor_msgs::PointCloud2> cloud_cont;
- // Do data processing here...
-  //output = *input;
+  std::vector<geometry_msgs::Quaternion> coefficient_cont;  
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_final(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>), cloud_f(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -108,19 +108,26 @@ bool seg_cb(segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm_
 
     // Get the points associated with the planar surface
     extract.filter(cloud_plane);
-    //std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
 
     //Convert to ros sensor msg, add to vector
     sensor_msgs::PointCloud2 output;
-    pcl::toROSMsg(cloud_plane, output );
+    pcl::toROSMsg(cloud_plane, output);
     cloud_cont.push_back(output);
+    
+    //Contain coefficients
+    coefficient_quat.x = coefficients->values[0];
+    coefficient_quat.y = coefficients->values[1];
+    coefficient_quat.z = coefficients->values[2];
+    coefficient_quat.w = coefficients->values[3];
+    coefficient_cont.push_back(coefficient_quat);
 
     // Remove the planar inliers, extract the rest
     extract.setNegative(true);
     extract.filter(*cloud_f);
     *cloud_filtered = *cloud_f;
   }
-    res.clouds = cloud_cont;
+  res.clouds = cloud_cont;
+  res.coefficients = coefficient_cont;
 }
 
   int main(int argc, char** argv)
