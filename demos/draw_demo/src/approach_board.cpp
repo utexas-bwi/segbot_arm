@@ -19,6 +19,12 @@
 #include <pcl_ros/transforms.h>
 #include <pcl/kdtree/kdtree_flann.h>
 
+//actions
+#include <actionlib/client/simple_action_client.h>
+#include "jaco_msgs/SetFingersPositionAction.h"
+#include "jaco_msgs/ArmPoseAction.h"
+
+#define PI 3.14159265
 
 /* Author: Maxwell Svetlik
  * Current state: finds closest point to end effector through transforms and KdTree search
@@ -51,6 +57,12 @@ void sig_handler(int sig)
   exit(1);
 };
 
+void approach(jaco_msgs::ArmPoseGoal goalPose){
+	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	ac.waitForServer();
+	ac.sendGoal(goalPose);
+	ac.waitForResult();
+}
 int main (int argc, char** argv)
 {
 	ros::init (argc, argv, "approach_board");
@@ -78,11 +90,12 @@ int main (int argc, char** argv)
 			if(ps_client.call(srv)){
 				ros::spinOnce();
 				
-				std::vector<sensor_msgs::PointCloud2> res = srv.response.clouds;
-				if(res.size() > 0){
+				segbot_arm_perception::PlanarSegmentation::Response res = srv.response; //assume (naively) that the largest plane is the one desired
+				
+				if(res.clouds.size() > 0){
 					//conversion of pointcloud
 					pcl::PCLPointCloud2 temp;
-					pcl_conversions::toPCL(res.at(0),temp);
+					pcl_conversions::toPCL(res.clouds.at(0),temp);
 					pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane(new pcl::PointCloud<pcl::PointXYZ>);
 					pcl::fromPCLPointCloud2(temp,*cloud_plane);
 					
@@ -91,7 +104,8 @@ int main (int argc, char** argv)
 					ef_pose.position.x = cur_x;
 					ef_pose.position.y = cur_y;
 					ef_pose.position.z = cur_z;
-					ef_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
+					ef_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
+
 					geometry_msgs::PoseStamped ef_mico;
 
 					ef_mico.header.frame_id = "mico_api_origin";
@@ -121,7 +135,8 @@ int main (int argc, char** argv)
 						target.position.x = cloud_plane->points[pointIdxNKNSearch[0]].x;
 						target.position.y = cloud_plane->points[pointIdxNKNSearch[0]].y;
 						target.position.z = cloud_plane->points[pointIdxNKNSearch[0]].z;
-						target.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
+						target.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
+
 						geometry_msgs::PoseStamped pose_in;
 
 						pose_in.header.frame_id = cloud_plane->header.frame_id;
@@ -132,10 +147,22 @@ int main (int argc, char** argv)
 						listener.waitForTransform(cloud_plane->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
 						listener.transformPose("mico_api_origin", pose_in, pose_out);
 
-						pose_out.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
 						std::cout << "The target approach point in the arm frame: ";
-						std::cout << pose_out.pose.position.x << " " << pose_out.pose.position.y << " " << pose_out.pose.position.z << std::endl;
-						//pose_pub.publish(pose_out);
+						std::cout << pose_out.pose.position.x << " " << pose_out.pose.position.y << " " << pose_out.pose.position.z << " ";
+						std::cout << res.coefficients.at(0).x << " " << res.coefficients.at(0).y << " " << res.coefficients.at(0).z << " " << res.coefficients.at(0).w << std::endl;
+						
+						jaco_msgs::ArmPoseGoal goalPose;
+						goalPose.pose.header.frame_id = "mico_api_origin";
+						goalPose.pose.pose.position.x = cur_x;	
+						goalPose.pose.pose.position.y = cur_y;				
+						goalPose.pose.pose.position.z = cur_z;			
+						goalPose.pose.pose.orientation.x = res.coefficients.at(0).x;		
+						goalPose.pose.pose.orientation.y = res.coefficients.at(0).y;		
+						goalPose.pose.pose.orientation.z = res.coefficients.at(0).z;		
+						goalPose.pose.pose.orientation.w = res.coefficients.at(0).w;							
+						//approach(goalPose);
+						
+						pose_pub.publish(pose_out);
 					}
 					else
 						std::cout << "Unable to find closest point." << std::endl;
