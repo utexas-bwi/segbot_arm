@@ -60,3 +60,7 @@ target_link_libraries(drawShapes ${catkin_LIBRARIES})
 add_executable (draw src/draw.cpp)
 target_link_libraries(draw ${catkin_LIBRARIES})
 
+#approach board
+add_executable(approach_board src/approach_board.cpp)
+target_link_libraries(approach_board ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+

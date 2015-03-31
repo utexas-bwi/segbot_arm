@@ -1336,6 +1336,7 @@ void subfunctionsMenu(){
 		cout << "1 - Set Reference Frame" << endl;
 		cout << "2 - Go Distance From Origin" << endl;
 		cout << "3 - Draw from file" << endl;
+		cout << "4 - Send raw velocity command ~ONLY USE IF YOU KNOW WHAT YOURE DOING~" << endl;
 		cout << "9 - Output Current Coordinate" << endl;
 		cin >> input;
 		if(input == 0)
@@ -1368,6 +1369,14 @@ void subfunctionsMenu(){
 			else
 				//drawFromCD();
 				cout << "This function has moved onto the main menu!" << endl;
+		}
+		else if(input == 4){
+			float x,y,z;
+			getWriteReady("horizontal");
+			cout << "Please enter x: "; cin >> x; 
+			cout << endl << "Please enter y: "; cin >> y;
+			cout << endl << "Please enter z: "; cin >> z;
+			sendRawVelocity(x,y,z);
 		}
 		else if(input == 9){
 			ros::spinOnce();
