@@ -58,6 +58,7 @@ find_package(catkin REQUIRED
  add_service_files(
    FILES
    PlanarSegmentation.srv
+   TableDetection.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -70,7 +71,7 @@ find_package(catkin REQUIRED
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   std_msgs	
+   std_msgs
    sensor_msgs
 )
 
@@ -109,9 +110,14 @@ target_link_libraries(planar_segmentation ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_executable(planar_segmentation_client src/planar_segmentation_client.cpp)
 target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-
 add_executable(button_detection_node src/button_detection_node.cpp)
 target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(multiple_object_detection_node src/multiple_object_detection_node.cpp)
+target_link_libraries(multiple_object_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(table_detection_node src/table_detection_node.cpp)
+target_link_libraries(table_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
