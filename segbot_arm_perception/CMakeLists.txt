@@ -59,7 +59,7 @@ find_package(catkin REQUIRED
  add_service_files(
    FILES
    PlanarSegmentation.srv
-   ClusterExtraction.srv
+   TableDetectionObjectExtraction.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -118,8 +118,8 @@ target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES}
 add_executable(multiple_object_detection_node src/multiple_object_detection_node.cpp)
 target_link_libraries(multiple_object_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(cluster_extraction_server src/cluster_extraction_server.cpp)
-target_link_libraries(cluster_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_executable(table_detection_object_extraction_server src/table_detection_object_extraction_server.cpp)
+target_link_libraries(table_detection_object_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

@@ -31,7 +31,7 @@
 
 #include <pcl/kdtree/kdtree.h>
 
-#include "segbot_arm_perception/ClusterExtraction.h"
+#include "segbot_arm_perception/TableDetectionObjectExtraction.h"
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
@@ -71,10 +71,12 @@ void computeClusters(PointCloudT::Ptr in, std::vector<PointCloudT> &cloud_cluste
 
 // param: z_range,
 // TableDetection.srv has req.cloud, res.cloud_plane, res.cloud_blobs
-bool cluster_extraction_cb(segbot_arm_perception::ClusterExtraction::Request &req,
-                    segbot_arm_perception::ClusterExtraction::Response &res) {
-    PointCloudT::Ptr cloud(new PointCloudT), cloud_filtered(new PointCloudT), cloud_blob(new PointCloudT),
-        cloud_plane(new PointCloudT);
+bool table_detection_object_extraction_cb(
+    segbot_arm_perception::TableDetectionObjectExtraction::Request &req,
+    segbot_arm_perception::TableDetectionObjectExtraction::Response &res) {
+
+    PointCloudT::Ptr cloud(new PointCloudT), cloud_filtered(new PointCloudT),
+        cloud_blob(new PointCloudT), cloud_plane(new PointCloudT);
     pcl::fromROSMsg(req.cloud, *cloud);
 
 
@@ -187,9 +189,9 @@ int main (int argc, char** argv) {
     ros::init(argc, argv, "cluster_extraction_server");
     ros::NodeHandle nh;
 
-    ros::ServiceServer service = nh.advertiseService("/segbot_arm_perception/cluster_extraction_server", cluster_extraction_cb);
+    ros::ServiceServer service = nh.advertiseService("/segbot_arm_perception/table_detection_object_extraction_server", table_detection_object_extraction_cb);
 
-    ROS_INFO("Cluster extraction server ready");
+    ROS_INFO("Table detection object extraction server ready");
     ros::spin();
     return 0;
 }
