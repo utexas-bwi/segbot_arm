@@ -18,6 +18,7 @@
 #include <pcl/conversions.h>
 #include <pcl_ros/transforms.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/features/normal_3d.h>
 
 //actions
 #include <actionlib/client/simple_action_client.h>
@@ -34,7 +35,7 @@
  */
 
 
-double cur_x, cur_y, cur_z;
+double cur_x, cur_y, cur_z, cur_qx, cur_qy, cur_qz, cur_qw;
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -46,6 +47,10 @@ void toolpos_cb(const geometry_msgs::PoseStamped &msg){
 	cur_x = current.pose.position.x;
 	cur_y = current.pose.position.y;
 	cur_z = current.pose.position.z;
+	cur_qx = current.pose.orientation.x;
+	cur_qy = current.pose.orientation.y;
+	cur_qz = current.pose.orientation.z;
+	cur_qw = current.pose.orientation.w;
 }
 
 
@@ -104,8 +109,12 @@ int main (int argc, char** argv)
 					ef_pose.position.x = cur_x;
 					ef_pose.position.y = cur_y;
 					ef_pose.position.z = cur_z;
-					ef_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
-
+					//ef_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-PI/2);
+					ef_pose.orientation.x = cur_qx;
+					ef_pose.orientation.y = cur_qy;
+					ef_pose.orientation.z = cur_qz;
+					ef_pose.orientation.w = cur_qw;
+					
 					geometry_msgs::PoseStamped ef_mico;
 
 					ef_mico.header.frame_id = "mico_api_origin";
@@ -119,24 +128,41 @@ int main (int argc, char** argv)
 					
 					//Find closest point to EF
 					pcl::PointXYZ targetPoint;
-					int K = 5; //K nearest neighbors
+					int K = 100; //K nearest neighbors
 					std::vector<int> pointIdxNKNSearch(K);
 					std::vector<float> pointNKNSquaredDistance(K);
-					targetPoint.x = ef_camera.pose.position.x;
-					targetPoint.y = ef_camera.pose.position.y;
-					targetPoint.z = ef_camera.pose.position.z;
+					Eigen::Vector4f centroid;
+					pcl::compute3DCentroid(*cloud_plane, centroid);
+					targetPoint.x = centroid(0); //ef_camera.pose.position.x;
+					targetPoint.y = centroid(1); //ef_camera.pose.position.y;
+					targetPoint.z = centroid(2); //ef_camera.pose.position.z;
 					
 					pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 					kdtree.setInputCloud(cloud_plane);
 					
 					if(kdtree.nearestKSearch(targetPoint, K, pointIdxNKNSearch, pointNKNSquaredDistance) > 0){
+						//Compute the normal to the target point
+						Eigen::Vector4f plane_parameters;
+						float curvature;
+						//setViewPoint(targetPoint.x, targetPoint.y, targetPoint.z);
+						computePointNormal(*cloud_plane, pointIdxNKNSearch, plane_parameters, curvature);
+						//flipNormalTowardsViewpoint(targetPoint, 0, 0, 1, plane_parameters);
+						
+
 						//transform pose to mico
 						geometry_msgs::Pose target;
 						target.position.x = cloud_plane->points[pointIdxNKNSearch[0]].x;
 						target.position.y = cloud_plane->points[pointIdxNKNSearch[0]].y;
 						target.position.z = cloud_plane->points[pointIdxNKNSearch[0]].z;
-						target.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
-
+						target.orientation = tf::createQuaternionMsgFromRollPitchYaw(plane_parameters[1],-plane_parameters[0], PI);
+						//target.orientation.x = cloud_plane->points[pointIdxNKNSearch[0]].x * plane_parameters[0];
+						//target.orientation.y = cloud_plane->points[pointIdxNKNSearch[0]].y * plane_parameters[1];
+						//target.orientation.z = cloud_plane->points[pointIdxNKNSearch[0]].z * plane_parameters[2];
+						//target.orientation.w = plane_parameters[3];
+						//std::cout << "PlaneZ: " << plane_parameters[2] << " and mult by pt z: " << (cloud_plane->points[pointIdxNKNSearch[0]].z * plane_parameters[2]) << std::endl;
+						std::cout << plane_parameters[0] << std::endl;
+						std::cout << plane_parameters[1] << std::endl;
+						std::cout << plane_parameters[2] << std::endl;
 						geometry_msgs::PoseStamped pose_in;
 
 						pose_in.header.frame_id = cloud_plane->header.frame_id;
@@ -146,21 +172,24 @@ int main (int argc, char** argv)
 						geometry_msgs::PoseStamped pose_out;
 						listener.waitForTransform(cloud_plane->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
 						listener.transformPose("mico_api_origin", pose_in, pose_out);
+						
+						//pose_out.pose.position.x += .05;
+						pose_out.pose.position.y += .1;
 
 						std::cout << "The target approach point in the arm frame: ";
 						std::cout << pose_out.pose.position.x << " " << pose_out.pose.position.y << " " << pose_out.pose.position.z << " ";
-						std::cout << res.coefficients.at(0).x << " " << res.coefficients.at(0).y << " " << res.coefficients.at(0).z << " " << res.coefficients.at(0).w << std::endl;
+						std::cout << pose_out.pose.orientation.x << " " << pose_out.pose.orientation.y   << " " << pose_out.pose.orientation.z << " " << pose_out.pose.orientation.w << std::endl;
 						
 						jaco_msgs::ArmPoseGoal goalPose;
 						goalPose.pose.header.frame_id = "mico_api_origin";
-						goalPose.pose.pose.position.x = cur_x;	
-						goalPose.pose.pose.position.y = cur_y;				
-						goalPose.pose.pose.position.z = cur_z;			
-						goalPose.pose.pose.orientation.x = res.coefficients.at(0).x;		
-						goalPose.pose.pose.orientation.y = res.coefficients.at(0).y;		
-						goalPose.pose.pose.orientation.z = res.coefficients.at(0).z;		
-						goalPose.pose.pose.orientation.w = res.coefficients.at(0).w;							
-						//approach(goalPose);
+						goalPose.pose.pose.position.x = pose_out.pose.position.x;	
+						goalPose.pose.pose.position.y = pose_out.pose.position.y;				
+						goalPose.pose.pose.position.z = pose_out.pose.position.z;			
+						goalPose.pose.pose.orientation.x = pose_out.pose.orientation.x;		
+						goalPose.pose.pose.orientation.y = pose_out.pose.orientation.y;		
+						goalPose.pose.pose.orientation.z = pose_out.pose.orientation.z;		
+						goalPose.pose.pose.orientation.w = pose_out.pose.orientation.w;							
+						approach(goalPose);
 						
 						pose_pub.publish(pose_out);
 					}
