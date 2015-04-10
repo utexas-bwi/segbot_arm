@@ -175,6 +175,7 @@ int main (int argc, char** argv)
 						
 						//pose_out.pose.position.x += .05;
 						pose_out.pose.position.y += .1;
+						pose_out.pose.position.z += .3;
 
 						std::cout << "The target approach point in the arm frame: ";
 						std::cout << pose_out.pose.position.x << " " << pose_out.pose.position.y << " " << pose_out.pose.position.z << " ";
@@ -188,10 +189,14 @@ int main (int argc, char** argv)
 						goalPose.pose.pose.orientation.x = pose_out.pose.orientation.x;		
 						goalPose.pose.pose.orientation.y = pose_out.pose.orientation.y;		
 						goalPose.pose.pose.orientation.z = pose_out.pose.orientation.z;		
-						goalPose.pose.pose.orientation.w = pose_out.pose.orientation.w;							
-						approach(goalPose);
-						
+						goalPose.pose.pose.orientation.w = pose_out.pose.orientation.w;
 						pose_pub.publish(pose_out);
+						char move;
+						std::cin >> move;
+
+						if(move == 'm')							
+							approach(goalPose);
+						
 					}
 					else
 						std::cout << "Unable to find closest point." << std::endl;
