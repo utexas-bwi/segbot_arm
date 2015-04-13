@@ -83,7 +83,7 @@ void movePose(float d_z) {
 	ROS_INFO_STREAM(goalPose);
 
   ac.waitForServer();
-  ROS_DEBUG("Waiting for server.");
+  ROS_INFO("Waiting for server.");
   //finally, send goal and wait
   ROS_INFO("Sending goal.");
   ac.sendGoal(goalPose);

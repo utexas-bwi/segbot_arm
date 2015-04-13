@@ -36,9 +36,44 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
-const int min_length_off_table = 0.1;
+const double min_length_off_table = 0.1;
 
-void computeClusters(PointCloudT::Ptr in, std::vector<PointCloudT> &cloud_clusters,
+ros::Publisher cloud_pub;
+
+typedef struct colorRGB{
+    int r;
+    int g;
+    int b;
+} colorRGB;
+
+std::vector<colorRGB> colorVector;
+
+bool colorPointCloud(PointCloudT &in, int index) {
+    colorRGB color;
+    // Check if we already have this color
+    if (index < colorVector.size()) {
+        color = colorVector[index];
+        for (int i = 0; i < in.points.size(); i++) {
+            in.points[i].r = color.r;
+            in.points[i].g = color.g;
+            in.points[i].b = color.b;
+        }
+    } else {
+        color.r = rand() % 255;
+        color.g = rand() % 255;
+        color.b = rand() % 255;
+        for (int i = 0; i < in.points.size(); i++) {
+            in.points[i].r = color.r;
+            in.points[i].g = color.g;
+            in.points[i].b = color.b;
+        }
+        colorVector.push_back(color);
+    }
+
+    return true;
+}
+
+bool computeClusters(PointCloudT::Ptr in, std::vector<PointCloudT> &cloud_clusters,
                      double tolerance) {
 	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 	tree->setInputCloud (in);
@@ -66,11 +101,12 @@ void computeClusters(PointCloudT::Ptr in, std::vector<PointCloudT> &cloud_cluste
 		cloud_cluster.is_dense = true;
         // Add cluster to cluster vector
 		cloud_clusters.push_back(cloud_cluster);
-  }
+    }
+
+    return true;
 }
 
-// param: z_range,
-// TableDetection.srv has req.cloud, res.cloud_plane, res.cloud_blobs
+
 bool table_detection_object_extraction_cb(
     segbot_arm_perception::TableDetectionObjectExtraction::Request &req,
     segbot_arm_perception::TableDetectionObjectExtraction::Response &res) {
@@ -92,13 +128,11 @@ bool table_detection_object_extraction_cb(
 
     // Create the filtering object: downsample the dataset using a leaf size of 1cm
     pcl::VoxelGrid<PointT> vg;
-//    pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>);
     vg.setInputCloud (cloud);
     vg.setLeafSize (0.005f, 0.005f, 0.005f);
     vg.filter (*cloud_filtered);
 
     ROS_INFO("After voxel grid filter: %i points",(int)cloud_filtered->points.size());
-
 
     // Step 2: plane separating
     pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
@@ -147,10 +181,13 @@ bool table_detection_object_extraction_cb(
     // Extract clusters
     computeClusters(cloud_blob, cloud_clusters, 0.04);
 
+    ROS_INFO("cloud_clusters.size() = %d", (int)cloud_clusters.size());
+
+    std::vector<PointCloudT*> cloud_clusters_on_plane;
     // Only use the clusters with centroid close to the plane
     for (unsigned int i = 0; i < cloud_clusters.size(); i++) {
         Eigen::Vector4f centroid_i;
-        pcl::compute3DCentroid(cloud_clusters.at(i), centroid_i);
+        pcl::compute3DCentroid(cloud_clusters[i], centroid_i);
         pcl::PointXYZ center;
         center.x = centroid_i(0);
         center.y = centroid_i(1);
@@ -158,36 +195,47 @@ bool table_detection_object_extraction_cb(
 
         double distance = pcl::pointToPlaneDistance(center, plane_coefficients);
 
-        if (distance > min_length_off_table) {
-            remove_indices.push_back(i);
+        if (distance < min_length_off_table) {
+            cloud_clusters_on_plane.push_back(&cloud_clusters[i]);
         }
     }
 
-    // Remove clusters that are too far from the table or under the table
-    for (unsigned int i = 0; i < remove_indices.size(); i++) {
-        cloud_clusters.erase(cloud_clusters.begin() + remove_indices.at(i));
-    }
-
+    ROS_INFO("Number of clusters = %d", (int)cloud_clusters_on_plane.size());
 
     // Copy ponitcloud header
     pcl::toROSMsg(*cloud_plane, res.cloud_plane);
     res.cloud_plane.header.frame_id = req.cloud.header.frame_id;
     res.cloud_plane.header.stamp = ros::Time::now();
-    for (unsigned int i = 0; i < cloud_clusters.size(); i++) {
+    PointCloudT cloud_debug;
+    for (unsigned int i = 0; i < cloud_clusters_on_plane.size(); i++) {
         sensor_msgs::PointCloud2 cloud_cluster_ros;
-        pcl::toROSMsg(cloud_clusters.at(i), cloud_cluster_ros);
+        pcl::toROSMsg(*(cloud_clusters_on_plane[i]), cloud_cluster_ros);
         cloud_cluster_ros.header.frame_id = req.cloud.header.frame_id;
         cloud_cluster_ros.header.stamp = ros::Time::now();
         res.cloud_clusters.push_back(cloud_cluster_ros);
+        // For debug purpose
+        PointCloudT cloud_temp(*cloud_clusters_on_plane[i]);
+        colorPointCloud(cloud_temp, i);
+        cloud_debug += cloud_temp;
     }
+
+    // Publish cloud result
+    ROS_INFO("Cluster size = %d", (int)cloud_debug.points.size());
+    ROS_INFO("Publishing pointcloud clusters...");
+    sensor_msgs::PointCloud2 cloud_debug_ros;
+    toROSMsg(cloud_debug, cloud_debug_ros);
+    cloud_debug_ros.header.frame_id = res.cloud_plane.header.frame_id;
+    cloud_pub.publish(cloud_debug_ros);
 
     return true;
 }
 
-
 int main (int argc, char** argv) {
     ros::init(argc, argv, "cluster_extraction_server");
     ros::NodeHandle nh;
+
+    // Debugging publisher
+    cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/table_detection_object_extraction/cloud", 10);
 
     ros::ServiceServer service = nh.advertiseService("/segbot_arm_perception/table_detection_object_extraction_server", table_detection_object_extraction_cb);
 
