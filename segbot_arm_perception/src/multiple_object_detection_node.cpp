@@ -142,25 +142,17 @@ sensor_msgs/PointCloud2[] cloud_clusters
             toROSMsg(*cloud, table_srv.request.cloud);
             ROS_INFO("Calling Service...");
             if (table_srv_client.call(table_srv) && table_srv.response.is_plane_found) {
-                PointCloudT::Ptr cloud_plane;
+                PointCloudT::Ptr cloud_plane(new PointCloudT);
                 std::vector<PointCloudT::Ptr > clusters_on_plane;
                 float cloud_plane_coef[4];
                 ROS_INFO("Table found");
                 // Retrieve values
-                ROS_INFO("0");
                 for (int i = 0; i < table_srv.response.cloud_plane_coef.size(); i++) {
                     cloud_plane_coef[i] = table_srv.response.cloud_plane_coef[i];
                 }
-                // ROS_INFO("0");
-                // sensor_msgs::PointCloud2 temp_cloud;
-                // temp_cloud = table_srv.response.cloud_plane; // Error??
-                // ROS_INFO("0");
-                // fromROSMsg(temp_cloud, *cloud_plane);
-
-                ROS_INFO("1");
+                fromROSMsg(table_srv.response.cloud_plane, *cloud_plane); // ERROR
                 for (int i = 0; i < table_srv.response.cloud_clusters.size(); i++) {
-
-                    PointCloudT::Ptr temp_ptr;
+                    PointCloudT::Ptr temp_ptr(new PointCloudT);
                     fromROSMsg(table_srv.response.cloud_clusters[i], *temp_ptr);
                     clusters_on_plane.push_back(temp_ptr);
                 }
