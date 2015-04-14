@@ -1,5 +1,6 @@
-#include<signal.h>
-
+#include <signal.h>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/DisplayRobotState.h>
@@ -25,6 +26,9 @@ int main(int argc, char **argv)
 	ros::NodeHandle node_handle;
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
+	
+	//button position publisher
+	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("target_trajectory/pose", 10);
 	
 	std::cout << "Please ensure that demo.launch has been run!" << std::endl;
 	// BEGIN_TUTORIAL
@@ -152,18 +156,30 @@ int main(int argc, char **argv)
 			std::cout << "Y: "; std::cin >> y;
 			std::cout << "Z: "; std::cin >> z;
 			geometry_msgs::Pose target_pose1;
-			target_pose1.orientation.w = 1.0;
+			target_pose1.orientation.w = -1.0;
 			target_pose1.position.x = x;
 			target_pose1.position.y = y;
 			target_pose1.position.z = z;
+			
 			group.setPoseTarget(target_pose1);
 			group.setStartState(*group.getCurrentState());
+			
+			//publish pose
+			geometry_msgs::PoseStamped stampOut;
+			stampOut.header.frame_id = "/mico_link_base";
+			stampOut.pose = target_pose1;
+			stampOut.pose.orientation = target_pose1.orientation;
+			
+			pose_pub.publish(stampOut);
 		}
+		
+		
 		//bool success = group.plan(my_plan);
 		// Now, we call the planner to compute the plan
 		// and visualize it.
 		// Note that we are just planning, not asking move_group
 		// to actually move the robot.
+		
 		moveit::planning_interface::MoveGroup::Plan my_plan;
 		bool success = group.plan(my_plan);
 		ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
