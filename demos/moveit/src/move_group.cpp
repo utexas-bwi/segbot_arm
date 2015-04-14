@@ -65,24 +65,47 @@ int main(int argc, char **argv)
 	primitive.type = primitive.BOX;
 	primitive.dimensions.resize(3);
 	primitive.dimensions[0] = 0.1;
-	primitive.dimensions[1] = 0.4;
+	primitive.dimensions[1] = 0.2;
 	primitive.dimensions[2] = 1.0;
 
 	/* A pose for the box (specified relative to frame_id) */
 	geometry_msgs::Pose box_pose;
 	box_pose.orientation.w = 1.0;
-	box_pose.position.x =  0.0;
-	box_pose.position.y =  0.4;
+	box_pose.position.x =  0.1;
+	box_pose.position.y =  0.3;
 	box_pose.position.z =  0.0;
-
+	
 	collision_object.primitives.push_back(primitive);
 	collision_object.primitive_poses.push_back(box_pose);
 	collision_object.operation = collision_object.ADD;
+	//second box
+	moveit_msgs::CollisionObject collision_object2;
+	collision_object2.header.frame_id = "mico_link_base";	
+	collision_object2.id = "box2";
 
-	std::vector<moveit_msgs::CollisionObject> collision_objects;
-	collision_objects.push_back(collision_object);
+	/* Define a box to add to the world. */
+	shape_msgs::SolidPrimitive primitive2;
+	primitive2.type = primitive2.BOX;
+	primitive2.dimensions.resize(3);
+	primitive2.dimensions[0] = 0.1;
+	primitive2.dimensions[1] = 0.2;
+	primitive2.dimensions[2] = 1.0;
+
+	/* A pose for the box (specified relative to frame_id) */
+	geometry_msgs::Pose box_pose2;
+	box_pose2.orientation.w = 1.0;
+	box_pose2.position.x =  0.5;
+	box_pose2.position.y =  0.3;
+	box_pose2.position.z =  0.0;
+	
+	collision_object2.primitives.push_back(primitive2);
+	collision_object2.primitive_poses.push_back(box_pose2);
+	collision_object2.operation = collision_object2.ADD;
 	
 	//finally, add the collision objects to planning environment
+	std::vector<moveit_msgs::CollisionObject> collision_objects;
+	collision_objects.push_back(collision_object);
+	collision_objects.push_back(collision_object2);
 
 	sleep(1.0);
 	char in;
