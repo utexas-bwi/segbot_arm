@@ -17,6 +17,7 @@
 #include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/common/time.h>
 #include <pcl/common/common.h>
+#include <pcl/common/distances.h>
 
 #include <pcl/filters/crop_box.h>
 #include <pcl/filters/passthrough.h>
@@ -40,7 +41,9 @@ const double min_length_off_table = 0.1;
 
 ros::Publisher cloud_pub;
 
-typedef struct colorRGB{
+typedef struct colorRGB {
+    Eigen::Vector4f centroid;
+    bool taken;
     int r;
     int g;
     int b;
@@ -50,15 +53,43 @@ std::vector<colorRGB> colorVector;
 
 bool colorPointCloud(PointCloudT &in, int index) {
     colorRGB color;
+    // Compute centroid
+    Eigen::Vector4f centroid;
+    pcl::compute3DCentroid(in, centroid);
+    // pcl::PointXYZ center;
+    // center.x = centroid_i(0);
+    // center.y = centroid_i(1);
+    // center.z = centroid_i(2);
+
     // Check if we already have this color
     if (index < colorVector.size()) {
-        color = colorVector[index];
+        int color_index = -1;
+        double max_distance = -1;
+        for (int i = 0; i < colorVector.size(); i++) {
+            if (!colorVector[i].taken) {
+                double distance_i = sqrt(centroid(0)*colorVector[i].centroid(0) + centroid(1)*colorVector[i].centroid(1)+centroid(2)*colorVector[i].centroid(2));
+               // double distance_i = pcl::distances::l2(centroid, colorVector[i].centroid);
+                if (distance_i > max_distance) {
+                    max_distance = distance_i;
+                    color_index = i;
+                }
+            }
+        }
+        if (!(max_distance >= 0 || color_index >=0)) {
+            ROS_INFO("ERROR, all colors taken, something went wrong~!");
+            return false;
+        }
+        color = colorVector[color_index];
         for (int i = 0; i < in.points.size(); i++) {
             in.points[i].r = color.r;
             in.points[i].g = color.g;
             in.points[i].b = color.b;
         }
+        color.taken = true;
+        color.centroid = centroid;
+
     } else {
+        color.centroid = centroid;
         color.r = rand() % 255;
         color.g = rand() % 255;
         color.b = rand() % 255;
@@ -201,6 +232,11 @@ bool table_detection_object_extraction_cb(
     }
 
     ROS_INFO("Number of clusters = %d", (int)cloud_clusters_on_plane.size());
+
+    // Reset color taken vales
+    for (int i = 0; i < colorVector.size(); i++) {
+        colorVector[i].taken = false;
+    }
 
     // Copy ponitcloud header
     pcl::toROSMsg(*cloud_plane, res.cloud_plane);
