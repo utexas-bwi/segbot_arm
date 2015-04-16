@@ -1,6 +1,8 @@
 #include <signal.h>
 #include <vector>
 #include <string>
+#include <cmath>
+#include <limits>
 #include <sys/stat.h>
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -37,68 +39,71 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
-const double min_length_off_table = 0.1;
+const double min_length_off_table = 0.08;
 
-ros::Publisher cloud_pub;
+ros::Publisher cloud_clusters_pub;
+ros::Publisher cloud_plane_pub;
 
-typedef struct colorRGB {
+typedef struct ColorRGB {
     Eigen::Vector4f centroid;
     bool taken;
     int r;
     int g;
     int b;
-} colorRGB;
+} ColorRGB;
 
-std::vector<colorRGB> colorVector;
+std::vector<ColorRGB> color_vector;
+
+bool pointCloudSizeComp (PointCloudT* cloud_1, PointCloudT* cloud_2) {
+    return cloud_1->points.size() > cloud_2->points.size();
+}
 
 bool colorPointCloud(PointCloudT &in, int index) {
-    colorRGB color;
+    ColorRGB* color;
     // Compute centroid
     Eigen::Vector4f centroid;
     pcl::compute3DCentroid(in, centroid);
-    // pcl::PointXYZ center;
-    // center.x = centroid_i(0);
-    // center.y = centroid_i(1);
-    // center.z = centroid_i(2);
-
     // Check if we already have this color
-    if (index < colorVector.size()) {
+    if (index < color_vector.size()) {
         int color_index = -1;
-        double max_distance = -1;
-        for (int i = 0; i < colorVector.size(); i++) {
-            if (!colorVector[i].taken) {
-                double distance_i = sqrt(centroid(0)*colorVector[i].centroid(0) + centroid(1)*colorVector[i].centroid(1)+centroid(2)*colorVector[i].centroid(2));
-               // double distance_i = pcl::distances::l2(centroid, colorVector[i].centroid);
-                if (distance_i > max_distance) {
-                    max_distance = distance_i;
+        double min_distance = std::numeric_limits<int>::max();
+        for (int i = 0; i < color_vector.size(); i++) {
+            if (!color_vector[i].taken) {
+                double distance_i = sqrt(pow(centroid(0) - color_vector[i].centroid(0), 2) +
+                                         pow(centroid(1) -color_vector[i].centroid(1), 2) +
+                                         pow(centroid(2) - color_vector[i].centroid(2), 2));
+                if (distance_i < min_distance) {
+                    min_distance = distance_i;
                     color_index = i;
                 }
             }
         }
-        if (!(max_distance >= 0 || color_index >=0)) {
+        if (color_index < 0) {
             ROS_INFO("ERROR, all colors taken, something went wrong~!");
             return false;
         }
-        color = colorVector[color_index];
+        ROS_INFO("color_index = %d", color_index);
+        color = &color_vector[color_index];
         for (int i = 0; i < in.points.size(); i++) {
-            in.points[i].r = color.r;
-            in.points[i].g = color.g;
-            in.points[i].b = color.b;
+            in.points[i].r = color->r;
+            in.points[i].g = color->g;
+            in.points[i].b = color->b;
         }
-        color.taken = true;
-        color.centroid = centroid;
+        color->taken = true;
+        color->centroid = centroid;
 
     } else {
-        color.centroid = centroid;
-        color.r = rand() % 255;
-        color.g = rand() % 255;
-        color.b = rand() % 255;
+        color = new ColorRGB;
+        color->r = rand() % 255;
+        color->g = rand() % 255;
+        color->b = rand() % 255;
         for (int i = 0; i < in.points.size(); i++) {
-            in.points[i].r = color.r;
-            in.points[i].g = color.g;
-            in.points[i].b = color.b;
+            in.points[i].r = color->r;
+            in.points[i].g = color->g;
+            in.points[i].b = color->b;
         }
-        colorVector.push_back(color);
+        color->centroid = centroid;
+        color_vector.push_back(*color);
     }
 
     return true;
@@ -120,8 +125,7 @@ bool computeClusters(PointCloudT::Ptr in, std::vector<PointCloudT> &cloud_cluste
 	ec.extract (cluster_indices);
 
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin ();
-         it != cluster_indices.end (); ++it)
-	{
+         it != cluster_indices.end (); ++it) {
 		PointCloudT cloud_cluster;
         // Get all points
 		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++) {
@@ -145,7 +149,7 @@ bool table_detection_object_extraction_cb(
     PointCloudT::Ptr cloud(new PointCloudT), cloud_filtered(new PointCloudT),
         cloud_blob(new PointCloudT), cloud_plane(new PointCloudT);
     pcl::fromROSMsg(req.cloud, *cloud);
-
+    cloud->header.frame_id = req.cloud.header.frame_id;
 
     // Step 1: z and voxel filters
     // Create the filtering object
@@ -176,7 +180,7 @@ bool table_detection_object_extraction_cb(
     seg.setModelType (pcl::SACMODEL_PLANE);
     seg.setMethodType (pcl::SAC_RANSAC);
     seg.setMaxIterations (1000);
-    seg.setDistanceThreshold (0.01);
+    seg.setDistanceThreshold (0.01); // 1 cm plane
 
     // Create the filtering object
     pcl::ExtractIndices<PointT> extract;
@@ -199,7 +203,7 @@ bool table_detection_object_extraction_cb(
     Eigen::Vector4f plane_coefficients;
     for (int i = 0; i < coefficients->values.size(); i++) {
         res.cloud_plane_coef[i] = coefficients->values[i];
-			plane_coefficients(i)=coefficients->values[i];
+        plane_coefficients(i) = coefficients->values[i];
     }
 
     // TODO give a good condition for plane detection or not
@@ -213,29 +217,48 @@ bool table_detection_object_extraction_cb(
     computeClusters(cloud_blob, cloud_clusters, 0.04);
 
     ROS_INFO("cloud_clusters.size() = %d", (int)cloud_clusters.size());
-
+    ROS_INFO("%f x + %f y + %f z + %f = 0", plane_coefficients(0), plane_coefficients(1),
+             plane_coefficients(2), plane_coefficients(3));
     std::vector<PointCloudT*> cloud_clusters_on_plane;
     // Only use the clusters with centroid close to the plane
     for (unsigned int i = 0; i < cloud_clusters.size(); i++) {
         Eigen::Vector4f centroid_i;
         pcl::compute3DCentroid(cloud_clusters[i], centroid_i);
-        pcl::PointXYZ center;
+        PointT center;
         center.x = centroid_i(0);
         center.y = centroid_i(1);
         center.z = centroid_i(2);
 
         double distance = pcl::pointToPlaneDistance(center, plane_coefficients);
-
-        if (distance < min_length_off_table) {
+        double is_above_table = center.x * plane_coefficients(0) +
+                                center.y * plane_coefficients(1) +
+                                center.z + plane_coefficients(2) + plane_coefficients(3);
+        if ((distance < min_length_off_table) && (is_above_table > 0)) {
+            ///////////////////
+            // Make pointcloud
+            // cloud_clusters[i].width = 1;
+            // cloud_clusters[i].height = 1;
+            // cloud_clusters[i].points.resize(1);
+            // cloud_clusters[i].points[0] = center;
+            /////////////////
             cloud_clusters_on_plane.push_back(&cloud_clusters[i]);
+            ROS_INFO("distance = %f", distance);
+//            ROS_INFO("is_above = %f", is_above_table);
+            ROS_INFO("(%f, %f, %f)", center.x, center.y, center.z);
         }
     }
 
     ROS_INFO("Number of clusters = %d", (int)cloud_clusters_on_plane.size());
 
     // Reset color taken vales
-    for (int i = 0; i < colorVector.size(); i++) {
-        colorVector[i].taken = false;
+    for (int i = 0; i < color_vector.size(); i++) {
+        color_vector[i].taken = false;
+    }
+
+    // Sort cloud_clouter_on_plane ascending
+    std::sort(cloud_clusters_on_plane.begin(), cloud_clusters_on_plane.end(), pointCloudSizeComp);
+    for (int i = 0; i < cloud_clusters_on_plane.size(); i++) {
+        ROS_INFO("cloudClusterSize = %d", (int)cloud_clusters_on_plane[i]->points.size());
     }
 
     // Copy ponitcloud header
@@ -256,12 +279,12 @@ bool table_detection_object_extraction_cb(
     }
 
     // Publish cloud result
-    ROS_INFO("Cluster size = %d", (int)cloud_debug.points.size());
     ROS_INFO("Publishing pointcloud clusters...");
     sensor_msgs::PointCloud2 cloud_debug_ros;
     toROSMsg(cloud_debug, cloud_debug_ros);
     cloud_debug_ros.header.frame_id = res.cloud_plane.header.frame_id;
-    cloud_pub.publish(cloud_debug_ros);
+    cloud_clusters_pub.publish(cloud_debug_ros);
+    cloud_plane_pub.publish(res.cloud_plane);
 
     return true;
 }
@@ -271,7 +294,8 @@ int main (int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Debugging publisher
-    cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/table_detection_object_extraction/cloud", 10);
+    cloud_clusters_pub = nh.advertise<sensor_msgs::PointCloud2>("/table_detection_object_extraction/cloud", 10);
+    cloud_plane_pub = nh.advertise<sensor_msgs::PointCloud2>("/table_detection_object_extraction/cloud_plane", 10);
 
     ros::ServiceServer service = nh.advertiseService("/segbot_arm_perception/table_detection_object_extraction_server", table_detection_object_extraction_cb);
 

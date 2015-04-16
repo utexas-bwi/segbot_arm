@@ -73,7 +73,7 @@ void sig_handler(int sig)
   ROS_INFO("caught sigint, init shutdown sequence...");
   ros::shutdown();
   exit(1);
-};
+}
 
 
 void
@@ -114,14 +114,7 @@ int main (int argc, char** argv)
     // Setup service client for table detection
     ros::ServiceClient table_srv_client = nh.serviceClient<segbot_arm_perception::TableDetectionObjectExtraction>("/segbot_arm_perception/table_detection_object_extraction_server");
 
-/*
-sensor_msgs/PointCloud2 cloud
----
-bool is_plane_found
-sensor_msgs/PointCloud2 cloud_plane
-float32[4] cloud_plane_coef
-sensor_msgs/PointCloud2[] cloud_clusters
-*/
+
 	// Main loop:
 	while (!g_caught_sigint && ros::ok()) {
 		//collect messages
