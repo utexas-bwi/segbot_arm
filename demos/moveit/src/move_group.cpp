@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 			std::cout << "Y: "; std::cin >> y;
 			std::cout << "Z: "; std::cin >> z;
 			geometry_msgs::Pose target_pose1;
-			target_pose1.orientation.w = -1.0;
+			target_pose1.orientation.w = 1.0;
 			target_pose1.position.x = x;
 			target_pose1.position.y = y;
 			target_pose1.position.z = z;
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 			
 			//publish pose
 			geometry_msgs::PoseStamped stampOut;
-			stampOut.header.frame_id = "/mico_link_base";
+			stampOut.header.frame_id = "/root_link";
 			stampOut.pose = target_pose1;
 			stampOut.pose.orientation = target_pose1.orientation;
 			
