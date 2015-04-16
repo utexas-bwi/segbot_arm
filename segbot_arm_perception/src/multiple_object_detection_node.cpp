@@ -16,6 +16,8 @@
 #include <pcl_ros/impl/transforms.hpp>
 
 // PCL specific includes
+#include <pcl/common/time.h>
+#include <pcl/common/common.h>
 #include <pcl/conversions.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
@@ -23,8 +25,9 @@
 #include <pcl/point_types.h>
 #include <pcl/io/openni_grabber.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
-#include <pcl/common/time.h>
-#include <pcl/common/common.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/pfh.h>
+//#include <pcl/visualization/pcl_visualizer.h>
 
 #include <pcl/filters/crop_box.h>
 #include <pcl/filters/passthrough.h>
@@ -143,16 +146,69 @@ int main (int argc, char** argv)
                 for (int i = 0; i < table_srv.response.cloud_plane_coef.size(); i++) {
                     cloud_plane_coef[i] = table_srv.response.cloud_plane_coef[i];
                 }
-                fromROSMsg(table_srv.response.cloud_plane, *cloud_plane); // ERROR
+                fromROSMsg(table_srv.response.cloud_plane, *cloud_plane);
                 for (int i = 0; i < table_srv.response.cloud_clusters.size(); i++) {
                     PointCloudT::Ptr temp_ptr(new PointCloudT);
                     fromROSMsg(table_srv.response.cloud_clusters[i], *temp_ptr);
                     clusters_on_plane.push_back(temp_ptr);
                 }
+                // Do work
+                // Create the normal estimation class, and pass the input dataset to it
+                pcl::NormalEstimation<PointT, pcl::Normal> ne;
+                ne.setInputCloud (cloud_plane);
+                ROS_INFO("Hi");
+                // Create an empty kdtree representation, and pass it to the normal estimation object.
+                // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+                pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
+                ne.setSearchMethod (tree);
+
+                // Output datasets
+                pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
+                ROS_INFO("Hi");
+                // Use all neighbors in a sphere of radius 3cm
+                ne.setRadiusSearch (0.03);
+
+                // Compute the features
+                ne.compute (*cloud_normals);
+                ROS_INFO("Hi");
+                // Check for undefined values
+                for (int i = 0; i < cloud_normals->points.size(); i++)
+                {
+                    if (!pcl::isFinite<pcl::Normal>(cloud_normals->points[i]))
+                    {
+                        PCL_WARN("normals[%d] is not finite\n", i);
+                    }
+                }
+                // Visualize
+                // boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+                // viewer->addPointCloud<pcl::Normal> (cloud_normals, "normal cloud");
+                ROS_INFO("Hi");
+                // Create the PFH estimation class, and pass the input dataset+normals to it
+                pcl::PFHEstimation<PointT, pcl::Normal, pcl::PFHSignature125> pfh;
+                pfh.setInputCloud (cloud_plane);
+                pfh.setInputNormals (cloud_normals);
+                // alternatively, if cloud is of tpe PointNormal, do pfh.setInputNormals (cloud);
+
+                // Create an empty kdtree representation, and pass it to the PFH estimation object.
+                // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+                pcl::search::KdTree<PointT>::Ptr tree2 (new pcl::search::KdTree<PointT> ());
+                //pcl::KdTreeFLANN<pcl::PointXYZ>::Ptr tree (new pcl::KdTreeFLANN<pcl::PointXYZ> ()); -- older call for PCL 1.5-
+                pfh.setSearchMethod (tree2);
+                ROS_INFO("Hi2");
+                // Output datasets
+                pcl::PointCloud<pcl::PFHSignature125>::Ptr pfhs (new pcl::PointCloud<pcl::PFHSignature125> ());
+
+                // Use all neighbors in a sphere of radius 5cm
+                // IMPORTANT: the radius used here has to be larger than the radius used to estimate the surface normals!!!
+                pfh.setRadiusSearch (0.05);
+                ROS_INFO("Hi");
+                // Compute the features
+                pfh.compute (*pfhs);
+                ROS_INFO("Hi");
                 ROS_INFO("Publishing cloud clusters...");
                 toROSMsg(*cloud_plane, cloud_ros);
+                // toROSMsg(*cloud_normals, cloud_ros);
                 cloud_pub.publish(cloud_ros);
-                // Do work
             }
         }
 	}
