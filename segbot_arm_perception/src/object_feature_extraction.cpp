@@ -154,40 +154,12 @@ int main (int argc, char** argv)
                     clusters_on_plane.push_back(temp_ptr);
                 }
                 // Do work
-                // Create the normal estimation class, and pass the input dataset to it
-                pcl::NormalEstimation<PointT, pcl::Normal> ne;
-                ne.setInputCloud (cloud_plane);
-                ROS_INFO("Hi");
-                // Create an empty kdtree representation, and pass it to the normal estimation object.
-                // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-                pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
-                ne.setSearchMethod (tree);
-
-                // Output datasets
-                pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
-                ROS_INFO("Hi");
-                // Use all neighbors in a sphere of radius 3cm
-                ne.setRadiusSearch (0.03);
-
-                // Compute the features
-                ne.compute (*cloud_normals);
-                ROS_INFO("Hi");
-                // Check for undefined values
-                for (int i = 0; i < cloud_normals->points.size(); i++)
-                {
-                    if (!pcl::isFinite<pcl::Normal>(cloud_normals->points[i]))
-                    {
-                        PCL_WARN("normals[%d] is not finite\n", i);
-                    }
-                }
-
                 segbot_arm_perception::FeatureExtraction feature_srv;
                 // Pack service request
                 toROSMsg(*cloud_plane, feature_srv.request.cloud);
                 ROS_INFO("Calling feature service...");
                 if (feature_srv_client.call(feature_srv)) {
                     ROS_INFO("Feature vector received");
-
                 }
 
                 ROS_INFO("Publishing cloud clusters...");
