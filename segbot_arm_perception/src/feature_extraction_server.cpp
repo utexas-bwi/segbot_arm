@@ -41,13 +41,32 @@ class ColorHistogram {
 
     void computeHistogram(PointCloudT &cloud) {
         for (int i = 0; i < cloud.points.size(); i++) {
-            int r = (int)cloud.points[i].r / dim;
-            int g = (int)cloud.points[i].g / dim;
-            int b = (int)cloud.points[i].b / dim;
+            // Max value of 255
+            double round = 256 / dim;
+            int r = (int)((double)(cloud.points[i].r) / round);
+            int g = (int)((double)(cloud.points[i].g) / round);
+            int b = (int)((double)(cloud.points[i].b) / round);
             hist3[r][g][b]++;
         }
     }
-
+    uint get(int r, int g, int b) {
+        return hist3[r][g][b];
+    }
+    // Breaks program, don't use
+    std::string rosPrintHist() {
+        for (int i = 0; i < dim; i++) {
+            ROS_INFO("i = %d", i);
+            ROS_INFO("[");
+            for (int j = 0; j < dim; j++) {
+                std::string output;
+                for (int k = 0; k < dim; k++) {
+                    output += boost::lexical_cast<std::string>(hist3[i][j][k]) + ", ";
+                }
+                ROS_INFO("%s", output.c_str());
+            }
+            ROS_INFO("]");
+        }
+    }
 };
 
 
@@ -114,8 +133,12 @@ bool feature_extraction_cb(
     PointCloudT::Ptr cloud(new PointCloudT);
     pcl::fromROSMsg(req.cloud, *cloud);
 
-    // Pack return feature vector
-    res.feature_vector;
+    ColorHistogram ch(8);
+    ch.computeHistogram(*cloud);
+
+//    ch.rosPrintHist(); // Bug, program crashes after printing and exiting, mem leak?
+    computePfh(cloud);
+
     return true;
 }
 
