@@ -106,6 +106,7 @@ bool computePfh(PointCloudT::Ptr &cloud) {
     // Compute the features
     pfh.compute (*pfhs);
     ROS_INFO("Hi");
+return true;
 }
 
 bool feature_extraction_cb(
