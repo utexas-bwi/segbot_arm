@@ -108,7 +108,7 @@ bool computePfh(PointCloudT::Ptr &cloud) {
     ROS_INFO("Hi");
 }
 
-bool  object_feature_extraction_cb(
+bool feature_extraction_cb(
     segbot_arm_perception::FeatureExtraction::Request &req,
     segbot_arm_perception::FeatureExtraction::Response &res) {
     PointCloudT::Ptr cloud(new PointCloudT);
@@ -123,9 +123,9 @@ int main (int argc, char** argv) {
     ros::init(argc, argv, "object_feature_detection_server");
     ros::NodeHandle nh;
 
-    ros::ServiceServer service = nh.advertiseService("/segbot_arm_perception/object_feature_extraction_server", object_feature_extraction_cb);
+ros::ServiceServer service = nh.advertiseService("/segbot_arm_perception/feature_extraction_server", feature_extraction_cb);
 
-    ROS_INFO("Table detection object extraction server ready");
+    ROS_INFO("Feature extraction server ready");
     ros::spin();
     return 0;
 }

@@ -43,6 +43,7 @@
 #include <pcl/kdtree/kdtree.h>
 
 #include "segbot_arm_perception/TableDetectionObjectExtraction.h"
+#include "segbot_arm_perception/FeatureExtraction.h"
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -116,7 +117,7 @@ int main (int argc, char** argv)
 
     // Setup service client for table detection
     ros::ServiceClient table_srv_client = nh.serviceClient<segbot_arm_perception::TableDetectionObjectExtraction>("/segbot_arm_perception/table_detection_object_extraction_server");
-
+    ros::ServiceClient feature_srv_client = nh.serviceClient<segbot_arm_perception::FeatureExtraction>("/segbot_arm_perception/feature_extraction_server");
 
 	// Main loop:
 	while (!g_caught_sigint && ros::ok()) {
@@ -136,7 +137,7 @@ int main (int argc, char** argv)
             segbot_arm_perception::TableDetectionObjectExtraction table_srv;
             // Pack service request
             toROSMsg(*cloud, table_srv.request.cloud);
-            ROS_INFO("Calling Service...");
+            ROS_INFO("Calling table service...");
             if (table_srv_client.call(table_srv) && table_srv.response.is_plane_found) {
                 PointCloudT::Ptr cloud_plane(new PointCloudT);
                 std::vector<PointCloudT::Ptr > clusters_on_plane;
@@ -179,32 +180,16 @@ int main (int argc, char** argv)
                         PCL_WARN("normals[%d] is not finite\n", i);
                     }
                 }
-                // Visualize
-                // boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-                // viewer->addPointCloud<pcl::Normal> (cloud_normals, "normal cloud");
-                ROS_INFO("Hi");
-                // Create the PFH estimation class, and pass the input dataset+normals to it
-                pcl::PFHEstimation<PointT, pcl::Normal, pcl::PFHSignature125> pfh;
-                pfh.setInputCloud (cloud_plane);
-                pfh.setInputNormals (cloud_normals);
-                // alternatively, if cloud is of tpe PointNormal, do pfh.setInputNormals (cloud);
 
-                // Create an empty kdtree representation, and pass it to the PFH estimation object.
-                // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-                pcl::search::KdTree<PointT>::Ptr tree2 (new pcl::search::KdTree<PointT> ());
-                //pcl::KdTreeFLANN<pcl::PointXYZ>::Ptr tree (new pcl::KdTreeFLANN<pcl::PointXYZ> ()); -- older call for PCL 1.5-
-                pfh.setSearchMethod (tree2);
-                ROS_INFO("Hi2");
-                // Output datasets
-                pcl::PointCloud<pcl::PFHSignature125>::Ptr pfhs (new pcl::PointCloud<pcl::PFHSignature125> ());
+                segbot_arm_perception::FeatureExtraction feature_srv;
+                // Pack service request
+                toROSMsg(*cloud_plane, feature_srv.request.cloud);
+                ROS_INFO("Calling feature service...");
+                if (feature_srv_client.call(feature_srv)) {
+                    ROS_INFO("Feature vector received");
 
-                // Use all neighbors in a sphere of radius 5cm
-                // IMPORTANT: the radius used here has to be larger than the radius used to estimate the surface normals!!!
-                pfh.setRadiusSearch (0.05);
-                ROS_INFO("Hi");
-                // Compute the features
-                pfh.compute (*pfhs);
-                ROS_INFO("Hi");
+                }
+
                 ROS_INFO("Publishing cloud clusters...");
                 toROSMsg(*cloud_plane, cloud_ros);
                 // toROSMsg(*cloud_normals, cloud_ros);
