@@ -116,14 +116,14 @@ target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRA
 add_executable(button_detection_node src/button_detection_node.cpp)
 target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(multiple_object_detection_node src/multiple_object_detection_node.cpp)
-target_link_libraries(multiple_object_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_executable(feature_extraction_server src/feature_extraction_server.cpp)
+target_link_libraries(feature_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(table_detection_object_extraction_server src/table_detection_object_extraction_server.cpp)
 target_link_libraries(table_detection_object_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(feature_extraction_server src/feature_extraction_server.cpp)
-target_link_libraries(feature_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_executable(object_feature_extraction src/object_feature_extraction)
+target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

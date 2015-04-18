@@ -23,6 +23,7 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 typedef unsigned int uint;
 
+
 class ColorHistogram {
   private:
     std::vector<std::vector<std::vector<uint> > > hist3;
@@ -41,17 +42,36 @@ class ColorHistogram {
 
     void computeHistogram(PointCloudT &cloud) {
         for (int i = 0; i < cloud.points.size(); i++) {
-            int r = (int)cloud.points[i].r / dim;
-            int g = (int)cloud.points[i].g / dim;
-            int b = (int)cloud.points[i].b / dim;
+            // Max value of 255
+            double round = 256 / dim;
+            int r = (int)((double)(cloud.points[i].r) / round);
+            int g = (int)((double)(cloud.points[i].g) / round);
+            int b = (int)((double)(cloud.points[i].b) / round);
             hist3[r][g][b]++;
         }
     }
-
+    uint get(int r, int g, int b) {
+        return hist3[r][g][b];
+    }
+    // Breaks program, don't use
+    std::string rosPrintHist() {
+        for (int i = 0; i < dim; i++) {
+            ROS_INFO("i = %d", i);
+            ROS_INFO("[");
+            for (int j = 0; j < dim; j++) {
+                std::string output;
+                for (int k = 0; k < dim; k++) {
+                    output += boost::lexical_cast<std::string>(hist3[i][j][k]) + ", ";
+                }
+                ROS_INFO("%s", output.c_str());
+            }
+            ROS_INFO("]");
+        }
+    }
 };
 
 
-PointCloud<pcl::Normal> computeNormal(PointCloudT::Ptr &cloud) {
+pcl::PointCloud<pcl::Normal>::Ptr computeNormal(PointCloudT::Ptr &cloud) {
     // Create the normal estimation class, and pass the input dataset to it
     pcl::NormalEstimation<PointT, pcl::Normal> ne;
     ne.setInputCloud (cloud);
@@ -78,7 +98,7 @@ PointCloud<pcl::Normal> computeNormal(PointCloudT::Ptr &cloud) {
         }
     }
 
-    return cloud_normals
+    return cloud_normals;
 }
 
 
@@ -87,14 +107,14 @@ bool computeFpfh(PointCloudT::Ptr &cloud) {
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals = computeNormal(cloud);
 
     // Create the FPFH estimation class, and pass the input dataset+normals to it
-    pcl::FPFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::FPFHSignature33> fpfh;
+    pcl::FPFHEstimation<PointT, pcl::Normal, pcl::FPFHSignature33> fpfh;
     fpfh.setInputCloud (cloud);
-    fpfh.setInputNormals (normals);
+    fpfh.setInputNormals (cloud_normals);
     // alternatively, if cloud is of tpe PointNormal, do fpfh.setInputNormals (cloud);
 
     // Create an empty kdtree representation, and pass it to the FPFH estimation object.
     // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-    pcl::search::KdTree<PointXYZ>::Ptr tree (new pcl::search::KdTree<PointXYZ>);
+    pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 
     fpfh.setSearchMethod (tree);
 
@@ -110,6 +130,7 @@ bool computeFpfh(PointCloudT::Ptr &cloud) {
 
     // fpfhs->points.size () should have the same size as the input cloud->points.size ()*
 }
+
 
 // Point Feature Histograms (PFH) descriptors
 // pointclouds.org/documentation/tutorials/pfh_estimation.php
@@ -159,8 +180,8 @@ bool computePfh(PointCloudT::Ptr &cloud) {
     pfh.setRadiusSearch (0.05);
     // Compute the features
     pfh.compute (*pfhs);
-
 }
+
 
 bool feature_extraction_cb(
     segbot_arm_perception::FeatureExtraction::Request &req,
@@ -168,11 +189,15 @@ bool feature_extraction_cb(
     PointCloudT::Ptr cloud(new PointCloudT);
     pcl::fromROSMsg(req.cloud, *cloud);
 
+    ColorHistogram ch(8);
+    ch.computeHistogram(*cloud);
 
-    // Pack return feature vector
-    res.feature_vector;
+//    ch.rosPrintHist(); // Bug, program crashes after printing and exiting, mem leak?
+    computeFpfh(cloud);
+
     return true;
 }
+
 
 int main (int argc, char** argv) {
     ros::init(argc, argv, "object_feature_detection_server");
