@@ -51,13 +51,11 @@ class ColorHistogram {
 };
 
 
-// Point Feature Histograms (PFH) descriptors
-// pointclouds.org/documentation/tutorials/pfh_estimation.php
-bool computePfh(PointCloudT::Ptr &cloud) {
+PointCloud<pcl::Normal> computeNormal(PointCloudT::Ptr &cloud) {
     // Create the normal estimation class, and pass the input dataset to it
     pcl::NormalEstimation<PointT, pcl::Normal> ne;
     ne.setInputCloud (cloud);
-    ROS_INFO("Hi");
+
     // Create an empty kdtree representation, and pass it to the normal estimation object.
     // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
     pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
@@ -65,13 +63,12 @@ bool computePfh(PointCloudT::Ptr &cloud) {
 
     // Output datasets
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
-    ROS_INFO("Hi");
+
     // Use all neighbors in a sphere of radius 3cm
     ne.setRadiusSearch (0.03);
 
     // Compute the features
     ne.compute (*cloud_normals);
-    ROS_INFO("Hi");
     // Check for undefined values
     for (int i = 0; i < cloud_normals->points.size(); i++)
     {
@@ -80,10 +77,69 @@ bool computePfh(PointCloudT::Ptr &cloud) {
             PCL_WARN("normals[%d] is not finite\n", i);
         }
     }
-    // Visualize
-    // boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-    // viewer->addPointCloud<pcl::Normal> (cloud_normals, "normal cloud");
-    ROS_INFO("Hi");
+
+    return cloud_normals
+}
+
+
+bool computeFpfh(PointCloudT::Ptr &cloud) {
+    // Find normal
+    pcl::PointCloud<pcl::Normal>::Ptr cloud_normals = computeNormal(cloud);
+
+    // Create the FPFH estimation class, and pass the input dataset+normals to it
+    pcl::FPFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::FPFHSignature33> fpfh;
+    fpfh.setInputCloud (cloud);
+    fpfh.setInputNormals (normals);
+    // alternatively, if cloud is of tpe PointNormal, do fpfh.setInputNormals (cloud);
+
+    // Create an empty kdtree representation, and pass it to the FPFH estimation object.
+    // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+    pcl::search::KdTree<PointXYZ>::Ptr tree (new pcl::search::KdTree<PointXYZ>);
+
+    fpfh.setSearchMethod (tree);
+
+    // Output datasets
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr fpfhs (new pcl::PointCloud<pcl::FPFHSignature33> ());
+
+    // Use all neighbors in a sphere of radius 5cm
+    // IMPORTANT: the radius used here has to be larger than the radius used to estimate the surface normals!!!
+    fpfh.setRadiusSearch (0.05);
+
+    // Compute the features
+    fpfh.compute (*fpfhs);
+
+    // fpfhs->points.size () should have the same size as the input cloud->points.size ()*
+}
+
+// Point Feature Histograms (PFH) descriptors
+// pointclouds.org/documentation/tutorials/pfh_estimation.php
+bool computePfh(PointCloudT::Ptr &cloud) {
+    // Create the normal estimation class, and pass the input dataset to it
+    pcl::NormalEstimation<PointT, pcl::Normal> ne;
+    ne.setInputCloud (cloud);
+
+    // Create an empty kdtree representation, and pass it to the normal estimation object.
+    // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+    pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
+    ne.setSearchMethod (tree);
+
+    // Output datasets
+    pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
+
+    // Use all neighbors in a sphere of radius 3cm
+    ne.setRadiusSearch (0.03);
+
+    // Compute the features
+    ne.compute (*cloud_normals);
+    // Check for undefined values
+    for (int i = 0; i < cloud_normals->points.size(); i++)
+    {
+        if (!pcl::isFinite<pcl::Normal>(cloud_normals->points[i]))
+        {
+            PCL_WARN("normals[%d] is not finite\n", i);
+        }
+    }
+
     // Create the PFH estimation class, and pass the input dataset+normals to it
     pcl::PFHEstimation<PointT, pcl::Normal, pcl::PFHSignature125> pfh;
     pfh.setInputCloud (cloud);
@@ -93,7 +149,6 @@ bool computePfh(PointCloudT::Ptr &cloud) {
     // Create an empty kdtree representation, and pass it to the PFH estimation object.
     // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
     pcl::search::KdTree<PointT>::Ptr tree2 (new pcl::search::KdTree<PointT> ());
-    //pcl::KdTreeFLANN<pcl::PointXYZ>::Ptr tree (new pcl::KdTreeFLANN<pcl::PointXYZ> ()); -- older call for PCL 1.5-
     pfh.setSearchMethod (tree2);
     ROS_INFO("Hi2");
     // Output datasets
@@ -102,10 +157,9 @@ bool computePfh(PointCloudT::Ptr &cloud) {
     // Use all neighbors in a sphere of radius 5cm
     // IMPORTANT: the radius used here has to be larger than the radius used to estimate the surface normals!!!
     pfh.setRadiusSearch (0.05);
-    ROS_INFO("Hi");
     // Compute the features
     pfh.compute (*pfhs);
-    ROS_INFO("Hi");
+
 }
 
 bool feature_extraction_cb(
@@ -113,6 +167,7 @@ bool feature_extraction_cb(
     segbot_arm_perception::FeatureExtraction::Response &res) {
     PointCloudT::Ptr cloud(new PointCloudT);
     pcl::fromROSMsg(req.cloud, *cloud);
+
 
     // Pack return feature vector
     res.feature_vector;
