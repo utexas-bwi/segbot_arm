@@ -8,7 +8,8 @@
 #include <moveit/kinematic_constraints/utils.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/PlanningScene.h>
-
+#include <moveit/move_group_interface/move_group.h>
+#include <moveit/robot_state/conversions.h>
 int main(int argc, char **argv)
 {
   ros::init (argc, argv, "move_group_tutorial");
@@ -24,6 +25,11 @@ int main(int argc, char **argv)
   // :planning_scene:`PlanningScene` that maintains the state of 
   // the world (including the robot). 
   planning_scene::PlanningScenePtr planning_scene(new planning_scene::PlanningScene(robot_model));
+  
+
+  //Want to capture the current state of the robot. Do this with move_group (which listens to the /joint_states topic
+  moveit::planning_interface::MoveGroup group("arm");
+
 
   // We can now setup the 
   // `PlanningPipeline`_
@@ -32,19 +38,20 @@ int main(int argc, char **argv)
   // planning plugin to use
   planning_pipeline::PlanningPipelinePtr planning_pipeline(new planning_pipeline::PlanningPipeline(robot_model, node_handle, "planning_plugin", "request_adapters"));
 
+
+ robot_state::RobotState current_state = planning_scene->getCurrentState();
+
   /* Sleep a little to allow time to startup rviz, etc. */
-  ros::WallDuration sleep_time(10.0);
+  ros::WallDuration sleep_time(3.0);
   sleep_time.sleep();
 
   // Pose Goal
   // ^^^^^^^^^
-  // We will now create a motion plan request for the right arm of the PR2
-  // specifying the desired pose of the end-effector as input.
   planning_interface::MotionPlanRequest req;
   planning_interface::MotionPlanResponse res;
   geometry_msgs::PoseStamped pose;
   pose.header.frame_id = "mico_link_base";
-  pose.pose.position.x = -0.3;
+  pose.pose.position.x = 0.3;
   pose.pose.position.y = 0.3;
   pose.pose.position.z = 0.3;
   pose.pose.orientation.w = 1.0;
@@ -58,6 +65,9 @@ int main(int argc, char **argv)
   // from the 
   // `kinematic_constraints`_
   // package.
+  //req.start_state = current_state;
+  //robot_state::robotStateMsgToRobotState(planning_scene->getTransforms(), req.start_state, current_state);
+  group.setStartStateToCurrentState();
   req.group_name = "arm";
   moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints("mico_link_hand", pose, tolerance_pose, tolerance_angle);
   req.goal_constraints.push_back(pose_goal);
