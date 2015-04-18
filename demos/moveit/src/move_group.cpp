@@ -9,6 +9,10 @@
 #include <moveit_msgs/CollisionObject.h>
 //used for assignment of vector
 #include <boost/assign/std/vector.hpp>
+//services
+#include "moveit_utils/MicoController.h"
+#include "ros/ros.h"
+
 using namespace boost::assign;
 
 bool g_caught_sigint = false;
@@ -29,7 +33,8 @@ int main(int argc, char **argv)
 	
 	//button position publisher
 	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("target_trajectory/pose", 10);
-	
+	//make controller service
+	ros::ServiceClient client = node_handle.serviceClient<moveit_utils::MicoController>("mico_controller");
 	std::cout << "Please ensure that demo.launch has been run!" << std::endl;
 	// BEGIN_TUTORIAL
 	//
@@ -189,6 +194,14 @@ int main(int argc, char **argv)
 			std::cin >> play;
 			if(play == '1'){
 				//call service
+				moveit_utils::MicoController srv;
+				srv.request.trajectory = my_plan.trajectory_;
+				if(client.call(srv)){
+					ROS_INFO("Service call sent. Beware!");
+				}
+				else {
+					ROS_INFO("Service call failed. Is the service running?");
+				}
 			}
 			else{
 				std::cout << "Not playing trajectory." << std::endl;
