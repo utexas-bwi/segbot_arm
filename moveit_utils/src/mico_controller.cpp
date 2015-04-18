@@ -8,7 +8,12 @@
 #include "jaco_msgs/ArmJointAnglesAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 #include <iostream>
-#include <fstream>
+//moveit
+#include <moveit_msgs/DisplayTrajectory.h>
+#include "trajectory_msgs/JointTrajectory.h"
+//service
+#include "moveit_utils/MicoController.h"
+
 using namespace std;
 static std::vector<vector<float> > trajectory;
 
@@ -24,23 +29,34 @@ void sig_handler(int sig)
 	ros::shutdown();
 	exit(1);
 };
-bool cb(segbot_arm::
+bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
+	//TODO: Check error codes in moveit_msgs/MoveitErrorCodes
 	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	moveit_msgs::MotionPlanResponse mpr = req.mpr;
+	trajectory_msgs::JointTrajectory trajectory = mpr.trajectory.joint_trajectory;
+	double q1,q2,q3,q4,q5,q6;
 	jaco_msgs::ArmJointAnglesGoal goal;
-	std::vector<float> last = trajectory.at(0);
-	ROS_INFO("Target position: %f, %f, %f, %f, %f, %f",last[0],last[1],last[2],last[3],last[4],last[5]);
-	goal.angles.joint1 = last[0];
-	goal.angles.joint2 = last[1];
-	goal.angles.joint3 = last[2];
-	goal.angles.joint4 = last[3];
-	goal.angles.joint5 = last[4];
-	goal.angles.joint6 = last[5];
-	ac.waitForServer();
-	ac.sendGoal(goal);
-	while(ac.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
-		ROS_INFO("Still trying");
+	for(int i = 0; i < trajectory.points.size(); i++){
+		//set this goal's qvals
+		q1 = trajectory.points.at(i).positions.at(0);
+		q2 = trajectory.points.at(i).positions.at(1);
+		q3 = trajectory.points.at(i).positions.at(2);
+		q4 = trajectory.points.at(i).positions.at(3);
+		q5 = trajectory.points.at(i).positions.at(4);
+		q6 = trajectory.points.at(i).positions.at(5);
+		ROS_INFO("Target position: %f, %f, %f, %f, %f, %f",q1,q2,q3,q4,q5,q6);
+		goal.angles.joint1 = q1;
+		goal.angles.joint2 = q2;
+		goal.angles.joint3 = q3;
+		goal.angles.joint4 = q4;
+		goal.angles.joint5 = q5;
+		goal.angles.joint6 = q6;
+		ac.waitForServer();
+		ac.sendGoal(goal);
+		ROS_INFO("Trajectory goal sent!");
+		ac.waitForResult();
 	}
-	ac.waitForResult();
+	return true;
 }
 int main(int argc, char** argv)
 {
@@ -52,8 +68,7 @@ int main(int argc, char** argv)
 	char input;
 	ros::NodeHandle n;
 	
-
-	ros::ServiceServer serv = n.advertiseService("mico_controller", cb);
+	ros::ServiceServer srv = n.advertiseService("mico_controller", cb);
 	ROS_INFO("Service loaded");
 	ros::spin();
 }

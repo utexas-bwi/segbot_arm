@@ -8,8 +8,12 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
   rospy
+  message_generation
+  moveit_msgs
+  trajectory_msgs
+  actionlib
 )
-
+############################
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -51,11 +55,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+   FILES
+   MicoController.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -65,10 +68,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  moveit_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -103,16 +106,16 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-# add_executable(moveit_utils_node src/moveit_utils_node.cpp)
+add_executable(mico_controller src/mico_controller.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(moveit_utils_node moveit_utils_generate_messages_cpp)
+add_dependencies(mico_controller moveit_utils_gencpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(moveit_utils_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(mico_controller
+   ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
