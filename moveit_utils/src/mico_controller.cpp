@@ -32,8 +32,7 @@ void sig_handler(int sig)
 bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
 	//TODO: Check error codes in moveit_msgs/MoveitErrorCodes
 	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
-	moveit_msgs::MotionPlanResponse mpr = req.mpr;
-	trajectory_msgs::JointTrajectory trajectory = mpr.trajectory.joint_trajectory;
+	trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
 	double q1,q2,q3,q4,q5,q6;
 	jaco_msgs::ArmJointAnglesGoal goal;
 	for(int i = 0; i < trajectory.points.size(); i++){
