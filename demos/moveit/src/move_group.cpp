@@ -183,6 +183,17 @@ int main(int argc, char **argv)
 		moveit::planning_interface::MoveGroup::Plan my_plan;
 		bool success = group.plan(my_plan);
 		ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
+		if(success){
+			char play;
+			std::cout << "Enter 1 to play the trajectory" << std::endl;
+			std::cin >> play;
+			if(play == '1'){
+				//call service
+			}
+			else{
+				std::cout << "Not playing trajectory." << std::endl;
+			}
+		}
 		std::cout << "Enter 'q' to quit, 1 to send a joint pose goal, 2 to send cart. goal: ";
 		std::cin >> in;
 		std::cout<< std::endl;
