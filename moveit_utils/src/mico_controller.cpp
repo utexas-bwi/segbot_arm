@@ -30,7 +30,7 @@ void sig_handler(int sig)
 	exit(1);
 };
 bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
-	//TODO: Check error codes in moveit_msgs/MoveitErrorCodes
+	
 	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
 	trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
 	double q1,q2,q3,q4,q5,q6;
@@ -55,6 +55,8 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
 		ROS_INFO("Trajectory goal sent!");
 		ac.waitForResult();
 	}
+	ROS_INFO("Done with playback.");
+	res.done = true;
 	return true;
 }
 int main(int argc, char** argv)
