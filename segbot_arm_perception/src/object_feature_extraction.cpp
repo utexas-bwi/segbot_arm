@@ -50,8 +50,8 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
 // Select mode
-const bool save_pl_mode = false;
-
+const bool kCaptureScene = false;
+const bool kLoadScene = true;
 // Mutex: //
 boost::mutex cloud_mutex;
 
@@ -60,6 +60,7 @@ PointCloudT::Ptr cloud (new PointCloudT);
 
 
 sensor_msgs::PointCloud2 cloud_ros;
+
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -81,8 +82,7 @@ void sig_handler(int sig)
 
 
 void
-cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
-{
+cloud_cb(const sensor_msgs::PointCloud2ConstPtr& input) {
 	cloud_mutex.lock();
 
 	//convert to PCL format
@@ -94,8 +94,8 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 	cloud_mutex.unlock();
 }
 
-int main (int argc, char** argv)
-{
+
+int main(int argc, char** argv) {
 	// Initialize ROS
 	ros::init (argc, argv, "segbot_arm_button_detector");
 	ros::NodeHandle nh;
@@ -124,46 +124,63 @@ int main (int argc, char** argv)
 		//collect messages
 		ros::spinOnce();
 
-
-
+        // TODO hack job for loading from disk
+        if (kLoadScene) {
+            new_cloud_available_flag = true;
+        }
         if (new_cloud_available_flag) {
             new_cloud_available_flag = false;
-            toROSMsg(*cloud, cloud_ros);
-            cloud_ros.header.frame_id = cloud->header.frame_id;
-            static int scene_count = 0;
-            char input_char;
+            if (kCaptureScene) {
+                static int scene_count = 0;
+                char input_char;
 
-            ROS_INFO("Publishing cloud clusters...");
-            cloud_pub.publish(cloud_ros);
+                toROSMsg(*cloud, cloud_ros);
+                cloud_ros.header.frame_id = cloud->header.frame_id;
+                ROS_INFO("Publishing cloud clusters...");
+                cloud_pub.publish(cloud_ros);
 
-            ROS_INFO("Save current button point cloud? [y/n]");
-            std::cin >> input_char;
-            if(input_char == 'y') {
-                pcl::PCDWriter writer;
-                std::stringstream ss;
-                ss << "scene_" << scene_count <<  ".pcd";
-                std::string pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
-                // Changing file name until it doesn't overlap with existing point clouds
-                while (file_exist(pathNameWrite)) {
+                ROS_INFO("Save current button point cloud? [y/n]");
+                std::cin >> input_char;
+                if(input_char == 'y') {
+                    pcl::PCDWriter writer;
+                    std::stringstream ss;
+                    ss << "scene_" << scene_count <<  ".pcd";
+                    std::string pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
+                    // Changing file name until it doesn't overlap with existing point clouds
+                    while (file_exist(pathNameWrite)) {
+                        scene_count++;
+                        ss.str("");
+                        ss << "red_button_" << scene_count <<  ".pcd";
+                        pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
+                    }
+
+                    ROS_INFO("Saving %s...", ss.str().c_str());
+                    writer.write<PointT>(pathNameWrite, *cloud, false);
                     scene_count++;
-                    ss.str("");
-                    ss << "red_button_" << scene_count <<  ".pcd";
-                    pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
                 }
-
-                ROS_INFO("Saving %s...", ss.str().c_str());
-                writer.write<PointT>(pathNameWrite, *cloud, false);
-                scene_count++;
+                continue;
             }
-            continue;
 
-            ros::Duration(2).sleep();
+            if (kLoadScene) {
+                pcl::PointCloud<PointT>::Ptr cloud_temp (new pcl::PointCloud<PointT>);
+                std::string pathNameRead = ros::package::getPath("segbot_arm_perception") + "/pcd/" + "scene_0.pcd";
+                if (pcl::io::loadPCDFile<PointT> (pathNameRead, *cloud_temp) == -1) {  //* load the file
+                    PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
+                    return (-1);
+                }
+                cloud = cloud_temp;
+                toROSMsg(*cloud, cloud_ros);
+                cloud_ros.header.frame_id = cloud->header.frame_id;
+                ROS_INFO("Publishing cloud clusters...");
+                cloud_pub.publish(cloud_ros);
+            }
+            // ros::Duration(2).sleep();
 
             // Prepare service call message
             segbot_arm_perception::TableDetectionObjectExtraction table_srv;
             // Pack service request
             toROSMsg(*cloud, table_srv.request.cloud);
-            ROS_INFO("Calling table service...");
+            ROS_INFO("Calling table detection clusters extraction service...");
             if (table_srv_client.call(table_srv) && table_srv.response.is_plane_found) {
                 PointCloudT::Ptr cloud_plane(new PointCloudT);
                 std::vector<PointCloudT::Ptr > clusters_on_plane;
