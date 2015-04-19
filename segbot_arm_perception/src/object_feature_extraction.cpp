@@ -74,7 +74,7 @@ bool file_exist(std::string& name) {
 void sig_handler(int sig)
 {
   g_caught_sigint = true;
-  ROS_INFO("caught sigint, init shutdown sequence...");
+  ROS_INFO("Caught sigint, init shutdown sequence...");
   ros::shutdown();
   exit(1);
 }
@@ -109,7 +109,7 @@ int main (int argc, char** argv)
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 
-	//refresh rate
+	//refresh rate (Hz)
 	double ros_rate = 3.0;
 	ros::Rate r(ros_rate);
 
@@ -123,7 +123,30 @@ int main (int argc, char** argv)
 	while (!g_caught_sigint && ros::ok()) {
 		//collect messages
 		ros::spinOnce();
-		r.sleep();
+        while (true) {
+            static int scene_count = 0;
+            char input_char;
+            ROS_INFO("Save current button point cloud? [y/n]");
+            std::cin >> input_char;
+            if(input_char == 'y') {
+                pcl::PCDWriter writer;
+                std::stringstream ss;
+                ss << "scene_" << scene_count <<  ".pcd";
+                std::string pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
+                // Changing file name until it doesn't overlap with existing point clouds
+                while (file_exist(pathNameWrite)) {
+                    scene_count++;
+                    ss.str("");
+                    ss << "red_button_" << scene_count <<  ".pcd";
+                    pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
+                }
+
+                ROS_INFO("Saving %s...", ss.str().c_str());
+                writer.write<PointT>(pathNameWrite, *cloud, false);
+                scene_count++;
+            }
+        }
+
 
         if (new_cloud_available_flag) {
             new_cloud_available_flag = false;
@@ -168,5 +191,6 @@ int main (int argc, char** argv)
                 cloud_pub.publish(cloud_ros);
             }
         }
+		r.sleep();
 	}
 }
