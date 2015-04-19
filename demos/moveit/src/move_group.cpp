@@ -12,18 +12,20 @@
 //services
 #include "moveit_utils/MicoController.h"
 #include "ros/ros.h"
-
+#include "geometry_msgs/Quaternion.h"
 using namespace boost::assign;
 
 bool g_caught_sigint = false;
-
+geometry_msgs::Quaternion q;
 void sig_handler(int sig){
 	g_caught_sigint = true;
 	ROS_INFO("caugt sigint, init shutdown seq...");
 	ros::shutdown();
 	exit(1);
 };
-
+void toolpos_cb(const geometry_msgs::PoseStamped &msg){
+	q = msg.pose.orientation;
+}
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "move_group_interface_tutorial");
@@ -36,6 +38,8 @@ int main(int argc, char **argv)
 	//make controller service
 	ros::ServiceClient client = node_handle.serviceClient<moveit_utils::MicoController>("mico_controller");
 	std::cout << "Please ensure that demo.launch has been run!" << std::endl;
+	//subscribers
+	ros::Subscriber sub_tool = node_handle.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
 	// BEGIN_TUTORIAL
 	//
 	// Setup
@@ -59,20 +63,6 @@ int main(int argc, char **argv)
 	// We can also print the name of the end-effector link for this group.
 	ROS_INFO("Reference frame: %s", group.getEndEffectorLink().c_str());
 	//create a target goal pose
-	
-
-	//cartesianal point
-	/*
-	geometry_msgs::Pose target_pose1;
-	target_pose1.orientation.w = 1.0;
-	target_pose1.position.x = 0.28;
-	target_pose1.position.y = -0.5;
-	target_pose1.position.z = -.5;
-	//the following two lines are suggested fixes via ROSwiki questions
-	//group.setPoseTarget(target_pose1.position.x, target_pose1.position.y, target_pose1.position.z, "mico_link_hand");
-	group.setGoalTolerance(.05);
-	group.setPoseTarget(target_pose1);
-	*/
 	
 
 	//object placement
@@ -161,7 +151,8 @@ int main(int argc, char **argv)
 			std::cout << "Y: "; std::cin >> y;
 			std::cout << "Z: "; std::cin >> z;
 			geometry_msgs::Pose target_pose1;
-			target_pose1.orientation.w = 1.0;
+			ros::spinOnce();
+			target_pose1.orientation = q;
 			target_pose1.position.x = x;
 			target_pose1.position.y = y;
 			target_pose1.position.z = z;
