@@ -52,6 +52,7 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 // Select mode
 const bool kCaptureScene = false;
 const bool kLoadScene = true;
+
 // Mutex: //
 boost::mutex cloud_mutex;
 
@@ -168,12 +169,14 @@ int main(int argc, char** argv) {
                     PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
                     return (-1);
                 }
+                cloud_temp->header.frame_id = cloud->header.frame_id;
                 cloud = cloud_temp;
                 toROSMsg(*cloud, cloud_ros);
                 cloud_ros.header.frame_id = cloud->header.frame_id;
                 ROS_INFO("Publishing cloud clusters...");
                 cloud_pub.publish(cloud_ros);
             }
+
             // ros::Duration(2).sleep();
 
             // Prepare service call message
