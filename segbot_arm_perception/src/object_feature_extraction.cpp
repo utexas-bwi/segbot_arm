@@ -113,7 +113,7 @@ int main (int argc, char** argv)
 	double ros_rate = 3.0;
 	ros::Rate r(ros_rate);
 
-	ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("multiple_object_detection/cloud", 10);
+	ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("object_feature_extraction/cloud", 10);
 
     // Setup service client for table detection
     ros::ServiceClient table_srv_client = nh.serviceClient<segbot_arm_perception::TableDetectionObjectExtraction>("/segbot_arm_perception/table_detection_object_extraction_server");
@@ -123,9 +123,19 @@ int main (int argc, char** argv)
 	while (!g_caught_sigint && ros::ok()) {
 		//collect messages
 		ros::spinOnce();
-        while (true) {
+
+
+
+        if (new_cloud_available_flag) {
+            new_cloud_available_flag = false;
+            toROSMsg(*cloud, cloud_ros);
+            cloud_ros.header.frame_id = cloud->header.frame_id;
             static int scene_count = 0;
             char input_char;
+
+            ROS_INFO("Publishing cloud clusters...");
+            cloud_pub.publish(cloud_ros);
+
             ROS_INFO("Save current button point cloud? [y/n]");
             std::cin >> input_char;
             if(input_char == 'y') {
@@ -145,15 +155,8 @@ int main (int argc, char** argv)
                 writer.write<PointT>(pathNameWrite, *cloud, false);
                 scene_count++;
             }
-        }
+            continue;
 
-
-        if (new_cloud_available_flag) {
-            new_cloud_available_flag = false;
-            toROSMsg(*cloud, cloud_ros);
-            cloud_ros.header.frame_id = cloud->header.frame_id;
-            // ROS_INFO("Publishing full cloud...");
-            // cloud_pub.publish(cloud_ros);
             ros::Duration(2).sleep();
 
             // Prepare service call message
