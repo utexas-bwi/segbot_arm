@@ -51,7 +51,8 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 
 // Select mode
 const bool kCaptureScene = false;
-const bool kLoadScene = true;
+const bool kLoadScene = false;
+const double kROSRate = 1.0; 	//refresh rate (Hz)
 
 // Mutex: //
 boost::mutex cloud_mutex;
@@ -59,9 +60,7 @@ boost::mutex cloud_mutex;
 bool new_cloud_available_flag = false;
 PointCloudT::Ptr cloud (new PointCloudT);
 
-
 sensor_msgs::PointCloud2 cloud_ros;
-
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -110,9 +109,7 @@ int main(int argc, char** argv) {
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 
-	//refresh rate (Hz)
-	double ros_rate = 3.0;
-	ros::Rate r(ros_rate);
+	ros::Rate r(kROSRate);
 
 	ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("object_feature_extraction/cloud", 10);
 
@@ -194,24 +191,42 @@ int main(int argc, char** argv) {
                     cloud_plane_coef[i] = table_srv.response.cloud_plane_coef[i];
                 }
                 fromROSMsg(table_srv.response.cloud_plane, *cloud_plane);
+                // Find the closest cluster to the center
+                int object_index = 0;
+                float min_y_value = std::numeric_limits<float>::max();
                 for (int i = 0; i < table_srv.response.cloud_clusters.size(); i++) {
+                    Eigen::Vector4f centroid_i;
                     PointCloudT::Ptr temp_ptr(new PointCloudT);
                     fromROSMsg(table_srv.response.cloud_clusters[i], *temp_ptr);
                     clusters_on_plane.push_back(temp_ptr);
+                    // Find min Y coordinate
+                    pcl::compute3DCentroid(*temp_ptr, centroid_i);
+                    if (fabs(centroid_i(0)) < min_y_value) {
+                        min_y_value = fabs(centroid_i(0));
+                        object_index = i;
+                    }
+                    ROS_INFO("centroid y value = %f", centroid_i(0));
+                    ROS_INFO("abs centroid y value = %f", fabs(centroid_i(0)));
                 }
-                // Do work
-                segbot_arm_perception::FeatureExtraction feature_srv;
-                // Pack service request
-                toROSMsg(*cloud_plane, feature_srv.request.cloud);
-                ROS_INFO("Calling feature service...");
-                if (feature_srv_client.call(feature_srv)) {
-                    ROS_INFO("Feature vector received");
-                }
+                ROS_INFO("object cluster index for feature extraction = %d", object_index);
+                ROS_INFO("min y centroid value = %f", min_y_value);
 
-                ROS_INFO("Publishing cloud clusters...");
-                toROSMsg(*cloud_plane, cloud_ros);
-                // toROSMsg(*cloud_normals, cloud_ros);
-                cloud_pub.publish(cloud_ros);
+                segbot_arm_perception::FeatureExtraction feature_srv;
+                if (clusters_on_plane.size() > 0) {
+                    // Pack service request
+                    toROSMsg(*clusters_on_plane[object_index], feature_srv.request.cloud);
+                    ROS_INFO("Calling feature extraction service...");
+                    if (feature_srv_client.call(feature_srv)) {
+                        ROS_INFO("Feature vector received");
+                    } else {
+                        ROS_INFO("No feature vector");
+                    }
+                    ROS_INFO("Publishing cloud clusters...");
+                    toROSMsg(*cloud_plane, cloud_ros);
+                    cloud_pub.publish(cloud_ros);
+                } else {
+                    ROS_INFO("No clusters found");
+                }
             }
         }
 		r.sleep();

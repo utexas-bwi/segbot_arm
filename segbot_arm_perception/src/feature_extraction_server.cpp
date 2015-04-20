@@ -18,13 +18,29 @@
 #include <pcl/features/vfh.h>
 #include <pcl/features/cvfh.h>
 #include <pcl/features/normal_3d.h>
-//#include <pcl/visualization/pcl_plotter.h>
+#include <pcl/visualization/pcl_plotter.h>
 
 #include "segbot_arm_perception/FeatureExtraction.h"
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 typedef unsigned int uint;
+
+//true if Ctrl-C is pressed
+bool g_caught_sigint = false;
+
+pcl::visualization::PCLPlotter * plotter;
+ros::Publisher cloud_pub;
+sensor_msgs::PointCloud2 cloud_ros;
+
+/* what happens when ctr-c is pressed */
+void sigint_handler(int sig)
+{
+  g_caught_sigint = true;
+  ROS_INFO("caught sigint, init shutdown sequence...");
+  ros::shutdown();
+  exit(1);
+}
 
 class ColorHistogram {
   private:
@@ -254,28 +270,37 @@ bool feature_extraction_cb(
     segbot_arm_perception::FeatureExtraction::Response &res) {
     PointCloudT::Ptr cloud(new PointCloudT);
     pcl::fromROSMsg(req.cloud, *cloud);
-    const int kColorHistBins = 8;
+    const int kColorHistBins = 4;
+
+    ROS_INFO("Publishing cloud size %d for feature extraction...", (int)cloud->points.size());
+    toROSMsg(*cloud, cloud_ros);
+    cloud_ros.header.frame_id = cloud->header.frame_id;
+    cloud_pub.publish(cloud_ros);
 
     // Features:
     // Color
+    ROS_INFO("Computing color histogram...");
     ColorHistogram ch(kColorHistBins);
     ch.computeHistogram(*cloud);
 
     // CVFH
-    computeFPFH(cloud);
+    // computeCVFH(cloud);
 
-    //defining a plotter
-    // pcl::visualization::PCLPlotter * plotter = new PCLPlotter ();
+    std::vector<double> color_hist_vector = ch.toDoubleVector();
+    std::vector<double> color_hist_counter (color_hist_vector.size());
+    for (int i = 0; i < color_hist_counter.size(); i++) {
+        color_hist_counter[i] = i;
+    }
 
-    // //defining the polynomial function, y = x^2. Index of x^2 is 1, rest is 0
-    // vector<double> func1 (3,0);
-    // func1[2] = 1;
+    // Plot histogram
+    plotter->clearPlots();
+    //adding the polynomial func1 to the plotter with [-10, 10] as the range in X axis and "y = x^2" as title
+    plotter->addPlotData (color_hist_counter, color_hist_vector, "Color histogram", vtkChart::POINTS);
+    plotter->addPlotData (color_hist_counter, color_hist_vector, "Color histogram", vtkChart::POINTS);
 
-    // //adding the polynomial func1 to the plotter with [-10, 10] as the range in X axis and "y = x^2" as title
-    // plotter->addPlotData (func1, -10, 10, "y = x^2");
-
-    // //display the plot, DONE!
-    // plotter->plot ();
+    ROS_INFO("Plotting data...");
+    //display the plot, DONE!
+    plotter->spinOnce(10);
 
     // vfhs->points[i].histogram[j]
     return true;
@@ -286,7 +311,15 @@ int main (int argc, char** argv) {
     ros::init(argc, argv, "object_feature_detection_server");
     ros::NodeHandle nh;
 
-ros::ServiceServer service = nh.advertiseService("/segbot_arm_perception/feature_extraction_server", feature_extraction_cb);
+    signal(SIGINT, sigint_handler);
+
+    ros::ServiceServer service = nh.advertiseService("/segbot_arm_perception/feature_extraction_server", feature_extraction_cb);
+
+    // Defining a plotter
+    plotter = new pcl::visualization::PCLPlotter ();
+
+    // Debug cloud
+    cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("feature_extraction_server/cloud", 10);
 
     ROS_INFO("Feature extraction server ready");
     ros::spin();

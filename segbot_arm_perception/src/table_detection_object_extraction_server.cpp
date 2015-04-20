@@ -39,7 +39,7 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
-const double min_length_off_table = 0.08;
+const double length_off_table = 0.15;
 
 ros::Publisher cloud_clusters_pub;
 ros::Publisher cloud_plane_pub;
@@ -53,6 +53,18 @@ typedef struct ColorRGB {
 } ColorRGB;
 
 std::vector<ColorRGB> color_vector;
+
+//true if Ctrl-C is pressed
+bool g_caught_sigint = false;
+
+/* what happens when ctr-c is pressed */
+void sigint_handler(int sig)
+{
+  g_caught_sigint = true;
+  ROS_INFO("caught sigint, init shutdown sequence...");
+  ros::shutdown();
+  exit(1);
+}
 
 bool pointCloudSizeComp (PointCloudT* cloud_1, PointCloudT* cloud_2) {
     return cloud_1->points.size() > cloud_2->points.size();
@@ -149,7 +161,6 @@ bool table_detection_object_extraction_cb(
     PointCloudT::Ptr cloud(new PointCloudT), cloud_filtered(new PointCloudT),
         cloud_blob(new PointCloudT), cloud_plane(new PointCloudT);
     pcl::fromROSMsg(req.cloud, *cloud);
-    cloud->header.frame_id = req.cloud.header.frame_id;
 
     // Step 1: z and voxel filters
     // Create the filtering object
@@ -233,9 +244,9 @@ bool table_detection_object_extraction_cb(
         double is_above_table = center.x * plane_coefficients(0) +
                                 center.y * plane_coefficients(1) +
                                 center.z + plane_coefficients(2) + plane_coefficients(3);
-        if ((distance < min_length_off_table) && (is_above_table > 0)) {
+        if ((distance < length_off_table) && (is_above_table > 0)) {
             ///////////////////
-            // Make pointcloud
+            // Make pointcloud of centroids
             // cloud_clusters[i].width = 1;
             // cloud_clusters[i].height = 1;
             // cloud_clusters[i].points.resize(1);
@@ -292,6 +303,8 @@ bool table_detection_object_extraction_cb(
 int main (int argc, char** argv) {
     ros::init(argc, argv, "cluster_extraction_server");
     ros::NodeHandle nh;
+
+    signal(SIGINT, sigint_handler);
 
     // Debugging publisher
     cloud_clusters_pub = nh.advertise<sensor_msgs::PointCloud2>("/table_detection_object_extraction/cloud", 10);
