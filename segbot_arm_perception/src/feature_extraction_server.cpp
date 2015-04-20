@@ -36,18 +36,19 @@ sensor_msgs::PointCloud2 cloud_ros;
 /* what happens when ctr-c is pressed */
 void sigint_handler(int sig)
 {
-  g_caught_sigint = true;
-  ROS_INFO("caught sigint, init shutdown sequence...");
-  ros::shutdown();
-  exit(1);
+    g_caught_sigint = true;
+    ROS_INFO("caught sigint, init shutdown sequence...");
+    ros::shutdown();
+    exit(1);
 }
 
 class ColorHistogram {
   private:
     std::vector<std::vector<std::vector<uint> > > hist3;
-    int dim;
+    int dim, cloud_size;
   public:
     ColorHistogram(int dim):dim(dim) {
+        cloud_size = 0;
         hist3.resize(dim);
         for (int i = 0; i < dim; i++) {
             hist3[i].resize(dim);
@@ -59,7 +60,9 @@ class ColorHistogram {
     }
 
     void computeHistogram(PointCloudT &cloud) {
-        for (int i = 0; i < cloud.points.size(); i++) {
+        ROS_INFO("Computing color histogram...");
+        cloud_size = cloud.points.size();
+        for (int i = 0; i < cloud_size; i++) {
             // Max value of 255
             double round = 256 / dim;
             int r = (int)((double)(cloud.points[i].r) / round);
@@ -100,6 +103,13 @@ class ColorHistogram {
 
         return hist3_double_vector;
     }
+    std::vector<double> toDoubleVectorNormalized() {
+        std::vector<double> hist_double_vector = toDoubleVector();
+        for (int i = 0; i < hist_double_vector.size(); i++) {
+            hist_double_vector[i] /= cloud_size;
+        }
+        return hist_double_vector;
+    }
 };
 
 
@@ -135,8 +145,9 @@ pcl::PointCloud<pcl::Normal>::Ptr computeNormals(PointCloudT::Ptr &cloud) {
 
 
 
-pcl::PointCloud<pcl::VFHSignature308>::Ptr computeCVFH(PointCloudT::Ptr &cloud) {
+std::vector<double> computeCVFH(PointCloudT::Ptr &cloud) {
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals = computeNormals(cloud);
+    ROS_INFO("Computing CVFH...");
 
     // Create the CVFH estimation class, and pass the input dataset+normals to it
     pcl::CVFHEstimation<PointT, pcl::Normal, pcl::VFHSignature308> cvfh;
@@ -152,13 +163,25 @@ pcl::PointCloud<pcl::VFHSignature308>::Ptr computeCVFH(PointCloudT::Ptr &cloud) 
 
     cvfh.compute(*vfhs);
 
-    return vfhs;
+    // Convert into normalized vector
+    int histogram_sum = 0;
+    std::vector<double> histogram_double_vector (308);
+    for (int i = 0; i < histogram_double_vector.size(); i++) {
+        histogram_double_vector[i] = vfhs->points[0].histogram[i];
+        histogram_sum += vfhs->points[0].histogram[i];
+    }
+    for (int i = 0; i < histogram_double_vector.size(); i++) {
+        histogram_double_vector[i] /= (double)histogram_sum;
+    }
+
+    return histogram_double_vector;
 }
 
 
 // http://pointclouds.org/documentation/tutorials/vfh_estimation.php#vfh-estimation
 pcl::PointCloud<pcl::VFHSignature308>::Ptr computeVFH(PointCloudT::Ptr &cloud) {
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals = computeNormals(cloud);
+    ROS_INFO("Computing VFH...");
 
     // Create the VFH estimation class, and pass the input dataset+normals to it
     pcl::VFHEstimation<PointT, pcl::Normal, pcl::VFHSignature308> vfh;
@@ -183,8 +206,8 @@ pcl::PointCloud<pcl::VFHSignature308>::Ptr computeVFH(PointCloudT::Ptr &cloud) {
 
 
 pcl::PointCloud<pcl::FPFHSignature33>::Ptr computeFPFH(PointCloudT::Ptr &cloud) {
-    // Find normal
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals = computeNormals(cloud);
+    ROS_INFO("Computing FPFH...");
 
     // Create the FPFH estimation class, and pass the input dataset+normals to it
     pcl::FPFHEstimation<PointT, pcl::Normal, pcl::FPFHSignature33> fpfh;
@@ -217,8 +240,9 @@ pcl::PointCloud<pcl::FPFHSignature33>::Ptr computeFPFH(PointCloudT::Ptr &cloud) 
 // Point Feature Histograms (PFH) descriptors
 // pointclouds.org/documentation/tutorials/pfh_estimation.php
 pcl::PointCloud<pcl::PFHSignature125>::Ptr computePFH(PointCloudT::Ptr &cloud) {
-    // Create the normal estimation class, and pass the input dataset to it
     pcl::NormalEstimation<PointT, pcl::Normal> ne;
+    ROS_INFO("Computing PFH...");
+
     ne.setInputCloud (cloud);
 
     // Create an empty kdtree representation, and pass it to the normal estimation object.
@@ -278,25 +302,35 @@ bool feature_extraction_cb(
     cloud_pub.publish(cloud_ros);
 
     // Features:
+    int feature_counter_offset = 0;
+    int feature_scale_factor = 0; // This value scales all features types for better visualization
     // Color
-    ROS_INFO("Computing color histogram...");
     ColorHistogram ch(kColorHistBins);
     ch.computeHistogram(*cloud);
+    std::vector<double> color_vector = ch.toDoubleVectorNormalized();
+    std::vector<double> color_counter (color_vector.size());
+    for (int i = 0; i < color_counter.size(); i++) {
+        color_counter[i] = i;
+    }
+    feature_counter_offset += color_counter.size();
+    feature_scale_factor = color_counter.size();
 
     // CVFH
-    // computeCVFH(cloud);
-
-    std::vector<double> color_hist_vector = ch.toDoubleVector();
-    std::vector<double> color_hist_counter (color_hist_vector.size());
-    for (int i = 0; i < color_hist_counter.size(); i++) {
-        color_hist_counter[i] = i;
+    std::vector<double> feature_vector = computeCVFH(cloud);
+    std::vector<double> feature_counter (feature_vector.size());
+    for (int i =0; i < feature_counter.size(); i++) {
+        feature_vector[i] *= (double)feature_counter.size() / feature_scale_factor;
+        feature_counter[i] = feature_counter_offset + i;
     }
+    feature_counter_offset += feature_counter.size();
 
     // Plot histogram
     plotter->clearPlots();
-    //adding the polynomial func1 to the plotter with [-10, 10] as the range in X axis and "y = x^2" as title
-    plotter->addPlotData (color_hist_counter, color_hist_vector, "Color histogram", vtkChart::POINTS);
-    plotter->addPlotData (color_hist_counter, color_hist_vector, "Color histogram", vtkChart::POINTS);
+    // Bug in plotter, need to call twice
+    plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
+    plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
+    plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
+    plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
 
     ROS_INFO("Plotting data...");
     //display the plot, DONE!

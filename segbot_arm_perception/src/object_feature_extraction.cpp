@@ -74,10 +74,10 @@ bool file_exist(std::string& name) {
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
 {
-  g_caught_sigint = true;
-  ROS_INFO("Caught sigint, init shutdown sequence...");
-  ros::shutdown();
-  exit(1);
+    g_caught_sigint = true;
+    ROS_INFO("Caught sigint, init shutdown sequence...");
+    ros::shutdown();
+    exit(1);
 }
 
 
@@ -205,11 +205,7 @@ int main(int argc, char** argv) {
                         min_y_value = fabs(centroid_i(0));
                         object_index = i;
                     }
-                    ROS_INFO("centroid y value = %f", centroid_i(0));
-                    ROS_INFO("abs centroid y value = %f", fabs(centroid_i(0)));
                 }
-                ROS_INFO("object cluster index for feature extraction = %d", object_index);
-                ROS_INFO("min y centroid value = %f", min_y_value);
 
                 segbot_arm_perception::FeatureExtraction feature_srv;
                 if (clusters_on_plane.size() > 0) {

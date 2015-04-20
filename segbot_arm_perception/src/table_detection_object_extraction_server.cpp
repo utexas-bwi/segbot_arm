@@ -254,7 +254,6 @@ bool table_detection_object_extraction_cb(
             /////////////////
             cloud_clusters_on_plane.push_back(&cloud_clusters[i]);
             ROS_INFO("distance = %f", distance);
-//            ROS_INFO("is_above = %f", is_above_table);
             ROS_INFO("(%f, %f, %f)", center.x, center.y, center.z);
         }
     }
