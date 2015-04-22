@@ -35,7 +35,7 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
 	trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
 	double q1,q2,q3,q4,q5,q6;
 	jaco_msgs::ArmJointAnglesGoal goal;
-	for(int i = 0; i < trajectory.points.size(); i++){
+	for(int i = 1; i < trajectory.points.size(); i++){ //skip first message because it always rotates j6 2pi
 		//set this goal's qvals
 		q1 = trajectory.points.at(i).positions.at(0);
 		q2 = trajectory.points.at(i).positions.at(1);
@@ -54,6 +54,7 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
 		ac.sendGoal(goal);
 		ROS_INFO("Trajectory goal sent!");
 		ac.waitForResult();
+		std::cout << ac.getState().toString() << std::endl;
 	}
 	ROS_INFO("Done with playback.");
 	res.done = true;
