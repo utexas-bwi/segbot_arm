@@ -181,6 +181,10 @@ int main(int argc, char **argv)
 		ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
 		if(success){
 			char play;
+			//print velocities
+			//for(int j = 0; j<my_plan.joint_trajectory.points.size(); j++){
+			//	std::cout << "Trajectory " << j << ": velocity = " << my_plan.joint_trajectory.points.at(j).velocity.at(0) << std::endl;
+			//}
 			std::cout << "Enter 1 to play the trajectory" << std::endl;
 			std::cin >> play;
 			if(play == '1'){
