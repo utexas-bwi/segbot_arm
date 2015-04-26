@@ -12,7 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_msgs
   trajectory_msgs
   actionlib
+  moveit_core
+  pluginlib
+  control_msgs
 )
+find_package(Boost REQUIRED thread)
+include_directories(SYSTEM ${Boost_INCLUDE_DIR})
+link_directories(${Boost_LIBRARY_DIRS})
 ############################
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -107,15 +113,14 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(mico_controller src/mico_controller.cpp)
-
+add_library(moveit_simple_controller_manager src/mico_joint_angle_plugin.cpp)
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(mico_controller moveit_utils_gencpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(mico_controller
-   ${catkin_LIBRARIES}
-)
+target_link_libraries(mico_controller ${catkin_LIBRARIES})
+target_link_libraries(moveit_simple_controller_manager ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 #############
 ## Install ##
