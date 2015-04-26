@@ -315,7 +315,7 @@ bool feature_extraction_cb(
     }
     feature_counter_offset += color_counter.size();
     feature_scale_factor = color_counter.size();
-
+    
     // CVFH
     std::vector<double> feature_vector = computeCVFH(cloud);
     std::vector<double> feature_counter (feature_vector.size());
@@ -325,7 +325,7 @@ bool feature_extraction_cb(
         res.feature_vector.push_back(feature_vector[i]);
     }
     feature_counter_offset += feature_counter.size();
-
+    
     // Plot histogram
     plotter->clearPlots();
     // Bug in plotter, need to call twice
@@ -333,10 +333,10 @@ bool feature_extraction_cb(
     plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
     plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
     plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
-
+    
     ROS_INFO("Plotting data...");
     plotter->spinOnce(10);
-
+    
     return true;
 }
 

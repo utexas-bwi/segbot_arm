@@ -13,6 +13,7 @@ find_package(catkin REQUIRED
 	roscpp
 	rospy
  	message_generation
+    ml_classifiers
 )
 
 ## System dependencies are found with CMake's conventions
@@ -22,7 +23,7 @@ find_package(catkin REQUIRED
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
+catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -87,6 +88,7 @@ find_package(catkin REQUIRED
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES segbot_arm_perception
@@ -143,10 +145,10 @@ target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRAR
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(PROGRAMS
+  scripts/test_ml_classifiers.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS segbot_arm_perception segbot_arm_perception_node
