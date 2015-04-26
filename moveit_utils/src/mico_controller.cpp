@@ -41,7 +41,7 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
 	double q1,q2,q3,q4,q5,q6;
 	jaco_msgs::ArmJointAnglesGoal goal;
 	char dumb;
-	for(int i = 1; i < trajectory.points.size(); i++){ //skip first message because it always rotates j6 2pi
+	for(int i = 0; i < trajectory.points.size(); i++){
 		//set this goal's qvals
 		ros::spinOnce();
 		q1 = trajectory.points.at(i).positions.at(0);
