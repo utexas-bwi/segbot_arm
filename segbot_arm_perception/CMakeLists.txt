@@ -111,20 +111,26 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 ## Declare a cpp executable
 add_executable(planar_segmentation src/planar_segmentation.cpp)
+add_dependencies(planar_segmentation segbot_arm_perception_gencpp)
 target_link_libraries(planar_segmentation ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
 add_executable(planar_segmentation_client src/planar_segmentation_client.cpp)
+add_dependencies(planar_segmentation_client segbot_arm_perception_gencpp)
 target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(button_detection_node src/button_detection_node.cpp)
 target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(feature_extraction_server src/feature_extraction_server.cpp)
+add_dependencies(feature_extraction_server segbot_arm_perception_gencpp)
 target_link_libraries(feature_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(table_detection_object_extraction_server src/table_detection_object_extraction_server.cpp)
+add_dependencies(table_detection_object_extraction_server segbot_arm_perception_gencpp)
 target_link_libraries(table_detection_object_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(object_feature_extraction src/object_feature_extraction)
+add_dependencies(object_feature_extraction segbot_arm_perception_gencpp)
 target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 ## Add cmake target dependencies of the executable/library
