@@ -1,4 +1,0 @@
-PoseArraybool excludePlane
-int16 numberOfPlanes
-----
-sensor_msgs/PointCloud2[] clouds
