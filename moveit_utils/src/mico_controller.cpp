@@ -7,7 +7,6 @@
 #include "jaco_msgs/JointAngles.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
-#include <iostream>
 //moveit
 #include <moveit_msgs/DisplayTrajectory.h>
 #include "trajectory_msgs/JointTrajectory.h"
