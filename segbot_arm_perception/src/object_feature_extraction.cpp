@@ -52,25 +52,24 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
 enum Label {
+    YELLOW = 1,
     RED,
     GREEN,
     BLUE
 };
 
-
-
 // Select mode
 const bool kCaptureScene = false;
 const bool kLoadScene = false;
 const double kROSRate = 1.0; 	//refresh rate (Hz)
-const std::string kFeatureDataFile = "train1";
-const Label kLabel = RED;
+const Label kLabel = YELLOW;
 
 // Mutex: //
 boost::mutex cloud_mutex;
 
 bool new_cloud_available_flag = false;
 PointCloudT::Ptr cloud (new PointCloudT);
+std::string data_file_name = "";
 
 sensor_msgs::PointCloud2 cloud_ros;
 
@@ -93,8 +92,7 @@ void sig_handler(int sig)
 }
 
 
-void
-cloud_cb(const sensor_msgs::PointCloud2ConstPtr& input) {
+void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& input) {
 	cloud_mutex.lock();
 
 	//convert to PCL format
@@ -117,7 +115,7 @@ int main(int argc, char** argv) {
 	ros::Subscriber sub = nh.subscribe (param_topic, 1, cloud_cb);
 
     tf::TransformListener listener;
-
+    int feature_received_count = 0;
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 
@@ -222,32 +220,69 @@ int main(int argc, char** argv) {
 
                 segbot_arm_perception::FeatureExtraction feature_srv;
                 if (clusters_on_plane.size() > 0) {
+
                     // Pack service request
                     toROSMsg(*clusters_on_plane[object_index], feature_srv.request.cloud);
                     ROS_INFO("Calling feature extraction service...");
                     if (feature_srv_client.call(feature_srv)) {
+                        if (feature_received_count == 0) {
+                            feature_received_count++;
+                            continue;
+                        }
                         ROS_INFO("Feature vector received");
-                        std::vector<double> feature_vector = feature_srv.response.feature_vector;
-                        std::string pathname_write = ros::package::getPath("segbot_arm_perception") + "/feature_data/" + kFeatureDataFile;
-                        std::ofstream write_feature_file;
-                        write_feature_file.open(pathname_write.c_str());
+                        while (data_file_name.empty()) {
+                            ROS_INFO("Output file name: ");
+                            std::getline (std::cin, data_file_name);
+                            ROS_INFO("data_file_name = %s", data_file_name.c_str());
+                        }
+                        ROS_INFO("PRESS 'y' TO SAVE. PRESS '0' TO QUIT. PRESS ANY OTHER KEYS TO SKIP");
                         char input_char;
                         std::cin >> input_char;
-                        ROS_INFO("PRESS 'y' TO SAVE. PRESS '0' TO QUIT. PRESS ANY OTHER KEY TO SKIP");
                         if (input_char == 'y') {
-                            write_feature_file << kLabel << " ";
-                            for (int i = 0; i < feature_vector.size(); i++) {
-                                write_feature_file << i << ":" << feature_vector[i] << " ";
+                            bool positive_example;
+                            do {
+                                ROS_INFO("Positive 'p' or negative 'n' example?");
+                                std::cin >> input_char;
+                                if (input_char == 'p') {
+                                    positive_example = true;
+                                } else {
+                                    positive_example = false;
+                                }
+                            } while (input_char != 'p' && input_char != 'n');
+
+                            std::vector<double> feature_vector = feature_srv.response.feature_vector;
+
+                            std::string pathname_write = ros::package::getPath("segbot_arm_perception") + "/feature_data/" + data_file_name;
+                            ROS_INFO("Path = %s", pathname_write.c_str());
+                            std::ofstream write_feature_file;
+                            write_feature_file.open(pathname_write.c_str(), std::ios::out | std::ios::app);
+                            if (write_feature_file.is_open()) {
+                                ROS_INFO("Writing to file...");
+                                if (positive_example) {
+                                    write_feature_file << "+";
+                                } else {
+                                    write_feature_file << "-";
+                                }
+                                write_feature_file << kLabel << " ";
+                                for (int i = 0; i < feature_vector.size(); i++) {
+                                    write_feature_file << i << ":" << feature_vector[i] << " ";
+                                }
+                                write_feature_file << "\n";
+                                write_feature_file.close();
+                            } else {
+                                ROS_ERROR("Cannot open file");
                             }
-                            write_feature_file << "\n";
+
                         } else if (input_char == '0') {
-                            ROS_INFO("Saving");
-                            write_feature_file.close();
+                            ROS_INFO("Shutting down...");
+                            ros::shutdown();
+                            exit(1);
                         } else {
                             ROS_INFO("Skipping");
                         }
+                        feature_received_count++;
                     } else {
-                        ROS_INFO("Error: No feature vector");
+                        ROS_WARN("Warning: No feature vector computed");
                     }
 
                     // ROS_INFO("Publishing cloud clusters...");

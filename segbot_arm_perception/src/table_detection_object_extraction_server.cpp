@@ -61,7 +61,7 @@ bool g_caught_sigint = false;
 void sigint_handler(int sig)
 {
   g_caught_sigint = true;
-  ROS_INFO("caught sigint, init shutdown sequence...");
+  ROS_INFO("Caught sigint, init shutdown sequence...");
   ros::shutdown();
   exit(1);
 }
