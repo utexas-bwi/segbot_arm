@@ -33,7 +33,7 @@ Jaco::JointVelocity check_state(Jaco::JointVelocity jv_cur, double time_remainin
 	enum Actuators {1, 2, 3, 4, 5, 6};
 	for(int i = 1; i <= 6; i++){
 		Actuators a = i;
-		if((js_cur + tol) >= js_goal && (js_cur - tol <= js_goal)){
+		if((js_cur.at(i) + tol) >= js_goal.at(i) && (js_cur.at(i) - tol <= js_goal.at(i))){
 			switch(a) {
 				case 1	: jv_update.joint1 = 0; break;
 				case 2	: jv_update.joint2 = 0; break;
@@ -67,7 +67,7 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
         trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
         Jaco::JointVelocity jv_goal;
 	bool next_point = false;
-	ros::Rate r(10);
+	ros::Rate r(40);
 	double last_sent, first_sent;
 	int trajectory_length = trajectory.points.at(0).position.size();
 	js_goal.clear();
@@ -98,11 +98,12 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
 		//further movement when required.
 		
 		while(!next_point){
-			if(((ros::Time::now() - first_sent) < (tfs - last).toSec()) && ((ros::Time::now() - last_sent) > .22)){ //where .22 represents lifetime of ta velocity command. In this case, it should continue moving, so we re-up
-				pub.publish(jv_goal);
-				last_sent = ros::Time::now();
-			}
-			else if(((ros::Time::now() - first_sent) >= (tfs - last).toSec()){ //movement should be preempted
+			//if(((ros::Time::now() - first_sent) < (tfs - last).toSec()) && ((ros::Time::now() - last_sent) > .22)){ //where .22 represents lifetime of ta velocity command. In this case, it should continue moving, so we re-up
+			//rather than check conditionally, re-up on the message
+			pub.publish(jv_goal);
+			last_sent = ros::Time::now();
+			//}
+			if(((ros::Time::now() - first_sent) >= (tfs - last).toSec()){ //movement should be preempted
 				Jaco::JointVelocity empty_goal;
 				pub.publish(empty_goal);
 				next_point = true;
