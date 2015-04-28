@@ -51,7 +51,7 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
 		q6 = trajectory.points.at(i).positions.at(5);
 		ROS_INFO("Current position: %f, %f, %f, %f, %f, %f", current_jpos.position[0], current_jpos.position[1], current_jpos.position[2], current_jpos.position[3], current_jpos.position[4], current_jpos.position[5]); 
 		ROS_INFO("Target position: %f, %f, %f, %f, %f, %f",q1,q2,q3,q4,q5,q6);
-		cin >> dumb;
+		//cin >> dumb;
 		goal.angles.joint1 = q1;
 		goal.angles.joint2 = q2;
 		goal.angles.joint3 = q3;
