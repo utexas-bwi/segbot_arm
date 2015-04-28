@@ -60,7 +60,7 @@ jaco_msgs::JointVelocity check_state(jaco_msgs::JointVelocity jv_cur, double tim
 //fills goal vector with the positions in the last entry in the trajectory vector
 void fill_goal(trajectory_msgs::JointTrajectory jt, int length){
 	for(int i = 0; i < 6; i++){
-		js_goal.push_back(jt.points.at(i).positions.at(length));
+		js_goal.push_back(jt.points.at(length - 1).positions.at(i));
 	}
 }
 bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
@@ -69,12 +69,13 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 	bool next_point = false;
 	ros::Rate r(40);
 	double last_sent, first_sent;
-	int trajectory_length = trajectory.points.at(0).positions.size();
+	int trajectory_length = trajectory.points.size();
+	std::cout << "preparing for " << trajectory_length << " number of trajs." << std::endl;
 	js_goal.clear();
 	fill_goal(trajectory, trajectory_length);
 	ros::Duration last(0.0); //holds the last trajectory's time from start, and the current traj's tfs
         ros::Duration tfs(0.0);
-	for(int i = 0; i < trajectory.points.size(); i++){
+	for(int i = 0; i < trajectory_length; i++){
                 //set the target velocity
                 ros::spinOnce();
                 jv_goal.joint1 = trajectory.points.at(i).velocities.at(0);
@@ -129,7 +130,7 @@ int main(int argc, char **argv)
     //publisher for velocity commands
     j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
     
-    ros::ServiceServer srv = n.advertiseService("mico_joint_velocity_controller_service", service_cb);
+    ros::ServiceServer srv = n.advertiseService("mico_controller", service_cb);
     ROS_INFO("Mico joint velocity controller server started.");
     
     ros::spin();
