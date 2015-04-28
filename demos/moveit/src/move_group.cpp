@@ -182,9 +182,11 @@ int main(int argc, char **argv)
 		if(success){
 			char play;
 			//print velocities
-			//for(int j = 0; j<my_plan.joint_trajectory.points.size(); j++){
-			//	std::cout << "Trajectory " << j << ": velocity = " << my_plan.joint_trajectory.points.at(j).velocity.at(0) << std::endl;
-			//}
+			for(int j = 0; j<my_plan.trajectory_.joint_trajectory.points.size(); j++){
+				for(int s = 0; s < 6; s++)
+					std::cout << "Trajectory " << j << ": velocity = " << my_plan.trajectory_.joint_trajectory.points.at(j).velocities.at(s) << " ";
+			std::cout << std::endl;
+			}
 			std::cout << "Enter 1 to play the trajectory" << std::endl;
 			std::cin >> play;
 			if(play == '1'){
