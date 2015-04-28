@@ -2,14 +2,16 @@
 #include <signal.h>
 #include <iostream>
 #include <vector>
-#include "jaco_msgs/JointAngles.h"
+
 //messages and types
+#include "jaco_msgs/JointAngles.h"
+#include "jaco_msgs/JointVelocity.h"
 #include <sensor_msgs/JointState.h>
 #include "moveit_utils/MicoController.h" //depending on needs, may need to create new srv
 
 ros::Publisher j_vel_pub;
 bool g_caught_sigint=false;
-jaco_msgs::JointState js_cur;
+sensor_msgs::JointState js_cur;
 float tol = .1; //Should get from mico launch / param server
 std::vector<float> js_goal;
 
@@ -20,7 +22,7 @@ void sig_handler(int sig){
     exit(1);
 }
 void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
-	js_cur = js;
+	js_cur = *js;
 };
 float update_velocity(float p_cur, float p_goal, double time_remaining){
 	return (float)(p_goal - p_cur)/time_remaining;
@@ -28,13 +30,11 @@ float update_velocity(float p_cur, float p_goal, double time_remaining){
 //update joint velocity based on target and cur position of the actuator.
 //required: tolerance set, goal set, time tracked correctly
 //returns: updated JointVelocity message for publishing
-Jaco::JointVelocity check_state(Jaco::JointVelocity jv_cur, double time_remaining){
-	Jaco::JointVelocity jv_update;
-	enum Actuators {1, 2, 3, 4, 5, 6};
+jaco_msgs::JointVelocity check_state(jaco_msgs::JointVelocity jv_cur, double time_remaining){
+	jaco_msgs::JointVelocity jv_update;
 	for(int i = 1; i <= 6; i++){
-		Actuators a = i;
-		if((js_cur.at(i) + tol) >= js_goal.at(i) && (js_cur.at(i) - tol <= js_goal.at(i))){
-			switch(a) {
+		if((js_cur.position.at(i) + tol) >= js_goal.at(i) && (js_cur.position.at(i) - tol <= js_goal.at(i))){
+			switch(i) {
 				case 1	: jv_update.joint1 = 0; break;
 				case 2	: jv_update.joint2 = 0; break;
 				case 3	: jv_update.joint3 = 0; break;
@@ -45,7 +45,7 @@ Jaco::JointVelocity check_state(Jaco::JointVelocity jv_cur, double time_remainin
 		}
 		//update velocity
 		else{
-			switch(a) {
+			switch(i) {
 				case 1	: jv_update.joint1 = update_velocity(js_goal.at(0), js_cur.position.at(0), time_remaining); break; 
 				case 2	: jv_update.joint1 = update_velocity(js_goal.at(1), js_cur.position.at(1), time_remaining); break;
 				case 3	: jv_update.joint1 = update_velocity(js_goal.at(2), js_cur.position.at(2), time_remaining); break;
@@ -60,20 +60,20 @@ Jaco::JointVelocity check_state(Jaco::JointVelocity jv_cur, double time_remainin
 //fills goal vector with the positions in the last entry in the trajectory vector
 void fill_goal(trajectory_msgs::JointTrajectory jt, int length){
 	for(int i = 0; i < 6; i++){
-		js_goal.pushback(jt.points.at(i).position.at(length));
+		js_goal.push_back(jt.points.at(i).positions.at(length));
 	}
 }
-bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
+bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
         trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
-        Jaco::JointVelocity jv_goal;
+        jaco_msgs::JointVelocity jv_goal;
 	bool next_point = false;
 	ros::Rate r(40);
 	double last_sent, first_sent;
-	int trajectory_length = trajectory.points.at(0).position.size();
+	int trajectory_length = trajectory.points.at(0).positions.size();
 	js_goal.clear();
 	fill_goal(trajectory, trajectory_length);
 	ros::Duration last(0.0); //holds the last trajectory's time from start, and the current traj's tfs
-        ros::Duraction tfs(0.0);
+        ros::Duration tfs(0.0);
 	for(int i = 0; i < trajectory.points.size(); i++){
                 //set the target velocity
                 ros::spinOnce();
@@ -87,9 +87,9 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
                 //ROS_INFO("Current position: %f, %f, %f, %f, %f, %f", current_jpos.position[0], current_jpos.position[1], 
 		//	current_jpos.position[2], current_jpos.position[3], current_jpos.position[4], current_jpos.position[5]);
                 //ROS_INFO("Target position: %f, %f, %f, %f, %f, %f",q1,q2,q3,q4,q5,q6);
-        	last_sent = ros::Time::now();
-		first_sent = ros::Time::now();
-		pub.publish(jv_goal);
+        	last_sent = ros::Time::now().toSec();
+		first_sent = ros::Time::now().toSec();
+		j_vel_pub.publish(jv_goal);
 		
 
 		//check if velocity should re-up or be canceled
@@ -100,12 +100,12 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
 		while(!next_point){
 			//if(((ros::Time::now() - first_sent) < (tfs - last).toSec()) && ((ros::Time::now() - last_sent) > .22)){ //where .22 represents lifetime of ta velocity command. In this case, it should continue moving, so we re-up
 			//rather than check conditionally, re-up on the message
-			pub.publish(jv_goal);
-			last_sent = ros::Time::now();
+			j_vel_pub.publish(jv_goal);
+			last_sent = ros::Time::now().toSec();
 			//}
-			if(((ros::Time::now() - first_sent) >= (tfs - last).toSec()){ //movement should be preempted
-				Jaco::JointVelocity empty_goal;
-				pub.publish(empty_goal);
+			if(((ros::Time::now().toSec() - first_sent) >= (tfs - last).toSec())){ //movement should be preempted
+				jaco_msgs::JointVelocity empty_goal;
+				j_vel_pub.publish(empty_goal);
 				next_point = true;
 			}
 			ros::spinOnce();
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
     //subscriber for position check
     ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
     //publisher for velocity commands
-    j_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/joint_velocity", 10);
+    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
     
     ros::ServiceServer srv = n.advertiseService("mico_joint_velocity_controller_service", service_cb);
     ROS_INFO("Mico joint velocity controller server started.");
