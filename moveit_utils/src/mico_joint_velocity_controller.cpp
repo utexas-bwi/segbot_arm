@@ -66,10 +66,15 @@ void fill_goal(trajectory_msgs::JointTrajectory jt, int length){
 bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
         trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
         Jaco::JointVelocity jv_goal;
+	bool next_point = false;
+	ros::Rate r(10);
+	double last_sent, first_sent;
 	int trajectory_length = trajectory.points.at(0).position.size();
 	js_goal.clear();
 	fill_goal(trajectory, trajectory_length);
-        for(int i = 0; i < trajectory.points.size(); i++){
+	ros::Duration last(0.0); //holds the last trajectory's time from start, and the current traj's tfs
+        ros::Duraction tfs(0.0);
+	for(int i = 0; i < trajectory.points.size(); i++){
                 //set the target velocity
                 ros::spinOnce();
                 jv_goal.joint1 = trajectory.points.at(i).velocities.at(0);
@@ -78,11 +83,35 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
                 jv_goal.joint4 = trajectory.points.at(i).velocities.at(3);
                 jv_goal.joint5 = trajectory.points.at(i).velocities.at(4);
                 jv_goal.joint6 = trajectory.points.at(i).velocities.at(5);
+		tfs = trajectory.points.at(i).time_from_start;
                 //ROS_INFO("Current position: %f, %f, %f, %f, %f, %f", current_jpos.position[0], current_jpos.position[1], 
 		//	current_jpos.position[2], current_jpos.position[3], current_jpos.position[4], current_jpos.position[5]);
                 //ROS_INFO("Target position: %f, %f, %f, %f, %f, %f",q1,q2,q3,q4,q5,q6);
-        	pub.publish(jv_goal);
-		sleep(.1); //turn sleep into ros::rate.sleep and make sleep time consistent with what moveit expects in order to keep continuous movement.
+        	last_sent = ros::Time::now();
+		first_sent = ros::Time::now();
+		pub.publish(jv_goal);
+		
+
+		//check if velocity should re-up or be canceled
+		//current implementation: assume that the traj velocities will take each joint to correct point
+		//written but not invoked is to check the target and goal pos of the joints, and preempting 
+		//further movement when required.
+		
+		while(!next_point){
+			if(((ros::Time::now() - first_sent) < (tfs - last).toSec()) && ((ros::Time::now() - last_sent) > .22)){ //where .22 represents lifetime of ta velocity command. In this case, it should continue moving, so we re-up
+				pub.publish(jv_goal);
+				last_sent = ros::Time::now();
+			}
+			else if(((ros::Time::now() - first_sent) >= (tfs - last).toSec()){ //movement should be preempted
+				Jaco::JointVelocity empty_goal;
+				pub.publish(empty_goal);
+				next_point = true;
+			}
+			ros::spinOnce();
+			r.sleep();
+		}
+		next_point = false;
+		last = trajectory.points.at(i).time_from_start;
 	}
         ROS_INFO("Waiting...");
         res.done = true;
