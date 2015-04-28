@@ -14,6 +14,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
+#include "jaco_msgs/JointVelocity.h"
 
 #define PI 3.14159265
 
@@ -29,6 +30,7 @@ jaco_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 
 ros::Publisher pub_velocity;
+ros::Publisher pub_angular_velocity;
  
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
@@ -139,6 +141,31 @@ void moveArmVelocity() {
 	}
 }
 
+
+void moveArmAngularVelocity() {
+
+	int rateHertz = 40;
+	
+	
+	ros::Rate r(rateHertz);
+	for(int i = 0; i < (int)5 * rateHertz; i++) {
+		
+		jaco_msgs::JointVelocity msg;
+		msg.joint1 = 0.0;
+		msg.joint2 = 0.0;
+		msg.joint3 = 0.0;
+		msg.joint4 = 0.0;
+		msg.joint5 = 0.0;
+		msg.joint6 = -48;
+		
+		
+		
+		pub_angular_velocity.publish(msg);
+		
+		r.sleep();
+	}
+}
+
 int main(int argc, char **argv) {
   // Intialize ROS with this node name
   ros::init(argc, argv, "mimic_motion");
@@ -159,6 +186,10 @@ int main(int argc, char **argv) {
   
   //publish velocities
   pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	 
+  pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+
+
 
   /*unsigned int finger_open_close_toggle = 0;
   while (ros::ok()) {
@@ -187,7 +218,7 @@ int main(int argc, char **argv) {
       ros::Duration(0.05).sleep();
   }*/
   
-  moveArmVelocity();
+  moveArmAngularVelocity();
   //movePose(-0.05);
 //  moveFinger(int finger_value);
   return 0;
