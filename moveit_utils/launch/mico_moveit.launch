@@ -42,7 +42,7 @@
 
 
 	<!-- Max's trajectory controller -->
-	<node name="mico_controller" pkg="moveit_utils" type="mico_controller" />
+	<node name="mico_joint_velocity_controller" pkg="moveit_utils" type="mico_joint_velocity_controller" />
 
 
 	<!-- starts tje asus xtion live pro camera -->

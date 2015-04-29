@@ -64,11 +64,17 @@ void fill_goal(trajectory_msgs::JointTrajectory jt, int length){
 		js_goal.push_back(jt.points.at(length - 1).positions.at(i));
 	}
 }
+
+
+
 bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
-        trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
-        jaco_msgs::JointVelocity jv_goal;
+
+	trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
+    jaco_msgs::JointVelocity jv_goal;
 	bool next_point = false;
+	
 	ros::Rate r(50);
+	
 	double last_sent;
 	ros::Time first_sent;
 	int trajectory_length = trajectory.points.size();
