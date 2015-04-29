@@ -13,7 +13,7 @@
 ros::Publisher j_vel_pub;
 bool g_caught_sigint=false;
 sensor_msgs::JointState js_cur;
-float tol = .05; //Should get from mico launch / param server
+float tol = 0; //Should get from mico launch / param server
 std::vector<float> js_goal;
 
 void sig_handler(int sig){
@@ -68,7 +68,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
         trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
         jaco_msgs::JointVelocity jv_goal;
 	bool next_point = false;
-	ros::Rate r(40);
+	ros::Rate r(50);
 	double last_sent;
 	ros::Time first_sent;
 	int trajectory_length = trajectory.points.size();
@@ -80,12 +80,12 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 	for(int i = 0; i < trajectory_length; i++){
                 //set the target velocity
                 ros::spinOnce();
-                jv_goal.joint1 = 180/PI*trajectory.points.at(i).velocities.at(0);
+                jv_goal.joint1 = -180/PI*trajectory.points.at(i).velocities.at(0);
                 jv_goal.joint2 = 180/PI*trajectory.points.at(i).velocities.at(1);
-                jv_goal.joint3 = 180/PI*trajectory.points.at(i).velocities.at(2);
-                jv_goal.joint4 = 180/PI*trajectory.points.at(i).velocities.at(3);
-                jv_goal.joint5 = 180/PI*trajectory.points.at(i).velocities.at(4);
-                jv_goal.joint6 = 180/PI*trajectory.points.at(i).velocities.at(5);
+                jv_goal.joint3 = -180/PI*trajectory.points.at(i).velocities.at(2);
+                jv_goal.joint4 = -180/PI*trajectory.points.at(i).velocities.at(3);
+                jv_goal.joint5 = -180/PI*trajectory.points.at(i).velocities.at(4);
+                jv_goal.joint6 = -180/PI*trajectory.points.at(i).velocities.at(5);
 		
 		tfs = trajectory.points.at(i).time_from_start;
 		last_sent = ros::Time::now().toSec();
@@ -99,6 +99,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 		
 		while(!next_point){
 			//rather than check conditionally, re-up on the message
+			ros::spinOnce();
 			j_vel_pub.publish(jv_goal);
 			last_sent = ros::Time::now().toSec();
 			ROS_INFO("first_sent: %f tfs: %f", (ros::Time::now() - first_sent).toSec(), (tfs - last).toSec());
@@ -108,11 +109,10 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 				j_vel_pub.publish(empty_goal);
 				next_point = true;
 			}
-			ros::spinOnce();
 			r.sleep();
 		}
 		next_point = false;
-		last += trajectory.points.at(i).time_from_start;
+		last = trajectory.points.at(i).time_from_start;
 	}
         ROS_INFO("Waiting...");
         res.done = true;
