@@ -13,7 +13,7 @@ find_package(catkin REQUIRED
 	roscpp
 	rospy
  	message_generation
-    ml_classifiers
+##    ml_classifiers
 )
 
 ## System dependencies are found with CMake's conventions
