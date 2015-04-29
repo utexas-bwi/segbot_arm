@@ -1,0 +1,12 @@
+#!/usr/bin/python3
+# Make directories for each object
+
+import os, sys
+
+for i in range(1, 51):
+    if i < 10:
+        path = str(0) + str(i);
+    else:
+        path = str(i);
+
+    os.mkdir(path, 0o755);

@@ -38,7 +38,7 @@ sensor_msgs::PointCloud2 cloud_ros;
 void sigint_handler(int sig)
 {
     g_caught_sigint = true;
-    ROS_INFO("caught sigint, init shutdown sequence...");
+    ROS_INFO("Caught sigint, init shutdown sequence...");
     ros::shutdown();
     exit(1);
 }
@@ -278,7 +278,7 @@ pcl::PointCloud<pcl::PFHSignature125>::Ptr computePFH(PointCloudT::Ptr &cloud) {
     // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
     pcl::search::KdTree<PointT>::Ptr tree2 (new pcl::search::KdTree<PointT> ());
     pfh.setSearchMethod (tree2);
-    ROS_INFO("Hi2");
+
     // Output datasets
     pcl::PointCloud<pcl::PFHSignature125>::Ptr pfhs (new pcl::PointCloud<pcl::PFHSignature125> ());
 
@@ -323,7 +323,8 @@ bool feature_extraction_cb(
     for (int i =0; i < feature_counter.size(); i++) {
         feature_vector[i] *= (double)feature_counter.size() / feature_scale_factor;
         feature_counter[i] = feature_counter_offset + i;
-        res.feature_vector.push_back(feature_vector[i]);
+        // TODO Uncomment this
+        // Res.feature_vector.push_back(feature_vector[i]);
     }
     feature_counter_offset += feature_counter.size();
 
