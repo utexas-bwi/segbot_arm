@@ -17,8 +17,8 @@
 #include <pcl/features/fpfh.h>
 #include <pcl/features/vfh.h>
 #include <pcl/features/cvfh.h>
-#include <pcl/features/normal_3d.h>
-//#include <pcl/visualization/pcl_plotter.h>
+#include <pcl/features/normal_3d.h>b
+#include <pcl/visualization/pcl_plotter.h>
 
 #include "segbot_arm_perception/FeatureExtraction.h"
 
