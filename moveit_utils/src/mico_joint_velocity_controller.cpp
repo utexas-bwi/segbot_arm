@@ -9,10 +9,11 @@
 #include <sensor_msgs/JointState.h>
 #include "moveit_utils/MicoController.h" //depending on needs, may need to create new srv
 
+#define PI 3.1459
 ros::Publisher j_vel_pub;
 bool g_caught_sigint=false;
 sensor_msgs::JointState js_cur;
-float tol = .1; //Should get from mico launch / param server
+float tol = .05; //Should get from mico launch / param server
 std::vector<float> js_goal;
 
 void sig_handler(int sig){
@@ -68,7 +69,8 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
         jaco_msgs::JointVelocity jv_goal;
 	bool next_point = false;
 	ros::Rate r(40);
-	double last_sent, first_sent;
+	double last_sent;
+	ros::Time first_sent;
 	int trajectory_length = trajectory.points.size();
 	std::cout << "preparing for " << trajectory_length << " number of trajs." << std::endl;
 	js_goal.clear();
@@ -78,20 +80,17 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 	for(int i = 0; i < trajectory_length; i++){
                 //set the target velocity
                 ros::spinOnce();
-                jv_goal.joint1 = trajectory.points.at(i).velocities.at(0);
-                jv_goal.joint2 = trajectory.points.at(i).velocities.at(1);
-                jv_goal.joint3 = trajectory.points.at(i).velocities.at(2);
-                jv_goal.joint4 = trajectory.points.at(i).velocities.at(3);
-                jv_goal.joint5 = trajectory.points.at(i).velocities.at(4);
-                jv_goal.joint6 = trajectory.points.at(i).velocities.at(5);
-		tfs = trajectory.points.at(i).time_from_start;
-                //ROS_INFO("Current position: %f, %f, %f, %f, %f, %f", current_jpos.position[0], current_jpos.position[1], 
-		//	current_jpos.position[2], current_jpos.position[3], current_jpos.position[4], current_jpos.position[5]);
-                //ROS_INFO("Target position: %f, %f, %f, %f, %f, %f",q1,q2,q3,q4,q5,q6);
-        	last_sent = ros::Time::now().toSec();
-		first_sent = ros::Time::now().toSec();
-		j_vel_pub.publish(jv_goal);
+                jv_goal.joint1 = 180/PI*trajectory.points.at(i).velocities.at(0);
+                jv_goal.joint2 = 180/PI*trajectory.points.at(i).velocities.at(1);
+                jv_goal.joint3 = 180/PI*trajectory.points.at(i).velocities.at(2);
+                jv_goal.joint4 = 180/PI*trajectory.points.at(i).velocities.at(3);
+                jv_goal.joint5 = 180/PI*trajectory.points.at(i).velocities.at(4);
+                jv_goal.joint6 = 180/PI*trajectory.points.at(i).velocities.at(5);
 		
+		tfs = trajectory.points.at(i).time_from_start;
+		last_sent = ros::Time::now().toSec();
+		first_sent = ros::Time::now();
+		j_vel_pub.publish(jv_goal);
 
 		//check if velocity should re-up or be canceled
 		//current implementation: assume that the traj velocities will take each joint to correct point
@@ -99,12 +98,12 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 		//further movement when required.
 		
 		while(!next_point){
-			//if(((ros::Time::now() - first_sent) < (tfs - last).toSec()) && ((ros::Time::now() - last_sent) > .22)){ //where .22 represents lifetime of ta velocity command. In this case, it should continue moving, so we re-up
 			//rather than check conditionally, re-up on the message
 			j_vel_pub.publish(jv_goal);
 			last_sent = ros::Time::now().toSec();
+			ROS_INFO("first_sent: %f tfs: %f", (ros::Time::now() - first_sent).toSec(), (tfs - last).toSec());
 			//}
-			if(((ros::Time::now().toSec() - first_sent) >= (tfs - last).toSec())){ //movement should be preempted
+			if(((ros::Time::now() - first_sent).toSec() >= ((1-tol) * (tfs - last).toSec()))){ //movement should be preempted
 				jaco_msgs::JointVelocity empty_goal;
 				j_vel_pub.publish(empty_goal);
 				next_point = true;
@@ -113,7 +112,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 			r.sleep();
 		}
 		next_point = false;
-		last = trajectory.points.at(i).time_from_start;
+		last += trajectory.points.at(i).time_from_start;
 	}
         ROS_INFO("Waiting...");
         res.done = true;
