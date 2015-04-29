@@ -15,8 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_core
   pluginlib
   control_msgs
+  actionlib_msgs
 )
 find_package(Boost REQUIRED thread)
+
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 ############################
@@ -67,16 +69,16 @@ add_service_files(
 )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+   FILES
+   FollowVelocityTrajectory.action
+)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
   moveit_msgs
+  actionlib_msgs
 )
 
 ###################################
@@ -93,6 +95,7 @@ catkin_package(
 #  LIBRARIES moveit_utils
 #  CATKIN_DEPENDS geometry_msgs roscpp rospy
 #  DEPENDS system_lib
+
 )
 
 ###########
@@ -113,15 +116,18 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(mico_controller src/mico_controller.cpp)
+add_executable(mico_controller_action src/mico_controller_action.cpp)
 add_executable(mico_joint_velocity_controller src/mico_joint_velocity_controller.cpp)
-
 add_library(moveit_simple_controller_manager src/mico_joint_angle_plugin.cpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(mico_controller moveit_utils_gencpp)
 add_dependencies(mico_joint_velocity_controller moveit_utils_gencpp)
+add_dependencies(mico_controller_action moveit_utils_gencpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(mico_controller ${catkin_LIBRARIES})
+target_link_libraries(mico_controller_action ${catkin_LIBRARIES})
 target_link_libraries(moveit_simple_controller_manager ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(mico_joint_velocity_controller ${catkin_LIBRARIES})
 #############
