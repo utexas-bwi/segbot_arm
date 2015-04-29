@@ -175,7 +175,7 @@ bool table_detection_object_extraction_cb(
     // Create the filtering object: downsample the dataset using a leaf size of 1cm
     pcl::VoxelGrid<PointT> vg;
     vg.setInputCloud (cloud);
-    vg.setLeafSize (0.005f, 0.005f, 0.005f);
+    vg.setLeafSize (0.004f, 0.004f, 0.004f); // Values picked based on real time computation speed
     vg.filter (*cloud_filtered);
 
     ROS_INFO("After voxel grid filter: %i points",(int)cloud_filtered->points.size());

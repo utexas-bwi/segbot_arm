@@ -59,7 +59,7 @@ enum Label {
 };
 
 // Select mode
-const bool kCaptureScene = false;
+const bool kCaptureScene = true;
 const bool kLoadScene = !kCaptureScene;
 const double kROSRate = 1.0; 	//refresh rate (Hz)
 const Label kLabel = YELLOW;
@@ -139,7 +139,7 @@ bool save_cloud_to_disk(PointCloudT::Ptr cloud) {
     // Set directory for each run of the program. Directory must already exist.
     set_pcd_dir_name();
 
-    ROS_INFO("Save current button point cloud? [y/n]");
+    ROS_INFO("Save current cloud (size %d)? [y/n]", (int)cloud->points.size());
     std::cin >> input_char;
     if(input_char == 'y') {
         pcl::PCDWriter writer;
