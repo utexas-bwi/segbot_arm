@@ -13,6 +13,7 @@ find_package(catkin REQUIRED
 	roscpp
 	rospy
  	message_generation
+    ml_classifiers
 )
 
 ## System dependencies are found with CMake's conventions
@@ -22,7 +23,7 @@ find_package(catkin REQUIRED
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
+catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -87,6 +88,7 @@ find_package(catkin REQUIRED
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES segbot_arm_perception
@@ -109,20 +111,26 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 ## Declare a cpp executable
 add_executable(planar_segmentation src/planar_segmentation.cpp)
+add_dependencies(planar_segmentation segbot_arm_perception_gencpp)
 target_link_libraries(planar_segmentation ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
 add_executable(planar_segmentation_client src/planar_segmentation_client.cpp)
+add_dependencies(planar_segmentation_client segbot_arm_perception_gencpp)
 target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(button_detection_node src/button_detection_node.cpp)
 target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(feature_extraction_server src/feature_extraction_server.cpp)
+add_dependencies(feature_extraction_server segbot_arm_perception_gencpp)
 target_link_libraries(feature_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(table_detection_object_extraction_server src/table_detection_object_extraction_server.cpp)
+add_dependencies(table_detection_object_extraction_server segbot_arm_perception_gencpp)
 target_link_libraries(table_detection_object_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(object_feature_extraction src/object_feature_extraction)
+add_dependencies(object_feature_extraction segbot_arm_perception_gencpp)
 target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 ## Add cmake target dependencies of the executable/library
@@ -143,10 +151,10 @@ target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRAR
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(PROGRAMS
+  scripts/test_ml_classifiers.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS segbot_arm_perception segbot_arm_perception_node

@@ -1,3 +1,5 @@
+#include <iostream>
+#include <fstream>
 #include <signal.h>
 #include <vector>
 #include <string>
@@ -49,18 +51,28 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
+enum Label {
+    RED,
+    GREEN,
+    BLUE
+};
+
+
+
 // Select mode
 const bool kCaptureScene = false;
-const bool kLoadScene = true;
+const bool kLoadScene = false;
+const double kROSRate = 1.0; 	//refresh rate (Hz)
+const std::string kFeatureDataFile = "train1";
+const Label kLabel = RED;
+
 // Mutex: //
 boost::mutex cloud_mutex;
 
 bool new_cloud_available_flag = false;
 PointCloudT::Ptr cloud (new PointCloudT);
 
-
 sensor_msgs::PointCloud2 cloud_ros;
-
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -74,10 +86,10 @@ bool file_exist(std::string& name) {
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
 {
-  g_caught_sigint = true;
-  ROS_INFO("Caught sigint, init shutdown sequence...");
-  ros::shutdown();
-  exit(1);
+    g_caught_sigint = true;
+    ROS_INFO("Caught sigint, init shutdown sequence...");
+    ros::shutdown();
+    exit(1);
 }
 
 
@@ -109,9 +121,7 @@ int main(int argc, char** argv) {
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 
-	//refresh rate (Hz)
-	double ros_rate = 3.0;
-	ros::Rate r(ros_rate);
+	ros::Rate r(kROSRate);
 
 	ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("object_feature_extraction/cloud", 10);
 
@@ -130,6 +140,8 @@ int main(int argc, char** argv) {
         }
         if (new_cloud_available_flag) {
             new_cloud_available_flag = false;
+
+            // Save pointcloud to disk
             if (kCaptureScene) {
                 static int scene_count = 0;
                 char input_char;
@@ -145,22 +157,23 @@ int main(int argc, char** argv) {
                     pcl::PCDWriter writer;
                     std::stringstream ss;
                     ss << "scene_" << scene_count <<  ".pcd";
-                    std::string pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
+                    std::string pathname_write = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
                     // Changing file name until it doesn't overlap with existing point clouds
-                    while (file_exist(pathNameWrite)) {
+                    while (file_exist(pathname_write)) {
                         scene_count++;
                         ss.str("");
                         ss << "red_button_" << scene_count <<  ".pcd";
-                        pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
+                        pathname_write = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
                     }
 
                     ROS_INFO("Saving %s...", ss.str().c_str());
-                    writer.write<PointT>(pathNameWrite, *cloud, false);
+                    writer.write<PointT>(pathname_write, *cloud, false);
                     scene_count++;
                 }
                 continue;
             }
 
+            // Load pointcloud from disk
             if (kLoadScene) {
                 pcl::PointCloud<PointT>::Ptr cloud_temp (new pcl::PointCloud<PointT>);
                 std::string pathNameRead = ros::package::getPath("segbot_arm_perception") + "/pcd/" + "scene_0.pcd";
@@ -168,13 +181,13 @@ int main(int argc, char** argv) {
                     PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
                     return (-1);
                 }
+                cloud_temp->header.frame_id = cloud->header.frame_id;
                 cloud = cloud_temp;
                 toROSMsg(*cloud, cloud_ros);
                 cloud_ros.header.frame_id = cloud->header.frame_id;
                 ROS_INFO("Publishing cloud clusters...");
                 cloud_pub.publish(cloud_ros);
             }
-            // ros::Duration(2).sleep();
 
             // Prepare service call message
             segbot_arm_perception::TableDetectionObjectExtraction table_srv;
@@ -191,24 +204,58 @@ int main(int argc, char** argv) {
                     cloud_plane_coef[i] = table_srv.response.cloud_plane_coef[i];
                 }
                 fromROSMsg(table_srv.response.cloud_plane, *cloud_plane);
+                // Find the closest cluster to the center
+                int object_index = 0;
+                float min_y_value = std::numeric_limits<float>::max();
                 for (int i = 0; i < table_srv.response.cloud_clusters.size(); i++) {
+                    Eigen::Vector4f centroid_i;
                     PointCloudT::Ptr temp_ptr(new PointCloudT);
                     fromROSMsg(table_srv.response.cloud_clusters[i], *temp_ptr);
                     clusters_on_plane.push_back(temp_ptr);
-                }
-                // Do work
-                segbot_arm_perception::FeatureExtraction feature_srv;
-                // Pack service request
-                toROSMsg(*cloud_plane, feature_srv.request.cloud);
-                ROS_INFO("Calling feature service...");
-                if (feature_srv_client.call(feature_srv)) {
-                    ROS_INFO("Feature vector received");
+                    // Find min Y coordinate
+                    pcl::compute3DCentroid(*temp_ptr, centroid_i);
+                    if (fabs(centroid_i(0)) < min_y_value) {
+                        min_y_value = fabs(centroid_i(0));
+                        object_index = i;
+                    }
                 }
 
-                ROS_INFO("Publishing cloud clusters...");
-                toROSMsg(*cloud_plane, cloud_ros);
-                // toROSMsg(*cloud_normals, cloud_ros);
-                cloud_pub.publish(cloud_ros);
+                segbot_arm_perception::FeatureExtraction feature_srv;
+                if (clusters_on_plane.size() > 0) {
+                    // Pack service request
+                    toROSMsg(*clusters_on_plane[object_index], feature_srv.request.cloud);
+                    ROS_INFO("Calling feature extraction service...");
+                    if (feature_srv_client.call(feature_srv)) {
+                        ROS_INFO("Feature vector received");
+                        std::vector<double> feature_vector = feature_srv.response.feature_vector;
+                        std::string pathname_write = ros::package::getPath("segbot_arm_perception") + "/feature_data/" + kFeatureDataFile;
+                        std::ofstream write_feature_file;
+                        write_feature_file.open(pathname_write.c_str());
+                        char input_char;
+                        std::cin >> input_char;
+                        ROS_INFO("PRESS 'y' TO SAVE. PRESS '0' TO QUIT. PRESS ANY OTHER KEY TO SKIP");
+                        if (input_char == 'y') {
+                            write_feature_file << kLabel << " ";
+                            for (int i = 0; i < feature_vector.size(); i++) {
+                                write_feature_file << i << ":" << feature_vector[i] << " ";
+                            }
+                            write_feature_file << "\n";
+                        } else if (input_char == '0') {
+                            ROS_INFO("Saving");
+                            write_feature_file.close();
+                        } else {
+                            ROS_INFO("Skipping");
+                        }
+                    } else {
+                        ROS_INFO("Error: No feature vector");
+                    }
+
+                    // ROS_INFO("Publishing cloud clusters...");
+                    // toROSMsg(*cloud_plane, cloud_ros);
+                    // cloud_pub.publish(cloud_ros);
+                } else {
+                    ROS_INFO("No clusters found");
+                }
             }
         }
 		r.sleep();
