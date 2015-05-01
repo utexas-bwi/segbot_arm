@@ -1,5 +1,4 @@
 <launch>
-   
 
 	<!-- start the kinova mico driver -->
 	<node name="mico_arm_driver" pkg="jaco_driver" type="jaco_arm_driver" output="screen" cwd="node">
@@ -34,15 +33,18 @@
 	
 	<!-- publishes tf -->
 	<include file="$(find jaco_model)/launch/upload_mico.launch"/>
-    <node name="mico_state_publisher"
-           pkg="robot_state_publisher"
+	<node name="mico_state_publisher" pkg="robot_state_publisher"
           type="robot_state_publisher">
 		<!-- <remap from="joint_states" to="/mico_arm_driver/out/joint_states"/> -->
-    </node>
+   	 </node>
 
 
 	<!-- Max's trajectory controller -->
 	<node name="mico_joint_velocity_controller" pkg="moveit_utils" type="mico_joint_velocity_controller" />
+	
+	<!-- Mico services: These services interface with moveit and the controller -->
+	<node name="mico_moveit_joint_pose_service" pkg="moveit_utils" type="mico_moveit_joint_pose_service" />
+	<node name="mico_nav_safety_service" pkg="moveit_utils" type="mico_nav_safety_service" />
 
 
 	<!-- starts tje asus xtion live pro camera -->
@@ -52,9 +54,5 @@
 	
 	 <!-- Launch moveit & rviz -->
     <include file="$(find mico_moveit_config)/launch/mico_moveit_bringup.launch" />
-
-    
-
-
 
 </launch>
