@@ -118,7 +118,6 @@ include_directories(
 add_executable(mico_controller src/mico_controller.cpp)
 add_executable(mico_controller_action src/mico_controller_action.cpp)
 add_executable(mico_joint_velocity_controller src/mico_joint_velocity_controller.cpp)
-add_library(moveit_simple_controller_manager src/mico_joint_angle_plugin.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
