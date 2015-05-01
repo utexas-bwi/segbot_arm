@@ -108,7 +108,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 			ros::spinOnce();
 			j_vel_pub.publish(jv_goal);
 			last_sent = ros::Time::now().toSec();
-			ROS_INFO("first_sent: %f tfs: %f", (ros::Time::now() - first_sent).toSec(), (tfs - last).toSec());
+			//ROS_INFO("first_sent: %f tfs: %f", (ros::Time::now() - first_sent).toSec(), (tfs - last).toSec());
 			//}
 			if(((ros::Time::now() - first_sent).toSec() >= ((1-tol) * (tfs - last).toSec()))){ //movement should be preempted
 				jaco_msgs::JointVelocity empty_goal;
@@ -120,7 +120,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 		next_point = false;
 		last = trajectory.points.at(i).time_from_start;
 	}
-        ROS_INFO("Waiting...");
+        //ROS_INFO("Waiting...");
         res.done = true;
         return true;
 }

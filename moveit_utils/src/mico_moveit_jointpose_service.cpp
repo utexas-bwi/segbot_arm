@@ -39,18 +39,20 @@ bool service_cb(moveit_utils::MicoMoveitJointPose::Request &req, moveit_utils::M
     q_vals.clear();
     for(int i = 0; i < NUM_JOINTS; i++){
         switch(i) {
-            case 1  :    q_vals.push_back(req.target.joint1); break;
-            case 2  :    q_vals.push_back(req.target.joint2); break;
-            case 3  :    q_vals.push_back(req.target.joint3); break;
-            case 4  :    q_vals.push_back(req.target.joint4); break;
-            case 5  :    q_vals.push_back(req.target.joint5); break;
-            case 6  :    q_vals.push_back(req.target.joint6); break;
+            case 0  :    q_vals.push_back(req.target.joint1); break;
+            case 1  :    q_vals.push_back(req.target.joint2); break;
+            case 2  :    q_vals.push_back(req.target.joint3); break;
+            case 3  :    q_vals.push_back(req.target.joint4); break;
+            case 4  :    q_vals.push_back(req.target.joint5); break;
+            case 5  :    q_vals.push_back(req.target.joint6); break;
         }
+	//ROS_INFO("Requested angle: %f", q_vals.at(i));
     }
     group.setJointValueTarget(q_vals);
     group.setStartState(*group.getCurrentState());
     moveit::planning_interface::MoveGroup::Plan my_plan;
     bool success = group.plan(my_plan);
+    ROS_INFO("planning success: %c", success);
     //call service
     moveit_utils::MicoController srv;
     srv_controller.request.trajectory = my_plan.trajectory_;
@@ -62,6 +64,7 @@ bool service_cb(moveit_utils::MicoMoveitJointPose::Request &req, moveit_utils::M
        ROS_INFO("Service call failed. Is the service running?");
        res.completed = false;
     }
+    ros::spinOnce();
     return true;
 }   
 int main(int argc, char **argv)
@@ -73,7 +76,7 @@ int main(int argc, char **argv)
     //make controller service
     //TODO: as a rosparam, option to use different controllers
     //ros::ServiceClient client = nh.serviceClient<moveit_utils::MicoMoveitJointPose>("mico_moveit_joint_pose");
-    controller_client = nh.serviceClient<moveit_utils::MicoController>("mico_velocity_controller");
+    controller_client = nh.serviceClient<moveit_utils::MicoController>("mico_controller");
     ros::ServiceServer srv = nh.advertiseService("mico_jointpose_service", service_cb);
 
     //TODO: as a rosparam, option for planning time
