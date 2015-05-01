@@ -103,6 +103,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(${catkin_INCLUDE_DIRS})
+include_directories(${LD_LIBRARY_PATH})
 
 ## Declare a cpp library
 # add_library(segbot_arm_perception
@@ -131,7 +132,7 @@ target_link_libraries(table_detection_object_extraction_server ${catkin_LIBRARIE
 
 add_executable(object_feature_extraction src/object_feature_extraction)
 add_dependencies(object_feature_extraction segbot_arm_perception_gencpp)
-target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${LD_LIBRARY_PATH})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

@@ -328,16 +328,16 @@ bool feature_extraction_cb(
     }
     feature_counter_offset += feature_counter.size();
 
-    // Plot histogram
-    plotter->clearPlots();
-    // Bug in plotter, need to call twice
-    plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
-    plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
-    plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
-    plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
+    // // Plot histogram
+    // plotter->clearPlots();
+    // // Bug in plotter, need to call twice
+    // plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
+    // plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
+    // plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
+    // plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
 
-    ROS_INFO("Plotting data...");
-    plotter->spinOnce(10);
+    // ROS_INFO("Plotting data...");
+    // plotter->spinOnce(10);
 
     return true;
 }

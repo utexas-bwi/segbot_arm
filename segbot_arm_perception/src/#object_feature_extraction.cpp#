@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
                             // toROSMsg(*cloud_plane, cloud_ros);
                             // cloud_pub.publish(cloud_ros);
                         } else {
-                            ROS_WARN("Error: No clusters found or failed to retrieve feature vector");
+                            ROS_WARN("Error: failed to retrieve feature vector");
                         }
 
                         // ROS_INFO("Press ENTER to continue");
