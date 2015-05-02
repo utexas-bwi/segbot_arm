@@ -1,0 +1,6 @@
+<launch>
+	<include file="$(find jaco_driver)/launch/mico_arm.launch">
+	</include>
+	<include file="$(find mico_moveit_config)/launch/demo.launch" />
+	<node name="mico_controller" pkg="moveit_utils" type="mico_controller" />
+</launch>
