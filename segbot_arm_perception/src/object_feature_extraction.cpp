@@ -110,7 +110,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& input) {
 
 void set_pcd_dir_name() {
     while (pcd_dir_name.empty()) {
-        ROS_INFO("Output object id (dir) [e.g. \"01\"]: ");
+        ROS_INFO("Output object id (dir) [e.g. \"01\"or ""]: ");
         std::getline (std::cin, pcd_dir_name);
         pcd_dir_name += "/";
         ROS_INFO("pcd_dir_name = %s", pcd_dir_name.c_str());
@@ -260,7 +260,11 @@ bool write_feature_to_disk_csv(std::vector<double>& feature_vector,
     if (write_feature_file.is_open() && write_feature_object_index_file.is_open()) {
         // write_feature_file << kLabel << " ";
         for (int i = 0; i < feature_vector.size(); i++) {
-            write_feature_file << feature_vector[i] << ",";
+            write_feature_file << feature_vector[i];
+            if (i + 1 < feature_vector.size()) {
+                write_feature_file << ",";
+            }
+
         }
         write_feature_file << "\n";
         write_feature_file.close();
@@ -369,6 +373,7 @@ int main(int argc, char** argv) {
                         if (!load_cloud_from_disk(temp_cloud, pcd_path_list[i].string())) {
                             ROS_WARN("Last file reached");
                             ros::shutdown();
+                            exist(0);
                         }
                         ROS_INFO("Publishing cloud clusters size %d...", (int)temp_cloud->points.size());
                         temp_cloud->header.frame_id = cloud->header.frame_id;
