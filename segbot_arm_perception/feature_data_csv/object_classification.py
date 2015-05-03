@@ -12,34 +12,23 @@ if __name__ == '__main__':
     n_neighbors = 3
 
     # Read feature vectors
-    reader = csv.reader(open("train.csv","r"), delimiter=',')
+    reader = csv.reader(open("train.csv", "r"), delimiter=',')
     X = np.array(list(reader))
     X = X.astype(np.float64)
-    # Read labels
-    reader = csv.reader(open("train_object_index.csv"))
+    # Read object labels
+    reader = csv.reader(open("train_object_index.csv", "r"))
     y = np.array(list(reader))
     # y = y.astype(np.int64)
     y = np.squeeze(y)
     print(X.shape)
     print(y.shape)
-    # y_2 = y[0, :]  # Transpose
-    # y_3 = np.squeeze(y)
-    # print(X.size)
-    # print(y_2.size)
-    # print(y_2)
-    # print(y_3.size)
-    # print(y_3)
-    # iris = datasets.load_iris()
-    # X_i = iris.data[:, :2]  # we only take the first two features. We could
-    # # avoid this ugly slicing by using a two-dim dataset
-    # y_i = iris.target
-    # print(X_i.size)
-    # print(y_i.size)
-    # print(y_i)
-    # print(iris.data)
-    # print(iris.data[:, :2])
-    # print(X[:][:-11])
-    # print(y[:][0])
+    # Read classifier list
+    # with open("object_classifier_table.csv", "r") as csvfile:
+    #     reader = csv
+    reader = csv.reader(open("object_classifiers.csv", "r"), delimiter=',')
+    classifier_table = np.array(list(reader))
+
+    # Map feature object pairs
 
     # Create model
     clf = neighbors.KNeighborsClassifier(n_neighbors, weights = 'uniform')
