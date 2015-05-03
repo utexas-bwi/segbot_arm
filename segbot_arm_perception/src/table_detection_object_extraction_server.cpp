@@ -300,7 +300,7 @@ bool table_detection_object_extraction_cb(
 }
 
 int main (int argc, char** argv) {
-    ros::init(argc, argv, "cluster_extraction_server");
+    ros::init(argc, argv, "table_detection_object_extraction");
     ros::NodeHandle nh;
 
     signal(SIGINT, sigint_handler);

@@ -13,8 +13,8 @@ find_package(catkin REQUIRED
 	roscpp
 	rospy
  	message_generation
-##    ml_classifiers
 )
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -103,7 +103,6 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(${catkin_INCLUDE_DIRS})
-include_directories(${LD_LIBRARY_PATH})
 
 ## Declare a cpp library
 # add_library(segbot_arm_perception
@@ -130,9 +129,14 @@ add_executable(table_detection_object_extraction_server src/table_detection_obje
 add_dependencies(table_detection_object_extraction_server segbot_arm_perception_gencpp)
 target_link_libraries(table_detection_object_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(object_feature_extraction src/object_feature_extraction)
+add_executable(object_feature_extraction src/object_feature_extraction.cpp)
 add_dependencies(object_feature_extraction segbot_arm_perception_gencpp)
-target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${LD_LIBRARY_PATH})
+target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+
+# add_executable(object_classification src/object_classification.cpp)
+# add_dependencies(object_classification segbot_arm_perception_gencpp)
+# target_link_libraries(object_classification ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${LD_LIBRARY_PATH}  mlpack)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

@@ -86,7 +86,7 @@ bool file_exist(std::string& name) {
 }
 
 
-/* what happens when ctr-c is pressed */
+// what happens when ctr-c is pressed
 void sig_handler(int sig) {
     g_caught_sigint = true;
     ROS_INFO("Caught sigint, init shutdown sequence...");
@@ -107,6 +107,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& input) {
 	cloud_mutex.unlock();
 }
 
+
 void set_pcd_dir_name() {
     while (pcd_dir_name.empty()) {
         ROS_INFO("Output object id (dir) [e.g. \"01\"]: ");
@@ -119,10 +120,9 @@ void set_pcd_dir_name() {
 
 // Retrieve all pcb file path name from pcb/object_dir recurisvely
 // Leave object_dir as blank to get all files for pcb/
-std::vector<std::string> get_pcd_path_list (std::string current_dir) {
+std::vector<boost::filesystem::path> get_pcd_path_list (std::string current_dir) {
     using namespace boost::filesystem;
-    std::vector<std::string> pcd_path_list;
-    std::multimap<int, std::string> pcd_path_map;
+    std::vector<path> pcd_path_list;
     path current_path(current_dir.c_str());
 
     if (!exists(current_path)) {
@@ -132,9 +132,9 @@ std::vector<std::string> get_pcd_path_list (std::string current_dir) {
     directory_iterator end_itr; // default construction yields past-the-end
     for (directory_iterator itr(current_path); itr != end_itr; itr++) {
         if (is_regular_file(itr->status())) {
-            pcd_path_list.push_back(itr->path().string());
+            pcd_path_list.push_back(itr->path());
         } else if (is_directory(itr->status())) {
-            std::vector<std::string> temp_path_list = get_pcd_path_list(itr->path().string());
+            std::vector<path> temp_path_list = get_pcd_path_list(itr->path().string());
             // Concatentate vectors
             pcd_path_list.insert(pcd_path_list.end(), temp_path_list.begin(), temp_path_list.end());
         }
@@ -241,25 +241,30 @@ bool write_feature_to_disk_libSVM(std::vector<double>& feature_vector) {
 
 
 // Write the feature vector to disk in libSVM format. See kFeatureDataFile for file name
-bool write_feature_to_disk_csv(std::vector<double>& feature_vector) {
+// It also writes the object id corresponding to the feature to another file
+bool write_feature_to_disk_csv(std::vector<double>& feature_vector,
+                               std::string feature_object_index) {
     // Set filename for each run of the program
     while (data_file_name.empty()) {
         ROS_INFO("Output file name: ");
         std::getline (std::cin, data_file_name);
-        ROS_INFO("data_file_name = %s", data_file_name.c_str());
     }
 
-    std::string pathname_write = ros::package::getPath("segbot_arm_perception") + "/feature_data_csv/" + data_file_name;
-    ROS_INFO("Path = %s", pathname_write.c_str());
+    std::string pathname_write = ros::package::getPath("segbot_arm_perception") + "/feature_data_csv/" + data_file_name + ".csv";
+    std::string pathname_object_index_write = ros::package::getPath("segbot_arm_perception") + "/feature_data_csv/" + data_file_name + "_object_index.csv";
+    ROS_INFO("Write path = %s", pathname_write.c_str());
     std::ofstream write_feature_file;
+    std::ofstream write_feature_object_index_file;
     write_feature_file.open(pathname_write.c_str(), std::ios::out | std::ios::app);
-    if (write_feature_file.is_open()) {
-        write_feature_file << kLabel << " ";
+    write_feature_object_index_file.open(pathname_object_index_write.c_str(), std::ios::out | std::ios::app);
+    if (write_feature_file.is_open() && write_feature_object_index_file.is_open()) {
+        // write_feature_file << kLabel << " ";
         for (int i = 0; i < feature_vector.size(); i++) {
             write_feature_file << feature_vector[i] << ",";
         }
         write_feature_file << "\n";
         write_feature_file.close();
+        write_feature_object_index_file << feature_object_index << "\n";
     } else {
         ROS_ERROR("Cannot open file");
     }
@@ -351,13 +356,19 @@ int main(int argc, char** argv) {
                     set_pcd_dir_name();
                     PointCloudT::Ptr temp_cloud(new PointCloudT);
                     std::string pcd_root_dir = ros::package::getPath("segbot_arm_perception") + "/pcd/" + pcd_dir_name;
-                    std::vector<std::string> pcd_path_list = get_pcd_path_list(pcd_root_dir);
+                    // Grab paths for each pointcloud
+                    std::vector<boost::filesystem::path> pcd_path_list = get_pcd_path_list(pcd_root_dir);
+                    // Extract parent dir (object id) name
+                    std::vector<std::string> feature_object_index_vector;
+                    for (int i = 0; i < pcd_path_list.size(); i++) {
+                        feature_object_index_vector.push_back(pcd_path_list[i].parent_path().filename().string().c_str());
+                    }
 
-                    for (int i =0; i < pcd_path_list.size(); i++) {
-                        ROS_INFO("%s", pcd_path_list[i].c_str());
-                        if (!load_cloud_from_disk(temp_cloud, pcd_path_list[i])) {
+                    for (int i = 0; i < pcd_path_list.size(); i++) {
+                        ROS_INFO("%s", pcd_path_list[i].string().c_str());
+                        if (!load_cloud_from_disk(temp_cloud, pcd_path_list[i].string())) {
                             ROS_WARN("Last file reached");
-                            while(1);
+                            ros::shutdown();
                         }
                         ROS_INFO("Publishing cloud clusters size %d...", (int)temp_cloud->points.size());
                         temp_cloud->header.frame_id = cloud->header.frame_id;
@@ -370,10 +381,9 @@ int main(int argc, char** argv) {
                         // Find feature if there is more than 1 cluster on table
                         if (feature_srv_client.call(feature_srv)) {
                             ROS_INFO("Feature vector received");
-
                             std::vector<double> feature_vector = feature_srv.response.feature_vector;
                             // Write feature to disk
-                            write_feature_to_disk_csv(feature_vector);
+                            write_feature_to_disk_csv(feature_vector, feature_object_index_vector[i]);
 
                             // ROS_INFO("Publishing cloud clusters...");
                             // toROSMsg(*cloud_plane, cloud_ros);
