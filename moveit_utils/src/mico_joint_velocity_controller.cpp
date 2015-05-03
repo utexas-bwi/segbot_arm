@@ -78,47 +78,52 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 	double last_sent;
 	ros::Time first_sent;
 	int trajectory_length = trajectory.points.size();
-	std::cout << "preparing for " << trajectory_length << " number of trajs." << std::endl;
-	js_goal.clear();
-	fill_goal(trajectory, trajectory_length);
-	ros::Duration last(0.0); //holds the last trajectory's time from start, and the current traj's tfs
-        ros::Duration tfs(0.0);
-	for(int i = 0; i < trajectory_length; i++){
-                //set the target velocity
-                ros::spinOnce();
-                jv_goal.joint1 = -180/PI*trajectory.points.at(i).velocities.at(0);
-                jv_goal.joint2 = 180/PI*trajectory.points.at(i).velocities.at(1);
-                jv_goal.joint3 = -180/PI*trajectory.points.at(i).velocities.at(2);
-                jv_goal.joint4 = -180/PI*trajectory.points.at(i).velocities.at(3);
-                jv_goal.joint5 = -180/PI*trajectory.points.at(i).velocities.at(4);
-                jv_goal.joint6 = -180/PI*trajectory.points.at(i).velocities.at(5);
-		
-		tfs = trajectory.points.at(i).time_from_start;
-		last_sent = ros::Time::now().toSec();
-		first_sent = ros::Time::now();
-		j_vel_pub.publish(jv_goal);
-
-		//check if velocity should re-up or be canceled
-		//current implementation: assume that the traj velocities will take each joint to correct point
-		//written but not invoked is to check the target and goal pos of the joints, and preempting 
-		//further movement when required.
-		
-		while(!next_point){
-			//rather than check conditionally, re-up on the message
-			ros::spinOnce();
-			j_vel_pub.publish(jv_goal);
+	
+	if(trajectory_length == 0)
+		ROS_INFO("Trajectory message empty. No movement generated.");
+	else{
+		std::cout << "preparing for " << trajectory_length << " number of trajs." << std::endl;
+		js_goal.clear();
+		fill_goal(trajectory, trajectory_length);
+		ros::Duration last(0.0); //holds the last trajectory's time from start, and the current traj's tfs
+			ros::Duration tfs(0.0);
+		for(int i = 0; i < trajectory_length; i++){
+					//set the target velocity
+					ros::spinOnce();
+					jv_goal.joint1 = -180/PI*trajectory.points.at(i).velocities.at(0);
+					jv_goal.joint2 = 180/PI*trajectory.points.at(i).velocities.at(1);
+					jv_goal.joint3 = -180/PI*trajectory.points.at(i).velocities.at(2);
+					jv_goal.joint4 = -180/PI*trajectory.points.at(i).velocities.at(3);
+					jv_goal.joint5 = -180/PI*trajectory.points.at(i).velocities.at(4);
+					jv_goal.joint6 = -180/PI*trajectory.points.at(i).velocities.at(5);
+			
+			tfs = trajectory.points.at(i).time_from_start;
 			last_sent = ros::Time::now().toSec();
-			//ROS_INFO("first_sent: %f tfs: %f", (ros::Time::now() - first_sent).toSec(), (tfs - last).toSec());
-			//}
-			if(((ros::Time::now() - first_sent).toSec() >= ((1-tol) * (tfs - last).toSec()))){ //movement should be preempted
-				jaco_msgs::JointVelocity empty_goal;
-				j_vel_pub.publish(empty_goal);
-				next_point = true;
+			first_sent = ros::Time::now();
+			j_vel_pub.publish(jv_goal);
+
+			//check if velocity should re-up or be canceled
+			//current implementation: assume that the traj velocities will take each joint to correct point
+			//written but not invoked is to check the target and goal pos of the joints, and preempting 
+			//further movement when required.
+			
+			while(!next_point){
+				//rather than check conditionally, re-up on the message
+				ros::spinOnce();
+				j_vel_pub.publish(jv_goal);
+				last_sent = ros::Time::now().toSec();
+				//ROS_INFO("first_sent: %f tfs: %f", (ros::Time::now() - first_sent).toSec(), (tfs - last).toSec());
+				//}
+				if(((ros::Time::now() - first_sent).toSec() >= ((1-tol) * (tfs - last).toSec()))){ //movement should be preempted
+					jaco_msgs::JointVelocity empty_goal;
+					j_vel_pub.publish(empty_goal);
+					next_point = true;
+				}
+				r.sleep();
 			}
-			r.sleep();
+			next_point = false;
+			last = trajectory.points.at(i).time_from_start;
 		}
-		next_point = false;
-		last = trajectory.points.at(i).time_from_start;
 	}
         //ROS_INFO("Waiting...");
         res.done = true;
