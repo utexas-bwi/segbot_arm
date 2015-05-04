@@ -1,3 +1,15 @@
+/* This service is the IK flavor of the movement interface to the MoveIt! move_group and planning_action interfaces.
+ * 
+ * Author: Maxwell Svetlik
+ * 
+ * */
+
+/* Temporary note: The IK solver currently used is likely too slow.
+ * Switch to IK Fast: 
+ * 	http://moveit.ros.org/wiki/Kinematics/IKFast
+ *  http://wiki.ros.org/Industrial/Tutorials/Create_a_Fast_IK_Solution
+ * */
+
 #include <signal.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -12,6 +24,7 @@
 #include "ros/ros.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "moveit_utils/MicoMoveitCartesianPose.h"
+
 
 bool g_caught_sigint = false;
 std::vector<double> q_vals;
@@ -29,9 +42,13 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
     moveit::planning_interface::MoveGroup group("arm");
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     group.setPlanningTime(5.0); //5 second maximum for collision computation
+    moveit::planning_interface::MoveGroup::Plan my_plan;
+    geometry_msgs::PoseStamped goal;
+    goal.pose.orientation = req.target.pose.orientation;
+    goal.pose.position = req.target.pose.position;
     group.setPoseTarget(req.target);
     group.setStartState(*group.getCurrentState());
-    moveit::planning_interface::MoveGroup::Plan my_plan;
+
     bool success = group.plan(my_plan);
     ROS_INFO("planning success: %c", success);
     //call service
