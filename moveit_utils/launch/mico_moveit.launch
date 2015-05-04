@@ -44,6 +44,7 @@
 	
 	<!-- Mico services: These services interface with moveit and the controller -->
 	<node name="mico_moveit_joint_pose_service" pkg="moveit_utils" type="mico_moveit_joint_pose_service" />
+	<node name="mico_moveit_caresianpose_service" pkg="moveit_utils" type="mico_moveit_cartesianpose_service" />
 	<node name="mico_nav_safety_service" pkg="moveit_utils" type="mico_nav_safety_service" />
 
 
