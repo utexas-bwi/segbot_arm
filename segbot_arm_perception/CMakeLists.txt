@@ -129,9 +129,9 @@ add_executable(table_detection_object_extraction_server src/table_detection_obje
 add_dependencies(table_detection_object_extraction_server segbot_arm_perception_gencpp)
 target_link_libraries(table_detection_object_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-#add_executable(object_feature_extraction src/object_feature_extraction.cpp)
-#add_dependencies(object_feature_extraction segbot_arm_perception_gencpp)
-#target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_executable(object_feature_extraction src/object_feature_extraction.cpp)
+add_dependencies(object_feature_extraction segbot_arm_perception_gencpp)
+target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
 # add_executable(object_classification src/object_classification.cpp)

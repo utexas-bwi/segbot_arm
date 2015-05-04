@@ -373,7 +373,7 @@ int main(int argc, char** argv) {
                         if (!load_cloud_from_disk(temp_cloud, pcd_path_list[i].string())) {
                             ROS_WARN("Last file reached");
                             ros::shutdown();
-                            exist(0);
+                            exit(0);
                         }
                         ROS_INFO("Publishing cloud clusters size %d...", (int)temp_cloud->points.size());
                         temp_cloud->header.frame_id = cloud->header.frame_id;
