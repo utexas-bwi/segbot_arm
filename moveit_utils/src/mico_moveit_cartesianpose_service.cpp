@@ -41,7 +41,7 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
     moveit_utils::MicoController srv_controller;
     moveit::planning_interface::MoveGroup group("arm");
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-    group.setPlanningTime(5.0); //5 second maximum for collision computation
+    group.setPlanningTime(600.0); //5 second maximum for collision computation
     moveit::planning_interface::MoveGroup::Plan my_plan;
     geometry_msgs::PoseStamped goal;
     goal.pose.orientation = req.target.pose.orientation;
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
     //TODO: as a rosparam, option to use different controllers
     //ros::ServiceClient client = nh.serviceClient<moveit_utils::MicoMoveitJointPose>("mico_moveit_joint_pose");
     controller_client = nh.serviceClient<moveit_utils::MicoController>("mico_controller");
-    ros::ServiceServer srv = nh.advertiseService("mico_cartesiantpose_service", service_cb);
+    ros::ServiceServer srv = nh.advertiseService("mico_cartesianpose_service", service_cb);
 
     //TODO: as a rosparam, option for planning time
     ros::spin();
