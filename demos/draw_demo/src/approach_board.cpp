@@ -25,6 +25,9 @@
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 
+//moveit interface service
+#include "moveit_utils/MicoMoveitCartesianPose.h"
+
 #define PI 3.14159265
 
 /* Author: Maxwell Svetlik
@@ -36,6 +39,8 @@
 
 
 double cur_x, cur_y, cur_z, cur_qx, cur_qy, cur_qz, cur_qw;
+
+ros::ServiceClient client;
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -62,11 +67,19 @@ void sig_handler(int sig)
   exit(1);
 };
 
-void approach(jaco_msgs::ArmPoseGoal goalPose){
+void approach_jaco(jaco_msgs::ArmPoseGoal goalPose){
 	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	ac.waitForServer();
 	ac.sendGoal(goalPose);
 	ac.waitForResult();
+}
+void approach(geometry_msgs::PoseStamped goal){
+	moveit_utils::MicoMoveitCartesianPose srv;
+	srv.request.target = goal;
+	if(client.call(srv))
+		ROS_INFO("Called IK interface service.");
+	else
+		ROS_INFO("Service call to IK interface failed, is it running?");
 }
 int main (int argc, char** argv)
 {
@@ -79,6 +92,8 @@ int main (int argc, char** argv)
 	ros::Publisher pose_pub = n.advertise<geometry_msgs::PoseStamped>("approach_board/pose", 10);
 	//create subscriber to tool position topic
 	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	
+	client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose>("mico_cartesianpose_service");
 	
 	tf::TransformListener listener;
 	signal(SIGINT, sig_handler);
@@ -195,7 +210,8 @@ int main (int argc, char** argv)
 						std::cin >> move;
 
 						if(move == 'm')							
-							approach(goalPose);
+							//approach_jaco(goalPose);
+							approach(pose_out);
 						
 					}
 					else
