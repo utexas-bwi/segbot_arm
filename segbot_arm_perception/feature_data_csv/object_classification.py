@@ -27,22 +27,33 @@ def get_classifer_vector(classifier_name, object_label_vector):
 def subset_feature_vectors_by_object_label(feature_vector_list, object_label_vector,
                                            classifier_vector, subset_object_labels):
     feature_vector_subset_index_list = []
+    feature_vector_rest_index_list = []
     feature_vector_sublist = []
     object_label_sublist = []
     classifier_sublist = []
+    feature_vector_rest = []
+    object_label_rest = []
+    classifier_rest = []
 
     # Get find all the feature indices for desired objects
     for i in range(len(object_label_vector)):
         if object_label_vector[i] in subset_object_labels:
             feature_vector_subset_index_list.append(i)
+        else:
+            feature_vector_rest_index_list.append(i)
 
     # Construct new sublists
     for i in feature_vector_subset_index_list:
         feature_vector_sublist.append(feature_vector_list[i])
         object_label_sublist.append(object_label_vector[i])
         classifier_sublist.append(classifier_vector[i])
+    for i in feature_vector_rest_index_list:
+        feature_vector_rest.append(feature_vector_list[i])
+        object_label_rest.append(object_label_vector[i])
+        classifier_rest.append(classifier_vector[i])
 
-    return (feature_vector_sublist, object_label_sublist, classifier_sublist)
+    return (feature_vector_sublist, object_label_sublist, classifier_sublist
+            feature_vector_rest, object_label_rest, classifier_rest)
 
 
 if __name__ == '__main__':
