@@ -312,6 +312,7 @@ bool feature_extraction_cb(
     std::vector<double> color_counter (color_vector.size());
     for (int i = 0; i < color_counter.size(); i++) {
         color_counter[i] = i;
+        // TODO Uncomment this
         res.feature_vector.push_back(color_vector[i]);
     }
     feature_counter_offset += color_counter.size();
@@ -323,8 +324,8 @@ bool feature_extraction_cb(
     for (int i =0; i < feature_counter.size(); i++) {
         feature_vector[i] *= (double)feature_counter.size() / feature_scale_factor;
         feature_counter[i] = feature_counter_offset + i;
-        // TODO Uncomment this
-        // Res.feature_vector.push_back(feature_vector[i]);
+
+        res.feature_vector.push_back(feature_vector[i]);
     }
     feature_counter_offset += feature_counter.size();
 
