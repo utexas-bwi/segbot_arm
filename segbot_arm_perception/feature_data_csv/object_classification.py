@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from sklearn import neighbors, datasets
+from sklearn.svm import SVC
 from scipy.stats import mode
 
 import csv
@@ -17,23 +18,45 @@ import collections
 def get_classifier_vector_list():
     # Stores the column list for each classifier
     classifier_vector_list = []
-    object_label_list = []
+    classifier_object_label_list = []
     # Retrieve classifiers for each object
     with open("object_classifier_table.csv", "r") as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
         next(reader, None)
         for row in reader:
-            object_label_list.append(row.pop(0))
+            classifier_object_label_list.append(row.pop(0))
             classifier_vector_list.append(np.array(list(row)).astype(np.int32))
             # print(np.array(list(row)).astype(np.int32))
 
-    return (classifier_vector_list,  object_label_list)
+    return (classifier_vector_list,  classifier_object_label_list)
+
+
+# Load all relevant .csv files to disk
+def load_files():
+     # Read feature vectors
+    reader = csv.reader(open("color_feature_vectors.csv", "r"), delimiter=',')
+    color_feature_vector_list = np.array(list(reader))
+    color_feature_vector_list = color_feature_vector_list.astype(np.float64)
+    reader = csv.reader(open("cvfh_feature_vectors.csv", "r"), delimiter=',')
+    shape_feature_vector_list = np.array(list(reader))
+    shape_feature_vector_list = shape_feature_vector_list.astype(np.float64)
+    # Read object labels (object index starts from 1)
+    reader = csv.reader(open("cvfh_feature_object_index.csv", "r"))
+    object_label_list = np.array(list(reader))
+    object_label_list = np.squeeze(object_label_list)
+    object_label_list = object_label_vector.astype(np.int32)
+    # Read classifier list
+    classifier_vector_list, classifier_object_label_list = get_classifier_vector_list()
+
+    return (color_feature_vector_list, shape_feature_vector_list, object_label_list,
+            classifier_vector_list, classifier_object_label)
 
 
 # Divide the data into train (*_rest) and test (*_sublist)
 def subset_feature_vectors_by_object_label(color_feature_vector_list, shape_feature_vector_list,
                                            object_label_list, classifier_vector_list,
                                            sublist_object_label_set):
+    print("object_lavel_list = ", len(object_label_list))
     feature_vector_subset_index_list = []
     feature_vector_rest_index_list = []
     color_feature_vector_sublist = []
@@ -66,6 +89,7 @@ def subset_feature_vectors_by_object_label(color_feature_vector_list, shape_feat
 
     return (color_feature_vector_sublist, shape_feature_vector_sublist, object_label_sublist, classifier_vector_sublist, color_feature_vector_rest, shape_feature_vector_rest, object_label_rest, classifier_vector_rest)
 
+
 def calculate_accuracy(predicted, expected):
     true_positive, false_positive, all_positive = 0, 0, 0
     # recall, precision = 0.0001, 0
@@ -89,48 +113,19 @@ def calculate_accuracy(predicted, expected):
     return (recall, precision)
 
 
-# Load all relevant .csv files to disk
-def load_files():
-     # Read feature vectors
-    reader = csv.reader(open("color_feature_vectors.csv", "r"), delimiter=',')
-    color_feature_vector_list = np.array(list(reader))
-    color_feature_vector_list = color_feature_vector_list.astype(np.float64)
-    reader = csv.reader(open("cvfh_feature_vectors.csv", "r"), delimiter=',')
-    shape_feature_vector_list = np.array(list(reader))
-    shape_feature_vector_list = shape_feature_vector_list.astype(np.float64)
-    # Read object labels (object index starts from 1)
-    reader = csv.reader(open("cvfh_feature_object_index.csv", "r"))
-    object_label_vector = np.array(list(reader))
-    object_label_vector = np.squeeze(object_label_vector)
-    object_label_vector = object_label_vector.astype(np.int32)
-    # Read classifier list
-    classifier_vector_list, object_label_list = get_classifier_vector_list()
-    # Extract "ObjectNum" vector for mapping classifier index to object number
-    # print(color_feature_vector_list.shape)
-    # print(shape_feature_vector_list.shape)
-    # print(object_label_vector.shape)
-
-    return (color_feature_vector_list, shape_feature_vector_list, object_label_list,
-            classifier_vector_list)
-
-def knn_classifier(n_neighbors, train, label, test):
+def knn_classifier(train, label, test, n_neighbors=5):
     # Create model
     clf = neighbors.KNeighborsClassifier(n_neighbors, weights = 'uniform')
     clf.fit(train, label)
     predicted = clf.predict(test)
-    # predicted = clf.predict(feature_vector_sublist)
-    # expected = np.array(classifier_sublist)
-    # objects = np.array(object_label_sublist)
-    # recall, precision = calculate_accuracy(predicted, expected)
-    # print("predictions:")
-    # print(predicted)
-    # print("expected:")
-    # print(expected)
-    # print("objects:")
-    # print(objects)
-    # sys.stdout.flush()
-    # print("recall: {0} \t precision: {1} \t F1: {2}".format(recall, precision,
-    #                                                         2*recall*precision/(recall+precision)))
+
+    return predicted
+
+def svm_classifier(train, label, test, C=1, gamma=1, kernel='rbf'):
+    # Create model
+    clf = SVC(C=C, gamma=gamma, kernel=kernel)
+    clf.fit(train, label)
+    predicted = clf.predict(test)
 
     return predicted
 
@@ -175,14 +170,16 @@ def main():
     # Input parameters
     color_classifier_list = ["red", "blue", "green", "yellow", "brown", "orange", "pink", "purple", "black", "white"]
     shape_classifier_list = ["cylinder", "bowl", "mug", "cap", "plate", "sphere", "cuboid", "car", "animaltoy"]
-    n_neighbors = 5
+    n_neighbors = 1
     sublist_ratio = 0.2
-    classifier_count = 18 # [color] + [shape]
+    classifier_method = 'knn'
+    classifier_count = 19 # [color] + [shape]
     color_classifier_index_bound = 9 # exclusive
+
     random.seed(163)
 
     # Load needed csv
-    color_feature_vector_list, shape_feature_vector_list, object_label_list, classifier_vector_list = load_files()
+    color_feature_vector_list, shape_feature_vector_list, object_label_list = classifier_vector_list, classifier_object_label = load_files()
 
     # Get a subset of the features based on object labels
     # object_label_set = set(object_label_list) # set breaks the random seeding
@@ -192,8 +189,9 @@ def main():
             object_label_set.append(label)
     sublist_size = int(len(object_label_set) * sublist_ratio)
     sublist_object_label_set = random.sample(object_label_set, sublist_size)
+    # TODO remove this test code
+    sublist_object_label_set = ['1', '2', '3', '4']
     sublist_object_label_set.sort()
-    print(sublist_object_label_set)
 
     # Divide features, object_label, and classifier lists based on the subset
     color_feature_vector_sublist, shape_feature_vector_sublist, object_label_sublist, classifier_sublist, color_feature_vector_rest, shape_feature_vector_rest, object_label_rest, classifier_rest = subset_feature_vectors_by_object_label(color_feature_vector_list, shape_feature_vector_list, object_label_list, classifier_vector_list, sublist_object_label_set)
@@ -202,15 +200,29 @@ def main():
     object_classification_vectors = collections.OrderedDict()
     accuracy_list = []
     for class_index in range(classifier_count):
+        # Get column vector for a classifier and object features
         classifier_labels = [ classifier_vector[class_index] for classifier_vector in classifier_rest ]
+        # print(len(classifier_labels))
+        # print(len(color_feature_vector_rest))
         # Run classifier
-        if class_index < color_classifier_index_bound:
-            predicted = knn_classifier(n_neighbors, color_feature_vector_rest, classifier_labels,
-                                       color_feature_vector_sublist)
-        else:
-            predicted = knn_classifier(n_neighbors, shape_feature_vector_rest, classifier_labels,
-                                       shape_feature_vector_sublist)
+        # if class_index < color_classifier_index_bound:
+        if classifier_method == 'knn':
+            predicted = knn_classifier(color_feature_vector_rest, classifier_labels,
+                                       color_feature_vector_sublist, n_neighbors=n_neighbors)
+        #     if classifier_method == 'svm':
+        #         predicted = svm_classifier(color_feature_vector_rest, classifier_labels,
+        #                                    color_feature_vector_sublist, C=1, gamma=1,
+        #                                    kernel='rbf')
+        # else:
+        #     if classifier_method == 'knn':
+        #         predicted = knn_classifier(shape_feature_vector_rest, classifier_labels,
+        #                                    shape_feature_vector_sublist, n_neighbors=n_neighbors)
+        #     if classifier_method == 'svm':
+        #         predicted = svm_classifier(shape_feature_vector_rest, classifier_labels,
+        #                                    shape_feature_vector_sublist, C=1, gamma=1,
+        #                                    kernel='rbf')
 
+        # print(predicted)
         expected = np.array([ classifier_vector[class_index]
                             for classifier_vector in classifier_sublist ])
         objects = np.array(object_label_sublist)
@@ -228,10 +240,14 @@ def main():
             object_classification_vectors.setdefault(label, []).append(object_classification_predicted[label])
         accuracy_list.append(compute_accuracy(object_classification_predicted, object_classification_expected))
 
-    print("ac: {}".format(accuracy_list))
-    for label in object_classification_vectors:
-        print("{}: {}".format(label, object_classification_vectors[label]))
-
+    # print("accuracy: {}".format(accuracy_list))
+    # print("average accuracy: ", sum(accuracy_list) / len(accuracy_list))
+    # print("predicted")
+    # for label in object_classification_vectors:
+    #     print("{}: {}".format(label, object_classification_vectors[label]))
+    # print("exptected")
+    # for i in range(len(classifier_sublist)):
+    #     print("{}: {}".format(object_label_sublist[i], classifier_sublist[i].tolist()))
 
 
 if __name__ == '__main__':
