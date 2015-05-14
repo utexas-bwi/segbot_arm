@@ -277,42 +277,47 @@ def run_experiment():
     n_fold = 4  # number of folds cross validation
     experiment_folder = "{}-fold/".format(n_fold)
 
-    precision_list = []
-    recall_list = []
-
+    average_precision_list = []
+    average_recall_list = []
     # iterate through the cutoff values [0, len=11]
-    cutoff = 6
-    for fold_index in range(n_fold):
-        # Load files from disk
-        reader = csv.reader(open(root_dir + experiment_folder + "run{}/test_index{}.csv".format(fold_index, fold_index), "r"))
-        language_sublist_object_label_set = list(np.squeeze(np.array(list(reader))).astype(np.int32))
-        language_classifier_vector_list, language_classifier_object_label_list = get_classifier_vector_list(root_dir + experiment_folder + "run{}/spf_bitVector{}.csv".format(fold_index, fold_index))
+    for cutoff in range(0, 11 + 1):
+        precision_list = []
+        recall_list = []
+        for fold_index in range(n_fold):
+            # Load files from disk
+            reader = csv.reader(open(root_dir + experiment_folder + "run{}/test_index{}.csv".format(fold_index, fold_index), "r"))
+            language_sublist_object_label_set = list(np.squeeze(np.array(list(reader))).astype(np.int32))
+            language_classifier_vector_list, language_classifier_object_label_list = get_classifier_vector_list(root_dir + experiment_folder + "run{}/spf_bitVector{}.csv".format(fold_index, fold_index))
 
-        # This is an ordered dictionary, key as object label, value as vectors
-        vision_object_classification_vectors = calculate_vision_vector_dict(language_sublist_object_label_set, cutoff)
+            # This is an ordered dictionary, key as object label, value as vectors
+            vision_object_classification_vectors = calculate_vision_vector_dict(language_sublist_object_label_set, cutoff)
 
-        print("predicted")
-        for label in vision_object_classification_vectors:
-            print("{}: {}".format(label, vision_object_classification_vectors[label]))
+            print("predicted")
+            for label in vision_object_classification_vectors:
+                print("{}: {}".format(label, vision_object_classification_vectors[label]))
 
-        print("language predicted")
-        for i in range(len(language_classifier_object_label_list)):
-            print("{}: {}".format(language_classifier_object_label_list[i], language_classifier_vector_list[i]))
+            print("language predicted")
+            for i in range(len(language_classifier_object_label_list)):
+                print("{}: {}".format(language_classifier_object_label_list[i], language_classifier_vector_list[i]))
 
-        # Calculate PR
-        # Compare vectors of the same object label, iterating over the language vectors
-        for i in range(len(language_classifier_object_label_list)):
-            label = language_classifier_object_label_list[i]
-            vision_vector = vision_object_classification_vectors[label]
-            language_vector = language_classifier_vector_list[i]
-            precision, recall = calculate_accuracy(vision_vector, language_vector)
-            if math.isnan(precision) or math.isnan(recall):
-                continue
-            else:
-                precision_list.append(precision)
-                recall_list.append(recall)
-    print("average precision: ", sum(precision_list) / len(precision_list))
-    print("average recall: ", sum(recall_list) / len(recall_list))
+            # Calculate PR
+            # Compare vectors of the same object label, iterating over the language vectors
+            for i in range(len(language_classifier_object_label_list)):
+                label = language_classifier_object_label_list[i]
+                vision_vector = vision_object_classification_vectors[label]
+                language_vector = language_classifier_vector_list[i]
+                precision, recall = calculate_accuracy(vision_vector, language_vector)
+                if math.isnan(precision) or math.isnan(recall):
+                    continue
+                else:
+                    precision_list.append(precision)
+                    recall_list.append(recall)
+        average_precision = sum(precision_list) / len(precision_list)
+        average_recall = sum(recall_list) / len(recall_list)
+        print("average precision: ", average_precision)
+        print("average recall: ", average_recall)
+        average_precision_list.append(average_precision)
+        average_recall_list.append(average_recall)
 
 if __name__ == '__main__':
     run_experiment()
