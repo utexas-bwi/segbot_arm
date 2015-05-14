@@ -324,8 +324,8 @@ bool feature_extraction_cb(
     for (int i =0; i < feature_counter.size(); i++) {
         feature_vector[i] *= (double)feature_counter.size() / feature_scale_factor;
         feature_counter[i] = feature_counter_offset + i;
-
-        res.feature_vector.push_back(feature_vector[i]);
+        // TODO Uncomment this
+        // res.feature_vector.push_back(feature_vector[i]);
     }
     feature_counter_offset += feature_counter.size();
 

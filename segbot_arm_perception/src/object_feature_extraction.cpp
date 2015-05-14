@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <math.h>
 #include <signal.h>
 #include <vector>
 #include <string>
@@ -16,6 +17,7 @@
 #include <tf/tf.h>
 
 #include <pcl_ros/impl/transforms.hpp>
+#include <pcl/impl/point_types.hpp>
 
 // PCL specific includes
 #include <pcl/common/time.h>
@@ -25,6 +27,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/console/parse.h>
 #include <pcl/point_types.h>
+#include <pcl/point_types_conversion.h>
 #include <pcl/io/openni_grabber.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/features/normal_3d.h>
@@ -277,6 +280,83 @@ bool write_feature_to_disk_csv(std::vector<double>& feature_vector,
 }
 
 
+void RGBtoHSV( float r, float g, float b, float *h, float *s, float *v )
+{
+    float min, max, delta;
+
+    min = std::min(std::min(r,g),b);
+    max = std::max(std::max(r,g),b);
+
+    *v = max;// v
+    delta = max - min;
+    if( max != 0 )
+        *s = delta / max;// s
+    else {
+        // r = g = b = 0// s = 0, v is undefined
+        *s = 0;
+        *h = -1;
+        return;
+    }
+    if( r == max )
+        *h = ( g - b ) / delta;// between yellow & magenta
+    else if( g == max )
+        *h = 2 + ( b - r ) / delta;// between cyan & yellow
+    else
+        *h = 4 + ( r - g ) / delta;// between magenta & cyan
+    *h *= 60;// degrees
+    if( *h < 0 )
+        *h += 360;
+}
+void HSVtoRGB( float *r, float *g, float *b, float h, float s, float v )
+{
+    int i;
+    float f, p, q, t;
+    if( s == 0 ) {
+        // achromatic (grey)
+        *r = *g = *b = v;
+        return;
+    }
+    h /= 60;// sector 0 to 5
+    i = floor( h );
+    f = h - i;// factorial part of h
+    p = v * ( 1 - s );
+    q = v * ( 1 - s * f );
+    t = v * ( 1 - s * ( 1 - f ) );
+    switch( i ) {
+    case 0:
+        *r = v;
+        *g = t;
+        *b = p;
+        break;
+    case 1:
+        *r = q;
+        *g = v;
+        *b = p;
+        break;
+    case 2:
+        *r = p;
+        *g = v;
+        *b = t;
+        break;
+    case 3:
+        *r = p;
+        *g = q;
+        *b = v;
+        break;
+    case 4:
+        *r = t;
+        *g = p;
+        *b = v;
+        break;
+    default:// case 5:
+        *r = v;
+        *g = p;
+        *b = q;
+        break;
+    }
+}
+
+
 int main(int argc, char** argv) {
 	// Initialize ROS
 	ros::init (argc, argv, "segbot_arm_button_detector");
@@ -376,9 +456,56 @@ int main(int argc, char** argv) {
                             exit(0);
                         }
                         ROS_INFO("Publishing cloud clusters size %d...", (int)temp_cloud->points.size());
+
                         temp_cloud->header.frame_id = cloud->header.frame_id;
                         toROSMsg(*temp_cloud, cloud_ros);
                         cloud_pub.publish(cloud_ros);
+
+                        ROS_INFO("Press ENTER to continue");
+                        std::cin.ignore();
+
+                        pcl::PointCloud<pcl::PointXYZHSV>::Ptr temp_cloud_hsv(new pcl::PointCloud<pcl::PointXYZHSV>);
+                        // PointCloudT::Ptr temp_cloud_2(new PointCloudT)
+                        pcl::PointCloudXYZRGBtoXYZHSV(*temp_cloud, *temp_cloud_hsv);
+                        PointT temp_point;
+                        pcl::PointXYZHSV temp_point_hsv;
+                        for (int poi = 0; poi < temp_cloud->points.size(); poi++) {
+                            pcl::PointXYZRGBtoXYZHSV(temp_cloud->points[poi], temp_point_hsv);
+                            // ROS_INFO("before: (%f, %f, %f)", temp_cloud->points[poi].x, temp_cloud->points[poi].y, temp_cloud->points[poi].z);
+
+                            // pcl::PointXYZRGBtoXYZHSV(temp_cloud->points[poi], temp_cloud_hsv->points[i]);
+                            // ROS_INFO("before: (%f, %f, %f)", temp_cloud_hsv->points[poi].h, temp_cloud_hsv->points[poi].s, temp_cloud_hsv->points[poi].v);
+
+                            // temp_point_hsv.s *= 0.8;
+                            float r, g, b, h, s, v;
+                            r = temp_cloud->points[poi].r;
+                            g= temp_cloud->points[poi].g;
+                            b = temp_cloud->points[poi].b;
+                            RGBtoHSV( r, g, b, &h, &s, &v );
+                            h *= 0.8;
+                            HSVtoRGB( &r,  &g, &b,  h, s, v );
+                            temp_cloud->points[poi].r = r;
+                            temp_cloud->points[poi].g = g;
+                            temp_cloud->points[poi].b = b;
+
+                            // ros_INFO("after: (%f, %f, %f)", temp_cloud_hsv->points[poi].h, temp_cloud_hsv->points[poi].s, temp_cloud_hsv->points[poi].v);
+                            // pcl::PointXYZHSVtoXYZRGB(temp_point_hsv,
+                            //                          temp_point);
+                            // temp_cloud->points[poi].r = temp_point.r;
+                            // temp_cloud->points[poi].g = temp_point.g;
+                            // temp_cloud->points[poi].b = temp_point.b;
+                            // ROS_INFO("after: (%f, %f, %f)", temp_cloud->points[poi].x, temp_cloud->points[poi].y, temp_cloud->points[poi].z);
+                        }
+
+                        temp_cloud->header.frame_id = cloud->header.frame_id;
+                        toROSMsg(*temp_cloud, cloud_ros);
+                        cloud_pub.publish(cloud_ros);
+
+                        ROS_INFO("Press ENTER to continue");
+                        std::cin.ignore();
+                        continue;
+
+/////////
 
                         segbot_arm_perception::FeatureExtraction feature_srv;
                         toROSMsg(*temp_cloud, feature_srv.request.cloud);
