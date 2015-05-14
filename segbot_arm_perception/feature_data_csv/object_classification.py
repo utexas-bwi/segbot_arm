@@ -98,27 +98,45 @@ def subset_feature_vectors_by_object_label(color_feature_vector_list, shape_feat
     return (color_feature_vector_sublist, shape_feature_vector_sublist, object_label_sublist, classifier_vector_sublist, classifier_object_label_sublist, color_feature_vector_rest, shape_feature_vector_rest, object_label_rest, classifier_vector_rest, classifier_object_label_rest)
 
 
-def calculate_accuracy(predicted, expected):
-    true_positive, false_positive, all_positive = 0, 0, 0
-    # recall, precision = 0.0001, 0
-    for i in range(expected.size):
-        if predicted[i]:
-            if expected[i]:
-                true_positive += 1
-            else:
-                false_positive += 1
-        if expected[i]:
-            all_positive += 1
 
-    # TODO avoid /0 case that causes the program to crash
-    if all_positive == 0 or false_positive == 0:
-        recall = true_positive / all_positive
-        precision = true_positive / (true_positive + false_positive)
-    else:
-        recall = float("nan")
-        precision = float("nan")
+# vision is a dictionary, language parameters are lists
+def calculate_accuracy(vision_object_classification_vectors, language_classifier_object_label_list, language_classifier_vector_list):
+    true_positive, false_positive, all_positive = (0, 0, 0)
 
-    return (recall, precision)
+    # # Compare vectors of the same object label, iterating over the language vectors
+    # for i in range(len(language_classifier_object_label_list)):
+    #     label = language_classifier_object_label_list[i]
+    #     vision_vector = vision_object_classification_vectors[label]
+    #     language_vector = language_classifier_vector_list[i]
+    #     assert len(vision_vector) == len(language_vector)
+    #     # Compare each element of the vectors
+    #     for j in range(len(vision_vector)):
+    #         if vision_vector[j]:
+    #             all_positive += 1
+    #             if language_vector[j]:
+    #                true_positive += 1
+    #         else:
+    #             false
+
+    # # recall, precision = 0.0001, 0
+    # for i in range(expected.size):
+    #     if predicted[i]:
+    #         if expected[i]:
+    #             true_positive += 1
+    #         else:
+    #             false_positive += 1
+    #     if expected[i]:
+    #         all_positive += 1
+
+    # # TODO avoid /0 case that causes the program to crash
+    # if all_positive == 0 or false_positive == 0:
+    #     recall = true_positive / all_positive
+    #     precision = true_positive / (true_positive + false_positive)
+    # else:
+    #     recall = float("nan")
+    #     precision = float("nan")
+
+    # return (recall, precision)
 
 
 def knn_classifier(train, label, test, n_neighbors=5):
@@ -126,6 +144,7 @@ def knn_classifier(train, label, test, n_neighbors=5):
     clf = neighbors.KNeighborsClassifier(n_neighbors, weights = 'uniform')
     clf.fit(train, label)
     predicted = clf.predict(test)
+    # predicted = clf.predict_proba(test)
 
     return predicted
 
@@ -253,9 +272,7 @@ def main(sublist_object_label_set=[]):
 
     print("accuracy: {}".format(accuracy_list))
     print("average accuracy: ", sum(accuracy_list) / len(accuracy_list))
-    print("predicted")
-    for label in object_classification_vectors:
-        print("{}: {}".format(label, object_classification_vectors[label]))
+
     print("exptected")
     for i in range(len(object_classification_vectors)):
         print("{}: {}".format(sublist_object_label_set[i], classifier_vector_sublist[i].tolist()))
@@ -264,20 +281,25 @@ def main(sublist_object_label_set=[]):
 
 def run_experiment():
     # Read language data files
-    reader = csv.reader(open("./language_data/test_index_0.csv", "r"))
-    language_sublist_object_label_set = list(np.squeeze(np.array(list(reader))).astype(np.int32))
-    language_classifier_vector_list, language_classifier_object_label_list = get_classifier_vector_list("language_data/bit_vector_0.csv")
-    # # Make langage data into an ordered dictionary
-    # language_object_classification_vectors = collections.OrderedDict()
-    # for i, label in enumerate(classifier_object_label_list):
-    #     language_object_classification_vectors.
+    root_dir = "process_results/"
+    n_fold = 4  # number of folds cross validation
+    experiment_folder = "{}-fold/".format(n_fold)
+    for fold_index in range(n_fold):
+        reader = csv.reader(open(root_dir + experiment_folder + "run{}/test_index{}.csv".format(fold_index, fold_index), "r"))
+        language_sublist_object_label_set = list(np.squeeze(np.array(list(reader))).astype(np.int32))
+        language_classifier_vector_list, language_classifier_object_label_list = get_classifier_vector_list(root_dir + experiment_folder + "run{}/spf_bitVector{}.csv".format(fold_index, fold_index))
 
-    # This is an ordered dictionary, key as object label, value as vectors
-    vision_object_classification_vectors = main(language_sublist_object_label_set)
+        # This is an ordered dictionary, key as object label, value as vectors
+        vision_object_classification_vectors = main(language_sublist_object_label_set)
 
-    print("language predicted")
-    for i in range(len(language_classifier_object_label_list)):
-        print("{}: {}".format(language_classifier_object_label_list[i], language_classifier_vector_list[i]))
+        print("predicted")
+        for label in vision_object_classification_vectors:
+            print("{}: {}".format(label, vision_object_classification_vectors[label]))
+
+        print("language predicted")
+        for i in range(len(language_classifier_object_label_list)):
+            print("{}: {}".format(language_classifier_object_label_list[i], language_classifier_vector_list[i]))
+
 
 
 if __name__ == '__main__':
