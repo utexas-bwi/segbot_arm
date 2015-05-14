@@ -72,9 +72,6 @@ def subset_feature_vectors_by_object_label(color_feature_vector_list, shape_feat
     classifier_vector_rest = []
     classifier_object_label_rest = []
 
-    print(object_label_list)
-    print(sublist_object_label_set)
-
     # Split all data into two bins based on sublist set
     for i, label in enumerate(object_label_list):
         if label in sublist_object_label_set:
@@ -165,9 +162,6 @@ def label_classification_with_object_id(sublist_object_label_set, object_label_s
         object_classification_predicted[object_label] = (1 if sum(temp_list_predicted)>=cutoff else 0) # Must have more than cutoff number of 1's to be classify as 1
         object_classification_expected[object_label] = (0 if temp_list_expected.count(0) > temp_list_expected.count(1) else 1) # This is always the same value in temp_list_expected
 
-        print(temp_list_predicted)
-        print(temp_list_expected)
-
     return (object_classification_predicted, object_classification_expected)
 
 
@@ -252,18 +246,15 @@ def calculate_vision_vector_dict(sublist_object_label_set=[], cutoff=6):
         print(predicted[:])
         print(expected[:])
         print()
-
+        # Post-process after getting all the predictions
         # Consolidate data into 1 vector for each object
+        # Per column, key = object labe, value = classifier label
         object_classification_predicted, object_classification_expected = label_classification_with_object_id(sublist_object_label_set, object_label_sublist, predicted, expected, cutoff)
 
         # Put to one list containing all objects
         for label in object_classification_predicted:
             object_classification_vectors.setdefault(label, []).append(object_classification_predicted[label])
 
-        accuracy_list.append(compute_accuracy(object_classification_predicted, object_classification_expected))
-
-    print("accuracy: {}".format(accuracy_list))
-    print("average accuracy: ", sum(accuracy_list) / len(accuracy_list))
 
     print("exptected")
     for i in range(len(object_classification_vectors)):
@@ -281,6 +272,7 @@ def run_experiment():
     average_recall_list = []
     # iterate through the cutoff values [0, len=11]
     for cutoff in range(0, 11 + 1):
+        print("cutoff: ", cutoff)
         precision_list = []
         recall_list = []
         for fold_index in range(n_fold):
@@ -318,6 +310,7 @@ def run_experiment():
         print("average recall: ", average_recall)
         average_precision_list.append(average_precision)
         average_recall_list.append(average_recall)
-
+    print("precis: ", average_precision_list)
+    print("recall: ", average_recall_list)
 if __name__ == '__main__':
     run_experiment()
