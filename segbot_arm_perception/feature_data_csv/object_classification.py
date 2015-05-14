@@ -12,6 +12,7 @@ import numpy
 import random
 import sys
 import collections
+import math
 
 # Load a classifier vector based on name (e.g. "red") for each object label
 # Note that it includes a column call "ObjectNum"
@@ -100,43 +101,29 @@ def subset_feature_vectors_by_object_label(color_feature_vector_list, shape_feat
 
 
 # vision is a dictionary, language parameters are lists
-def calculate_accuracy(vision_object_classification_vectors, language_classifier_object_label_list, language_classifier_vector_list):
+def calculate_accuracy(vision_vector, language_vector):
     true_positive, false_positive, all_positive = (0, 0, 0)
 
-    # # Compare vectors of the same object label, iterating over the language vectors
-    # for i in range(len(language_classifier_object_label_list)):
-    #     label = language_classifier_object_label_list[i]
-    #     vision_vector = vision_object_classification_vectors[label]
-    #     language_vector = language_classifier_vector_list[i]
-    #     assert len(vision_vector) == len(language_vector)
-    #     # Compare each element of the vectors
-    #     for j in range(len(vision_vector)):
-    #         if vision_vector[j]:
-    #             all_positive += 1
-    #             if language_vector[j]:
-    #                true_positive += 1
-    #         else:
-    #             false
+    assert len(vision_vector) == len(language_vector)
+    # Compare each element of the vectors
+    for j in range(len(vision_vector)):
+        if vision_vector[j]:
+            all_positive += 1
+            if language_vector[j]:
+                true_positive += 1
+        else:
+            if language_vector[j]:
+                false_positive += 1
 
-    # # recall, precision = 0.0001, 0
-    # for i in range(expected.size):
-    #     if predicted[i]:
-    #         if expected[i]:
-    #             true_positive += 1
-    #         else:
-    #             false_positive += 1
-    #     if expected[i]:
-    #         all_positive += 1
+    # Case when either predicted or
+    if (not all_positive) or (not(true_positive + false_positive)):
+        precision = float('nan')
+        recall = float('nan')
+    else:
+        precision = true_positive / (true_positive + false_positive)
+        recall = true_positive / all_positive
 
-    # # TODO avoid /0 case that causes the program to crash
-    # if all_positive == 0 or false_positive == 0:
-    #     recall = true_positive / all_positive
-    #     precision = true_positive / (true_positive + false_positive)
-    # else:
-    #     recall = float("nan")
-    #     precision = float("nan")
-
-    # return (recall, precision)
+    return (precision, recall)
 
 
 def knn_classifier(train, label, test, n_neighbors=5):
@@ -159,21 +146,27 @@ def svm_classifier(train, label, test, C=1, gamma=1, kernel='rbf'):
 
 # Collapse each object label into 1 classification
 def label_classification_with_object_id(sublist_object_label_set, object_label_sublist, predicted,
-                                        expected):
+                                        expected, cutoff):
     object_classification_predicted = collections.OrderedDict()
     object_classification_expected = collections.OrderedDict()
+    # Iterate each object label (column) once in the set
     for object_label in sublist_object_label_set:
         temp_list_predicted = []
         temp_list_expected = []
+        # Find all vectors with the same object label
         for i in range(len(object_label_sublist)):
             if object_label == object_label_sublist[i]:
                 temp_list_predicted.append(predicted[i])
                 temp_list_expected.append(expected[i])
         assert len(temp_list_predicted) != 0
         assert len(temp_list_expected) != 0
-        # Find mode
-        object_classification_predicted[object_label] = (0 if temp_list_predicted.count(0) > temp_list_predicted.count(1) else 1)
-        object_classification_expected[object_label] = (0 if temp_list_expected.count(0) > temp_list_expected.count(1) else 1)
+
+        # object_classification_predicted[object_label] = (0 if temp_list_predicted.count(0) > temp_list_predicted.count(1) else 1) # Mode, so above half
+        object_classification_predicted[object_label] = (1 if sum(temp_list_predicted)>=cutoff else 0) # Must have more than cutoff number of 1's to be classify as 1
+        object_classification_expected[object_label] = (0 if temp_list_expected.count(0) > temp_list_expected.count(1) else 1) # This is always the same value in temp_list_expected
+
+        print(temp_list_predicted)
+        print(temp_list_expected)
 
     return (object_classification_predicted, object_classification_expected)
 
@@ -193,7 +186,7 @@ def compute_accuracy(object_classification_predicted, object_classification_expe
     return accuracy
 
 
-def main(sublist_object_label_set=[]):
+def calculate_vision_vector_dict(sublist_object_label_set=[], cutoff=6):
     # Input parameters
     color_classifier_list = ["red", "blue", "green", "yellow", "brown", "orange", "pink", "purple", "black", "white", "cylinder", "bowl", "mug", "cap", "plate", "sphere", "cuboid", "car", "animaltoy"]
     n_neighbors = 5
@@ -259,10 +252,9 @@ def main(sublist_object_label_set=[]):
         print(predicted[:])
         print(expected[:])
         print()
-        # print("recall: {0} \t precision: {1} \t F1: {2}".format(recall, precision, 2*recall*precision/(recall+precision)))
 
         # Consolidate data into 1 vector for each object
-        object_classification_predicted, object_classification_expected = label_classification_with_object_id(sublist_object_label_set, object_label_sublist, predicted, expected)
+        object_classification_predicted, object_classification_expected = label_classification_with_object_id(sublist_object_label_set, object_label_sublist, predicted, expected, cutoff)
 
         # Put to one list containing all objects
         for label in object_classification_predicted:
@@ -284,13 +276,20 @@ def run_experiment():
     root_dir = "process_results/"
     n_fold = 4  # number of folds cross validation
     experiment_folder = "{}-fold/".format(n_fold)
+
+    precision_list = []
+    recall_list = []
+
+    # iterate through the cutoff values [0, len=11]
+    cutoff = 6
     for fold_index in range(n_fold):
+        # Load files from disk
         reader = csv.reader(open(root_dir + experiment_folder + "run{}/test_index{}.csv".format(fold_index, fold_index), "r"))
         language_sublist_object_label_set = list(np.squeeze(np.array(list(reader))).astype(np.int32))
         language_classifier_vector_list, language_classifier_object_label_list = get_classifier_vector_list(root_dir + experiment_folder + "run{}/spf_bitVector{}.csv".format(fold_index, fold_index))
 
         # This is an ordered dictionary, key as object label, value as vectors
-        vision_object_classification_vectors = main(language_sublist_object_label_set)
+        vision_object_classification_vectors = calculate_vision_vector_dict(language_sublist_object_label_set, cutoff)
 
         print("predicted")
         for label in vision_object_classification_vectors:
@@ -300,8 +299,20 @@ def run_experiment():
         for i in range(len(language_classifier_object_label_list)):
             print("{}: {}".format(language_classifier_object_label_list[i], language_classifier_vector_list[i]))
 
-
+        # Calculate PR
+        # Compare vectors of the same object label, iterating over the language vectors
+        for i in range(len(language_classifier_object_label_list)):
+            label = language_classifier_object_label_list[i]
+            vision_vector = vision_object_classification_vectors[label]
+            language_vector = language_classifier_vector_list[i]
+            precision, recall = calculate_accuracy(vision_vector, language_vector)
+            if math.isnan(precision) or math.isnan(recall):
+                continue
+            else:
+                precision_list.append(precision)
+                recall_list.append(recall)
+    print("average precision: ", sum(precision_list) / len(precision_list))
+    print("average recall: ", sum(recall_list) / len(recall_list))
 
 if __name__ == '__main__':
     run_experiment()
-    # main()
