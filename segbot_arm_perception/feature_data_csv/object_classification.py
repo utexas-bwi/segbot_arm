@@ -3,7 +3,7 @@ print(__doc__)
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-from sklearn import neighbors, datasets
+from sklearn import neighbors, datasets, tree
 from sklearn.svm import SVC
 from scipy.stats import mode
 
@@ -126,6 +126,7 @@ def calculate_accuracy(vision_vector, language_vector):
 def knn_classifier(train, label, test, n_neighbors=5):
     # Create model
     clf = neighbors.KNeighborsClassifier(n_neighbors, weights = 'uniform')
+    # clf = tree.DecisionTreeClassifier()
     clf.fit(train, label)
     predicted = clf.predict(test)
     # predicted = clf.predict_proba(test)
@@ -242,10 +243,11 @@ def calculate_vision_vector_dict(sublist_object_label_set=[], cutoff=6):
 
         expected = np.array(classifier_label_sublist)
         objects = np.array(object_label_sublist)
-        print(color_classifier_list[class_index])
-        print(predicted[:])
-        print(expected[:])
-        print()
+        # print(color_classifier_list[class_index])
+        # print(predicted[:])
+        # print(expected[:])
+        # print()
+
         # Post-process after getting all the predictions
         # Consolidate data into 1 vector for each object
         # Per column, key = object labe, value = classifier label
@@ -256,22 +258,24 @@ def calculate_vision_vector_dict(sublist_object_label_set=[], cutoff=6):
             object_classification_vectors.setdefault(label, []).append(object_classification_predicted[label])
 
 
-    print("exptected")
-    for i in range(len(object_classification_vectors)):
-        print("{}: {}".format(sublist_object_label_set[i], classifier_vector_sublist[i].tolist()))
+    # print("exptected")
+    # for i in range(len(object_classification_vectors)):
+    #     print("{}: {}".format(sublist_object_label_set[i], classifier_vector_sublist[i].tolist()))
 
     return object_classification_vectors
 
 def run_experiment():
     # Read language data files
     root_dir = "process_results/"
-    n_fold = 4  # number of folds cross validation
+    n_fold = 5  # number of folds cross validation
     experiment_folder = "{}-fold/".format(n_fold)
 
+    percent_skipped_list = []
     average_precision_list = []
     average_recall_list = []
     # iterate through the cutoff values [0, len=11]
     for cutoff in range(0, 11 + 1):
+        # cutoff = 6
         print("cutoff: ", cutoff)
         precision_list = []
         recall_list = []
@@ -280,37 +284,83 @@ def run_experiment():
             reader = csv.reader(open(root_dir + experiment_folder + "run{}/test_index{}.csv".format(fold_index, fold_index), "r"))
             language_sublist_object_label_set = list(np.squeeze(np.array(list(reader))).astype(np.int32))
             language_classifier_vector_list, language_classifier_object_label_list = get_classifier_vector_list(root_dir + experiment_folder + "run{}/spf_bitVector{}.csv".format(fold_index, fold_index))
-
+            assert len(language_classifier_vector_list) == len(language_classifier_object_label_list)
             # This is an ordered dictionary, key as object label, value as vectors
+            # key = object label, value = vector containing all class labels
             vision_object_classification_vectors = calculate_vision_vector_dict(language_sublist_object_label_set, cutoff)
 
-            print("predicted")
-            for label in vision_object_classification_vectors:
-                print("{}: {}".format(label, vision_object_classification_vectors[label]))
+            # print("vision predicted")
+            # for label in vision_object_classification_vectors:
+            #     print("{}: {}".format(label, vision_object_classification_vectors[label]))
 
-            print("language predicted")
-            for i in range(len(language_classifier_object_label_list)):
-                print("{}: {}".format(language_classifier_object_label_list[i], language_classifier_vector_list[i]))
+            # print("language predicted")
+            # for i in range(len(language_classifier_object_label_list)):
+            #     print("{}: {}".format(language_classifier_object_label_list[i], language_classifier_vector_list[i]))
 
-            # Calculate PR
-            # Compare vectors of the same object label, iterating over the language vectors
-            for i in range(len(language_classifier_object_label_list)):
-                label = language_classifier_object_label_list[i]
-                vision_vector = vision_object_classification_vectors[label]
+            # Pick a list of vision object labels from vision vectors containing the bits from sentence vectors
+            total_count, no_match_count = 0, 0
+            for i in range(len(language_classifier_vector_list)):
                 language_vector = language_classifier_vector_list[i]
-                precision, recall = calculate_accuracy(vision_vector, language_vector)
-                if math.isnan(precision) or math.isnan(recall):
-                    continue
+
+                # Cycle through all the vision vectors
+                matched_vision_label_list = []
+                for vision_label in vision_object_classification_vectors:
+                    vision_vector = vision_object_classification_vectors[vision_label]
+
+                    # Check each bit
+                    assert len(list(vision_vector)) == len(list(language_vector))
+                    language_vision_match = True
+                    for j in range(len(vision_vector)):
+                        # If there exist one '1' bit in vision that doesn't match the '1' in language, discard
+                        if language_vector[j] and (not vision_vector[j]):
+                            language_vision_match = False
+                    if language_vision_match:
+                        matched_vision_label_list.append(vision_label)
+                # Calcuate precision and recall
+                matched_vision_label_count = matched_vision_label_list.count(language_classifier_object_label_list[i])
+                # If no match, don't add it to recall or precision
+                if not len(matched_vision_label_list):
+                    no_match_count += 1
+                    recall = 1 if matched_vision_label_count > 0 else 0
+                    recall_list.append(recall)
                 else:
+                    # Otherwise, save p and r
+                    precision = matched_vision_label_count / len(matched_vision_label_list)
+                    recall = 1 if matched_vision_label_count > 0 else 0
                     precision_list.append(precision)
                     recall_list.append(recall)
+                total_count += 1
+                # print("{}: {}".format(language_classifier_object_label_list[i], matched_vision_label_list))
+                # print("p: ", precision)
+                # print("r: ", recall)
+                # input()
+
+            # # Calculate PR (comparing vision and language vectors)
+            # # Compare vectors of the same object label, iterating over the language vectors
+            # for i in range(len(language_classifier_object_label_list)):
+            #     label = language_classifier_object_label_list[i]
+            #     vision_vector = vision_object_classification_vectors[label]
+            #     language_vector = language_classifier_vector_list[i]
+            #     precision, recall = calculate_accuracy(vision_vector, language_vector)
+            #     if math.isnan(precision) or math.isnan(recall):
+            #         continue
+            #     else:
+            #         precision_list.append(precision)
+            #         recall_list.append(recall)
+
+        percent_skipped = no_match_count / total_count
         average_precision = sum(precision_list) / len(precision_list)
         average_recall = sum(recall_list) / len(recall_list)
+        print("percept skipped: ", percent_skipped)
         print("average precision: ", average_precision)
         print("average recall: ", average_recall)
+        percent_skipped_list.append(percent_skipped)
         average_precision_list.append(average_precision)
         average_recall_list.append(average_recall)
-    print("precis: ", average_precision_list)
-    print("recall: ", average_recall_list)
+    print("\%skip = ", percent_skipped_list)
+    print("precis = ", average_precision_list)
+    print("recall = ", average_recall_list)
+    f1_peak = max([ 2 * tup[0] * tup[1] / (tup[0] + tup[1]) for tup in zip(average_precision_list, average_recall_list) ])
+    print("F1 peak = ", f1_peak)
 if __name__ == '__main__':
     run_experiment()
