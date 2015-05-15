@@ -1,0 +1,27 @@
+a black marker
+(lambda $0:e (and:<t*,t> (black:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the black marker
+(lambda $0:e (and:<t*,t> (black:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the black marker
+(lambda $0:e (and:<t*,t> (black:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the black whiteboard marker
+(lambda $0:e (and:<t*,t> (black:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the black dry erase marker
+(lambda $0:e (and:<t*,t> (black:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the expo marker is black
+(lambda $0:e (and:<t*,t> (black:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the white and black marker
+(lambda $0:e (and:<t*,t> (black:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the black marker
+(lambda $0:e (and:<t*,t> (black:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+a black marker
+(lambda $0:e (and:<t*,t> (black:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+

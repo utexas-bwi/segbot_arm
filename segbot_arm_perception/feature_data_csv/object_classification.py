@@ -267,7 +267,7 @@ def calculate_vision_vector_dict(sublist_object_label_set=[], cutoff=6):
 def run_experiment():
     # Read language data files
     root_dir = "process_results/"
-    n_fold = 5  # number of folds cross validation
+    n_fold = 10  # number of folds cross validation
     experiment_folder = "{}-fold/".format(n_fold)
 
     percent_skipped_list = []

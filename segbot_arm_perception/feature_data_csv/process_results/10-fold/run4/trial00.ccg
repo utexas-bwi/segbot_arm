@@ -1,0 +1,135 @@
+a tea cup
+(lambda $0:e (and:<t*,t> (mug:<e,t> $0) (yellow:<e,t> $0)))
+
+the baroque-styled hand-crafted mug
+(lambda $0:e (and:<t*,t> (mug:<e,t> $0) (yellow:<e,t> $0)))
+
+the small ceramic mug
+(lambda $0:e (and:<t*,t> (mug:<e,t> $0) (yellow:<e,t> $0)))
+
+the ceramic coffee mug
+(lambda $0:e (and:<t*,t> (mug:<e,t> $0) (yellow:<e,t> $0)))
+
+the mug is small and tan
+(lambda $0:e (and:<t*,t> (mug:<e,t> $0) (yellow:<e,t> $0)))
+
+the cup is dark mustard colored with a handle
+(lambda $0:e (and:<t*,t> (mug:<e,t> $0) (yellow:<e,t> $0)))
+
+the wood colored mug
+(lambda $0:e (and:<t*,t> (mug:<e,t> $0) (yellow:<e,t> $0)))
+
+the coffee mug
+(lambda $0:e (and:<t*,t> (mug:<e,t> $0) (yellow:<e,t> $0)))
+
+it's a yellow mug
+(lambda $0:e (and:<t*,t> (mug:<e,t> $0) (yellow:<e,t> $0)))
+
+the yellow bowl
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (bowl:<e,t> $0)))
+
+the yellow hat
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (bowl:<e,t> $0)))
+
+the small yellow bowl
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (bowl:<e,t> $0)))
+
+the small yellow plastic bowl
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (bowl:<e,t> $0)))
+
+the small yellow bowl
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (bowl:<e,t> $0)))
+
+the bowl is shallow and yellow
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (bowl:<e,t> $0)))
+
+the yellow bowl
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (bowl:<e,t> $0)))
+
+the yellow cup
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (bowl:<e,t> $0)))
+
+it is a plastic yellow bowl
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (bowl:<e,t> $0)))
+
+a stuffed elephant
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (animaltoy:<e,t> $0)))
+
+the furry yellow elephant
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (animaltoy:<e,t> $0)))
+
+the toy yellow elephant
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (animaltoy:<e,t> $0)))
+
+the yellow elephant
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (animaltoy:<e,t> $0)))
+
+the fluffy elephant plush
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (animaltoy:<e,t> $0)))
+
+the stuffed animal is a yellow elephant
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (animaltoy:<e,t> $0)))
+
+the yellow elephant soft toy
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (animaltoy:<e,t> $0)))
+
+the elephant stuffed toy is yellow in color
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (animaltoy:<e,t> $0)))
+
+it's a yellow elephant with two large black eyes
+(lambda $0:e (and:<t*,t> (yellow:<e,t> $0) (animaltoy:<e,t> $0)))
+
+the blue coffee mug
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (mug:<e,t> $0)))
+
+the blue generic mug
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (mug:<e,t> $0)))
+
+the blue mug
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (mug:<e,t> $0)))
+
+the blue ceramic coffee cup
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (mug:<e,t> $0)))
+
+the large dark blue mug
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (mug:<e,t> $0)))
+
+this mug is blue and heavy
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (mug:<e,t> $0)))
+
+the big blue mug
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (mug:<e,t> $0)))
+
+the big dark blue coffee mug
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (mug:<e,t> $0)))
+
+it's a dark blue cup with white color inside
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (mug:<e,t> $0)))
+
+a squishy blue ball
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (sphere:<e,t> $0)))
+
+the blue ball
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (sphere:<e,t> $0)))
+
+the squishy blue ball
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (sphere:<e,t> $0)))
+
+the soft blue ball
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (sphere:<e,t> $0)))
+
+the blue rubber ball
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (sphere:<e,t> $0)))
+
+this ball is blue and squishy
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (sphere:<e,t> $0)))
+
+the blue ball
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (sphere:<e,t> $0)))
+
+the dark blue ball is spongy
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (sphere:<e,t> $0)))
+
+it's a blue ball
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (sphere:<e,t> $0)))
+

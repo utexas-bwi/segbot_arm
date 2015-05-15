@@ -1,0 +1,135 @@
+a green hemisphere
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the green deflated ball
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the squishy green ball
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the green soft ball
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the ball is green and under inflated
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the ball is green and squishy
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the green ball
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the spongy green box
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+it's a dark green ball and a bit flat
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+a blue plate
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (plate:<e,t> $0)))
+
+the blue plate
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (plate:<e,t> $0)))
+
+the blue ceramic plate
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (plate:<e,t> $0)))
+
+the ceramic blue plate
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (plate:<e,t> $0)))
+
+the matte blue dish
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (plate:<e,t> $0)))
+
+the plate is blue
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (plate:<e,t> $0)))
+
+the blue plate
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (plate:<e,t> $0)))
+
+the dark blue saucer
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (plate:<e,t> $0)))
+
+this is a blue plate
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (plate:<e,t> $0)))
+
+a bright orange cap
+(lambda $0:e (and:<t*,t> (orange:<e,t> $0) (cap:<e,t> $0)))
+
+the orange cap
+(lambda $0:e (and:<t*,t> (orange:<e,t> $0) (cap:<e,t> $0)))
+
+the orange hat
+(lambda $0:e (and:<t*,t> (orange:<e,t> $0) (cap:<e,t> $0)))
+
+the orange neon cap
+(lambda $0:e (and:<t*,t> (orange:<e,t> $0) (cap:<e,t> $0)))
+
+the hunter safety orange hat
+(lambda $0:e (and:<t*,t> (orange:<e,t> $0) (cap:<e,t> $0)))
+
+the cap is a bright neon orange in color
+(lambda $0:e (and:<t*,t> (orange:<e,t> $0) (cap:<e,t> $0)))
+
+the fluorescent orange cap
+(lambda $0:e (and:<t*,t> (orange:<e,t> $0) (cap:<e,t> $0)))
+
+the pinkish orange cap
+(lambda $0:e (and:<t*,t> (orange:<e,t> $0) (cap:<e,t> $0)))
+
+a shiny orange hat
+(lambda $0:e (and:<t*,t> (orange:<e,t> $0) (cap:<e,t> $0)))
+
+a squishy purple ball
+(lambda $0:e (and:<t*,t> (purple:<e,t> $0) (sphere:<e,t> $0)))
+
+the purple ball
+(lambda $0:e (and:<t*,t> (purple:<e,t> $0) (sphere:<e,t> $0)))
+
+a squishy purple ball
+(lambda $0:e (and:<t*,t> (purple:<e,t> $0) (sphere:<e,t> $0)))
+
+the purple soft ball
+(lambda $0:e (and:<t*,t> (purple:<e,t> $0) (sphere:<e,t> $0)))
+
+the purple rubber ball
+(lambda $0:e (and:<t*,t> (purple:<e,t> $0) (sphere:<e,t> $0)))
+
+the ball is purple and squishy
+(lambda $0:e (and:<t*,t> (purple:<e,t> $0) (sphere:<e,t> $0)))
+
+the purple ball
+(lambda $0:e (and:<t*,t> (purple:<e,t> $0) (sphere:<e,t> $0)))
+
+the purple ball is spongy
+(lambda $0:e (and:<t*,t> (purple:<e,t> $0) (sphere:<e,t> $0)))
+
+it's a purple ball
+(lambda $0:e (and:<t*,t> (purple:<e,t> $0) (sphere:<e,t> $0)))
+
+a blue marker
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the blue cylinder
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the blue marker
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the blue whiteboard marker
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the blue dry erase marker
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the is a blue dry erase marker
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the white and blue marker
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the blue marker
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+it is a blue marker with white body
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+

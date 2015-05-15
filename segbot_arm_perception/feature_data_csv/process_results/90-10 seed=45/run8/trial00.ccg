@@ -1,0 +1,135 @@
+a coaster
+(lambda $0:e (and:<t*,t> (brown:<e,t> $0) (plate:<e,t> $0)))
+
+the brown wooden plate
+(lambda $0:e (and:<t*,t> (brown:<e,t> $0) (plate:<e,t> $0)))
+
+the wooden hot plate
+(lambda $0:e (and:<t*,t> (brown:<e,t> $0) (plate:<e,t> $0)))
+
+the wooden coaster
+(lambda $0:e (and:<t*,t> (brown:<e,t> $0) (plate:<e,t> $0)))
+
+the large wooden coaster
+(lambda $0:e (and:<t*,t> (brown:<e,t> $0) (plate:<e,t> $0)))
+
+this thing is brown, circular and made out of wood
+(lambda $0:e (and:<t*,t> (brown:<e,t> $0) (plate:<e,t> $0)))
+
+the circular wooden disk
+(lambda $0:e (and:<t*,t> (brown:<e,t> $0) (plate:<e,t> $0)))
+
+the circular wooden placeholder
+(lambda $0:e (and:<t*,t> (brown:<e,t> $0) (plate:<e,t> $0)))
+
+it's brown wooden coaster
+(lambda $0:e (and:<t*,t> (brown:<e,t> $0) (plate:<e,t> $0)))
+
+the salt container
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the blue salt cylinder
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the salt container
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the salt container
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the salt container is blue and white
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the salt container is cylindrical
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the white and blue cylindrical container
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+the paper box is cylindrical
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+it's a paper blue can with a white cap
+(lambda $0:e (and:<t*,t> (blue:<e,t> $0) (white:<e,t> $0) (cylinder:<e,t> $0)))
+
+a spool of red wire
+(lambda $0:e (and:<t*,t> (red:<e,t> $0) (black:<e,t> $0) (cylinder:<e,t> $0)))
+
+the red wire
+(lambda $0:e (and:<t*,t> (red:<e,t> $0) (black:<e,t> $0) (cylinder:<e,t> $0)))
+
+a spool of red wire
+(lambda $0:e (and:<t*,t> (red:<e,t> $0) (black:<e,t> $0) (cylinder:<e,t> $0)))
+
+the red 22-gauge wire spool
+(lambda $0:e (and:<t*,t> (red:<e,t> $0) (black:<e,t> $0) (cylinder:<e,t> $0)))
+
+the spool of red wire is unopened
+(lambda $0:e (and:<t*,t> (red:<e,t> $0) (black:<e,t> $0) (cylinder:<e,t> $0)))
+
+the wire is red and wrapped in a cylindrical holding object thing
+(lambda $0:e (and:<t*,t> (red:<e,t> $0) (black:<e,t> $0) (cylinder:<e,t> $0)))
+
+the red wire reel
+(lambda $0:e (and:<t*,t> (red:<e,t> $0) (black:<e,t> $0) (cylinder:<e,t> $0)))
+
+the big dark blue coffee mug
+(lambda $0:e (and:<t*,t> (red:<e,t> $0) (black:<e,t> $0) (cylinder:<e,t> $0)))
+
+it's a wound of pink wire with two ends black
+(lambda $0:e (and:<t*,t> (red:<e,t> $0) (black:<e,t> $0) (cylinder:<e,t> $0)))
+
+a green toy car
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (car:<e,t> $0)))
+
+the green toy car
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (car:<e,t> $0)))
+
+a green car
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (car:<e,t> $0)))
+
+the green plastic play car
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (car:<e,t> $0)))
+
+the green plastic car
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (car:<e,t> $0)))
+
+the toy car is green
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (car:<e,t> $0)))
+
+the green toy car
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (car:<e,t> $0)))
+
+the jeep toy is small and green in color
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (car:<e,t> $0)))
+
+a green sports car with its front left tire missing
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (car:<e,t> $0)))
+
+a dirty cup
+(lambda $0:e (and:<t*,t> (white:<e,t> $0) (mug:<e,t> $0)))
+
+the white paper cup
+(lambda $0:e (and:<t*,t> (white:<e,t> $0) (mug:<e,t> $0)))
+
+the paper cup
+(lambda $0:e (and:<t*,t> (white:<e,t> $0) (mug:<e,t> $0)))
+
+the paper cup
+(lambda $0:e (and:<t*,t> (white:<e,t> $0) (mug:<e,t> $0)))
+
+the white paper cup
+(lambda $0:e (and:<t*,t> (white:<e,t> $0) (mug:<e,t> $0)))
+
+the coffee cup is white
+(lambda $0:e (and:<t*,t> (white:<e,t> $0) (mug:<e,t> $0)))
+
+the white paper cup
+(lambda $0:e (and:<t*,t> (white:<e,t> $0) (mug:<e,t> $0)))
+
+the white paper glass
+(lambda $0:e (and:<t*,t> (white:<e,t> $0) (mug:<e,t> $0)))
+
+it's a paper cup in white color
+(lambda $0:e (and:<t*,t> (white:<e,t> $0) (mug:<e,t> $0)))
+

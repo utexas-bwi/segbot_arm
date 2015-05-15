@@ -1,0 +1,27 @@
+a green hemisphere
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the green deflated ball
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the squishy green ball
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the green soft ball
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the ball is green and under inflated
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the ball is green and squishy
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the green ball
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+the spongy green box
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+
+it's a dark green ball and a bit flat
+(lambda $0:e (and:<t*,t> (green:<e,t> $0) (sphere:<e,t> $0)))
+

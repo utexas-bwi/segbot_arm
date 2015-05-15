@@ -1,0 +1,9 @@
+1,(lambda $0:e (and:<t*,t> (bowl:<e,t> $0) (blue:<e,t> $0))
+2,(lambda $0:e (bowl:<e,t> $0)
+3,(lambda $0:e (and:<t*,t> (bowl:<e,t> $0) (blue:<e,t> $0))
+4,(lambda $0:e (and:<t*,t> (bowl:<e,t> $0) (yellow:<e,t> $0))
+5,
+6,(lambda $0:e (and:<t*,t> (and:<t*,t> (green:<e,t> $0) (blue:<e,t> $0)) (bowl:<e,t> $0))
+7,(lambda $0:e (and:<t*,t> (bowl:<e,t> $0) (blue:<e,t> $0))
+8,(lambda $0:e (white:<e,t> $0)
+9,(lambda $0:e (and:<t*,t> (green:<e,t> $0) (and:<t*,t> (bowl:<e,t> $0) (blue:<e,t> $0)))
