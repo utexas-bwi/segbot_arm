@@ -276,7 +276,7 @@ int main (int argc, char** argv)
 
 			//Step 4: detect the button among the remaining clusters
 			int max_index = -1;
-/*
+
 			double max_red = 0.0;
             // Find the max red value
 			for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
@@ -288,9 +288,9 @@ int main (int argc, char** argv)
 					max_index = i;
 				}
 			}
-*/
 
-            int max_num_red = 0;
+
+            /*int max_num_red = 0;
             // Alternatively, find the blob with most red voxels
 			for (unsigned int i = 0; i < clusters_on_plane.size(); i++) {
                 int red_num_i = countRedVoxels(clusters_on_plane.at(i));
@@ -298,17 +298,17 @@ int main (int argc, char** argv)
                     max_num_red = red_num_i;
                     max_index = i;
                 }
-            }
+            }*/
 
 
-			// PointT min;
-			// PointT max;
-			// pcl::getMinMax3D(*clusters_on_plane.at(max_index),min,max);
+			 PointT min;
+			 PointT max;
+			 pcl::getMinMax3D(*clusters_on_plane.at(max_index),min,max);
 
-			// double volume = (max.x-min.x)*(max.y-min.y)*(max.z-min.z);
+			 double volume = (max.x-min.x)*(max.y-min.y)*(max.z-min.z);
 
 			//float area = pcl::calculatePolygonArea(*clusters_on_plane.at(max_index));
-//			ROS_INFO("Button found: %i points with red_value = %f, volume = %f",(int)clusters_on_plane.at(max_index)->points.size(),max_red,volume);
+			ROS_INFO("Button found: %i points with red_value = %f, volume = %f",(int)clusters_on_plane.at(max_index)->points.size(),max_red,volume);
 
 
 			//publish  cloud if we think it's a button
