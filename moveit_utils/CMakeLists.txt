@@ -17,7 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
   control_msgs
   actionlib_msgs
   moveit_ros_planning_interface
-)
+  jaco_msgs
+  )
 find_package(Boost REQUIRED thread)
 
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
