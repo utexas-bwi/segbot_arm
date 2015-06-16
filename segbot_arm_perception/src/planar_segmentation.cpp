@@ -135,7 +135,7 @@ bool seg_cb(segbot_arm_perception::PlanarSegmentation::Request &req, segbot_arm_
   // Initialize ROS
   ros::init(argc, argv, "planar_segmentation_service");
   ros::NodeHandle n;
-  ros::Subscriber sub = n.subscribe("/camera/depth_registered/points", 3, depth_cb);
+  ros::Subscriber sub = n.subscribe("/xtion/camera/depth_registered/points", 3, depth_cb);
   ros::ServiceServer service = n.advertiseService("PlanarSegmentation", seg_cb);
   ros::spin();
 }
