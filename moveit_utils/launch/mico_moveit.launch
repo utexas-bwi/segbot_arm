@@ -1,44 +1,4 @@
 <launch>
-
-	<!-- start the kinova mico driver -->
-	<node name="mico_arm_driver" pkg="jaco_driver" type="jaco_arm_driver" output="screen" cwd="node">
-		<!-- Set this parameter to use a specific arm on your system    --> 
-		<!-- <param name="serial_number" value="PJ00650002132770005" /> -->
-		<param name="tf_prefix" value="mico_" />
-
-		<param name="fingers/stall_interval_seconds" value="1.0" />
-		<param name="fingers/stall_threshold" value="1.0" />
-		<param name="fingers/rate_hz" value="10.0" />
-		<param name="fingers/tolerance" value="15.0" />
-
-		<param name="arm_pose/stall_interval_seconds" value="1.0" />
-		<param name="arm_pose/stall_threshold" value="0.005" />
-		<param name="arm_pose/rate_hz" value="10.0" />
-		<param name="arm_pose/tolerance" value="0.005" />
-		<param name="arm_pose/tf_prefix" value="mico_" />
-
-		<param name="joint_angles/stall_interval_seconds" value="0.2" />
-		<param name="joint_angles/stall_threshold" value="2.0" />
-		<param name="joint_angles/rate_hz" value="40.0" />
-		<param name="joint_angles/tolerance" value="1.0" />
-		
-		<param name="start_in_force_control_mode" value="True" />
-		<!-- support effort types: "gravfree" (default), "full" -->
-		<param name="joint_efforts_type" value="full" />
-
-		<!-- how often the driver publishes the robot's joint states, efforts, etc. -->
-		<param name="status_interval_seconds" value="0.025" />
-		
-	</node>
-	
-	<!-- publishes tf -->
-	<include file="$(find jaco_model)/launch/upload_mico.launch"/>
-	<node name="mico_state_publisher" pkg="robot_state_publisher"
-          type="robot_state_publisher">
-		<!-- <remap from="joint_states" to="/mico_arm_driver/out/joint_states"/> -->
-   	 </node>
-
-
 	<!-- Max's trajectory controller -->
 	<node name="mico_joint_velocity_controller" pkg="moveit_utils" type="mico_joint_velocity_controller" />
 	
@@ -46,12 +6,6 @@
 	<node name="mico_moveit_joint_pose_service" pkg="moveit_utils" type="mico_moveit_joint_pose_service" />
 	<node name="mico_moveit_caresianpose_service" pkg="moveit_utils" type="mico_moveit_cartesianpose_service" />
 	<node name="mico_nav_safety_service" pkg="moveit_utils" type="mico_nav_safety_service" />
-
-
-	<!-- starts tje asus xtion live pro camera -->
-	<include file="$(find openni2_launch)/launch/openni2.launch">
-		<arg name="depth_registration" value="True" />
-	</include>
 	
 	 <!-- Launch moveit & rviz -->
     <include file="$(find mico_moveit_fullsegbot_config)/launch/mico_moveit_bringup.launch" />
