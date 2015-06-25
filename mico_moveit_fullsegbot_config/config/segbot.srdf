@@ -147,8 +147,7 @@
     <disable_collisions link1="back_left_vertical_beam_link" link2="mico_link_4" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="mico_link_5" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="mico_link_base" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="mico_link_finger_1" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="mico_link_hand" reason="Never" />
+    <disable_collisions link1="back_left_vertical_beam_link" link2="mico_link_finger_2" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="nav_hokuyo_plate_link" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="nav_kinect_base_plate_link" reason="Never" />
@@ -197,6 +196,8 @@
     <disable_collisions link1="back_right_vertical_beam_link" link2="mico_link_4" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="mico_link_5" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="mico_link_base" reason="Never" />
+    <disable_collisions link1="back_right_vertical_beam_link" link2="mico_link_finger_1" reason="Never" />
+    <disable_collisions link1="back_right_vertical_beam_link" link2="mico_link_hand" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="nav_hokuyo_plate_link" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="nav_kinect_base_plate_link" reason="Never" />
@@ -476,6 +477,7 @@
     <disable_collisions link1="battery_box_link" link2="mico_link_5" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="mico_link_base" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="mico_link_finger_1" reason="Never" />
+    <disable_collisions link1="battery_box_link" link2="mico_link_finger_2" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="mico_link_hand" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="nav_hokuyo_plate_link" reason="Never" />
@@ -728,7 +730,8 @@
     <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_3" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_4" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_5" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_base" reason="Never" />
+    <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_base" reason="Default" />
+    <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_finger_2" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_hand" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="nav_hokuyo_plate_link" reason="Never" />
@@ -766,7 +769,7 @@
     <disable_collisions link1="front_right_vertical_beam_link" link2="mico_link_4" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="mico_link_5" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="mico_link_base" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="mico_link_finger_1" reason="Never" />
+    <disable_collisions link1="front_right_vertical_beam_link" link2="mico_link_finger_2" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="mico_link_hand" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="nav_hokuyo_plate_link" reason="Never" />
@@ -871,6 +874,7 @@
     <disable_collisions link1="laptop_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="laptop_link" link2="mico_link_3" reason="Never" />
     <disable_collisions link1="laptop_link" link2="mico_link_4" reason="Never" />
+    <disable_collisions link1="laptop_link" link2="mico_link_5" reason="Never" />
     <disable_collisions link1="laptop_link" link2="mico_link_base" reason="Never" />
     <disable_collisions link1="laptop_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="laptop_link" link2="nav_hokuyo_plate_link" reason="Never" />
@@ -898,7 +902,8 @@
     <disable_collisions link1="laptop_screen_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="left_sensor_beam_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="left_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="mico_link_1" reason="Never" />
+    <disable_collisions link1="laptop_screen_link" link2="mico_link_2" reason="Never" />
+    <disable_collisions link1="laptop_screen_link" link2="mico_link_3" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="mico_link_base" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="nav_hokuyo_plate_link" reason="Never" />
@@ -931,6 +936,7 @@
     <disable_collisions link1="laser_obstacle" link2="mico_link_4" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="mico_link_5" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="mico_link_base" reason="Never" />
+    <disable_collisions link1="laser_obstacle" link2="mico_link_hand" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="nav_hokuyo_link" reason="Default" />
     <disable_collisions link1="laser_obstacle" link2="nav_hokuyo_plate_link" reason="Default" />
     <disable_collisions link1="laser_obstacle" link2="nav_kinect_base_plate_link" reason="Default" />
@@ -960,7 +966,7 @@
     <disable_collisions link1="left_laptop_support_beam_link" link2="mico_link_3" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="mico_link_4" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="mico_link_5" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="mico_link_base" reason="Never" />
+    <disable_collisions link1="left_laptop_support_beam_link" link2="mico_link_base" reason="Default" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="nav_hokuyo_plate_link" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="nav_kinect_base_plate_link" reason="Never" />
@@ -986,7 +992,6 @@
     <disable_collisions link1="left_sensor_beam_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="mico_link_base" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="mico_link_finger_2" reason="Default" />
     <disable_collisions link1="left_sensor_beam_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="nav_hokuyo_plate_link" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="nav_kinect_base_plate_link" reason="Never" />
@@ -1164,7 +1169,6 @@
     <disable_collisions link1="mico_link_5" link2="sonar2_link" reason="Never" />
     <disable_collisions link1="mico_link_5" link2="sonar2_rotated_center_link" reason="Never" />
     <disable_collisions link1="mico_link_5" link2="sonar_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_5" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="nav_hokuyo_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="nav_kinect_base_plate_link" reason="Never" />
@@ -1191,10 +1195,12 @@
     <disable_collisions link1="mico_link_finger_1" link2="mico_link_hand" reason="Adjacent" />
     <disable_collisions link1="mico_link_finger_1" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="nav_hokuyo_plate_link" reason="Never" />
+    <disable_collisions link1="mico_link_finger_1" link2="nav_kinect_base_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="nav_kinect_sensor_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="nav_kinect_standoff_1_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="nav_kinect_standoff_2_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="nav_kinect_standoff_3_link" reason="Never" />
+    <disable_collisions link1="mico_link_finger_1" link2="nav_kinect_standoff_4_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="right_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="sensor_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="sonar0_link" reason="Never" />
@@ -1206,9 +1212,11 @@
     <disable_collisions link1="mico_link_finger_2" link2="mico_link_hand" reason="Adjacent" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_hokuyo_plate_link" reason="Never" />
+    <disable_collisions link1="mico_link_finger_2" link2="nav_kinect_base_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_kinect_sensor_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_kinect_standoff_1_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_kinect_standoff_2_link" reason="Never" />
+    <disable_collisions link1="mico_link_finger_2" link2="nav_kinect_standoff_3_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_kinect_standoff_4_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="right_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="sensor_plate_link" reason="Never" />
@@ -1228,6 +1236,7 @@
     <disable_collisions link1="mico_link_hand" link2="nav_kinect_standoff_3_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="nav_kinect_standoff_4_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="nav_kinect_top_plate_link" reason="Never" />
+    <disable_collisions link1="mico_link_hand" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="right_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="sensor_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="sonar0_link" reason="Never" />
