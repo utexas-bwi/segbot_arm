@@ -62,6 +62,7 @@ catkin_python_setup()
    PlanarSegmentation.srv
    TableDetectionObjectExtraction.srv
    FeatureExtraction.srv
+   LogPerception.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -113,6 +114,10 @@ include_directories(${catkin_INCLUDE_DIRS})
 add_executable(planar_segmentation src/planar_segmentation.cpp)
 add_dependencies(planar_segmentation segbot_arm_perception_gencpp)
 target_link_libraries(planar_segmentation ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(log_perception src/log_perception.cpp)
+add_dependencies(log_perception log_perception_gencpp)
+target_link_libraries(log_perception ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(planar_segmentation_client src/planar_segmentation_client.cpp)
 add_dependencies(planar_segmentation_client segbot_arm_perception_gencpp)
