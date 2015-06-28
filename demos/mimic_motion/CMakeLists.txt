@@ -115,6 +115,17 @@ target_link_libraries(copy ${catkin_LIBRARIES} )
 add_executable(push_button_demo src/push_button_demo.cpp)
 target_link_libraries(push_button_demo ${catkin_LIBRARIES} )
 
+## Declare a cpp executable
+add_executable(press_object_demo src/press_object_demo.cpp)
+target_link_libraries(press_object_demo ${catkin_LIBRARIES} )
+
+## Declare a cpp executable
+add_executable(side_grasp_demo src/side_grasp_demo.cpp)
+target_link_libraries(side_grasp_demo ${catkin_LIBRARIES} )
+
+## Declare a cpp executable
+add_executable(top_grasp_demo src/top_grasp_demo.cpp)
+target_link_libraries(top_grasp_demo ${catkin_LIBRARIES} )
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
