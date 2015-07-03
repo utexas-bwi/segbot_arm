@@ -10,8 +10,14 @@
     <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
     <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
     <group name="arm">
-        <chain base_link="arm_link" tip_link="mico_end_effector" />
+        <chain base_link="mico_link_base" tip_link="mico_link_hand" />
     </group>
+    <group name="gripper">
+        <joint name="mico_joint_finger_1" />
+        <joint name="mico_joint_finger_2" />
+    </group>
+    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <end_effector name="gripper" parent_link="mico_link_hand" group="gripper" parent_group="arm" />
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="arm_link" link2="back_base_beam_link" reason="Never" />
     <disable_collisions link1="arm_link" link2="back_left_vertical_beam_link" reason="Never" />
