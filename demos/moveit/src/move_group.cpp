@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 	while(in != 'q' && !g_caught_sigint){
 		//planning_scene_interface.addCollisionObjects(collision_objects);
 		group.setPlanningTime(5.0); //10 second maximum for collision computation
-		group.setNumPlanningAttempts(100);
+		group.setNumPlanningAttempts(10);
 		//group.setGoalTolerance(0.0001);
 		group.clearPoseTargets();
 		if( in == '1'){
@@ -162,14 +162,15 @@ int main(int argc, char **argv)
 			target_pose1.position.x = .22;//x;
 			target_pose1.position.y = -.22;//y;
 			target_pose1.position.z = .389;//z;
-			group.setApproximateJointValueTarget(target_pose1, "mico_link_hand");
+			//group.setApproximateJointValueTarget(target_pose1, "mico_end_effector");
 			//group.setPoseTarget(target_pose1, "mico_link_hand");
 			//group.setStartState(*group.getCurrentState());
-			//group.setPositionTarget(x,y,z,"mico_link_hand");
-			//group.setRPYTarget(0,0,0,"mico_link_hand");
+			group.setPositionTarget(x,y,z,"mico_end_effector");
+			//group.setRPYTarget(0,0,0,"mico_end_effector");
+			group.setOrientationTarget(q.x, q.y, q.z, q.w, "mico_end_effector");
 			//publish pose
 			geometry_msgs::PoseStamped stampOut;
-			stampOut.header.frame_id = "/root_link";
+			stampOut.header.frame_id = "/mico_base_link";
 			stampOut.pose = target_pose1;
 			stampOut.pose.orientation = target_pose1.orientation;
 			
