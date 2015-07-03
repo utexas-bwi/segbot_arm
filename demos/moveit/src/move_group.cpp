@@ -64,6 +64,7 @@ int main(int argc, char **argv)
 	ROS_INFO("Reference frame: %s", group.getEndEffectorLink().c_str());
 	//create a target goal pose
 	
+	//group.setPlannerId("RRTkConfigDefault");
 
 	//object placement
 	moveit_msgs::CollisionObject collision_object;
@@ -122,12 +123,15 @@ int main(int argc, char **argv)
 	char in;
 	std::cout << "Enter 1 for a joint command, 2 for an EF command: ";
 	std::cin >> in;
-	planning_scene_interface.addCollisionObjects(collision_objects);
+	//planning_scene_interface.addCollisionObjects(collision_objects);
 	while(in != 'q' && !g_caught_sigint){
-		planning_scene_interface.addCollisionObjects(collision_objects);
+		//planning_scene_interface.addCollisionObjects(collision_objects);
 		group.setPlanningTime(5.0); //10 second maximum for collision computation
+		group.setNumPlanningAttempts(100);
+		//group.setGoalTolerance(0.0001);
+		group.clearPoseTargets();
 		if( in == '1'){
-			std::vector<double> q_vals;
+			/*std::vector<double> q_vals;
 			std::cout << "Please specify 6 joint angles for a custom plan. Alternatively, enter the number of a preset." << std::endl;
 			for(int i = 1; i < 7; i++){
 				double in_q;
@@ -143,7 +147,7 @@ int main(int argc, char **argv)
 				std::cin.clear();
 				}
 
-			group.setJointValueTarget(q_vals);
+			group.setJointValueTarget(q_vals);*/
 		}
 		else if( in == '2'){
 			double x,y,z;
@@ -152,14 +156,17 @@ int main(int argc, char **argv)
 			std::cout << "Z: "; std::cin >> z;
 			geometry_msgs::Pose target_pose1;
 			ros::spinOnce();
-			target_pose1.orientation = q;
-			target_pose1.position.x = x;
-			target_pose1.position.y = y;
-			target_pose1.position.z = z;
-			
-			group.setPoseTarget(target_pose1);
-			group.setStartState(*group.getCurrentState());
-			
+			target_pose1.orientation.w = 1;
+
+
+			target_pose1.position.x = .22;//x;
+			target_pose1.position.y = -.22;//y;
+			target_pose1.position.z = .389;//z;
+			group.setApproximateJointValueTarget(target_pose1, "mico_link_hand");
+			//group.setPoseTarget(target_pose1, "mico_link_hand");
+			//group.setStartState(*group.getCurrentState());
+			//group.setPositionTarget(x,y,z,"mico_link_hand");
+			//group.setRPYTarget(0,0,0,"mico_link_hand");
 			//publish pose
 			geometry_msgs::PoseStamped stampOut;
 			stampOut.header.frame_id = "/root_link";
