@@ -32,13 +32,3 @@ joint_limits:
     max_velocity: 0.35
     has_acceleration_limits: false
     max_acceleration: 0
-  mico_joint_finger_1:
-    has_velocity_limits: true
-    max_velocity: 5
-    has_acceleration_limits: false
-    max_acceleration: 0
-  mico_joint_finger_2:
-    has_velocity_limits: true
-    max_velocity: 5
-    has_acceleration_limits: false
-    max_acceleration: 0
