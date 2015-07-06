@@ -68,13 +68,14 @@ int main(int argc, char **argv)
 		if(in == '1'){
 			group.clearPoseTargets();
 			for(int i = 0; i < 2; i++){
-				std::cin >> in;
-				if( in == '1' && i == 1){
+				if(i == 1){
 					ROS_INFO("Please move the arm to the desired start position and enter '1' when ready to capture.");
+					std::cin >> in;
 					group.setStartState(*group.getCurrentState());
 				}
-				else if(in == '1' && i == 0){			
+				else if(i == 0){			
 					ROS_INFO("Please move the arm to the desired end position and enter '1' when ready to capture.");
+					std::cin >> in;
 					ros::spinOnce();
 					//group.setApproximateJointValueTarget(pose, "mico_end_effector");
 					//group.setPoseTarget(pose.pose, "mico_link_hand");
