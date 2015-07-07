@@ -7,7 +7,6 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
-#include <jaco_msgs/JointAngles.h>
 //used for assignment of vector
 #include <boost/assign/std/vector.hpp>
 //services
@@ -19,18 +18,12 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <boost/foreach.hpp>
-#include <sensor_msgs/JointState.h>
-
 #define foreach BOOST_FOREACH
 
 using namespace boost::assign;
 bool g_caught_sigint = false;
 
-geometry_msgs::PoseStamped pose_start;
-geometry_msgs::PoseStamped pose_final;
-geometry_msgs::PoseStamped pose_current;
-
-std::vector<double> angles_current;
+geometry_msgs::Pose pose;
 void sig_handler(int sig){
 	g_caught_sigint = true;
 	ROS_INFO("caugt sigint, init shutdown seq...");
@@ -38,17 +31,11 @@ void sig_handler(int sig){
 	exit(1);
 };
 void toolpos_cb(const geometry_msgs::PoseStamped &msg){
-	pose_current = msg;
+	pose = msg.pose;
 }
-//Joint state cb
-void joint_state_cb(const sensor_msgs::JointState &input){
-	angles_current.clear();
-	for(int i = 0; i < 6; i++){
-		angles_current.push_back(input.position.at(i));
-	}
-}
-int main(int argc, char **argv){
-	ros::init(argc, argv, "move_group_interface");
+int main(int argc, char **argv)
+{
+	ros::init(argc, argv, "move_group_interface_tutorial");
 	ros::NodeHandle node_handle;
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
@@ -60,7 +47,6 @@ int main(int argc, char **argv){
 	std::cout << "Please ensure that demo.launch has been run!" << std::endl;
 	//subscribers
 	ros::Subscriber sub_tool = node_handle.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
-	ros::Subscriber sub_angles = node_handle.subscribe ("/joint_states", 1, joint_state_cb);
 	
 	moveit::planning_interface::MoveGroup group("arm"); //this is the specific group name you'd like to move
 
@@ -80,27 +66,21 @@ int main(int argc, char **argv){
 		std::cout << "MAIN MENU: q for quit, 1 for record, 2 for playback" << std::endl;		
 		std::cin >> in;
 		if(in == '1'){
-			//group.clearPoseTargets();
+			group.clearPoseTargets();
 			for(int i = 0; i < 2; i++){
-				if(i == 1){
+				std::cin >> in;
+				if( in == '1' && i == 1){
 					ROS_INFO("Please move the arm to the desired start position and enter '1' when ready to capture.");
-					std::cin >> in;
-					//ros::spinOnce();
-					//pose_start = pose_current;
-					group.setStartStateToCurrentState();
+					group.setStartState(*group.getCurrentState());
 				}
-				else if(i == 0){			
+				else if(in == '1' && i == 0){			
 					ROS_INFO("Please move the arm to the desired end position and enter '1' when ready to capture.");
-					std::cin >> in;
 					ros::spinOnce();
-					pose_final = pose_current;
-					pose_final.header.frame_id = "base_link";
-					group.setJointValueTarget(angles_current);
 					//group.setApproximateJointValueTarget(pose, "mico_end_effector");
 					//group.setPoseTarget(pose.pose, "mico_link_hand");
-					//group.setPositionTarget(pose_final.position.x,pose_final.position.y,pose_final.position.z,"mico_end_effector");
+					group.setPositionTarget(pose.position.x,pose.position.y,pose.position.z,"mico_end_effector");
 					//group.setRPYTarget(0,0,0,"mico_end_effector");
-					//group.setOrientationTarget(pose_final.orientation.x, pose_final.orientation.y, pose_final.orientation.z, pose_final.orientation.w, "mico_end_effector");
+					group.setOrientationTarget(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w, "mico_end_effector");		
 				}
 				if(i == 1){
 					moveit::planning_interface::MoveGroup::Plan my_plan;

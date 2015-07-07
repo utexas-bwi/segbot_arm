@@ -32,7 +32,7 @@ main (int argc, char *argv[])
 		ros::NodeHandle nh;
 	    
 	    ros::Publisher pub = nh.advertise<std_msgs::Float64MultiArray>("/audio_samples", 10);
-		ROS_INFO("Ready to record and process audio data.");
+		ROS_INFO("Ready to publish audio data.");
 	
 		//open a handle to the microphone
 		capture_handle = open_mic_capture("hw:2,0",SAMPLE_RATE);
@@ -43,7 +43,6 @@ main (int argc, char *argv[])
 		short buf[128];
 		
 		while (ros::ok()){
-			
 			if ((err = snd_pcm_readi (capture_handle, buf, BUFF_SIZE)) != BUFF_SIZE) {
 				fprintf (stderr, "read from audio interface failed (%s)\n",snd_strerror (err));
 				exit (1);
@@ -61,13 +60,11 @@ main (int argc, char *argv[])
 							msg.data.push_back(sampleData[i]);
 						}
 						pub.publish(msg);
-						
 						sampleData.clear();
 					}
 		    	}
+			}
 		}
-	
 		snd_pcm_close (capture_handle);
 		exit (0);
-	}
 }

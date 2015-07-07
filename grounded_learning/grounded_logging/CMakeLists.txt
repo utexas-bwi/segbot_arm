@@ -183,7 +183,7 @@ add_executable(audio_logging_server src/audio_logging_server.cpp)
 target_link_libraries(audio_publisher ${catkin_LIBRARIES} ${ALSA_LIBRARIES})
 add_dependencies(audio_publisher grounded_logging_gencpp)
 
-target_link_libraries(audio_logging_server ${catkin_LIBRARIES} ${ALSA_LIBRARIES} ${FFTW_LIBRARIES} ${SNDFILE_LIBRARIES})
+target_link_libraries(audio_logging_server ${catkin_LIBRARIES} ${ALSA_LIBRARIES} ${FFTW_LIBRARIES} ${SNDFILE_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(audio_logging_server grounded_logging_gencpp)
 
 #############

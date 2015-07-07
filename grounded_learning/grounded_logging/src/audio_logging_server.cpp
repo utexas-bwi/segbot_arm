@@ -1,20 +1,22 @@
 // Run the server in the following way 
 // Run the publisher first --> rosrun grounded_logging audio_publisher
 // rosrun grounded_logging audio_logging_server
-// rosservice call <arg1> <arg2>
+// rosservice call <arg1> <arg2> <arg3>
 
 #include "ros/ros.h"
+#include "ros/time.h"
 #include "std_msgs/String.h"
 #include <stdio.h>
 #include <signal.h> 
 #include <iostream>
 #include <fstream>
-#include <stdlib.h>
+#include <stdlib.h> 
 #include "std_msgs/Float64MultiArray.h"
 #include "grounded_logging/ProcessAudio.h"
 #include "include/alsa_utils.h"
 #include "include/fft_calculator_dq.h"				//Have to install libfftw3-dev
 #include <sndfile.hh>								//Have to install libsndfile1-dev
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 
@@ -30,18 +32,24 @@ const static int BUFF_SIZE = 128;
 
 bool g_caught_sigint = false;
 
+//array to store the raw data
+std::vector<double> sampleData;
+//matrix to store the fft
+std::vector< std::vector<double> > fftData;
+//strings to store the filenames
+string wavFileName;
+string outputDftFileName;
+int c = 0;
+int num_fft_columns = 0;
+FFT_calculator* fft_calc;
+time_t ltime;   
+
 snd_pcm_t *capture_handle;
 
-int i,j;
-int err;
-short buf[128];
-std::vector<double> sampleData;
-string wavFileName;
+// should start recording or not				
+bool recording_samples;          
 
-//bool startRecordingReceived;      // do we start recording
-//bool stopRecordingReceived;       // do we stop recording
-bool recording_samples;          //are we recording or not
-
+// function to handle Ctrl-C
 void sig_handler(int sig)
 {
 	g_caught_sigint = true;
@@ -49,34 +57,86 @@ void sig_handler(int sig)
 	exit (0);
 };
 
+// function to return the timestamp in local time
+/*std::string get_time_stamp(){
+	ltime = time(NULL);        // get current calendar time
+	string timeStamp = asctime(localtime(&ltime));
+	// Replace spaces, colons and slashes as they are not allowed in filenames
+	for(int i = 0; i<timeStamp.length(); ++i){
+        if (timeStamp[i] == '/' || timeStamp[i] == ':' || timeStamp[i] == '\n')
+            timeStamp[i] = '-';
+        if (timeStamp[i] == ' ')
+			timeStamp[i] = '_';
+    }
+    return timeStamp;
+}*/
+
+// callback function to process the published audio msgs
 void listen_audio_data(const std_msgs::Float64MultiArrayConstPtr& msg){
 	if(recording_samples == true){
 		for(unsigned int i=0;i<msg->data.size();i++){
 			sampleData.push_back((double)msg->data[i]);
 		}
+		
+		for (unsigned int j = 0; j < msg->data.size(); j++){	
+			if (fft_calc->add_sample_RT((float)msg->data[j])){
+				//get last sample
+				vector<double> next_fft = fft_calc->get_last_fft_column();			
+				fftData.push_back(next_fft);
+				num_fft_columns++;
+			}
+			c++;
+		}
+		printf("Listened for %i samples and %i fft columns...\n",c,num_fft_columns);
 	}
 }
 
-//add a callback function
 //in the callback function, if recording_samples is true, then add the samples to the vector that we store
 bool audio_service_callback(grounded_logging::ProcessAudio::Request &req, 
 							grounded_logging::ProcessAudio::Response &res){	
 	if (req.start == 1){
-		//startRecordingReceived = true;
 		recording_samples = true;
-		//also store the filename that was in the request
+		
+		//also store the filenames that are in the request
 		wavFileName = req.outputRawFileName;
-		// string outputDftFileName = req.outputDftFileName;      ----> Add back when doing DFT
+		outputDftFileName = req.outputDftFileName;
+		
+		//get the start time of recording
+		double begin = ros::Time::now().toSec();
+		string startTime = boost::lexical_cast<std::string>(begin);
+		
+		// append start timestamp with filenames
+		wavFileName.append("_"+startTime+".wav");
+		outputDftFileName.append("_"+startTime+".txt");
+		ROS_INFO("Filename1: %s", wavFileName.c_str());
+		ROS_INFO("Filename2: %s", outputDftFileName.c_str());
 		
 		//clear out results
 		sampleData.clear();
+		fftData.clear();
+		c = 0;
+		num_fft_columns = 0;
 	}
 	else {
-		//stopRecordingReceived = true;
-		//set a flag for stop recording
+		//set a flag to stop recording
 		recording_samples = false;
+			
+		//save the fft data to the file
+		std::ofstream outputDftFile(outputDftFileName.c_str());
+		if(!outputDftFile.is_open()){
+			std::cout<< "Could not open the file to store\n";
+			return -1;
+		}
+		for (unsigned int k=0; k < fftData.size(); k++){
+			for(unsigned int l=0; l<fftData[k].size(); l++){
+				if(l == fftData[k].size()-1)
+					outputDftFile << fftData[k].at(l) << endl;
+				else
+					outputDftFile << fftData[k].at(l) << ",";
+			}
+		}
 		
-		//save the data to the file
+		//save the raw data to the file
 		SndfileHandle outputRawFile(wavFileName.c_str(), SFM_WRITE, format, channel, SAMPLE_RATE);
 		if(not outputRawFile){
 			("Could not create the .wav file");
@@ -97,6 +157,10 @@ int main (int argc, char** argv)
 	// Initialize ROS
 	ros::init (argc, argv, "audio_logging_server");
 	ros::NodeHandle nh;
+	
+	// Intialize FFT
+	fft_calc = new FFT_calculator(NFFT,FFT_WIN,NOVERLAP);	
+	fft_calc->init_RT_mode();	
 		
 	//Set up the service
 	ros::ServiceServer service = nh.advertiseService("audio_logger_service", audio_service_callback);
