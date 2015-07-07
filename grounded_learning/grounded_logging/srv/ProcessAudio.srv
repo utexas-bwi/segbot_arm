@@ -1,4 +1,5 @@
 int64 start
 string outputRawFileName
+string outputDftFileName
 ---
 bool success

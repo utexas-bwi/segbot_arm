@@ -142,11 +142,11 @@ add_executable(object_feature_extraction src/object_feature_extraction.cpp)
 add_dependencies(object_feature_extraction segbot_arm_perception_gencpp)
 target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(side_grasp_node src/side_grasp_node.cpp)
-target_link_libraries(side_grasp_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+#add_executable(side_grasp_node src/side_grasp_node.cpp)
+#target_link_libraries(side_grasp_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(top_grasp_node src/top_grasp_node.cpp)
-target_link_libraries(top_grasp_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+#add_executable(top_grasp_node src/top_grasp_node.cpp)
+#target_link_libraries(top_grasp_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 # add_executable(object_classification src/object_classification.cpp)
 # add_dependencies(object_classification segbot_arm_perception_gencpp)
