@@ -61,6 +61,7 @@ int main(int argc, char **argv){
 	//subscribers
 	ros::Subscriber sub_tool = node_handle.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
 	ros::Subscriber sub_angles = node_handle.subscribe ("/joint_states", 1, joint_state_cb);
+
 	
 	moveit::planning_interface::MoveGroup group("arm"); //this is the specific group name you'd like to move
 
@@ -71,7 +72,7 @@ int main(int argc, char **argv){
 	
 	group.setPlanningTime(5.0); //10 second maximum for collision computation
 	group.setNumPlanningAttempts(10);
-		
+	group.allowReplanning(true);
 	char in;
 	int count = 0;
 	std::cout << "For each trajectory, 2 key presses are required. When prompted, move the arm to the desired end position and press the first instructed key." << std::endl;
@@ -105,6 +106,12 @@ int main(int argc, char **argv){
 				if(i == 1){
 					moveit::planning_interface::MoveGroup::Plan my_plan;
 					bool success = group.plan(my_plan);
+					int count = 0;
+					if(success == moveit_msgs::MoveItErrorCodes::INVALID_MOTION_PLAN && count < 3){
+						ROS_INFO("Plan with collision detected. Replanning...");
+						success = group.plan(my_plan);
+						count++;
+					}
 					ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
 					if(success){
 						std::string filename;
