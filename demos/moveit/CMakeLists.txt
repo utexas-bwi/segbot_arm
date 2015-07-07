@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  rosbag
   geometry_msgs
   moveit_ros_planning_interface
 )
