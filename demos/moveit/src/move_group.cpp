@@ -13,10 +13,18 @@
 #include "moveit_utils/MicoController.h"
 #include "ros/ros.h"
 #include "geometry_msgs/Quaternion.h"
-using namespace boost::assign;
 
+#include <ros/package.h>
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
+using namespace boost::assign;
+bool writeTrajToFile = true;
 bool g_caught_sigint = false;
-geometry_msgs::Quaternion q;
+geometry_msgs::PoseStamped cur;
+
 void sig_handler(int sig){
 	g_caught_sigint = true;
 	ROS_INFO("caugt sigint, init shutdown seq...");
@@ -24,7 +32,7 @@ void sig_handler(int sig){
 	exit(1);
 };
 void toolpos_cb(const geometry_msgs::PoseStamped &msg){
-	q = msg.pose.orientation;
+	cur = msg;
 }
 int main(int argc, char **argv)
 {
@@ -131,7 +139,7 @@ int main(int argc, char **argv)
 		//group.setGoalTolerance(0.0001);
 		group.clearPoseTargets();
 		if( in == '1'){
-			/*std::vector<double> q_vals;
+			std::vector<double> q_vals;
 			std::cout << "Please specify 6 joint angles for a custom plan. Alternatively, enter the number of a preset." << std::endl;
 			for(int i = 1; i < 7; i++){
 				double in_q;
@@ -147,7 +155,7 @@ int main(int argc, char **argv)
 				std::cin.clear();
 				}
 
-			group.setJointValueTarget(q_vals);*/
+			group.setJointValueTarget(q_vals);
 		}
 		else if( in == '2'){
 			double x,y,z;
@@ -162,15 +170,17 @@ int main(int argc, char **argv)
 			target_pose1.position.x = .22;//x;
 			target_pose1.position.y = -.22;//y;
 			target_pose1.position.z = .389;//z;
-			//group.setApproximateJointValueTarget(target_pose1, "mico_end_effector");
+			ros::spinOnce();
+			cur.header.frame_id = "base_link";
+			group.setApproximateJointValueTarget(cur, "mico_end_effector");
 			//group.setPoseTarget(target_pose1, "mico_link_hand");
 			//group.setStartState(*group.getCurrentState());
-			group.setPositionTarget(x,y,z,"mico_end_effector");
+			//group.setPositionTarget(x,y,z,"mico_end_effector");
 			//group.setRPYTarget(0,0,0,"mico_end_effector");
-			group.setOrientationTarget(q.x, q.y, q.z, q.w, "mico_end_effector");
+			//group.setOrientationTarget(q.x, q.y, q.z, q.w, "mico_end_effector");
 			//publish pose
 			geometry_msgs::PoseStamped stampOut;
-			stampOut.header.frame_id = "/mico_base_link";
+			stampOut.header.frame_id = "/base_link";
 			stampOut.pose = target_pose1;
 			stampOut.pose.orientation = target_pose1.orientation;
 			
@@ -211,6 +221,36 @@ int main(int argc, char **argv)
 			}
 			else{
 				std::cout << "Not playing trajectory." << std::endl;
+			}
+			if(writeTrajToFile){
+				std::cout << "Please enter 1 to record the trajectory, 2 to read previous trajectory 'test'" << std::endl;
+				std::cin >> play;
+					if(play == '1'){
+						rosbag::Bag bag;
+						std::string path = ros::package::getPath("moveit");
+
+						bag.open(path + "/trajectories/" + "test.bag", rosbag::bagmode::Write);
+
+						bag.write("moveitTrajectory", ros::Time::now(), my_plan.trajectory_);
+
+						bag.close();
+					}
+					if(play == '2'){
+						rosbag::Bag bag;
+						std::string path = ros::package::getPath("moveit");
+
+						bag.open(path + "/trajectories/" + "test.bag", rosbag::bagmode::Read);
+						
+						rosbag::View view(bag, rosbag::TopicQuery("moveitTrajectory"));
+						BOOST_FOREACH(rosbag::MessageInstance const m, view)
+						{
+							moveit_msgs::RobotTrajectory::ConstPtr traj = m.instantiate<moveit_msgs::RobotTrajectory>();
+							if (traj != NULL)
+								std::cout << traj->joint_trajectory << std::endl;
+						}
+
+						bag.close();
+					}
 			}
 		}
 		std::cout << "Enter 'q' to quit, 1 to send a joint pose goal, 2 to send cart. goal: ";
