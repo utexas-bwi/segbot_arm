@@ -7,6 +7,7 @@ project(moveit)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  rosbag
   std_msgs
   geometry_msgs
   moveit_ros_planning_interface
