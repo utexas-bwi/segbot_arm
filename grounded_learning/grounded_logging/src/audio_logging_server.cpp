@@ -21,7 +21,7 @@
 using namespace std;
 
 //For writing to the .wav file
-const int format = SF_FORMAT_WAV | SF_FORMAT_DOUBLE;        // SF_FORMAT_FLOAT or SF_FORMAT_PCM_16 depending on what you are storing
+const int format = SF_FORMAT_WAV | SF_FORMAT_FLOAT;        // SF_FORMAT_FLOAT or SF_FORMAT_PCM_16 depending on what you are storing
 const int channel = 1;        								// 1-Mono and 2-Stereo
 const static int SAMPLE_RATE = 44100;						// Frequency of the microphone
 const static int BUFF_SIZE = 128;
@@ -33,7 +33,7 @@ const static int BUFF_SIZE = 128;
 bool g_caught_sigint = false;
 
 //array to store the raw data
-std::vector<double> sampleData;
+std::vector<float> sampleData;
 //matrix to store the fft
 std::vector< std::vector<double> > fftData;
 //strings to store the filenames
@@ -75,11 +75,11 @@ void sig_handler(int sig)
 void listen_audio_data(const std_msgs::Float64MultiArrayConstPtr& msg){
 	if(recording_samples == true){
 		for(unsigned int i=0;i<msg->data.size();i++){
-			sampleData.push_back((double)msg->data[i]);
+			sampleData.push_back((float)msg->data[i]);
 		}
 		
 		for (unsigned int j = 0; j < msg->data.size(); j++){	
-			if (fft_calc->add_sample_RT((float)msg->data[j])){
+			if (fft_calc->add_sample_RT((double)msg->data[j])){
 				//get last sample
 				vector<double> next_fft = fft_calc->get_last_fft_column();			
 				fftData.push_back(next_fft);
@@ -143,7 +143,7 @@ bool audio_service_callback(grounded_logging::ProcessAudio::Request &req,
 			return -1;
 		}
 		//convert vector to array
-		double *data = &sampleData[0];
+		float *data = &sampleData[0];
 		// write to file
 		outputRawFile.write(&data[0], sampleData.size());
 	}
