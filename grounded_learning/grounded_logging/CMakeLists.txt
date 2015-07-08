@@ -18,13 +18,13 @@ if(ALSA_FOUND)
 endif()
 
 #fftw - "libfftw3-3" and "libfftw3-dev"
-find_library(FFTW_LIBRARY
+find_library(FFTW3_LIBRARY
      NAMES fftw3 fftw)
-set(FFTW_LIBRARIES ${FFTW_LIBRARY})
+set(FFTW_LIBRARIES ${FFTW3_LIBRARY})
 if(UNIX AND NOT WIN32)
-     find_library(FFTW_libm_LIBRARY
+     find_library(FFTW3_libm_LIBRARY
          NAMES m)
-     list(APPEND FFTW_LIBRARIES ${FFTW_libm_LIBRARY})
+     list(APPEND FFTW_LIBRARIES ${FFTW3_libm_LIBRARY})
 endif()
  
 set(SNDFILE_INCLUDE_DIRS
