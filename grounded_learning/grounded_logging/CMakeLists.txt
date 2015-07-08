@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(grounded_logging)
 
+find_package( OpenCV REQUIRED)
+
 find_path(ALSA_INCLUDE_DIR NAMES asoundlib.h
           PATH_SUFFIXES alsa
           DOC "The ALSA (asound) include directory"
@@ -62,6 +64,9 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   actionlib_msgs 
   actionlib
+  sensor_msgs
+  cv_bridge
+  image_transport
 )
 
 ## System dependencies are found with CMake's conventions
@@ -108,6 +113,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    ProcessAudio.srv
+   ProcessVision.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -148,6 +154,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -167,6 +174,9 @@ add_executable(audio_publisher src/audio_publisher.cpp)
 ## Declare a cpp executable
 add_executable(audio_logging_server src/audio_logging_server.cpp)
 
+## Declare a cpp executable
+add_executable(vision_logging_server src/vision_logging_server.cpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(grounded_logging_node grounded_logging_generate_messages_cpp)
@@ -185,6 +195,9 @@ add_dependencies(audio_publisher grounded_logging_gencpp)
 
 target_link_libraries(audio_logging_server ${catkin_LIBRARIES} ${ALSA_LIBRARIES} ${FFTW_LIBRARIES} ${SNDFILE_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(audio_logging_server grounded_logging_gencpp)
+
+target_link_libraries(vision_logging_server ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(vision_logging_server grounded_logging_gencpp)
 
 #############
 ## Install ##
