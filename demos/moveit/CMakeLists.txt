@@ -108,6 +108,8 @@ include_directories(
 ## Declare a cpp executable
 add_executable(move_group src/move_group.cpp)
 add_executable(planning_pipeline src/planning_pipeline.cpp)
+add_executable(move_group_rviz_mimic src/move_group_rviz_mimic.cpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(moveit_node moveit_generate_messages_cpp)
@@ -115,6 +117,8 @@ add_executable(planning_pipeline src/planning_pipeline.cpp)
 ## Specify libraries to link a library or executable target against
  target_link_libraries(move_group ${catkin_LIBRARIES} )
  target_link_libraries(planning_pipeline ${catkin_LIBRARIES})
+ target_link_libraries(move_group_rviz_mimic ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############
