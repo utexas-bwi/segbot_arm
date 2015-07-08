@@ -65,8 +65,6 @@ void fill_goal(trajectory_msgs::JointTrajectory jt, int length){
 	}
 }
 
-
-
 bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
 
 	trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
@@ -86,17 +84,17 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 		js_goal.clear();
 		fill_goal(trajectory, trajectory_length);
 		ros::Duration last(0.0); //holds the last trajectory's time from start, and the current traj's tfs
-			ros::Duration tfs(0.0);
+		ros::Duration tfs(0.0);
 		for(int i = 0; i < trajectory_length; i++){
-					//set the target velocity
-					ros::spinOnce();
-					jv_goal.joint1 = -180/PI*trajectory.points.at(i).velocities.at(0);
-					jv_goal.joint2 = 180/PI*trajectory.points.at(i).velocities.at(1);
-					jv_goal.joint3 = -180/PI*trajectory.points.at(i).velocities.at(2);
-					jv_goal.joint4 = -180/PI*trajectory.points.at(i).velocities.at(3);
-					jv_goal.joint5 = -180/PI*trajectory.points.at(i).velocities.at(4);
-					jv_goal.joint6 = -180/PI*trajectory.points.at(i).velocities.at(5);
-			
+			//set the target velocity
+			ros::spinOnce();
+			jv_goal.joint1 = -180/PI*trajectory.points.at(i).velocities.at(0);
+			jv_goal.joint2 = 180/PI*trajectory.points.at(i).velocities.at(1);
+			jv_goal.joint3 = -180/PI*trajectory.points.at(i).velocities.at(2);
+			jv_goal.joint4 = -180/PI*trajectory.points.at(i).velocities.at(3);
+			jv_goal.joint5 = -180/PI*trajectory.points.at(i).velocities.at(4);
+			jv_goal.joint6 = -180/PI*trajectory.points.at(i).velocities.at(5);
+	
 			tfs = trajectory.points.at(i).time_from_start;
 			last_sent = ros::Time::now().toSec();
 			first_sent = ros::Time::now();
@@ -119,15 +117,15 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 					j_vel_pub.publish(empty_goal);
 					next_point = true;
 				}
-				r.sleep();
+				//r.sleep();
 			}
 			next_point = false;
 			last = trajectory.points.at(i).time_from_start;
 		}
 	}
-        //ROS_INFO("Waiting...");
-        res.done = true;
-        return true;
+	//ROS_INFO("Waiting...");
+	res.done = true;
+	return true;
 }
 int main(int argc, char **argv)
 {
