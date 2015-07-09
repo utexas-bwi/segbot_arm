@@ -13,7 +13,7 @@
 ros::Publisher j_vel_pub;
 bool g_caught_sigint=false;
 sensor_msgs::JointState js_cur;
-float tol = 0; //Should get from mico launch / param server
+float tol = 0.005; //Should get from mico launch / param server
 std::vector<float> js_goal;
 
 void sig_handler(int sig){
@@ -71,7 +71,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
     jaco_msgs::JointVelocity jv_goal;
 	bool next_point = false;
 	
-	ros::Rate r(50);
+	ros::Rate r(1000);
 	
 	double last_sent;
 	ros::Time first_sent;
@@ -119,7 +119,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 					j_vel_pub.publish(empty_goal);
 					next_point = true;
 				}
-				//r.sleep();
+				r.sleep();
 			}
 			next_point = false;
 			last = trajectory.points.at(i).time_from_start;
@@ -127,7 +127,24 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 		//ROS_INFO("At       pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
 
 	}
-	//ROS_INFO("Waiting...");
+	/*
+	* Corrective velocity at very end
+	*/
+	int i = trajectory_length - 1;
+	ros::spinOnce();
+	ROS_INFO("Sending corrective velocity message");
+	jv_goal.joint1 = -180/PI*(trajectory.points.at(trajectory_length - 1).positions.at(0) - js_cur.position.at(0))*4;
+	jv_goal.joint2 = 180/PI*(trajectory.points.at(trajectory_length - 1).positions.at(1) - js_cur.position.at(1))*4;
+	jv_goal.joint3 = -180/PI*(trajectory.points.at(trajectory_length - 1).positions.at(2) - js_cur.position.at(2))*4;
+	jv_goal.joint4 = -180/PI*(trajectory.points.at(trajectory_length - 1).positions.at(3) - js_cur.position.at(3))*4;
+	jv_goal.joint5 = -180/PI*(trajectory.points.at(trajectory_length - 1).positions.at(4) - js_cur.position.at(4))*4;
+	jv_goal.joint6 = -180/PI*(trajectory.points.at(trajectory_length - 1).positions.at(5) - js_cur.position.at(5))*4;
+	j_vel_pub.publish(jv_goal);
+	sleep(1);
+	ros::spinOnce();
+	ROS_INFO("Expecting pos: %f, %f, %f, %f, %f, %f", trajectory.points.at(i).positions.at(0), trajectory.points.at(i).positions.at(1), trajectory.points.at(i).positions.at(2), trajectory.points.at(i).positions.at(3), trajectory.points.at(i).positions.at(4), trajectory.points.at(i).positions.at(5));
+	ROS_INFO("At       pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
+
 	res.done = true;
 	return true;
 }
@@ -140,7 +157,7 @@ int main(int argc, char **argv)
     //subscriber for position check
     ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
     //publisher for velocity commands
-    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 1);
+    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
     
     ros::ServiceServer srv = n.advertiseService("mico_controller", service_cb);
     ROS_INFO("Mico joint velocity controller server started.");
