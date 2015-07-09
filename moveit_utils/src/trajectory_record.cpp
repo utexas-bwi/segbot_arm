@@ -52,7 +52,8 @@ int main(int argc, char **argv){
 	ros::NodeHandle node_handle;
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
-	
+	signal(SIGINT, sig_handler);
+
 	//button position publisher
 	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("target_trajectory/pose", 10);
 	//make controller service
@@ -112,6 +113,15 @@ int main(int argc, char **argv){
 						success = group.plan(my_plan);
 						count++;
 					}
+					bool cont = false;
+					do{
+						std::cout << "Replan? (y/n): ";
+						std::cin >> in;
+						if(in == 'y')
+							success = group.plan(my_plan);
+						else if(in == 'n')
+							cont = true;
+					}while(!cont);
 					ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
 					if(success){
 						std::string filename;
