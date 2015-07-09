@@ -20,8 +20,7 @@ bool g_caught_sigint = false;
 // should start recording or not				
 bool recording_samples;
 string generalImageFileName;
-string generalDepthImageName; 
-std::ostringstream os;   
+string generalDepthImageName;    
 
 int g_count = 0;
 
@@ -57,8 +56,9 @@ void collect_vision_rgb_data(const sensor_msgs::ImageConstPtr& msg){
 			string startTime = boost::lexical_cast<std::string>(begin);
 		
 			// append start timestamp with filenames
-			os << g_count;
-			std::string filename = generalImageFileName + "_"+startTime+"_"+os.str()+".jpg";
+			std::stringstream convert;
+			convert << g_count;
+			std::string filename = generalImageFileName+convert.str()+"_"+startTime+".jpg";
 			cv::imwrite(filename.c_str(), cv_image->image);
 			ROS_INFO("Saved image %s", filename.c_str());
 					
