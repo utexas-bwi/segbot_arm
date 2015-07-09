@@ -48,7 +48,8 @@ int main(int argc, char **argv)
 	ros::NodeHandle node_handle;
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
-	
+	signal(SIGINT, sig_handler);
+
 	//button position publisher
 	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("target_trajectory/pose", 10);
 	//make controller service
@@ -57,7 +58,7 @@ int main(int argc, char **argv)
 	ros::Subscriber sub_tool = node_handle.subscribe("/move_group/result", 1, result_cb);
 	
 	char in;
-	while(true){
+	while(in != 'q'){
 		ros::spinOnce();
 		if(gotPlan){
 			ROS_INFO("Robot trajectory recieved. Enter 1 to play");
