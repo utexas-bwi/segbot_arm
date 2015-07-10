@@ -21,7 +21,7 @@ using namespace std;
 bool g_caught_sigint = false;
 
 /* define what kind of point clouds we're using */
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
 // should start recording or not				
@@ -30,6 +30,7 @@ string generalImageFileName;
 string generalDepthImageName;    
 
 int image_count = 0;
+int pcd_count = 0;
 
 // function to handle Ctrl-C
 void sig_handler(int sig)
@@ -61,7 +62,6 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 		ROS_INFO("Saved pcd file %s", filename.c_str());
 		
 		pcd_count++;
-		
 	}
 }
 
@@ -127,7 +127,7 @@ int main (int argc, char** argv)
 	ros::Subscriber sub_depth = nh.subscribe ("/camera/depth/points", 1000, collect_vision_depth_data);
 
 	//subsribe to the vision rgb topic
-	ros::Subscriber sub_rgb = nh.subscribe ("/camera/rgb/image_color", 1000, collect_vision_rgb_data);
+	//ros::Subscriber sub_rgb = nh.subscribe ("/camera/rgb/image_color", 1000, collect_vision_rgb_data);
 		
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
