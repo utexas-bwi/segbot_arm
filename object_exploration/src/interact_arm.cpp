@@ -1,5 +1,5 @@
 #include <signal.h>
-#include <stdlib.h>
+#include <cmath>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <moveit/move_group_interface/move_group.h>
@@ -80,8 +80,8 @@ int openFull(){
 int closeComplt(){
 	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
 	jaco_msgs::SetFingersPositionGoal goal;
- 	goal.fingers.finger1 = 7000;
-	goal.fingers.finger2 = 7000;
+ 	goal.fingers.finger1 = 5000;
+	goal.fingers.finger2 = 5000;
 	goal.fingers.finger3 = 0;
 	ac.waitForServer();
 	ac.sendGoal(goal);
@@ -92,15 +92,15 @@ void lift(double distance){
 	ros::Rate r(4);
 	ros::spinOnce();
 	double base_vel = .1;
-	
+
 	geometry_msgs::TwistStamped T;
-		T.twist.linear.x= 0.0;
-		T.twist.linear.y= 0.0;
-		T.twist.linear.z= 0.1;
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=.0;
-	for(int i = 0; i < abs(distance)/base_vel/.25; i++){
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	
+	for(int i = 0; i < std::abs(distance)/base_vel/.25; i++){
 		ros::spinOnce();
 		if(distance > 0)
 			T.twist.linear.z= base_vel;
@@ -149,6 +149,7 @@ bool approachAndGrip(){
 	lift(.1);
 	sleep(.5);
 	lift(-.1);
+	sleep(.5);
 	openFull();
 	sleep(.3);
 	goHome();
@@ -178,7 +179,7 @@ int main(int argc, char **argv){
 
 
 
-	//approachAndGrip();
-	goHome();
+	approachAndGrip();
+	
 	return 0;
 }
