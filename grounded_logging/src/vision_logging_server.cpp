@@ -10,19 +10,26 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <cv_bridge/cv_bridge.h>
-#include <camera_calibration_parsers/parse.h>
-#include <boost/format.hpp>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/io/io.h>
+#include <pcl/io/pcd_io.h>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 
 bool g_caught_sigint = false;
+
+/* define what kind of point clouds we're using */
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> PointCloudT;
 
 // should start recording or not				
 bool recording_samples;
 string generalImageFileName;
 string generalDepthImageName;    
 
-int g_count = 0;
+int image_count = 0;
 
 // function to handle Ctrl-C
 void sig_handler(int sig)
@@ -34,6 +41,26 @@ void sig_handler(int sig)
 //callback funtion to store depth images
 void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 	if(recording_samples == true){
+		 if ((msg->width * msg->height) == 0)
+			return;
+		// General point cloud to store the whole image
+		PointCloudT::Ptr image_cloud (new PointCloudT);
+		
+		//convert the msg to PCL format
+		pcl::fromROSMsg (*msg, *image_cloud);
+		
+		//get the start time of recording
+		double begin = ros::Time::now().toSec();
+		string startTime = boost::lexical_cast<std::string>(begin);
+		
+		// append start timestamp with filenames
+		std::stringstream convert;
+		convert << pcd_count;
+		std::string filename = generalDepthImageName+convert.str()+"_"+startTime+".pcd";
+		pcl::io::savePCDFileASCII(filename, *image_cloud);
+		ROS_INFO("Saved pcd file %s", filename.c_str());
+		
+		pcd_count++;
 		
 	}
 }
@@ -57,12 +84,12 @@ void collect_vision_rgb_data(const sensor_msgs::ImageConstPtr& msg){
 		
 			// append start timestamp with filenames
 			std::stringstream convert;
-			convert << g_count;
+			convert << image_count;
 			std::string filename = generalImageFileName+convert.str()+"_"+startTime+".jpg";
 			cv::imwrite(filename.c_str(), cv_image->image);
 			ROS_INFO("Saved image %s", filename.c_str());
 					
-			g_count++;
+			image_count++;
 		}
 	}
 }
@@ -76,7 +103,7 @@ bool vision_service_callback(grounded_logging::ProcessVision::Request &req,
 		
 		//also store the filenames that are in the request
 		generalImageFileName = req.generalImageFileName;
-		// generalDepthImageName = req.generalDepthImageName;        ---> uncomment when doing depth images
+		generalDepthImageName = req.generalDepthImageName;       
 	}
 	else{
 		//set a flag to stop recording
@@ -97,7 +124,7 @@ int main (int argc, char** argv)
 	ros::ServiceServer service = nh.advertiseService("vision_logger_service", vision_service_callback);
 	
 	//subscribe to the vision depth topic
-	//image_transport::Subscriber sub_depth = nh.subscribe ("/camera/depth_registered/points", 1000, collect_vision_depth_data);
+	ros::Subscriber sub_depth = nh.subscribe ("/camera/depth/points", 1000, collect_vision_depth_data);
 
 	//subsribe to the vision rgb topic
 	ros::Subscriber sub_rgb = nh.subscribe ("/camera/rgb/image_color", 1000, collect_vision_rgb_data);

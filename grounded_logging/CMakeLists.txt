@@ -66,7 +66,8 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   sensor_msgs
   cv_bridge
-  image_transport
+  pcl_ros
+  pcl_conversions
 )
 
 ## System dependencies are found with CMake's conventions
@@ -196,7 +197,7 @@ add_dependencies(audio_publisher grounded_logging_gencpp)
 target_link_libraries(audio_logging_server ${catkin_LIBRARIES} ${ALSA_LIBRARIES} ${FFTW_LIBRARIES} ${SNDFILE_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(audio_logging_server grounded_logging_gencpp)
 
-target_link_libraries(vision_logging_server ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(vision_logging_server ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
 add_dependencies(vision_logging_server grounded_logging_gencpp)
 
 #############
