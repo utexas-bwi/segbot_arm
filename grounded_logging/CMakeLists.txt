@@ -178,6 +178,9 @@ add_executable(audio_logging_server src/audio_logging_server.cpp)
 ## Declare a cpp executable
 add_executable(vision_logging_server src/vision_logging_server.cpp)
 
+## Declare a cpp executable
+add_executable(point_cloud_viewer src/point_cloud_viewer.cpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(grounded_logging_node grounded_logging_generate_messages_cpp)
@@ -199,6 +202,8 @@ add_dependencies(audio_logging_server grounded_logging_gencpp)
 
 target_link_libraries(vision_logging_server ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
 add_dependencies(vision_logging_server grounded_logging_gencpp)
+
+target_link_libraries(point_cloud_viewer ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 #############
 ## Install ##

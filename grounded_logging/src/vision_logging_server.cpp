@@ -15,6 +15,13 @@
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
 #include <boost/lexical_cast.hpp>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
 
 using namespace std;
 
@@ -46,6 +53,8 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 			return;
 		// General point cloud to store the whole image
 		PointCloudT::Ptr image_cloud (new PointCloudT);
+		PointCloudT::Ptr cloud_plane (new PointCloudT);
+		PointCloudT::Ptr image_cloud_filtered (new PointCloudT);
 		
 		//convert the msg to PCL format
 		pcl::fromROSMsg (*msg, *image_cloud);
@@ -58,8 +67,54 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 		std::stringstream convert;
 		convert << pcd_count;
 		std::string filename = generalDepthImageName+convert.str()+"_"+startTime+".pcd";
-		pcl::io::savePCDFileASCII(filename, *image_cloud);
+		
+		//Before saving, do a z-filter
+		pcl::PassThrough<PointT> pass;
+		pass.setInputCloud (image_cloud);
+		pass.setFilterFieldName ("z");
+		pass.setFilterLimits (0.0, 1.15);
+		pass.filter (*image_cloud);
+		
+		//Place fitting
+		pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+		pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+		// Create the segmentation object
+		pcl::SACSegmentation<PointT> seg;
+		// Optional
+		seg.setOptimizeCoefficients (true);
+		// Mandatory
+		seg.setModelType (pcl::SACMODEL_PLANE);
+		seg.setMethodType (pcl::SAC_RANSAC);
+		seg.setMaxIterations (1000);
+		seg.setDistanceThreshold (0.01);
+		
+		// Create the filtering object
+		pcl::ExtractIndices<PointT> extract;
+		
+		// Segment the largest planar component from the remaining cloud
+		seg.setInputCloud (image_cloud);
+		seg.segment (*inliers, *coefficients);
+		
+		// Extract the plane
+		extract.setInputCloud (image_cloud);
+		extract.setIndices (inliers);
+		extract.setNegative (false);
+		extract.filter (*cloud_plane);
+		
+		//extract everything else
+		extract.setNegative (true);
+		extract.filter (*image_cloud_filtered);
+			
+		//Save the cloud to a .pcd file
+		pcl::io::savePCDFileASCII(filename, *image_cloud_filtered);
 		ROS_INFO("Saved pcd file %s", filename.c_str());
+		
+		/*std::cerr << "Start Cloud Viewer..." << std::endl;
+		std::cerr << "z-filtered point cloud" << std::endl;
+		pcl::visualization::CloudViewer viewer2 ("plane segmentation");
+		viewer2.showCloud (image_cloud_filtered);
+		while (!viewer2.wasStopped ());
+			return;*/
 		
 		pcd_count++;
 	}
