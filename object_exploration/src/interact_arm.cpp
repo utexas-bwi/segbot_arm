@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <stdlib.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <moveit/move_group_interface/move_group.h>
@@ -14,7 +15,7 @@
 #include "moveit_utils/MicoController.h"
 #include "ros/ros.h"
 #include "geometry_msgs/Pose.h"
-
+#include "jaco_msgs/HomeArm.h"
 #include <ros/package.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
@@ -30,6 +31,13 @@
 #include <actionlib/client/simple_action_client.h>
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
+#include "jaco_msgs/ArmJointAnglesAction.h"
+#include "jaco_msgs/ArmPoseAction.h"
+
+
+#include <dlfcn.h>
+#include "KinovaTypes.h"
+#include "Kinova.API.UsbCommandLayerUbuntu.h"
 
 #define foreach BOOST_FOREACH
 
@@ -40,11 +48,20 @@ float f1;
 float f2;
 ros::Publisher c_vel_pub_;
 ros::ServiceClient movement_client;
+ros::ServiceClient home_client;
 
 //checks fingers position - used for object holding assurance
 void fingers_cb(const jaco_msgs::FingerPosition input){
 	f1 = input.finger1;
 	f2 = input.finger2;
+}
+
+int goHome(){
+	jaco_msgs::HomeArm srv;
+	if(home_client.call(srv))
+		ROS_INFO("Homeing arm");
+	else
+		ROS_INFO("Cannot contact homing service. Is it running?");
 }
 
 //opens fingers compeltely
@@ -57,7 +74,6 @@ int openFull(){
 	ac.waitForServer();
 	ac.sendGoal(goal);
 	ac.waitForResult();
- 
 }
 
 //closes the fingers completely
@@ -73,7 +89,7 @@ int closeComplt(){
 }
 //lifts ef specified distance
 void lift(double distance){
-	ros::Rate r(.24);
+	ros::Rate r(4);
 	ros::spinOnce();
 	double base_vel = .1;
 	
@@ -84,9 +100,12 @@ void lift(double distance){
 		T.twist.angular.x=0.0;
 		T.twist.angular.y=0.0;
 		T.twist.angular.z=.0;
-	for(int i = 0; i < distance/base_vel/.25; i++){
+	for(int i = 0; i < abs(distance)/base_vel/.25; i++){
 		ros::spinOnce();
-		T.twist.linear.z= base_vel;
+		if(distance > 0)
+			T.twist.linear.z= base_vel;
+		else
+			T.twist.linear.z= -base_vel;
 		c_vel_pub_.publish(T);
 		r.sleep();
 	}
@@ -127,17 +146,23 @@ bool approachAndGrip(){
 	readTrajectory("grab_from_home_1");
 	sleep(1);
 	closeComplt();
-	lift(.05);
-	
+	lift(.1);
+	sleep(.5);
+	lift(-.1);
+	openFull();
+	sleep(.3);
+	goHome();
 }
 
 int main(int argc, char **argv){
+	ros::init(argc, argv, "interact_arm");
     ros::NodeHandle n;
 	
 	//publisher for cartesian velocity
 	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
 	
 	movement_client = n.serviceClient<moveit_utils::MicoController>("mico_controller");
+	home_client = n.serviceClient<jaco_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
 
 	//create subscriber to joint angles
 	//ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
@@ -152,5 +177,8 @@ int main(int argc, char **argv){
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 
 
+
+	//approachAndGrip();
+	goHome();
 	return 0;
 }
