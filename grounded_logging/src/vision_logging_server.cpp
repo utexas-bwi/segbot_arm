@@ -30,6 +30,17 @@ bool g_caught_sigint = false;
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
+// General point cloud to store the whole image
+PointCloudT::Ptr image_cloud (new PointCloudT);
+PointCloudT::Ptr cloud_plane (new PointCloudT);
+PointCloudT::Ptr image_cloud_filtered (new PointCloudT);
+		
+//z-filter
+pcl::PassThrough<PointT> pass;
+
+//the current image pointer
+cv_bridge::CvImagePtr cv_image;
+
 // should start recording or not				
 bool recording_samples;
 string generalImageFileName;
@@ -50,10 +61,6 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 	if(recording_samples == true){
 		 if ((msg->width * msg->height) == 0)
 			return;
-		// General point cloud to store the whole image
-		PointCloudT::Ptr image_cloud (new PointCloudT);
-		PointCloudT::Ptr cloud_plane (new PointCloudT);
-		PointCloudT::Ptr image_cloud_filtered (new PointCloudT);
 		
 		//convert the msg to PCL format
 		pcl::fromROSMsg (*msg, *image_cloud);
@@ -68,41 +75,13 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 		std::string filename = generalDepthImageName+convert.str()+"_"+startTime+".pcd";
 		
 		//Before saving, do a z-filter
-		pcl::PassThrough<PointT> pass;
+		
 		pass.setInputCloud (image_cloud);
 		pass.setFilterFieldName ("z");
 		pass.setFilterLimits (0.0, 2.15);
 		pass.filter (*image_cloud);
 		
-		//Place fitting
-		/*pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
-		pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
-		// Create the segmentation object
-		pcl::SACSegmentation<PointT> seg;
-		// Optional
-		seg.setOptimizeCoefficients (true);
-		// Mandatory
-		seg.setModelType (pcl::SACMODEL_PLANE);
-		seg.setMethodType (pcl::SAC_RANSAC);
-		seg.setMaxIterations (1000);
-		seg.setDistanceThreshold (0.01);
 		
-		// Create the filtering object
-		pcl::ExtractIndices<PointT> extract;
-		
-		// Segment the largest planar component from the remaining cloud
-		seg.setInputCloud (image_cloud);
-		seg.segment (*inliers, *coefficients);
-		
-		// Extract the plane
-		extract.setInputCloud (image_cloud);
-		extract.setIndices (inliers);
-		extract.setNegative (false);
-		extract.filter (*cloud_plane);
-		
-		//extract everything else
-		extract.setNegative (true);
-		extract.filter (*image_cloud_filtered);*/
 			
 		//Save the cloud to a .pcd file
 		pcl::io::savePCDFileASCII(filename, *image_cloud);
@@ -115,7 +94,7 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 //callback funtion to store rgb images
 void collect_vision_rgb_data(const sensor_msgs::ImageConstPtr& msg){
 	if(recording_samples == true){
-		cv_bridge::CvImagePtr cv_image;
+		
 		try{	
 			cv_image = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 		}
@@ -173,10 +152,10 @@ int main (int argc, char** argv)
 	ros::ServiceServer service = nh.advertiseService("vision_logger_service", vision_service_callback);
 	
 	//subscribe to the vision depth topic
-	ros::Subscriber sub_depth = nh.subscribe ("/xtion_camera/depth_registered/points", 1000, collect_vision_depth_data);
+	//ros::Subscriber sub_depth = nh.subscribe ("/xtion_camera/depth_registered/points", 1, collect_vision_depth_data);
 
 	//subsribe to the vision rgb topic
-	ros::Subscriber sub_rgb = nh.subscribe ("/xtion_camera/rgb/image_rect_color", 1000, collect_vision_rgb_data);
+	ros::Subscriber sub_rgb = nh.subscribe ("/xtion_camera/rgb/image_rect_color", 1, collect_vision_rgb_data);
 		
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
