@@ -116,16 +116,14 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-# add_executable(object_exploration_node src/object_exploration_node.cpp)
+add_executable(interact_arm src/interact_arm.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(object_exploration_node object_exploration_generate_messages_cpp)
+add_dependencies(interact_arm interact_arm_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(object_exploration_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(interact_arm ${catkin_LIBRARIES})
 
 #############
 ## Install ##
