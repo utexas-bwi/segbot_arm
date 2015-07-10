@@ -12,7 +12,7 @@ int main (int argc, char** argv)
     pcl::PCDReader reader;
     
     // Change the name of the file to the one you want to view
-    std::string pathName = "/home/bwi/imageData/pointClouds/test0_1436556234.9214823.pcd";
+    std::string pathName = "/home/bwi/priyanka_image_data/test/test135_1436561492.7694213.pcd";
     reader.read (pathName, *image_cloud);
     
     // Convert to the templated PointCloud

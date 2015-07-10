@@ -15,7 +15,6 @@
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
 #include <boost/lexical_cast.hpp>
-#include <pcl/visualization/cloud_viewer.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/sac_segmentation.h>
@@ -28,7 +27,7 @@ using namespace std;
 bool g_caught_sigint = false;
 
 /* define what kind of point clouds we're using */
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
 // should start recording or not				
@@ -72,11 +71,11 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 		pcl::PassThrough<PointT> pass;
 		pass.setInputCloud (image_cloud);
 		pass.setFilterFieldName ("z");
-		pass.setFilterLimits (0.0, 1.15);
+		pass.setFilterLimits (0.0, 2.15);
 		pass.filter (*image_cloud);
 		
 		//Place fitting
-		pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+		/*pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
 		pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
 		// Create the segmentation object
 		pcl::SACSegmentation<PointT> seg;
@@ -103,18 +102,11 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 		
 		//extract everything else
 		extract.setNegative (true);
-		extract.filter (*image_cloud_filtered);
+		extract.filter (*image_cloud_filtered);*/
 			
 		//Save the cloud to a .pcd file
-		pcl::io::savePCDFileASCII(filename, *image_cloud_filtered);
+		pcl::io::savePCDFileASCII(filename, *image_cloud);
 		ROS_INFO("Saved pcd file %s", filename.c_str());
-		
-		/*std::cerr << "Start Cloud Viewer..." << std::endl;
-		std::cerr << "z-filtered point cloud" << std::endl;
-		pcl::visualization::CloudViewer viewer2 ("plane segmentation");
-		viewer2.showCloud (image_cloud_filtered);
-		while (!viewer2.wasStopped ());
-			return;*/
 		
 		pcd_count++;
 	}
@@ -163,6 +155,8 @@ bool vision_service_callback(grounded_logging::ProcessVision::Request &req,
 	else{
 		//set a flag to stop recording
 		recording_samples = false;
+		image_count = 0;
+		pcd_count = 0;
 	}
 	
 	res.success = true;
@@ -179,10 +173,10 @@ int main (int argc, char** argv)
 	ros::ServiceServer service = nh.advertiseService("vision_logger_service", vision_service_callback);
 	
 	//subscribe to the vision depth topic
-	ros::Subscriber sub_depth = nh.subscribe ("/camera/depth/points", 1000, collect_vision_depth_data);
+	ros::Subscriber sub_depth = nh.subscribe ("/xtion_camera/depth_registered/points", 1000, collect_vision_depth_data);
 
 	//subsribe to the vision rgb topic
-	//ros::Subscriber sub_rgb = nh.subscribe ("/camera/rgb/image_color", 1000, collect_vision_rgb_data);
+	ros::Subscriber sub_rgb = nh.subscribe ("/xtion_camera/rgb/image_rect_color", 1000, collect_vision_rgb_data);
 		
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
