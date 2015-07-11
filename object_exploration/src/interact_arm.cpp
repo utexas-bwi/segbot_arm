@@ -80,12 +80,38 @@ int openFull(){
 int closeComplt(){
 	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
 	jaco_msgs::SetFingersPositionGoal goal;
- 	goal.fingers.finger1 = 5000;
-	goal.fingers.finger2 = 5000;
+ 	goal.fingers.finger1 = 6000;
+	goal.fingers.finger2 = 6000;
 	goal.fingers.finger3 = 0;
 	ac.waitForServer();
 	ac.sendGoal(goal);
 	ac.waitForResult();
+}
+
+void approach(double distance){
+	ros::Rate r(4);
+	ros::spinOnce();
+	double base_vel = .1;
+
+	geometry_msgs::TwistStamped T;
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	
+	for(int i = 0; i < std::abs(distance)/base_vel/.25; i++){
+		ros::spinOnce();
+		if(distance > 0)
+			T.twist.linear.x= base_vel;
+		else
+			T.twist.linear.x= -base_vel;
+		c_vel_pub_.publish(T);
+		r.sleep();
+	}
+	T.twist.linear.x = 0.0;
+	c_vel_pub_.publish(T);
 }
 //lifts ef specified distance
 void lift(double distance){
@@ -113,6 +139,17 @@ void lift(double distance){
 	c_vel_pub_.publish(T);
 }
 
+void clearMsgs(double duration){
+	ros::Time start = ros::Time::now();
+	ros::Duration timeout = ros::Duration(duration);
+	ros::Rate r2(30);
+	//clears out old effort msgs
+	while( (ros::Time::now() - start) < timeout){
+		ros::spinOnce();
+		r2.sleep();
+	}
+}
+
 bool readTrajectory(std::string filename){
 	rosbag::Bag bag;
 	std::string path = ros::package::getPath("moveit_utils");
@@ -138,20 +175,39 @@ bool readTrajectory(std::string filename){
 		}
 	}	
 	bag.close();
+	clearMsgs(1.);
+}
+void push(){
+	closeComplt();
+	approach(.08);
+	clearMsgs(0.5);
+	approach(-.08);
 }
 
-bool approachAndGrip(){
-	//must be at home position
+bool approachFromHome(){
+	goHome();
 	openFull();
 	readTrajectory("grab_from_home_1");
-	sleep(1);
+}
+
+bool grabFromApch(){
+	approach(.08);
 	closeComplt();
-	lift(.1);
-	sleep(.5);
-	lift(-.1);
-	sleep(.5);
+}
+
+bool releaseAndReturn(){
 	openFull();
-	sleep(.3);
+	approach(-.08);
+}
+bool demo(){
+	approachFromHome();
+	grabFromApch();
+	clearMsgs(0.5);
+	lift(.1);
+	clearMsgs(1.0);
+	lift(-.1);
+	clearMsgs(1.0);
+	releaseAndReturn();
 	goHome();
 }
 
@@ -179,7 +235,7 @@ int main(int argc, char **argv){
 
 
 
-	approachAndGrip();
+	demo();
 	
 	return 0;
 }
