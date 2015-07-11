@@ -195,6 +195,32 @@ bool grabFromApch(){
 	closeComplt();
 }
 
+bool shake(){
+	int iterations = 2;
+	double step = .25; 
+	geometry_msgs::TwistStamped T;
+	ros::Rate r(8);
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	for(int i = 0; i < 2*3.1459*iterations/step; i++){
+		double vel = sin(i*step)/2;
+		r.sleep();
+		ROS_INFO("Got vel: %f",vel);
+		T.twist.linear.z = vel; // for circle: cos(i*step)/10;
+		T.twist.linear.y = vel;
+		c_vel_pub_.publish(T);
+	}
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+
+	c_vel_pub_.publish(T);
+}
+
 bool releaseAndReturn(){
 	openFull();
 	approach(-.08);
@@ -208,6 +234,7 @@ bool demo(){
 	lift(-.1);
 	clearMsgs(1.0);
 	releaseAndReturn();
+	push();
 	goHome();
 }
 
@@ -232,8 +259,6 @@ int main(int argc, char **argv){
 
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
-
-
 
 	demo();
 	
