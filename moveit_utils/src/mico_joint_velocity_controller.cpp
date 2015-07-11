@@ -157,7 +157,7 @@ int main(int argc, char **argv)
     //subscriber for position check
     ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
     //publisher for velocity commands
-    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 1);
     
     ros::ServiceServer srv = n.advertiseService("mico_controller", service_cb);
     ROS_INFO("Mico joint velocity controller server started.");
