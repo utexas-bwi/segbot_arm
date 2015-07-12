@@ -63,7 +63,6 @@ catkin_python_setup()
    PlanarSegmentation.srv
    TableDetectionObjectExtraction.srv
    FeatureExtraction.srv
-   LogPerception.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -121,10 +120,6 @@ add_executable(planar_segmentation_client src/planar_segmentation_client.cpp)
 add_dependencies(planar_segmentation_client segbot_arm_perception_gencpp)
 target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(log_perception src/log_perception.cpp)
-add_dependencies(log_perception segbot_arm_perception_gencpp)
-target_link_libraries(log_perception ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-
 add_executable(log_perception_action src/log_perception_action.cpp)
 add_dependencies(log_perception_action segbot_arm_perception_gencpp)
 target_link_libraries(log_perception_action ${catkin_LIBRARIES} ${PCL_LIBRARIES})
@@ -132,10 +127,6 @@ target_link_libraries(log_perception_action ${catkin_LIBRARIES} ${PCL_LIBRARIES}
 add_executable(log_perception_action_client src/log_perception_action_client.cpp)
 target_link_libraries(log_perception_action_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-
-add_executable(log_perception_client src/log_perception_client.cpp)
-add_dependencies(log_perception_client segbot_arm_perception_gencpp)
-target_link_libraries(log_perception_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(button_detection_node src/button_detection_node.cpp)
 target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
