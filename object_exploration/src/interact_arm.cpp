@@ -206,7 +206,7 @@ bool shake(){
 		double vel = sin(i*step)/2;
 		r.sleep();
 		ROS_INFO("Got vel: %f",vel);
-		T.twist.linear.z = vel; // for circle: cos(i*step)/10;
+		T.twist.linear.z = step * (vel > 0 ? 1: -1);
 		T.twist.linear.y = vel;
 		c_vel_pub_.publish(T);
 	}
@@ -224,9 +224,10 @@ bool demo(){
 	approachFromHome();
 	grabFromApch();
 	clearMsgs(0.5);
-	lift(.1);
+	lift(.3);
+	shake();
 	clearMsgs(1.0);
-	lift(-.1);
+	lift(-.3);
 	clearMsgs(1.0);
 	releaseAndReturn();
 	push();
