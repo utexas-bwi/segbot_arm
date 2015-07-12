@@ -19,7 +19,7 @@ int main (int argc, char **argv)
   ROS_INFO("Action server started, sending goal.");
   // send a goal to the action
   segbot_arm_perception::LogPerceptionGoal goal;
-  goal.filePath = ros::package::getPath("segbot_arm_perception");
+  goal.filePath = ros::package::getPath("segbot_arm_perception") + "/something";
   goal.start = true;
   ac.sendGoal(goal);
 

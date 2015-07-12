@@ -122,7 +122,7 @@ target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRA
 
 add_executable(log_perception_action src/log_perception_action.cpp)
 add_dependencies(log_perception_action segbot_arm_perception_gencpp)
-target_link_libraries(log_perception_action ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(log_perception_action ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(log_perception_action_client src/log_perception_action_client.cpp)
 target_link_libraries(log_perception_action_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})

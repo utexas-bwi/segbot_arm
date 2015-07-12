@@ -1,13 +1,17 @@
 /*
-* This ROS service logs perceptual data relating to the arm (and vision if applicable)
+* This ROS action logs perceptual data relating to the arm
 * 
 * The following series of data are logged into csv(s)
 * 	-Joint efforts
 * 	-Joint positions
 * 	-EF position
 * 
-* Output is based on the input string for the service request. A file naming scheme
-* is to be determined based on the experimental structure.
+* 
+* Output is based on the input string for the service request. 
+* 
+* File naming is as follows: input file string should contain the absolute path and the base name of the file (without extension)
+* ie: filePath should be passed in as: ~/someBaseFolder/armPerceps/object1
+* this will then be appended by the time of the experiment (and movement) and finally by the extension
 * 
 * File parsing is as follows: 6 doubles > efforts, 6 doubles > positions, 3 doubles > EF cart position
 * 
@@ -22,6 +26,7 @@
 #include <actionlib/server/simple_action_server.h>
 #include "segbot_arm_perception/LogPerceptionAction.h"
 #include "jaco_msgs/FingerPosition.h"
+#include <boost/lexical_cast.hpp>
 
 #include <vector>
 #include <iostream>
@@ -73,9 +78,11 @@ public:
   }
   
   bool createHandle(std::string filePath){
-	std::string path = filePath + "/example.csv";
-	ROS_INFO("Making %s", path.c_str());	
-	myfile.open(path.c_str());
+	double begin = ros::Time::now().toSec();
+	std::string startTime = boost::lexical_cast<std::string>(begin);
+	filePath.append("_" + startTime + ".csv");
+	ROS_INFO("Making %s", filePath.c_str());	
+	myfile.open(filePath.c_str());
 	//write header
 	myfile << "efforts,joint_position,tool_position\n";
 	return true;
