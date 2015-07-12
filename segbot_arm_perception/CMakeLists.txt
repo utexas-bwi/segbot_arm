@@ -13,6 +13,7 @@ find_package(catkin REQUIRED
 	roscpp
 	rospy
  	message_generation
+ 	actionlib_msgs
 )
 
 
@@ -66,11 +67,10 @@ catkin_python_setup()
  )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+ add_action_files(
+    FILES
+    LogPerceptionAction.action
+)
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
@@ -78,6 +78,7 @@ catkin_python_setup()
    std_msgs
    sensor_msgs
    geometry_msgs
+   actionlib_msgs
 )
 
 ###################################
@@ -122,6 +123,10 @@ target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRA
 add_executable(log_perception src/log_perception.cpp)
 add_dependencies(log_perception segbot_arm_perception_gencpp)
 target_link_libraries(log_perception ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(log_perception_action src/log_perception.cpp)
+add_dependencies(log_perception_action segbot_arm_perception_gencpp)
+target_link_libraries(log_perception_action ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(log_perception_client src/log_perception_client.cpp)
 add_dependencies(log_perception_client segbot_arm_perception_gencpp)
