@@ -34,11 +34,6 @@
 #include "jaco_msgs/ArmJointAnglesAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 
-
-#include <dlfcn.h>
-#include "KinovaTypes.h"
-#include "Kinova.API.UsbCommandLayerUbuntu.h"
-
 #define foreach BOOST_FOREACH
 
 using namespace boost::assign;
