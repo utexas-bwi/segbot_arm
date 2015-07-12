@@ -50,13 +50,13 @@ protected:
 
   ros::NodeHandle nh_;
   // NodeHandle instance must be created before this line. Otherwise strange error may occur.
-  actionlib::SimpleActionServer<segbot_arm_perception::FibonacciAction> as_; 
+  actionlib::SimpleActionServer<segbot_arm_perception::LogPerceptionAction> as_; 
   std::string action_name_;
   // create messages that are used to published feedback/result
-  learning_actionlib::FibonacciFeedback feedback_;
-  learning_actionlib::FibonacciResult result_;
+  segbot_arm_perception::LogPerceptionFeedback feedback_;
+  segbot_arm_perception::LogPerceptionResult result_;
   std::ofstream myfile;
-  bool handleMade = false;
+  bool handleMade;
   
 public:
 
@@ -65,6 +65,7 @@ public:
     action_name_(name)
   {
     as_.start();
+    handleMade = false;
   }
 
   ~LogPerceptionAction(void)
@@ -80,14 +81,14 @@ public:
 	return true;
   }
 
-  void executeCB(const learning_actionlib::FibonacciGoalConstPtr &goal){
+  void executeCB(const segbot_arm_perception::LogPerceptionGoalConstPtr &goal){
     // helper variables
     ros::Rate r(1);
     bool success = true;
 
 	if(goal->start == true){
 		if(!handleMade){
-			handleMade = createHandle(); 
+			handleMade = createHandle(goal->filePath); 
 		}
 		
 		ros::spinOnce();
@@ -112,7 +113,6 @@ public:
         as_.setPreempted();
         success = false;
       } else{
-		  write(goal->filePath);
 		  //set feedback here
 		  // publish the feedback
 		  as_.publishFeedback(feedback_);
@@ -121,6 +121,8 @@ public:
 	  }
     } else if(goal->start == false){
 		myfile.close();
+		ROS_INFO("Closing file.");	
+		handleMade = false;
 	}
 
     if(success){
@@ -175,22 +177,9 @@ void write(std::string filePath){
 	myfile.close();
 
 }
-bool log_cb(segbot_arm_perception::LogPerception::Request &req, segbot_arm_perception::LogPerception::Response &res){
-	if(req.start == true){
-		start = true;
-		write(req.filePath);
-		res.success = true;
-	}else if(req.start == false){
-		start = false;
-		write("");
-		res.success = true;
-	}
-	return res.success;
-
-}
 
 int main(int argc, char** argv){
-	ros::init(argc, argv, "arm_perceptual_log_node");
+	ros::init(argc, argv, "arm_perceptual_log_action");
 	ros::NodeHandle n;
 	signal(SIGINT, sig_handler);
 	
@@ -198,7 +187,6 @@ int main(int argc, char** argv){
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
 	ros::Subscriber sub_states = n.subscribe ("joint_states", 1, jointstate_cb);
-	ros::ServiceServer service = n.advertiseService("log_perception", log_cb);
-	FibonacciAction log(ros::this_node::getName());
+	LogPerceptionAction log(ros::this_node::getName());
 	ros::spin();
 }
