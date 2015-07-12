@@ -83,49 +83,52 @@ public:
 
   void executeCB(const segbot_arm_perception::LogPerceptionGoalConstPtr &goal){
     // helper variables
-    ros::Rate r(1);
+    ros::Rate r(15);
     bool success = true;
 
 	if(goal->start == true){
 		if(!handleMade){
-			handleMade = createHandle(goal->filePath); 
+			handleMade = createHandle(goal->filePath);
+			//as_.setSucceeded(result_);
 		}
-		
-		ros::spinOnce();
-		for(int i = 0; i < 6; i++){
-			myfile << efforts.effort[i] <<"," << joint_state.position[i] << ",";
-			if(i < 3){
-				switch(i){
-					case 0:
-						myfile << toolpos.pose.position.x << ","; break;
-					case 1:
-						myfile << toolpos.pose.position.y << ","; break;
-					case 2:
-						myfile << toolpos.pose.position.z << ","; break;
+		while(!as_.isNewGoalAvailable() && goal->start){
+			ros::spinOnce();
+			for(int i = 0; i < 6; i++){
+				myfile << efforts.effort[i] <<"," << joint_state.position[i] << ",";
+				if(i < 3){
+					switch(i){
+						case 0:
+							myfile << toolpos.pose.position.x << ","; break;
+						case 1:
+							myfile << toolpos.pose.position.y << ","; break;
+						case 2:
+							myfile << toolpos.pose.position.z << ","; break;
+					}
 				}
+				myfile << "\n";
 			}
-			myfile << "\n";
-		}
-      // check that preempt has not been requested by the client
-      if (as_.isPreemptRequested() || !ros::ok()){
-        ROS_INFO("%s: Preempted", action_name_.c_str());
-        // set the action state to preempted
-        as_.setPreempted();
-        success = false;
-      } else{
-		  //set feedback here
-		  // publish the feedback
-		  as_.publishFeedback(feedback_);
-		  // this sleep is not necessary, the sequence is computed at 1 Hz for demonstration purposes
-		  r.sleep();
+		
+		  // check that preempt has not been requested by the client
+		  if (as_.isPreemptRequested() || !ros::ok()){
+			ROS_INFO("%s: Preempted", action_name_.c_str());
+			// set the action state to preempted
+			as_.setPreempted();
+			success = false;
+		  } else{
+			  feedback_.logging = true;
+			  // publish the feedback
+			  as_.publishFeedback(feedback_);
+			  r.sleep();
+		  }
 	  }
-    } else if(goal->start == false){
-		myfile.close();
-		ROS_INFO("Closing file.");	
-		handleMade = false;
-	}
+    }
 
     if(success){
+		if(handleMade){
+			myfile.close();
+			ROS_INFO("Closing file.");
+			handleMade = false;
+		}
       result_.success = success;
       ROS_INFO("%s: Succeeded", action_name_.c_str());
       // set the action state to succeeded
