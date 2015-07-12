@@ -11,7 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   actionlib
   image_transport
-)
+  message_generation
+  )
 find_package(OpenCV REQUIRED)
 
 catkin_package(
@@ -59,8 +60,8 @@ target_link_libraries(drawShapes ${catkin_LIBRARIES})
 #draw exe
 add_executable (draw src/draw.cpp)
 target_link_libraries(draw ${catkin_LIBRARIES})
-
+add_dependencies(draw jaco_msgs_gencpp)
 #approach board
 add_executable(approach_board src/approach_board.cpp)
 target_link_libraries(approach_board ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-
+add_dependencies(approach_board segbot_arm_perception_gencpp)
