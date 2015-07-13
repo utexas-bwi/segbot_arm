@@ -1,5 +1,5 @@
 int64 start
-string outputRawFileName
-string outputDftFileName
+string outputRawFilePath
+string outputDftFilePath
 ---
 bool success

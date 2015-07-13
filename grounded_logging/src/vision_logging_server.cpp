@@ -16,11 +16,7 @@
 #include <pcl/io/pcd_io.h>
 #include <boost/lexical_cast.hpp>
 #include <pcl/filters/passthrough.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/ModelCoefficients.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
+#include <pcl/compression/octree_pointcloud_compression.h>
 
 using namespace std;
 
@@ -32,8 +28,13 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 
 // General point cloud to store the whole image
 PointCloudT::Ptr image_cloud (new PointCloudT);
-PointCloudT::Ptr cloud_plane (new PointCloudT);
-PointCloudT::Ptr image_cloud_filtered (new PointCloudT);
+// output pointcloud
+PointCloudT::Ptr image_cloud_compressed (new PointCloudT);
+
+// For point-cloud compression purposes
+pcl::io::OctreePointCloudCompression<PointT>* PointCloudEncoder;
+pcl::io::OctreePointCloudCompression<PointT>* PointCloudDecoder;
+pcl::io::compression_Profiles_e compressionProfile = pcl::io::MED_RES_ONLINE_COMPRESSION_WITH_COLOR;
 		
 //z-filter
 pcl::PassThrough<PointT> pass;
@@ -74,18 +75,36 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 		convert << pcd_count;
 		std::string filename = generalDepthImageName+convert.str()+"_"+startTime+".pcd";
 		
-		//Before saving, do a z-filter
-		
+		//Before saving, do a z-filter	
 		pass.setInputCloud (image_cloud);
 		pass.setFilterFieldName ("z");
 		pass.setFilterLimits (0.0, 2.15);
 		pass.filter (*image_cloud);
 		
+		// stringstream to store compressed point cloud
+		std::stringstream compressedData;
+
+		// instantiate point cloud compression for encoding and decoding
+		PointCloudEncoder = new pcl::io::OctreePointCloudCompression<PointT> (compressionProfile, true);
+		PointCloudDecoder = new pcl::io::OctreePointCloudCompression<PointT> ();
+    
+		//ROS_INFO("Starting compression");
 		
-			
+		// compress point cloud
+		PointCloudEncoder->encodePointCloud (image_cloud, compressedData);
+
+		// decompress point cloud
+		PointCloudDecoder->decodePointCloud (compressedData, image_cloud_compressed);	
+		
+		//ROS_INFO("Saving compressed cloud to file");
+		
 		//Save the cloud to a .pcd file
 		pcl::io::savePCDFileASCII(filename, *image_cloud);
 		ROS_INFO("Saved pcd file %s", filename.c_str());
+		
+		// delete point cloud compression instances
+		delete (PointCloudEncoder);
+		delete (PointCloudDecoder);
 		
 		pcd_count++;
 	}
@@ -128,8 +147,8 @@ bool vision_service_callback(grounded_logging::ProcessVision::Request &req,
 		recording_samples = true;
 		
 		//also store the filenames that are in the request
-		generalImageFileName = req.generalImageFileName;
-		generalDepthImageName = req.generalDepthImageName;       
+		generalImageFileName = req.generalImageFilePath;
+		generalDepthImageName = req.generalDepthImagePath;       
 	}
 	else{
 		//set a flag to stop recording

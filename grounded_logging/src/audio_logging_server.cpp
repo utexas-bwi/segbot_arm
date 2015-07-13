@@ -98,8 +98,8 @@ bool audio_service_callback(grounded_logging::ProcessAudio::Request &req,
 		recording_samples = true;
 		
 		//also store the filenames that are in the request
-		wavFileName = req.outputRawFileName;
-		outputDftFileName = req.outputDftFileName;
+		wavFileName = req.outputRawFilePath;
+		outputDftFileName = req.outputDftFilePath;
 		
 		//get the start time of recording
 		double begin = ros::Time::now().toSec();

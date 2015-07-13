@@ -1,5 +1,5 @@
 int64 start
-string generalImageFileName
-string generalDepthImageName
+string generalImageFilePath
+string generalDepthImagePath
 ---
 bool success
