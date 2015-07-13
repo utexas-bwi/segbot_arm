@@ -37,7 +37,7 @@
 #include "jaco_msgs/ArmPoseAction.h"
 
 #define foreach BOOST_FOREACH
-
+#define MINHEIGHT -0.05 //defines the height of the table relative to the mico_base
 using namespace boost::assign;
 bool g_caught_sigint = false;
 //Finger vars
@@ -103,7 +103,7 @@ sensor_msgs::JointState getStateFromBag(std::string bagName){
 	}
 	bag.close();
 	
-	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	/*actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
 	jaco_msgs::ArmJointAnglesGoal goal;
 	goal.angles.joint1 = fromFile.position[0];
 	goal.angles.joint2 = fromFile.position[1];
@@ -116,6 +116,7 @@ sensor_msgs::JointState getStateFromBag(std::string bagName){
 	ac.sendGoal(goal);
 	ROS_INFO("Trajectory goal sent!");
 	ac.waitForResult();
+	*/
 	return fromFile;
 }
 
@@ -135,7 +136,7 @@ geometry_msgs::PoseStamped getToolFromBag(std::string bagName){
 	}	
 	bag.close();
 
-	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	/*actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	jaco_msgs::ArmPoseGoal goalPose;
 	goalPose.pose.header.frame_id = fromFile.header.frame_id;
 	goalPose.pose.pose = fromFile.pose;
@@ -143,7 +144,7 @@ geometry_msgs::PoseStamped getToolFromBag(std::string bagName){
 	ROS_DEBUG("Waiting for server.");
 	ROS_INFO("Sending goal.");
 	ac.sendGoal(goalPose);
-	ac.waitForResult(); 
+	ac.waitForResult(); */
 	return fromFile;
 }
 void approach(double distance){
@@ -365,14 +366,37 @@ bool shake(double step){
 	c_vel_pub_.publish(T);
 }
 
-bool releaseAndReturn(double distance){
+bool drop(double height){
+	if(height < MINHEIGHT)
+		height = MINHEIGHT;
+	//go to that height
+	sensor_msgs::JointState drop = getStateFromBag("drop");
 	openFull();
-	approach('x', -distance);
 }
 
-bool releaseAndReturnSide(double distance){
-	openFull();
-	approach('y', distance);
+bool poke(double velocity){
+	closeComplt(7000);
+	sensor_msgs::JointState drop = getStateFromBag("poke");
+	//go to poke place
+}
+
+bool push(double velocity){
+	sensor_msgs::JointState push = getStateFromBag("push");
+	//go to push place
+	//start recording
+	//negative y velocity for a certain distance
+	//stop recording
+}
+
+bool press(double velocity){
+	sensor_msgs::JointState press = getStateFromBag("press");
+	//go to press place
+	//negative z vel
+	//start recording
+	//check efforts
+	//once touched once, stop recording
+	//start recording 'squeeze'
+	//small negative z vel
 }
 
 bool revolveJ6(double velocity){ 
@@ -404,7 +428,7 @@ bool demo(){
 	clearMsgs(0.5);
 	lift(.3);
 
-	/*shake();
+	/*shake(.2);
 	clearMsgs(1.0);
 	lift(-.3);
 	clearMsgs(1.0);
@@ -438,6 +462,5 @@ int main(int argc, char **argv){
 
 	//getStateFromBag("grab");
 	//demo();
-	shake(.1);
 	return 0;
 }
