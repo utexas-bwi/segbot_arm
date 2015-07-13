@@ -40,6 +40,7 @@
 #define MINHEIGHT -0.05 //defines the height of the table relative to the mico_base
 using namespace boost::assign;
 bool g_caught_sigint = false;
+
 //Finger vars
 float f1;
 float f2;
@@ -47,16 +48,51 @@ ros::Publisher c_vel_pub_;
 ros::ServiceClient movement_client;
 ros::ServiceClient home_client;
 
+//efforts and force detection
+bool heard_efforts = false;
+sensor_msgs::JointState current_efforts;
+sensor_msgs::JointState last_efforts;
+double total_grav_free_effort = 0;
+double total_delta;
+double delta_effort[6];
+
 //checks fingers position - used for object holding assurance
 void fingers_cb(const jaco_msgs::FingerPosition input){
 	f1 = input.finger1;
 	f2 = input.finger2;
 }
 
+//joint effort callback 
+void joint_effort_cb(const sensor_msgs::JointStateConstPtr& input){
+	
+	//compute the change in efforts if we had already heard the last one
+	if (heard_efforts){
+		for (int i = 0; i < 6; i ++){
+			delta_effort[i] = input->effort[i]-current_efforts.effort[i];
+		}
+	}
+	
+	//store the current effort
+	current_efforts = *input;
+	
+	total_grav_free_effort = 0.0;
+	for(int i = 0; i < 6; i ++){
+		if (current_efforts.effort[i] < 0.0)
+			total_grav_free_effort -= (current_efforts.effort[i]);
+		else 
+			total_grav_free_effort += (current_efforts.effort[i]);
+	}
+	
+	//calc total change in efforts
+	total_delta = delta_effort[0]+delta_effort[1]+delta_effort[2]+delta_effort[3]+delta_effort[4]+delta_effort[5];
+	
+	heard_efforts = true;
+}
+
 int goHome(){
 	jaco_msgs::HomeArm srv;
 	if(home_client.call(srv))
-		ROS_INFO("Homeing arm");
+		ROS_INFO("Homing arm");
 	else
 		ROS_INFO("Cannot contact homing service. Is it running?");
 }
@@ -250,7 +286,6 @@ void lift(double vel){
 	sleep(2);
 	//start logging here
 	
-		
 	for(int i = 0; i < std::abs(distance)/vel/.25; i++){
 		ros::spinOnce();
 		if(distance > 0)
@@ -340,7 +375,7 @@ bool approachSide(){
 bool shake(double step){
 	int iterations = 2;
 	geometry_msgs::TwistStamped T;
-	ros::Rate r(8);
+	ros::Rate r(4);
 	T.twist.linear.x= 0.0;
 	T.twist.linear.y= 0.0;
 	T.twist.linear.z= 0.0;
@@ -401,6 +436,7 @@ bool press(double velocity){
 
 bool revolveJ6(double velocity){ 
 	geometry_msgs::TwistStamped T;
+	ros::Time first_sent;
 	ros::Rate r(4);
 	T.twist.linear.x= 0.0;
 	T.twist.linear.y= 0.0;
@@ -409,16 +445,26 @@ bool revolveJ6(double velocity){
 	T.twist.angular.x= 0.0;
 	T.twist.angular.y= 0.0;
 	T.twist.angular.z= 0.0;
-	ROS_INFO("Expecting %f messages", 2/velocity/.25);
+	/*ROS_INFO("Expecting %f messages", 2/velocity/.25);
 	for(int i = 0; i < 2/velocity/.25; i++){
-		T.twist.angular.z = velocity;
 		r.sleep();
 		c_vel_pub_.publish(T);
 		ROS_INFO("Sending message %d", i);
-	}
-	T.twist.angular.z= 0.0;
+	}*/
+	
+	first_sent = ros::Time::now();
 
-	c_vel_pub_.publish(T);
+	ros::spinOnce();
+	T.twist.angular.z = velocity;
+	double total = 2/velocity;
+	while(true){
+		if(((ros::Time::now() - first_sent).toSec() >= total)){ //movement should be preempted
+			T.twist.angular.z= 0.0;
+			c_vel_pub_.publish(T);
+			break;
+		}
+		c_vel_pub_.publish(T);
+	}
 }
 
 bool demo(){
@@ -462,5 +508,7 @@ int main(int argc, char **argv){
 
 	//getStateFromBag("grab");
 	//demo();
+	//revolveJ6(.2);
+	shake(.3);
 	return 0;
 }
