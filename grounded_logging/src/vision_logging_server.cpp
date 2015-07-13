@@ -45,7 +45,7 @@ cv_bridge::CvImagePtr cv_image;
 // should start recording or not				
 bool recording_samples;
 string generalImageFileName;
-string generalDepthImageName;    
+//string generalDepthImageName;    
 
 int image_count = 0;
 int pcd_count = 0;
@@ -58,7 +58,7 @@ void sig_handler(int sig)
 };
 
 //callback funtion to store depth images
-void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
+/*void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 	if(recording_samples == true){
 		 if ((msg->width * msg->height) == 0)
 			return;
@@ -108,7 +108,7 @@ void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 		
 		pcd_count++;
 	}
-}
+}*/
 
 //callback funtion to store rgb images
 void collect_vision_rgb_data(const sensor_msgs::ImageConstPtr& msg){
@@ -148,7 +148,7 @@ bool vision_service_callback(grounded_logging::ProcessVision::Request &req,
 		
 		//also store the filenames that are in the request
 		generalImageFileName = req.generalImageFilePath;
-		generalDepthImageName = req.generalDepthImagePath;       
+		//generalDepthImageName = req.generalDepthImagePath;       
 	}
 	else{
 		//set a flag to stop recording
@@ -167,14 +167,20 @@ int main (int argc, char** argv)
 	ros::init (argc, argv, "vision_logging_server");
 	ros::NodeHandle nh;
 	
+	//to store the topic to subscribe to
+	string rgb_topic_;
+	
 	//Set up the service
 	ros::ServiceServer service = nh.advertiseService("vision_logger_service", vision_service_callback);
 	
 	//subscribe to the vision depth topic
 	//ros::Subscriber sub_depth = nh.subscribe ("/xtion_camera/depth_registered/points", 1, collect_vision_depth_data);
 
+	//get the topic from the launch file
+	nh.param<std::string>("rgb_topic", rgb_topic_, "/xtion_camera/rgb/image_rect_color");
+	
 	//subsribe to the vision rgb topic
-	ros::Subscriber sub_rgb = nh.subscribe ("/xtion_camera/rgb/image_rect_color", 1, collect_vision_rgb_data);
+	ros::Subscriber sub_rgb = nh.subscribe (rgb_topic_, 1, collect_vision_rgb_data);
 		
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
