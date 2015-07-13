@@ -83,7 +83,7 @@ int closeComplt(){
 	ac.waitForResult();
 }
 
-void approach(double distance){
+void approach(char dimension, double distance){
 	ros::Rate r(4);
 	ros::spinOnce();
 	double base_vel = .1;
@@ -98,14 +98,33 @@ void approach(double distance){
 	
 	for(int i = 0; i < std::abs(distance)/base_vel/.25; i++){
 		ros::spinOnce();
-		if(distance > 0)
-			T.twist.linear.x= base_vel;
-		else
-			T.twist.linear.x= -base_vel;
+		if(distance > 0){
+			switch(dimension){
+				case('x'):
+					T.twist.linear.x = base_vel; break;
+				case('y'):
+					T.twist.linear.y = base_vel; break;
+				case('z'):
+					T.twist.linear.z = base_vel; break;
+			}
+		}
+		else{
+			switch(dimension){
+				case('x'):
+					T.twist.linear.x = -base_vel; break;
+				case('y'):
+					T.twist.linear.y = -base_vel; break;
+				case('z'):
+					T.twist.linear.z = -base_vel; break;
+			}
+		}
 		c_vel_pub_.publish(T);
 		r.sleep();
 	}
 	T.twist.linear.x = 0.0;
+	T.twist.linear.y = 0.0;
+	T.twist.linear.z = 0.0;
+
 	c_vel_pub_.publish(T);
 }
 //lifts ef specified distance
@@ -174,22 +193,40 @@ bool readTrajectory(std::string filename){
 }
 void push(){
 	closeComplt();
-	approach(.08);
+	approach('x', .08);
 	clearMsgs(0.5);
-	approach(-.08);
+	approach('x', -.08);
+}
+void pushFromSide(double distance){
+	closeComplt();
+	approach('y', -distance);
+	clearMsgs(0.5);
+	approach('y', distance);
 }
 
 bool approachFromHome(){
 	goHome();
 	openFull();
-	readTrajectory("grab_from_home_1");
+	readTrajectory("grab_from_home_close");
 }
 
-bool grabFromApch(){
-	approach(.08);
+bool grabFromApch(double distance){
+	approach('x', distance);
 	closeComplt();
 }
 
+bool grabFromSide(double distance){
+	approach('y', -distance);
+	closeComplt();
+}
+
+/*
+ * Assumes ef is at the front 'approach' position
+ */
+bool approachSide(){
+	openFull();
+	readTrajectory("front_grab_to_side_grab");
+}
 bool shake(){
 	int iterations = 2;
 	double step = .25; 
@@ -208,6 +245,8 @@ bool shake(){
 		ROS_INFO("Got vel: %f",vel);
 		T.twist.linear.z = step * (vel > 0 ? 1: -1);
 		T.twist.linear.y = vel;
+		T.twist.angular.z= -vel*2;
+
 		c_vel_pub_.publish(T);
 	}
 	T.twist.linear.y= 0.0;
@@ -216,21 +255,30 @@ bool shake(){
 	c_vel_pub_.publish(T);
 }
 
-bool releaseAndReturn(){
+bool releaseAndReturn(double distance){
 	openFull();
-	approach(-.08);
+	approach('x', -distance);
 }
+
+bool releaseAndReturnSide(double distance){
+	openFull();
+	approach('y', distance);
+}
+
 bool demo(){
 	approachFromHome();
-	grabFromApch();
+	grabFromApch(0.02);
 	clearMsgs(0.5);
 	lift(.3);
 	shake();
 	clearMsgs(1.0);
 	lift(-.3);
 	clearMsgs(1.0);
-	releaseAndReturn();
-	push();
+	releaseAndReturn(0.08);
+	approachSide();
+	grabFromSide(0.08);
+	releaseAndReturn(0.08);
+	pushFromSide(0.08);
 	goHome();
 }
 
@@ -256,7 +304,7 @@ int main(int argc, char **argv){
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 
-	demo();
-	
+	//demo();
+	shake();
 	return 0;
 }
