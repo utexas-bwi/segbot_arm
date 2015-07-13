@@ -21,7 +21,7 @@
 using namespace std;
 
 //For writing to the .wav file
-const int format = SF_FORMAT_WAV | SF_FORMAT_FLOAT;        // SF_FORMAT_FLOAT or SF_FORMAT_PCM_16 depending on what you are storing
+const int format = SF_FORMAT_WAV | SF_FORMAT_FLOAT;         // SF_FORMAT_FLOAT or SF_FORMAT_PCM_16 depending on what you are storing
 const int channel = 1;        								// 1-Mono and 2-Stereo
 const static int SAMPLE_RATE = 44100;						// Frequency of the microphone
 const static int BUFF_SIZE = 128;
