@@ -129,6 +129,8 @@ add_executable(mico_moveit_joint_pose_service src/mico_moveit_jointpose_service.
 add_executable(mico_nav_safety_service src/mico_nav_safety_service.cpp)
 add_executable(mico_moveit_cartesianpose_service src/mico_moveit_cartesianpose_service.cpp)
 add_executable(trajectory_record src/trajectory_record.cpp)
+add_executable(position_record src/position_record.cpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(mico_controller moveit_utils_gencpp)
@@ -137,7 +139,8 @@ add_dependencies(mico_controller_action moveit_utils_gencpp)
 add_dependencies(mico_moveit_joint_pose_service moveit_utils_gencpp)
 add_dependencies(mico_nav_safety_service moveit_utils_gencpp)
 add_dependencies(mico_moveit_cartesianpose_service moveit_utils_gencpp)
-add_dependencies(trajectory_record trajectory_record_gencpp)
+add_dependencies(trajectory_record moveit_utils_gencpp)
+add_dependencies(position_record moveit_utils_gencpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(mico_controller ${catkin_LIBRARIES})
 target_link_libraries(mico_controller_action ${catkin_LIBRARIES})
@@ -146,6 +149,7 @@ target_link_libraries(mico_moveit_joint_pose_service ${catkin_LIBRARIES} ${Boost
 target_link_libraries(mico_nav_safety_service ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(mico_moveit_cartesianpose_service ${catkin_LIBRARIES})
 target_link_libraries(trajectory_record ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(position_record ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 #############
 ## Install ##
