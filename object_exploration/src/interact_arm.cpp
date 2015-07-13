@@ -21,6 +21,8 @@
 #include <rosbag/view.h>
 #include <boost/foreach.hpp>
 #include <sensor_msgs/JointState.h>
+#include "jaco_msgs/JointAngles.h"
+#include "jaco_msgs/ArmJointAnglesAction.h"
 
 //subscriber msgs
 #include <sensor_msgs/JointState.h>
@@ -71,18 +73,111 @@ int openFull(){
 	ac.waitForResult();
 }
 
-//closes the fingers completely
-int closeComplt(){
+//closes the fingers as specified
+//max: ~<7000
+//min: ~12
+int closeComplt(int fingerPos){
 	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
 	jaco_msgs::SetFingersPositionGoal goal;
- 	goal.fingers.finger1 = 6000;
-	goal.fingers.finger2 = 6000;
+ 	goal.fingers.finger1 = fingerPos;
+	goal.fingers.finger2 = fingerPos;
 	goal.fingers.finger3 = 0;
 	ac.waitForServer();
 	ac.sendGoal(goal);
 	ac.waitForResult();
 }
 
+sensor_msgs::JointState getStateFromBag(std::string bagName){
+	rosbag::Bag bag;
+	std::string path = ros::package::getPath("moveit_utils");
+	
+	bag.open(path + "/positions/" + bagName + ".bag", rosbag::bagmode::Read);
+	
+	rosbag::View view(bag, rosbag::TopicQuery("joint_states"));
+	sensor_msgs::JointState fromFile;
+	BOOST_FOREACH(rosbag::MessageInstance const m, view){
+		sensor_msgs::JointState::ConstPtr traj = m.instantiate<sensor_msgs::JointState>();
+		if (traj != NULL){
+			fromFile = *traj;
+		}
+	}
+	bag.close();
+	
+	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	jaco_msgs::ArmJointAnglesGoal goal;
+	goal.angles.joint1 = fromFile.position[0];
+	goal.angles.joint2 = fromFile.position[1];
+	goal.angles.joint3 = fromFile.position[2];
+	goal.angles.joint4 = fromFile.position[3];
+	goal.angles.joint5 = fromFile.position[4];
+	goal.angles.joint6 = fromFile.position[5];
+	//ROS_INFO("Joint6: %f", fromFile.position[5]);
+	ac.waitForServer();
+	ac.sendGoal(goal);
+	ROS_INFO("Trajectory goal sent!");
+	ac.waitForResult();
+	return fromFile;
+}
+
+geometry_msgs::PoseStamped getToolFromBag(std::string bagName){
+	rosbag::Bag bag;
+	std::string path = ros::package::getPath("moveit_utils");
+	
+	bag.open(path + "/positions/" + bagName + ".bag", rosbag::bagmode::Read);
+	
+	rosbag::View view(bag, rosbag::TopicQuery("tool_position"));
+	geometry_msgs::PoseStamped fromFile;
+	BOOST_FOREACH(rosbag::MessageInstance const m, view){
+		geometry_msgs::PoseStamped::ConstPtr traj = m.instantiate<geometry_msgs::PoseStamped>();
+		if (traj != NULL){
+			fromFile = *traj;
+		}
+	}	
+	bag.close();
+
+	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	jaco_msgs::ArmPoseGoal goalPose;
+	goalPose.pose.header.frame_id = fromFile.header.frame_id;
+	goalPose.pose.pose = fromFile.pose;
+	ac.waitForServer();
+	ROS_DEBUG("Waiting for server.");
+	ROS_INFO("Sending goal.");
+	ac.sendGoal(goalPose);
+	ac.waitForResult(); 
+	return fromFile;
+}
+void approach(double distance){
+	ros::Rate r(4);
+	ros::spinOnce();
+	double base_vel = .1;
+
+	geometry_msgs::TwistStamped T;
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	
+	for(int i = 0; i < std::abs(distance)/base_vel/.25; i++){
+		ros::spinOnce();
+		if(distance > 0){
+			T.twist.linear.x = base_vel;
+			T.twist.linear.y = -base_vel;
+		}
+		else {
+			T.twist.linear.x = -base_vel;
+			T.twist.linear.y = base_vel;
+		}
+		c_vel_pub_.publish(T);
+		r.sleep();
+	}
+	T.twist.linear.x = 0.0;
+	T.twist.linear.y = 0.0;
+	T.twist.linear.z = 0.0;
+
+	c_vel_pub_.publish(T);
+}
 void approach(char dimension, double distance){
 	ros::Rate r(4);
 	ros::spinOnce();
@@ -128,11 +223,11 @@ void approach(char dimension, double distance){
 	c_vel_pub_.publish(T);
 }
 //lifts ef specified distance
-void lift(double distance){
+void lift(double vel){
 	ros::Rate r(4);
 	ros::spinOnce();
-	double base_vel = .1;
-
+	double distance_init = .2;
+	double distance = .3;
 	geometry_msgs::TwistStamped T;
 	T.twist.linear.x= 0.0;
 	T.twist.linear.y= 0.0;
@@ -140,17 +235,36 @@ void lift(double distance){
 	T.twist.angular.y= 0.0;
 	T.twist.angular.z= 0.0;
 	
-	for(int i = 0; i < std::abs(distance)/base_vel/.25; i++){
+	for(int i = 0; i < std::abs(distance_init)/vel/.25; i++){
 		ros::spinOnce();
 		if(distance > 0)
-			T.twist.linear.z= base_vel;
+			T.twist.linear.z= vel;
 		else
-			T.twist.linear.z= -base_vel;
+			T.twist.linear.z= -vel;
 		c_vel_pub_.publish(T);
 		r.sleep();
 	}
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
+	sleep(2);
+	//start logging here
+	
+		
+	for(int i = 0; i < std::abs(distance)/vel/.25; i++){
+		ros::spinOnce();
+		if(distance > 0)
+			T.twist.linear.z= vel;
+		else
+			T.twist.linear.z= -vel;
+		c_vel_pub_.publish(T);
+		r.sleep();
+	}
+	T.twist.linear.z= 0.0;
+	c_vel_pub_.publish(T);
+	
+	//go into holding
+	//log
+	sleep(2);
 }
 
 void clearMsgs(double duration){
@@ -192,13 +306,13 @@ bool readTrajectory(std::string filename){
 	clearMsgs(1.);
 }
 void push(){
-	closeComplt();
+	closeComplt(7000);
 	approach('x', .08);
 	clearMsgs(0.5);
 	approach('x', -.08);
 }
 void pushFromSide(double distance){
-	closeComplt();
+	closeComplt(7000);
 	approach('y', -distance);
 	clearMsgs(0.5);
 	approach('y', distance);
@@ -207,17 +321,12 @@ void pushFromSide(double distance){
 bool approachFromHome(){
 	goHome();
 	openFull();
-	readTrajectory("grab_from_home_close");
+	readTrajectory("home_to_grasp_real");
 }
 
-bool grabFromApch(double distance){
-	approach('x', distance);
-	closeComplt();
-}
-
-bool grabFromSide(double distance){
-	approach('y', -distance);
-	closeComplt();
+bool grabFromApch(int fingerPos){
+	approach(.02);
+	closeComplt(fingerPos);
 }
 
 /*
@@ -227,9 +336,8 @@ bool approachSide(){
 	openFull();
 	readTrajectory("front_grab_to_side_grab");
 }
-bool shake(){
+bool shake(double step){
 	int iterations = 2;
-	double step = .25; 
 	geometry_msgs::TwistStamped T;
 	ros::Rate r(8);
 	T.twist.linear.x= 0.0;
@@ -243,10 +351,12 @@ bool shake(){
 		double vel = sin(i*step)/2;
 		r.sleep();
 		ROS_INFO("Got vel: %f",vel);
-		T.twist.linear.z = step * (vel > 0 ? 1: -1);
-		T.twist.linear.y = vel;
-		T.twist.angular.z= -vel*2;
-
+		//T.twist.linear.z = step * (vel > 0 ? 1: -1);
+		//T.twist.linear.y = vel;
+		T.twist.angular.z= vel;
+		T.twist.angular.x= vel;
+		T.twist.angular.y= -vel;
+		
 		c_vel_pub_.publish(T);
 	}
 	T.twist.linear.y= 0.0;
@@ -265,21 +375,43 @@ bool releaseAndReturnSide(double distance){
 	approach('y', distance);
 }
 
+bool revolveJ6(double velocity){ 
+	geometry_msgs::TwistStamped T;
+	ros::Rate r(4);
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	ROS_INFO("Expecting %f messages", 2/velocity/.25);
+	for(int i = 0; i < 2/velocity/.25; i++){
+		T.twist.angular.z = velocity;
+		r.sleep();
+		c_vel_pub_.publish(T);
+		ROS_INFO("Sending message %d", i);
+	}
+	T.twist.angular.z= 0.0;
+
+	c_vel_pub_.publish(T);
+}
+
 bool demo(){
 	approachFromHome();
-	grabFromApch(0.02);
+	grabFromApch(6000);
+	
 	clearMsgs(0.5);
 	lift(.3);
-	shake();
+
+	/*shake();
 	clearMsgs(1.0);
 	lift(-.3);
 	clearMsgs(1.0);
 	releaseAndReturn(0.08);
-	approachSide();
-	grabFromSide(0.08);
 	releaseAndReturn(0.08);
 	pushFromSide(0.08);
-	goHome();
+	goHome();*/
 }
 
 int main(int argc, char **argv){
@@ -304,7 +436,8 @@ int main(int argc, char **argv){
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 
+	//getStateFromBag("grab");
 	//demo();
-	shake();
+	shake(.1);
 	return 0;
 }
