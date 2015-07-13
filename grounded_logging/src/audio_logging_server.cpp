@@ -158,15 +158,21 @@ int main (int argc, char** argv)
 	ros::init (argc, argv, "audio_logging_server");
 	ros::NodeHandle nh;
 	
+	//to store the topic to publish to
+	string audio_samples_;
+	
 	// Intialize FFT
 	fft_calc = new FFT_calculator(NFFT,FFT_WIN,NOVERLAP);	
 	fft_calc->init_RT_mode();	
+	
+	//get the topic from the launch file
+	nh.param<std::string>("audio_samples", audio_samples_, "/audio_samples");
 		
 	//Set up the service
 	ros::ServiceServer service = nh.advertiseService("audio_logger_service", audio_service_callback);
 	
 	//subscribe to audio topic
-	ros::Subscriber sub = nh.subscribe ("/audio_samples", 1000, listen_audio_data);
+	ros::Subscriber sub = nh.subscribe (audio_samples_, 1000, listen_audio_data);
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);

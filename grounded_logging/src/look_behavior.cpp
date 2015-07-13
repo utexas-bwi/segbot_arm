@@ -83,11 +83,17 @@ int main (int argc, char** argv)
 	ros::init (argc, argv, "point_cloud_logging_server");
 	ros::NodeHandle nh;
 	
+	//to store the topic to subscribe to
+	string depth_topic_;
+	
 	//Set up the service
 	ros::ServiceServer service = nh.advertiseService("point_cloud_logger_service", point_cloud_service_callback);
 	
+	//get the topic from the launch file
+	nh.param<std::string>("depth_topic", depth_topic_, "/xtion_camera/depth_registered/points");
+	
 	//subscribe to the vision depth topic
-	ros::Subscriber sub_depth = nh.subscribe ("/xtion_camera/depth_registered/points", 1, collect_point_cloud_data);
+	ros::Subscriber sub_depth = nh.subscribe (depth_topic_, 1, collect_point_cloud_data);
 		
 	ROS_INFO("Ready to record and process point cloud data.");
 	ros::spin();

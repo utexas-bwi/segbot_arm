@@ -30,8 +30,14 @@ main (int argc, char *argv[])
 		// Initialize ROS
 		ros::init (argc, argv, "audio_sample_publisher");
 		ros::NodeHandle nh;
+		
+		//to store the topic to publish to
+		string audio_samples_;
 	    
-	    ros::Publisher pub = nh.advertise<std_msgs::Float64MultiArray>("/audio_samples", 10);
+	    //get the topic from the launch file
+		nh.param<std::string>("audio_samples", audio_samples_, "/audio_samples");
+		
+	    ros::Publisher pub = nh.advertise<std_msgs::Float64MultiArray>(audio_samples_, 10);
 		ROS_INFO("Ready to publish audio data.");
 	
 		//open a handle to the microphone
