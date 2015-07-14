@@ -476,35 +476,25 @@ bool press(double velocity){
 }
 
 bool revolveJ6(double velocity){ 
-	geometry_msgs::TwistStamped T;
 	ros::Time first_sent;
 	ros::Rate r(4);
-	T.twist.linear.x= 0.0;
-	T.twist.linear.y= 0.0;
-	T.twist.linear.z= 0.0;
-
-	T.twist.angular.x= 0.0;
-	T.twist.angular.y= 0.0;
-	T.twist.angular.z= 0.0;
-	/*ROS_INFO("Expecting %f messages", 2/velocity/.25);
-	for(int i = 0; i < 2/velocity/.25; i++){
-		r.sleep();
-		c_vel_pub_.publish(T);
-		ROS_INFO("Sending message %d", i);
-	}*/
+	jaco_msgs::JointVelocity T;
 	
-	first_sent = ros::Time::now();
-
-	ros::spinOnce();
-	T.twist.angular.z = velocity;
-	double total = 2/velocity;
-	while(true){
-		if(((ros::Time::now() - first_sent).toSec() >= total)){ //movement should be preempted
-			T.twist.angular.z= 0.0;
-			c_vel_pub_.publish(T);
-			break;
-		}
-		c_vel_pub_.publish(T);
+	T.joint1 = 0.0;
+	T.joint2 = 0.0;
+	T.joint3 = 0.0;
+	T.joint4 = 0.0;
+	T.joint5 = 0.0;
+	T.joint6 = 0.0;
+	
+	velocity *= 180/3.14596;
+	
+	ROS_INFO("Expecting %f messages", 360/velocity/.25);
+	for(int i = 0; i < round(360/velocity/.25); i++){
+		r.sleep();
+		T.joint6 = velocity;
+		j_vel_pub_.publish(T);
+		ROS_INFO("Sending message %d", i);
 	}
 }
 
@@ -551,8 +541,8 @@ int main(int argc, char **argv){
 
 	//getStateFromBag("grab");
 	//demo();
-	//revolveJ6(.2);
-	shake(1.5);
+	revolveJ6(.6);
+	//shake(1.5);
 	//drop(.5);
 	return 0;
 }
