@@ -7,6 +7,9 @@
 	<node name="mico_moveit_caresianpose_service" pkg="moveit_utils" type="mico_moveit_cartesianpose_service" />
 	<node name="mico_nav_safety_service" pkg="moveit_utils" type="mico_nav_safety_service" />
 	
+	<!-- Jivko's angular controler -->
+	<node name="angular_vel_control_srv" pkg="moveit_utils" type="angular_vel_control_srv" />
+	
 	 <!-- Launch moveit & rviz -->
     <include file="$(find mico_moveit_fullsegbot_config)/launch/mico_moveit_bringup.launch" />
 
