@@ -251,9 +251,11 @@ void approach(std::string dimension, double distance, double velocity){
 	T.twist.angular.x= 0.0;
 	T.twist.angular.y= 0.0;
 	T.twist.angular.z= 0.0;
-	
-	for(int i = 0; i < std::abs(distance)/velocity/.25; i++){
+	ROS_INFO("velocity: %f", velocity);
+	for(int i = 0; i < distance/std::abs(velocity)/.25; i++){
 		ros::spinOnce();
+		ROS_INFO("velocity: %f", velocity);
+
 		if(velocity > 0){
 			if(!dimension.compare("x"))
 				T.twist.linear.x = velocity;
@@ -277,7 +279,6 @@ void approach(std::string dimension, double distance, double velocity){
 				T.twist.linear.x = -velocity;
 				T.twist.linear.y = velocity;
 			}
-
 		}
 		c_vel_pub_.publish(T);
 		r.sleep();
@@ -487,6 +488,7 @@ bool goToLocation(sensor_msgs::JointState js){
 		ROS_INFO("Sending angular commands");
 	else
 		ROS_INFO("Cannot contact angular velocity service. Is it running?");
+	clearMsgs(.5);
 	return srv.response.success;
 }
 bool drop(double height){
@@ -513,8 +515,8 @@ bool push(double velocity){
 	sensor_msgs::JointState push = getStateFromBag("push");
 	goToLocation(push);
 	//start recording
-	clearMsgs(1.);
-	approach("y", 0.2, -velocity);
+	//clearMsgs(1.);
+	approach("y", 0.2, velocity);
 	//stop recording
 }
 
@@ -585,7 +587,7 @@ int main(int argc, char **argv){
     ros::NodeHandle n;
 	
 	//publisher for cartesian velocity
-	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
 	j_vel_pub_ = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 2);
 
 	movement_client = n.serviceClient<moveit_utils::MicoController>("mico_controller");
