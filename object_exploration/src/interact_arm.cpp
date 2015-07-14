@@ -1,5 +1,6 @@
 #include <signal.h>
 #include <cmath>
+#include <string>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <moveit/move_group_interface/move_group.h>
@@ -91,6 +92,18 @@ void joint_effort_cb(const sensor_msgs::JointStateConstPtr& input){
 	total_delta = delta_effort[0]+delta_effort[1]+delta_effort[2]+delta_effort[3]+delta_effort[4]+delta_effort[5];
 	
 	heard_efforts = true;
+}
+
+bool clearMsgs(double duration){
+	ros::Time start = ros::Time::now();
+	ros::Duration timeout = ros::Duration(duration);
+	ros::Rate r2(30);
+	//clears out old effort msgs
+	while( (ros::Time::now() - start) < timeout){
+		ros::spinOnce();
+		r2.sleep();
+	}
+	return true;
 }
 
 int goHome(){
@@ -219,6 +232,62 @@ void approach(double distance){
 
 	c_vel_pub_.publish(T);
 }
+/*
+ * Overloaded approach useful for varying distance and dimension based on application
+ * while allowing velocity to be chosen by the agent
+ * 
+ * for multiple dimensions, doesn't take into account the distance of the hypotenuse
+ * 
+ */
+void approach(std::string dimension, double distance, double velocity){
+	ros::Rate r(4);
+	ros::spinOnce();
+	double base_vel = .1;
+
+	geometry_msgs::TwistStamped T;
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	
+	for(int i = 0; i < std::abs(distance)/velocity/.25; i++){
+		ros::spinOnce();
+		if(velocity > 0){
+			if(!dimension.compare("x"))
+				T.twist.linear.x = velocity;
+			else if(!dimension.compare("y"))
+				T.twist.linear.y = velocity;
+			else if(!dimension.compare("z"))
+				T.twist.linear.z = velocity;
+			else if(!dimension.compare("xy") || !dimension.compare("yx")){
+				T.twist.linear.x = velocity;
+				T.twist.linear.y = -velocity;
+			}
+		}
+		else{
+			if(!dimension.compare("x"))
+				T.twist.linear.x = -velocity;
+			else if(!dimension.compare("y"))
+				T.twist.linear.y = -velocity;
+			else if(!dimension.compare("z"))
+				T.twist.linear.z = -velocity;
+			else if(!dimension.compare("xy") || !dimension.compare("yx")){
+				T.twist.linear.x = -velocity;
+				T.twist.linear.y = velocity;
+			}
+
+		}
+		c_vel_pub_.publish(T);
+		r.sleep();
+	}
+	T.twist.linear.x = 0.0;
+	T.twist.linear.y = 0.0;
+	T.twist.linear.z = 0.0;
+	c_vel_pub_.publish(T);
+	clearMsgs(.5);
+}
 void approach(char dimension, double distance){
 	ros::Rate r(4);
 	ros::spinOnce();
@@ -307,17 +376,6 @@ void lift(double vel){
 	sleep(2);
 }
 
-void clearMsgs(double duration){
-	ros::Time start = ros::Time::now();
-	ros::Duration timeout = ros::Duration(duration);
-	ros::Rate r2(30);
-	//clears out old effort msgs
-	while( (ros::Time::now() - start) < timeout){
-		ros::spinOnce();
-		r2.sleep();
-	}
-}
-
 bool readTrajectory(std::string filename){
 	rosbag::Bag bag;
 	std::string path = ros::package::getPath("moveit_utils");
@@ -369,13 +427,6 @@ bool grabFromApch(int fingerPos){
 	closeComplt(fingerPos);
 }
 
-/*
- * Assumes ef is at the front 'approach' position
- */
-bool approachSide(){
-	openFull();
-	readTrajectory("front_grab_to_side_grab");
-}
 bool shake(double amplitude){
 	int iterations = 2;
 	double step = .3;
@@ -452,15 +503,18 @@ bool drop(double height){
 
 bool poke(double velocity){
 	closeComplt(7000);
-	sensor_msgs::JointState drop = getStateFromBag("poke");
-	//go to poke place
+	sensor_msgs::JointState poke = getStateFromBag("poke");
+	goToLocation(poke);
+	clearMsgs(1.);
+	approach("xy", 0.2, velocity);
 }
 
 bool push(double velocity){
 	sensor_msgs::JointState push = getStateFromBag("push");
-	//go to push place
+	goToLocation(push);
 	//start recording
-	//negative y velocity for a certain distance
+	clearMsgs(1.);
+	approach("y", 0.2, -velocity);
 	//stop recording
 }
 
@@ -475,10 +529,21 @@ bool press(double velocity){
 	//small negative z vel
 }
 
+/*
+ * velocity in radians/sec
+ * limited at .8r/s
+ */
 bool revolveJ6(double velocity){ 
 	ros::Time first_sent;
 	ros::Rate r(4);
 	jaco_msgs::JointVelocity T;
+	
+	if(velocity > 0)
+		if(velocity > .8)
+			velocity = .8;
+	else
+		if(velocity < -.8)
+			velocity = -.8;
 	
 	T.joint1 = 0.0;
 	T.joint2 = 0.0;
@@ -520,7 +585,7 @@ int main(int argc, char **argv){
     ros::NodeHandle n;
 	
 	//publisher for cartesian velocity
-	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
+	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	j_vel_pub_ = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 2);
 
 	movement_client = n.serviceClient<moveit_utils::MicoController>("mico_controller");
@@ -541,8 +606,10 @@ int main(int argc, char **argv){
 
 	//getStateFromBag("grab");
 	//demo();
-	revolveJ6(.6);
+	//revolveJ6(.6);
 	//shake(1.5);
-	//drop(.5);
+	//drop(.5
+	poke(.2);
+	push(.2);
 	return 0;
 }
