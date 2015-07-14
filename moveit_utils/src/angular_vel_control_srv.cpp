@@ -71,9 +71,9 @@ jaco_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<float> goal_vector){
 bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::AngularVelCtrl::Response &res){
 	//get joint positions
 	waitForJointAngles();
-	target_joint_state = current_state;
+	target_joint_state = req.state;
 	
-	starting_joint_state = req.state;
+	starting_joint_state = current_state;
 	
 	ROS_INFO("Starting state:");
 	ROS_INFO("%f, %f, %f, %f, %f, %f",starting_joint_state.position[0],starting_joint_state.position[1],starting_joint_state.position[2],
