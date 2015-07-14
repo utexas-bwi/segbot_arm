@@ -2,3 +2,4 @@ int64 start
 string pointCloudFilePath
 ---
 bool success
+bool saved
