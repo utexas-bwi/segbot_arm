@@ -192,11 +192,20 @@ int main(int argc, char** argv){
 	ros::init(argc, argv, "arm_perceptual_log_action");
 	ros::NodeHandle n;
 	signal(SIGINT, sig_handler);
+	std::string tool_pos_, finger_pos_, joint_efforts_, joint_states_;
 	
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
-  	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
-	ros::Subscriber sub_states = n.subscribe ("joint_states", 1, jointstate_cb);
+	//get the topics from the launch file  ---> grounded_logging.launch
+	n.param<std::string>("tool_pos", tool_pos_, "/mico_arm_driver/out/tool_position");
+	n.param<std::string>("finger_pos", finger_pos_, "/mico_arm_driver/out/finger_position");
+	n.param<std::string>("joint_efforts", joint_efforts_, "/mico_arm_driver/out/joint_efforts");
+	n.param<std::string>("joint_states", joint_states_, "joint_states");
+	
+	ros::Subscriber sub_tool = n.subscribe(tool_pos_, 1, toolpos_cb);
+  	ros::Subscriber sub_finger = n.subscribe(finger_pos_, 1, fingers_cb);
+	ros::Subscriber sub_torques = n.subscribe (joint_efforts_, 1, joint_effort_cb);
+	ros::Subscriber sub_states = n.subscribe (joint_states_, 1, jointstate_cb);
 	LogPerceptionAction log(ros::this_node::getName());
+	
+	ROS_INFO("Ready to record and process haptic data.");
 	ros::spin();
 }

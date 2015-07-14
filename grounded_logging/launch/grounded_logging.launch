@@ -19,4 +19,12 @@
 	<node name="audio_logging_server" pkg="grounded_logging" type="audio_logging_server" output="screen" cwd="node">
 		<param name="audio_samples" value="/audio_samples" />
 	</node>
+	
+	<!-- Setting up topics for the haptic node -->
+	<node name="arm_perceptual_log_action" pkg="segbot_arm_perception" type="log_perception_action" output="screen" cwd="node">
+		<param name="tool_pos" value="/mico_arm_driver/out/tool_position" />
+		<param name="finger_pos" value="/mico_arm_driver/out/finger_position" />
+		<param name="joint_efforts" value="/mico_arm_driver/out/joint_efforts" />
+		<param name="joint_states" value="joint_states" />
+	</node>
 </launch>
