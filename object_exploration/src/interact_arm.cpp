@@ -23,12 +23,13 @@
 #include <sensor_msgs/JointState.h>
 #include "jaco_msgs/JointAngles.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
+#include "moveit_utils/AngularVelCtrl.h"
 
 //subscriber msgs
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Float32.h>
-
+#include <jaco_msgs/JointVelocity.h>
 //actions
 #include <actionlib/client/simple_action_client.h>
 #include "jaco_msgs/SetFingersPositionAction.h"
@@ -45,8 +46,11 @@ bool g_caught_sigint = false;
 float f1;
 float f2;
 ros::Publisher c_vel_pub_;
+ros::Publisher j_vel_pub_;
+
 ros::ServiceClient movement_client;
 ros::ServiceClient home_client;
+ros::ServiceClient angular_client;
 
 //efforts and force detection
 bool heard_efforts = false;
@@ -372,17 +376,22 @@ bool approachSide(){
 	openFull();
 	readTrajectory("front_grab_to_side_grab");
 }
-bool shake(double step){
+bool shake(double amplitude){
 	int iterations = 2;
-	geometry_msgs::TwistStamped T;
+	double step = .3;
+	
+	if(amplitude > 1.5)
+		amplitude = 1.5;
+		
+	jaco_msgs::JointVelocity T;
 	ros::Rate r(4);
-	T.twist.linear.x= 0.0;
-	T.twist.linear.y= 0.0;
-	T.twist.linear.z= 0.0;
-
-	T.twist.angular.x= 0.0;
-	T.twist.angular.y= 0.0;
-	T.twist.angular.z= 0.0;
+	T.joint1 = 0.0;
+	T.joint2 = 0.0;
+	T.joint3 = 0.0;
+	T.joint4 = 0.0;
+	T.joint5 = 0.0;
+	T.joint6 = 0.0;
+/*
 	for(int i = 0; i < 2*3.1459*iterations/step; i++){
 		double vel = sin(i*step)/2;
 		r.sleep();
@@ -399,13 +408,45 @@ bool shake(double step){
 	T.twist.linear.z= 0.0;
 
 	c_vel_pub_.publish(T);
-}
+*/
+	for(int i = 0; i < 2*3.1459*iterations/step; i++){
+		double vel = amplitude*sin(i*step);
+		r.sleep();
+		vel *= 180/3.1459;
+		ROS_INFO("Got vel: %f",vel);
+		//T.twist.linear.z = step * (vel > 0 ? 1: -1);
+		//T.twist.linear.y = vel;
+		T.joint4 = vel;
+		T.joint5 = vel;
+		T.joint6 = vel;
+		
+		j_vel_pub_.publish(T);
+	}
+	T.joint4 = 0.0;
+	T.joint5 = 0.0;
+	T.joint6 = 0.0;
+	
+	j_vel_pub_.publish(T);
 
+}
+bool goToLocation(sensor_msgs::JointState js){
+	moveit_utils::AngularVelCtrl srv;
+	srv.request.state = js;
+	if(angular_client.call(srv))
+		ROS_INFO("Sending angular commands");
+	else
+		ROS_INFO("Cannot contact angular velocity service. Is it running?");
+	return srv.response.success;
+}
 bool drop(double height){
 	if(height < MINHEIGHT)
 		height = MINHEIGHT;
 	//go to that height
 	sensor_msgs::JointState drop = getStateFromBag("drop");
+	goToLocation(drop);
+	//height of table should be a constant
+	//look at tool position height
+	//send cart vel commands to match height
 	openFull();
 }
 
@@ -490,10 +531,12 @@ int main(int argc, char **argv){
 	
 	//publisher for cartesian velocity
 	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
-	
+	j_vel_pub_ = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 2);
+
 	movement_client = n.serviceClient<moveit_utils::MicoController>("mico_controller");
 	home_client = n.serviceClient<jaco_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
-
+	angular_client = n.serviceClient<moveit_utils::AngularVelCtrl>("angular_vel_control");
+	
 	//create subscriber to joint angles
 	//ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 	
@@ -509,6 +552,7 @@ int main(int argc, char **argv){
 	//getStateFromBag("grab");
 	//demo();
 	//revolveJ6(.2);
-	shake(.3);
+	shake(1.5);
+	//drop(.5);
 	return 0;
 }
