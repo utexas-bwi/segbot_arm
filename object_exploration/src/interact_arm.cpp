@@ -458,13 +458,13 @@ bool grabFromApch(int fingerPos){
 	closeComplt(fingerPos);
 }
 
-bool shake(double amplitude){
+bool shake(double vel){
 	int iterations = 2;
-	double step = .3;
-	
-	if(amplitude > 1.5)
-		amplitude = 1.5;
-		
+	int count = 0;
+	double step = .25;
+	double distance = 45; //degrees
+	if(vel > 1.5)
+		vel = 1.5;
 	jaco_msgs::JointVelocity T;
 	ros::Rate r(4);
 	T.joint1 = 0.0;
@@ -475,23 +475,6 @@ bool shake(double amplitude){
 	T.joint6 = 0.0;
 /*
 	for(int i = 0; i < 2*3.1459*iterations/step; i++){
-		double vel = sin(i*step)/2;
-		r.sleep();
-		ROS_INFO("Got vel: %f",vel);
-		//T.twist.linear.z = step * (vel > 0 ? 1: -1);
-		//T.twist.linear.y = vel;
-		T.twist.angular.z= vel;
-		T.twist.angular.x= vel;
-		T.twist.angular.y= -vel;
-		
-		c_vel_pub_.publish(T);
-	}
-	T.twist.linear.y= 0.0;
-	T.twist.linear.z= 0.0;
-
-	c_vel_pub_.publish(T);
-*/
-	for(int i = 0; i < 2*3.1459*iterations/step; i++){
 		double vel = amplitude*sin(i*step);
 		r.sleep();
 		vel *= 180/3.1459;
@@ -501,6 +484,80 @@ bool shake(double amplitude){
 		T.joint6 = vel;
 		
 		j_vel_pub_.publish(T);
+	}
+	T.joint4 = 0.0;
+	T.joint5 = 0.0;
+	T.joint6 = 0.0;
+	
+	j_vel_pub_.publish(T);
+*/
+	vel *= 180/3.1459;
+	int sign = 1;
+	double tempDistance;
+	bool firstOrLast = true;
+	while(count < iterations){
+		for(int i = 0; i < distance/vel/step; i++){
+			ROS_INFO("Got vel: %f",vel);
+			
+			T.joint4 = vel;
+			T.joint5 = vel;
+			T.joint6 = vel;
+			
+			j_vel_pub_.publish(T);
+			r.sleep();
+
+		}
+		T.joint4 = 0.0;
+		T.joint5 = 0.0;
+		T.joint6 = 0.0;
+		
+		j_vel_pub_.publish(T);
+		for(int i = 0; i < distance/vel/step; i++){
+			ROS_INFO("Got vel: %f",vel);
+			
+			T.joint4 = -vel;
+			T.joint5 = -vel;
+			T.joint6 = -vel;
+			
+			j_vel_pub_.publish(T);
+			r.sleep();
+		}
+		T.joint4 = 0.0;
+		T.joint5 = 0.0;
+		T.joint6 = 0.0;
+		
+		j_vel_pub_.publish(T);
+		for(int i = 0; i < distance/vel/step; i++){
+			ROS_INFO("Got vel: %f",vel);
+			
+			T.joint4 = -vel;
+			T.joint5 = -vel;
+			T.joint6 = -vel;
+			
+			j_vel_pub_.publish(T);
+			r.sleep();
+		}
+		T.joint4 = 0.0;
+		T.joint5 = 0.0;
+		T.joint6 = 0.0;
+		
+		j_vel_pub_.publish(T);
+		for(int i = 0; i < distance/vel/step; i++){
+			ROS_INFO("Got vel: %f",vel);
+			
+			T.joint4 = vel;
+			T.joint5 = vel;
+			T.joint6 = vel;
+			
+			j_vel_pub_.publish(T);
+			r.sleep();
+		}
+		T.joint4 = 0.0;
+		T.joint5 = 0.0;
+		T.joint6 = 0.0;
+		
+		j_vel_pub_.publish(T);
+		count++;
 	}
 	T.joint4 = 0.0;
 	T.joint5 = 0.0;
@@ -667,7 +724,7 @@ bool loop1(){
 	lift(.3);
 	hold(.5);
 	revolveJ6(.6);
-	shake(1.5);
+	shake(1.);
 	drop(.5);
 	poke(.2);
 	push(-.2);
@@ -700,7 +757,7 @@ int main(int argc, char **argv){
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 
-	//loop1();
-	hold(.1);
+	loop1();
+
 	return 0;
 }
