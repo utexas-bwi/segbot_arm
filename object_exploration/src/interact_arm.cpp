@@ -537,13 +537,62 @@ bool push(double velocity){
 
 bool press(double velocity){
 	sensor_msgs::JointState press = getStateFromBag("press");
-	//go to press place
-	//negative z vel
-	//start recording
-	//check efforts
-	//once touched once, stop recording
-	//start recording 'squeeze'
-	//small negative z vel
+	goToLocation(press);
+	ros::Rate r(40);
+	double base_vel = 0.1;
+	geometry_msgs::TwistStamped T;
+	
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	
+	geometry_msgs::Pose tool_pose_last = tool_pos_cur;
+	ros::spinOnce();
+	while(tool_pos_cur.position.z <= tool_pose_last.position.z){
+		T.twist.linear.z = -velocity;
+		c_vel_pub_.publish(T);
+		r.sleep();
+		tool_pose_last = tool_pos_cur;
+		ros::spinOnce();
+	} 
+	T.twist.linear.z= 0.0;
+	c_vel_pub_.publish(T);
+}
+
+/*
+ * should be called immediately after `press` 
+ * velocity capped at 
+ * moves downward for 5 seconds or if movement causes force control to react
+ */
+bool squeeze(double velocity){
+	ros::Rate r(40);
+	double base_vel = 0.1;
+	geometry_msgs::TwistStamped T;
+	
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	
+	geometry_msgs::Pose tool_pose_last = tool_pos_cur;
+	ros::spinOnce();
+	ros::Time start = ros::Time::now();
+	ros::Duration timeout = ros::Duration(5.);
+	
+	while(tool_pos_cur.position.z <= tool_pose_last.position.z || ros::Time::now() - start < timeout){
+		T.twist.linear.z = -velocity;
+		c_vel_pub_.publish(T);
+		r.sleep();
+		tool_pose_last = tool_pos_cur;
+		ros::spinOnce();
+	} 
+	T.twist.linear.z= 0.0;
+	c_vel_pub_.publish(T);
 }
 
 /*
@@ -628,6 +677,8 @@ int main(int argc, char **argv){
 	//drop(.5);
 	//poke(.2);
 	//push(-.2);
-	drop(MINHEIGHT + .2);
+	//drop(MINHEIGHT + .2);
+	//press(0.2);
+	squeeze(.05);
 	return 0;
 }
