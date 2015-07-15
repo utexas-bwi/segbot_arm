@@ -39,7 +39,8 @@
 #include "jaco_msgs/ArmPoseAction.h"
 
 #define foreach BOOST_FOREACH
-#define MINHEIGHT -0.05 //defines the height of the table relative to the mico_base
+#define MINHEIGHT -0.05 		//defines the height of the table relative to the mico_base
+#define ALPHA .7				//constant for temporal smoothing in effort cb
 using namespace boost::assign;
 bool g_caught_sigint = false;
 
@@ -59,7 +60,10 @@ sensor_msgs::JointState current_efforts;
 sensor_msgs::JointState last_efforts;
 double total_grav_free_effort = 0;
 double total_delta;
+double total_delta_smoothed;
 double delta_effort[6];
+double effort_smoothed[6];
+double delta_effort_smoothed[6];
 
 //checks fingers position - used for object holding assurance
 void fingers_cb(const jaco_msgs::FingerPosition input){
@@ -74,6 +78,8 @@ void joint_effort_cb(const sensor_msgs::JointStateConstPtr& input){
 	if (heard_efforts){
 		for (int i = 0; i < 6; i ++){
 			delta_effort[i] = input->effort[i]-current_efforts.effort[i];
+			effort_smoothed[i] = ALPHA * input->effort[i] + (1.0 - ALPHA) * current_efforts.effort[i];
+			delta_effort_smoothed[i] = effort_smoothed[i] - current_efforts.effort[i];
 		}
 	}
 	
@@ -90,7 +96,8 @@ void joint_effort_cb(const sensor_msgs::JointStateConstPtr& input){
 	
 	//calc total change in efforts
 	total_delta = delta_effort[0]+delta_effort[1]+delta_effort[2]+delta_effort[3]+delta_effort[4]+delta_effort[5];
-	
+	total_delta_smoothed = delta_effort_smoothed[0] + delta_effort_smoothed[1] + delta_effort_smoothed[3]
+		+ delta_effort_smoothed[4] + delta_effort_smoothed[5];
 	heard_efforts = true;
 }
 
@@ -516,7 +523,7 @@ bool push(double velocity){
 	goToLocation(push);
 	//start recording
 	//clearMsgs(1.);
-	approach("y", 0.2, velocity);
+	approach("y", 0.2, -velocity);
 	//stop recording
 }
 
@@ -610,7 +617,7 @@ int main(int argc, char **argv){
 	//demo();
 	//revolveJ6(.6);
 	//shake(1.5);
-	//drop(.5
+	//drop(.5);
 	poke(.2);
 	push(.2);
 	return 0;
