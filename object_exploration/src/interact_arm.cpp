@@ -268,7 +268,7 @@ void approach(std::string dimension, double distance, double velocity){
 		ros::spinOnce();
 		ROS_INFO("velocity: %f", velocity);
 
-		if(velocity > 0){
+		//if(velocity > 0){
 			if(!dimension.compare("x"))
 				T.twist.linear.x = velocity;
 			else if(!dimension.compare("y"))
@@ -278,19 +278,6 @@ void approach(std::string dimension, double distance, double velocity){
 			else if(!dimension.compare("xy") || !dimension.compare("yx")){
 				T.twist.linear.x = velocity;
 				T.twist.linear.y = -velocity;
-			}
-		}
-		else{
-			if(!dimension.compare("x"))
-				T.twist.linear.x = -velocity;
-			else if(!dimension.compare("y"))
-				T.twist.linear.y = -velocity;
-			else if(!dimension.compare("z"))
-				T.twist.linear.z = -velocity;
-			else if(!dimension.compare("xy") || !dimension.compare("yx")){
-				T.twist.linear.x = -velocity;
-				T.twist.linear.y = velocity;
-			}
 		}
 		c_vel_pub_.publish(T);
 		r.sleep();
@@ -543,7 +530,7 @@ bool push(double velocity){
 	goToLocation(push);
 	//start recording
 	//clearMsgs(1.);
-	approach("y", 0.2, -velocity);
+	approach("y", 0.2, velocity);
 	//stop recording
 }
 
@@ -639,6 +626,6 @@ int main(int argc, char **argv){
 	//shake(1.5);
 	//drop(.5);
 	poke(.2);
-	push(.2);
+	push(-.2);
 	return 0;
 }
