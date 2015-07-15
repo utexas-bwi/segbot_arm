@@ -53,7 +53,7 @@ using namespace boost::assign;
 bool g_caught_sigint = false;
 
 // total number of object and trials to help with folder generation
-int totalObjects = 2, totalTrials = 1;
+int totalObjects = 2, totalTrials = 2;
 
 //global strings to store the modality data
 string visionFilePath, audioFilePath, hapticFilePath;
@@ -77,10 +77,6 @@ ros::ServiceClient depth_client;
 ros::ServiceClient image_client;
 ros::ServiceClient audio_client;
 
-//Declare the haptic action client
-actionlib::SimpleActionClient<segbot_arm_perception::LogPerceptionAction> ac("arm_perceptual_log_action", true);
-segbot_arm_perception::LogPerceptionGoal goal;
-
 ros::ServiceClient movement_client;
 ros::ServiceClient home_client;
 ros::ServiceClient angular_client;
@@ -100,6 +96,9 @@ geometry_msgs::Pose tool_pos_cur;
 
 // function to start storing the vision, audio and haptic data while the behaviour is being executed
 int startSensoryDataCollection(){
+	//Declare the haptic action client
+	actionlib::SimpleActionClient<segbot_arm_perception::LogPerceptionAction> ac("arm_perceptual_log_action", true);
+	segbot_arm_perception::LogPerceptionGoal goal;
 	// then call the vision and the audio loggers
 	image_srv.request.start = 1;
 	image_srv.request.generalImageFilePath = visionFilePath;
@@ -122,17 +121,30 @@ int startSensoryDataCollection(){
 		ROS_ERROR("Failed to call audio_logger_service. Server might not have been launched yet.");
 		return 1;
 	}
+	
+	ROS_INFO("Waiting for action server to start.");
+	// wait for the action server to start
+	ac.waitForServer(); //will wait for infinite time
+	ROS_INFO("Action server started, sending goal.");
 				
 	// send a goal to the action
 	goal.filePath = hapticFilePath;
 	goal.start = true;
 	ac.sendGoal(goal);
 	
+	// Print out the result of the action
+	actionlib::SimpleClientGoalState state = ac.getState();
+	ROS_INFO("Action status: %s",state.toString().c_str());
+	
 	return(0);
 }
 
 // function to stop storing the vision, audio and haptic data while the behaviour is being executed
 void stopSensoryDataCollection(){
+	//Declare the haptic action client
+	actionlib::SimpleActionClient<segbot_arm_perception::LogPerceptionAction> ac("arm_perceptual_log_action", true);
+	segbot_arm_perception::LogPerceptionGoal goal;
+	
 	//call the service again with the stop signal
 	image_srv.request.start = 0;
 	audio_srv.request.start = 0;
@@ -143,10 +155,6 @@ void stopSensoryDataCollection(){
 	if(audio_client.call(audio_srv)){
 		ROS_INFO("Audio_logger_service stopped...");
 	}
-				
-	// Print out the result of the action
-	actionlib::SimpleClientGoalState state = ac.getState();
-	ROS_INFO("Action status: %s",state.toString().c_str());
 				
 	//stop the action
 	goal.start = false;
@@ -539,11 +547,7 @@ void pushFromSide(double distance){
 	approach('y', distance);
 }
 
-bool approachFromHome(){
-	goHome();
-	openFull();
-	readTrajectory("home_to_grasp_real");
-}
+
 
 bool grabFromApch(int fingerPos){
 	startSensoryDataCollection();
@@ -833,7 +837,13 @@ bool revolveJ6(double velocity){
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
-
+bool approachFromHome(){
+	goHome();
+	openFull();
+	//readTrajectory("home_to_grasp_real");
+	sensor_msgs::JointState grab = getStateFromBag("grab");
+	goToLocation(grab);
+}
 void createBehaviorAndSubDirectories(string behaviorName, string trialFilePath){
 	//create behaviour directory
 	string behaviorFilePath = trialFilePath + "/" + behaviorName;
@@ -964,14 +974,15 @@ bool loop1(){
 			storePointCloud();
 			clearMsgs(3.0);
 			goHome();
+			clearMsgs(10.0);
 		}
 	}
 }
 
 int main(int argc, char **argv){
 	ros::init(argc, argv, "interact_arm");
-    ros::NodeHandle n;
-	
+    ros::NodeHandle n;	
+
 	//publisher for cartesian velocity
 	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
 	j_vel_pub_ = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 2);
@@ -995,11 +1006,6 @@ int main(int argc, char **argv){
 	depth_client = n.serviceClient<grounded_logging::StorePointCloud>("point_cloud_logger_service");
 	image_client = n.serviceClient<grounded_logging::ProcessVision>("vision_logger_service");
 	audio_client = n.serviceClient<grounded_logging::ProcessAudio>("audio_logger_service");
-	
-	ROS_INFO("Waiting for action server to start.");
-	// wait for the action server to start
-	ac.waitForServer(); //will wait for infinite time
-	ROS_INFO("Action server started, sending goal.");
 
 	loop1();
 
