@@ -1,8 +1,4 @@
 #include "ros/ros.h"
-#include "grounded_logging/ProcessAudio.h"
-#include "grounded_logging/ProcessVision.h"
-#include "grounded_logging/StorePointCloud.h"
-#include <segbot_arm_perception/LogPerceptionAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include "std_msgs/String.h"
@@ -10,6 +6,11 @@
 #include <cstdlib>
 #include <iostream>
 #include <boost/filesystem.hpp>
+//Services
+#include "grounded_logging/ProcessAudio.h"
+#include "grounded_logging/ProcessVision.h"
+#include "grounded_logging/StorePointCloud.h"
+#include <segbot_arm_perception/LogPerceptionAction.h>
 
 using namespace std;
 
@@ -19,18 +20,13 @@ const static int DURATION_TO_RECORD = 5;
 // total number to help with file generation
 int totalObjects = 2, totalTrials = 1, totalBehaviors = 3;
 
+//Filepath to store the data
 std::string generalFilePath = "/home/bwi/grounded_learning_experiments/";
 
 int main(int argc, char **argv)
 {
 	//Initialize ROS
 	ros::init (argc, argv, "grounded_learning_client");
-	/*if(argc != 7) 
-	{
-		ROS_INFO("Usage: grounded_learning_client <objectNumber> <depthImageFilePath> <rgbImageFilePath> <wavFilePath> <dftFilePath> <hapticFilePath>");
-		return 1;
-	}*/
-	
 	ros::NodeHandle nh;
 	
 	ros::ServiceClient depth_client = nh.serviceClient<grounded_logging::StorePointCloud>("point_cloud_logger_service");
@@ -41,7 +37,6 @@ int main(int argc, char **argv)
 	ROS_INFO("Waiting for action server to start.");
 	// wait for the action server to start
 	ac.waitForServer(); //will wait for infinite time
-
 	ROS_INFO("Action server started, sending goal.");
 	
 	// Declare the three services 
