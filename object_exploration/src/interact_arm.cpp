@@ -268,16 +268,15 @@ void approach(std::string dimension, double distance, double velocity){
 		ros::spinOnce();
 		ROS_INFO("velocity: %f", velocity);
 
-		//if(velocity > 0){
-			if(!dimension.compare("x"))
-				T.twist.linear.x = velocity;
-			else if(!dimension.compare("y"))
-				T.twist.linear.y = velocity;
-			else if(!dimension.compare("z"))
-				T.twist.linear.z = velocity;
-			else if(!dimension.compare("xy") || !dimension.compare("yx")){
-				T.twist.linear.x = velocity;
-				T.twist.linear.y = -velocity;
+		if(!dimension.compare("x"))
+			T.twist.linear.x = velocity;
+		else if(!dimension.compare("y"))
+			T.twist.linear.y = velocity;
+		else if(!dimension.compare("z"))
+			T.twist.linear.z = velocity;
+		else if(!dimension.compare("xy") || !dimension.compare("yx")){
+			T.twist.linear.x = velocity;
+			T.twist.linear.y = -velocity;
 		}
 		c_vel_pub_.publish(T);
 		r.sleep();
@@ -506,10 +505,12 @@ bool drop(double height){
 	T.twist.angular.y= 0.0;
 	T.twist.angular.z= 0.0;
 		
-	while(tool_pos_cur.position.z - height >= 0.05 || tool_pos_cur.position.z - height <= 0.05){
+	while(tool_pos_cur.position.z - MINHEIGHT >= 0.05 + height){
+		ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
 		T.twist.linear.z = -base_vel;
 		c_vel_pub_.publish(T);
 		r.sleep();
+		ros::spinOnce();
 	} 
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
@@ -625,7 +626,8 @@ int main(int argc, char **argv){
 	//revolveJ6(.6);
 	//shake(1.5);
 	//drop(.5);
-	poke(.2);
-	push(-.2);
+	//poke(.2);
+	//push(-.2);
+	drop(MINHEIGHT + .2);
 	return 0;
 }
