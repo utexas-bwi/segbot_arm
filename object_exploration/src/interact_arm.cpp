@@ -368,11 +368,45 @@ void lift(double vel){
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
 	
-	//go into holding
 	//log
 	sleep(2);
 }
 
+bool hold(double height){
+	if(height < MINHEIGHT)
+		height = MINHEIGHT;
+	//go to that height
+	ros::Rate r(25);
+	double base_vel = 0.1;
+	geometry_msgs::TwistStamped T;
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	clearMsgs(.4);
+	ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
+
+	if( tool_pos_cur.position.z - MINHEIGHT < height)
+		while(tool_pos_cur.position.z - MINHEIGHT <= 0.05 + height){
+			ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
+			T.twist.linear.z = base_vel;
+			c_vel_pub_.publish(T);
+			r.sleep();
+			ros::spinOnce();
+		}
+	else
+		while(tool_pos_cur.position.z - MINHEIGHT >= height + 0.05){
+			ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
+			T.twist.linear.z = -base_vel;
+			c_vel_pub_.publish(T);
+			r.sleep();
+			ros::spinOnce();
+		}
+	T.twist.linear.z= 0.0;
+	c_vel_pub_.publish(T);
+}
 bool readTrajectory(std::string filename){
 	rosbag::Bag bag;
 	std::string path = ros::package::getPath("moveit_utils");
@@ -631,6 +665,7 @@ bool loop1(){
 	approachFromHome();
 	grabFromApch(6000);
 	lift(.3);
+	hold(.5);
 	revolveJ6(.6);
 	shake(1.5);
 	drop(.5);
@@ -665,7 +700,7 @@ int main(int argc, char **argv){
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 
-	loop1();
-
+	//loop1();
+	hold(.1);
 	return 0;
 }
