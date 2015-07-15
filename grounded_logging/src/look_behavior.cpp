@@ -41,7 +41,7 @@ void collect_point_cloud_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 		string startTime = boost::lexical_cast<std::string>(begin);
 			
 		// append start timestamp with filenames
-		std::string filename = pointCloudFileName+"_"+startTime+".pcd";
+		std::string filename = pointCloudFileName+"/test_"+startTime+".pcd";
 			
 		//Before saving, do a z-filter	
 		pass.setInputCloud (image_cloud);

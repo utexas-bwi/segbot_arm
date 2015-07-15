@@ -9,9 +9,9 @@
 * 
 * Output is based on the input string for the service request. 
 * 
-* File naming is as follows: input file string should contain the absolute path and the base name of the file (without extension)
-* ie: filePath should be passed in as: ~/someBaseFolder/armPerceps/object1
-* this will then be appended by the time of the experiment (and movement) and finally by the extension
+* File naming is as follows: input file string should contain the absolute path to the folder (without extension)
+* ie: filePath should be passed in as: ~/someBaseFolder/armPerceps/
+* this will then be appended by the name of the file - *test_* (kept constant) and the time of the experiment (and movement) and finally by the extension
 * 
 * File parsing is as follows: 6 doubles > efforts, 6 doubles > positions, 3 doubles > EF cart position
 * 
@@ -80,7 +80,7 @@ public:
   bool createHandle(std::string filePath){
 	double begin = ros::Time::now().toSec();
 	std::string startTime = boost::lexical_cast<std::string>(begin);
-	filePath.append("_" + startTime + ".csv");
+	filePath.append("/test_" + startTime + ".csv");
 	ROS_INFO("Making %s", filePath.c_str());	
 	myfile.open(filePath.c_str());
 	//write header

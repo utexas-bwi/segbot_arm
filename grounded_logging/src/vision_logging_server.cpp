@@ -130,7 +130,7 @@ void collect_vision_rgb_data(const sensor_msgs::ImageConstPtr& msg){
 			// append start timestamp with filenames
 			std::stringstream convert;
 			convert << image_count;
-			std::string filename = generalImageFileName+convert.str()+"_"+startTime+".jpg";
+			std::string filename = generalImageFileName+"/test"+convert.str()+"_"+startTime+".jpg";
 			cv::imwrite(filename.c_str(), cv_image->image);
 			ROS_INFO("Saved image %s", filename.c_str());
 					

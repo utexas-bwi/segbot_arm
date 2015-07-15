@@ -17,7 +17,7 @@ using namespace std;
 const static int DURATION_TO_RECORD = 5;
 
 // total number to help with file generation
-int totalObjects = 5, totalTrials = 2, totalBehaviors = 3;
+int totalObjects = 2, totalTrials = 1, totalBehaviors = 3;
 
 std::string generalFilePath = "/home/bwi/grounded_learning_experiments/";
 
@@ -167,6 +167,29 @@ int main(int argc, char **argv)
 				//stop the action
 				goal.start = false;
 				ac.sendGoal(goal);
+				
+				//after the action is stopped, call the point cloud server once again
+				depth_srv.request.start = 1;
+				depth_srv.request.pointCloudFilePath = visionFilePath;
+				
+				//Check if the services are running
+				if (depth_client.call(depth_srv)){
+					ROS_INFO("Point_cloud_logger_service called...");
+				}
+				else{
+					ROS_ERROR("Failed to call point_cloud_logger_service. Server might not have been launched yet.");
+					return 1;
+				}
+				
+				//check if the look behaviour has been executed and the point cloud has been saved
+				if(depth_srv.response.saved == true){
+						depth_srv.request.start = 0;
+				}
+				
+				//call the client with the stop signal
+				if(depth_client.call(depth_srv)){
+					ROS_INFO("Point_cloud_logger_service stopped...");
+				}
 			}
 		}
 	}

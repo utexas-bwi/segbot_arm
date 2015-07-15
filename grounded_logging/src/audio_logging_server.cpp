@@ -55,21 +55,7 @@ void sig_handler(int sig)
 	g_caught_sigint = true;
 	snd_pcm_close (capture_handle);
 	exit (0);
-};
-
-// function to return the timestamp in local time
-/*std::string get_time_stamp(){
-	ltime = time(NULL);        // get current calendar time
-	string timeStamp = asctime(localtime(&ltime));
-	// Replace spaces, colons and slashes as they are not allowed in filenames
-	for(int i = 0; i<timeStamp.length(); ++i){
-        if (timeStamp[i] == '/' || timeStamp[i] == ':' || timeStamp[i] == '\n')
-            timeStamp[i] = '-';
-        if (timeStamp[i] == ' ')
-			timeStamp[i] = '_';
-    }
-    return timeStamp;
-}*/
+}
 
 // callback function to process the published audio msgs
 void listen_audio_data(const std_msgs::Float64MultiArrayConstPtr& msg){
@@ -106,8 +92,8 @@ bool audio_service_callback(grounded_logging::ProcessAudio::Request &req,
 		string startTime = boost::lexical_cast<std::string>(begin);
 		
 		// append start timestamp with filenames
-		wavFileName.append("_"+startTime+".wav");
-		outputDftFileName.append("_"+startTime+".txt");
+		wavFileName.append("/test_"+startTime+".wav");
+		outputDftFileName.append("/test_"+startTime+".txt");
 		ROS_INFO("Filename1: %s", wavFileName.c_str());
 		ROS_INFO("Filename2: %s", outputDftFileName.c_str());
 		
