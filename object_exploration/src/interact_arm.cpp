@@ -263,10 +263,8 @@ void approach(std::string dimension, double distance, double velocity){
 	T.twist.angular.x= 0.0;
 	T.twist.angular.y= 0.0;
 	T.twist.angular.z= 0.0;
-	ROS_INFO("velocity: %f", velocity);
 	for(int i = 0; i < distance/std::abs(velocity)/.25; i++){
 		ros::spinOnce();
-		ROS_INFO("velocity: %f", velocity);
 
 		if(!dimension.compare("x"))
 			T.twist.linear.x = velocity;
@@ -464,8 +462,6 @@ bool shake(double amplitude){
 		r.sleep();
 		vel *= 180/3.1459;
 		ROS_INFO("Got vel: %f",vel);
-		//T.twist.linear.z = step * (vel > 0 ? 1: -1);
-		//T.twist.linear.y = vel;
 		T.joint4 = vel;
 		T.joint5 = vel;
 		T.joint6 = vel;
@@ -531,7 +527,7 @@ bool push(double velocity){
 	goToLocation(push);
 	//start recording
 	//clearMsgs(1.);
-	approach("y", 0.2, velocity);
+	approach("y", 0.5, velocity);
 	//stop recording
 }
 
@@ -539,7 +535,6 @@ bool press(double velocity){
 	sensor_msgs::JointState press = getStateFromBag("press");
 	goToLocation(press);
 	ros::Rate r(40);
-	double base_vel = 0.1;
 	geometry_msgs::TwistStamped T;
 	
 	T.twist.linear.x= 0.0;
@@ -560,16 +555,18 @@ bool press(double velocity){
 	} 
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
+	clearMsgs(.5);
 }
 
 /*
  * should be called immediately after `press` 
- * velocity capped at 
+ * velocity capped at .07
  * moves downward for 5 seconds or if movement causes force control to react
  */
 bool squeeze(double velocity){
+	if(velocity > .07)
+		velocity = .07;
 	ros::Rate r(40);
-	double base_vel = 0.1;
 	geometry_msgs::TwistStamped T;
 	
 	T.twist.linear.x= 0.0;
@@ -584,7 +581,7 @@ bool squeeze(double velocity){
 	ros::Time start = ros::Time::now();
 	ros::Duration timeout = ros::Duration(5.);
 	
-	while(tool_pos_cur.position.z <= tool_pose_last.position.z || ros::Time::now() - start < timeout){
+	while(tool_pos_cur.position.z <= tool_pose_last.position.z && ros::Time::now() - start < timeout){
 		T.twist.linear.z = -velocity;
 		c_vel_pub_.publish(T);
 		r.sleep();
@@ -593,6 +590,7 @@ bool squeeze(double velocity){
 	} 
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
+	clearMsgs(.5);
 }
 
 /*
@@ -629,21 +627,18 @@ bool revolveJ6(double velocity){
 	}
 }
 
-bool demo(){
+bool loop1(){
 	approachFromHome();
 	grabFromApch(6000);
-	
-	clearMsgs(0.5);
 	lift(.3);
-
-	/*shake(.2);
-	clearMsgs(1.0);
-	lift(-.3);
-	clearMsgs(1.0);
-	releaseAndReturn(0.08);
-	releaseAndReturn(0.08);
-	pushFromSide(0.08);
-	goHome();*/
+	revolveJ6(.6);
+	shake(1.5);
+	drop(.5);
+	poke(.2);
+	push(-.2);
+	press(0.2);
+	squeeze(.03);
+	goHome();
 }
 
 int main(int argc, char **argv){
@@ -670,15 +665,7 @@ int main(int argc, char **argv){
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 
-	//getStateFromBag("grab");
-	//demo();
-	//revolveJ6(.6);
-	//shake(1.5);
-	//drop(.5);
-	//poke(.2);
-	//push(-.2);
-	//drop(MINHEIGHT + .2);
-	//press(0.2);
-	squeeze(.05);
+	loop1();
+
 	return 0;
 }
