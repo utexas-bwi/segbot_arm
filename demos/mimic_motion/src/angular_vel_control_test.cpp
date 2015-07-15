@@ -20,9 +20,11 @@
 #include <tf/tf.h>
 
 #define PI 3.14159265
+#define RAD_TO_DEG 57.2957795
 
-#define TOLERANCE_RADIANS 0.05*PI
-#define MAX_VELOCITY_RADIANS 0.2*PI
+#define TOLERANCE_RADIANS 0.0025*PI
+#define MAX_VELOCITY_RADIANS (2*0.075*PI)
+
 
 using namespace std;
 
@@ -56,12 +58,19 @@ void waitForJointAngles(){
 jaco_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<float> goal_vector){
 	jaco_msgs::JointVelocity jv_goal;
 	
-	jv_goal.joint1 = -180/PI*goal_vector[0];
+	/*jv_goal.joint1 = -180/PI*goal_vector[0];
 	jv_goal.joint2 = 180/PI*goal_vector[1];
 	jv_goal.joint3 = -180*goal_vector[2];
 	jv_goal.joint4 = -180*goal_vector[3];
 	jv_goal.joint5 = -180*goal_vector[4];
-	jv_goal.joint6 = -180*goal_vector[5];
+	jv_goal.joint6 = -180*goal_vector[5];*/
+	
+	jv_goal.joint1 = -RAD_TO_DEG*goal_vector[0];
+	jv_goal.joint2 = RAD_TO_DEG*goal_vector[1];
+	jv_goal.joint3 = -RAD_TO_DEG*goal_vector[2];
+	jv_goal.joint4 = -RAD_TO_DEG*goal_vector[3];
+	jv_goal.joint5 = -RAD_TO_DEG*goal_vector[4];
+	jv_goal.joint6 = -RAD_TO_DEG*goal_vector[5];
 	
 	return jv_goal;
 }
@@ -157,11 +166,25 @@ int main(int argc, char **argv) {
 				distance_to_travel[3],distance_to_travel[4],distance_to_travel[5]);
 	
 	
+	//find which joint has to travel the most; that joint travels at MAX_VELOCITY_RADIANS
+	int fastest_joint = -1;
+	double d_temp = -1.0;
+	for (unsigned int i = 0; i < 6; i ++){
+		if (fabs(distance_to_travel[i]) > d_temp){
+			d_temp = fabs(distance_to_travel[i]);
+			fastest_joint = i;
+		}
+	}
+	
+	double expected_duration = (double) d_temp / (double) MAX_VELOCITY_RADIANS;
+	ROS_INFO("[%f / %f = %f] Expected duration of movement",d_temp,MAX_VELOCITY_RADIANS,expected_duration);
 
 	//next, decide the speed
 	for (unsigned int i = 0; i < 6; i ++){
 		if (fabs(distance_to_travel[i]) > TOLERANCE_RADIANS){
-			j_vel_goal[i] = MAX_VELOCITY_RADIANS*j_vel_directions[i];
+			double v_i = (fabs(distance_to_travel[i])/d_temp)*MAX_VELOCITY_RADIANS;
+			j_vel_goal[i] = v_i*j_vel_directions[i];
+			//j_vel_goal[i] = MAX_VELOCITY_RADIANS*j_vel_directions[i];
 		}
 		else 
 			j_vel_goal[i]=0.0;
@@ -173,6 +196,9 @@ int main(int argc, char **argv) {
 	
 	jaco_msgs::JointVelocity jv_goal;
 	double sum = 0.0;
+	
+	double t_start_sec =ros::Time::now().toSec();
+
 	
 	//starti looping
 	while (ros::ok()){
@@ -187,18 +213,30 @@ int main(int argc, char **argv) {
 			}	
 			sum+=fabs(j_vel_goal[i]);
 		}
-		ROS_INFO("j vel sum = %f",sum);
+		//ROS_INFO("j vel sum = %f",sum);
 		
 		//publish joint commands
+		ROS_INFO("publishing j_vel: %f, %f, %f, %f, %f, %f",j_vel_goal[0],j_vel_goal[1],j_vel_goal[2],
+				j_vel_goal[3],j_vel_goal[4],j_vel_goal[5]);
+	
+	
 		jv_goal = toJacoJointVelocityMsg(j_vel_goal);
 		
 		j_vel_pub.publish(jv_goal);
 		
 		r.sleep();
 		
+		//if we got there
 		if (sum < 0.01)
 			break;
+			
+		//to do: check if too much time has passed (e.g., 1.5 times expected_duration) and end as well
 	}
+	
+	double t_end_sec =ros::Time::now().toSec();
+	double actual_duration = t_end_sec-t_start_sec;
+	ROS_INFO("Movement took %f seconds, expected was %f ",actual_duration,expected_duration);
+	
 	
 	//compute final error
 	std::vector<float> j_pos_error;
