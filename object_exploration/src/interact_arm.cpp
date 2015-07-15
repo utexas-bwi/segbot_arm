@@ -1,3 +1,4 @@
+#include "ros/ros.h"
 #include <signal.h>
 #include <cmath>
 #include <string>
@@ -14,7 +15,6 @@
 #include <boost/assign/std/vector.hpp>
 //services
 #include "moveit_utils/MicoController.h"
-#include "ros/ros.h"
 #include "geometry_msgs/Pose.h"
 #include "jaco_msgs/HomeArm.h"
 #include <ros/package.h>
@@ -25,7 +25,6 @@
 #include "jaco_msgs/JointAngles.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
 #include "moveit_utils/AngularVelCtrl.h"
-
 //subscriber msgs
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
@@ -33,22 +32,54 @@
 #include <jaco_msgs/JointVelocity.h>
 //actions
 #include <actionlib/client/simple_action_client.h>
+#include <actionlib/client/terminal_state.h>
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
+//Logger Services
+#include "grounded_logging/ProcessAudio.h"
+#include "grounded_logging/ProcessVision.h"
+#include "grounded_logging/StorePointCloud.h"
+#include <segbot_arm_perception/LogPerceptionAction.h>
+//boost filesystems
+#include <boost/filesystem.hpp>
 
 #define foreach BOOST_FOREACH
 #define MINHEIGHT -0.05 		//defines the height of the table relative to the mico_base
 #define ALPHA .7				//constant for temporal smoothing in effort cb
+using namespace std;
 using namespace boost::assign;
 bool g_caught_sigint = false;
+
+// total number of object and trials to help with folder generation
+int totalObjects = 2, totalTrials = 1;
+
+//global strings to store the modality data
+string visionFilePath, audioFilePath, hapticFilePath;
+
+//Filepath to store the data
+std::string generalFilePath = "/home/bwi/grounded_learning_experiments/";
 
 //Finger vars
 float f1;
 float f2;
 ros::Publisher c_vel_pub_;
 ros::Publisher j_vel_pub_;
+
+// Declare the three logger services 
+grounded_logging::StorePointCloud depth_srv;
+grounded_logging::ProcessVision image_srv;
+grounded_logging::ProcessAudio audio_srv;
+
+//Declare the logger serice clients
+ros::ServiceClient depth_client;
+ros::ServiceClient image_client;
+ros::ServiceClient audio_client;
+
+//Declare the haptic action client
+actionlib::SimpleActionClient<segbot_arm_perception::LogPerceptionAction> ac("arm_perceptual_log_action", true);
+segbot_arm_perception::LogPerceptionGoal goal;
 
 ros::ServiceClient movement_client;
 ros::ServiceClient home_client;
@@ -66,6 +97,61 @@ double effort_smoothed[6];
 double delta_effort_smoothed[6];
 
 geometry_msgs::Pose tool_pos_cur;
+
+// function to start storing the vision, audio and haptic data while the behaviour is being executed
+int startSensoryDataCollection(){
+	// then call the vision and the audio loggers
+	image_srv.request.start = 1;
+	image_srv.request.generalImageFilePath = visionFilePath;
+	audio_srv.request.start = 1;
+	audio_srv.request.outputRawFilePath = audioFilePath;
+	audio_srv.request.outputDftFilePath = audioFilePath;
+				
+	//call the other two services
+	if (image_client.call(image_srv)){
+		ROS_INFO("Vision_logger_service called...");
+	}
+	else{
+		ROS_ERROR("Failed to call vision_logger_service. Server might not have been launched yet.");
+		return 1;
+	}
+	if (audio_client.call(audio_srv)){
+		ROS_INFO("Audio_logger_service called...");
+	}
+	else{
+		ROS_ERROR("Failed to call audio_logger_service. Server might not have been launched yet.");
+		return 1;
+	}
+				
+	// send a goal to the action
+	goal.filePath = hapticFilePath;
+	goal.start = true;
+	ac.sendGoal(goal);
+	
+	return(0);
+}
+
+// function to stop storing the vision, audio and haptic data while the behaviour is being executed
+void stopSensoryDataCollection(){
+	//call the service again with the stop signal
+	image_srv.request.start = 0;
+	audio_srv.request.start = 0;
+				
+	if(image_client.call(image_srv)){
+		ROS_INFO("Vision_logger_service stopped...");
+	}
+	if(audio_client.call(audio_srv)){
+		ROS_INFO("Audio_logger_service stopped...");
+	}
+				
+	// Print out the result of the action
+	actionlib::SimpleClientGoalState state = ac.getState();
+	ROS_INFO("Action status: %s",state.toString().c_str());
+				
+	//stop the action
+	goal.start = false;
+	ac.sendGoal(goal);
+}
 
 //checks fingers position - used for object holding assurance
 void fingers_cb(const jaco_msgs::FingerPosition input){
@@ -331,6 +417,7 @@ void approach(char dimension, double distance){
 }
 //lifts ef specified distance
 void lift(double vel){
+	startSensoryDataCollection();
 	ros::Rate r(4);
 	ros::spinOnce();
 	double distance_init = .2;
@@ -370,9 +457,12 @@ void lift(double vel){
 	
 	//log
 	sleep(2);
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
 }
 
 bool hold(double height){
+	startSensoryDataCollection();
 	if(height < MINHEIGHT)
 		height = MINHEIGHT;
 	//go to that height
@@ -406,6 +496,8 @@ bool hold(double height){
 		}
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
 }
 bool readTrajectory(std::string filename){
 	rosbag::Bag bag;
@@ -454,11 +546,15 @@ bool approachFromHome(){
 }
 
 bool grabFromApch(int fingerPos){
+	startSensoryDataCollection();
 	approach(.02);
 	closeComplt(fingerPos);
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
 }
 
 bool shake(double vel){
+	startSensoryDataCollection();
 	int iterations = 2;
 	int count = 0;
 	double step = .25;
@@ -564,6 +660,8 @@ bool shake(double vel){
 	T.joint6 = 0.0;
 	
 	j_vel_pub_.publish(T);
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
 
 }
 bool goToLocation(sensor_msgs::JointState js){
@@ -577,6 +675,7 @@ bool goToLocation(sensor_msgs::JointState js){
 	return srv.response.success;
 }
 bool drop(double height){
+	startSensoryDataCollection();
 	if(height < MINHEIGHT)
 		height = MINHEIGHT;
 	//go to that height
@@ -603,26 +702,35 @@ bool drop(double height){
 	c_vel_pub_.publish(T);
 	
 	openFull();
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
 }
 
 bool poke(double velocity){
+	startSensoryDataCollection();
 	closeComplt(7000);
 	sensor_msgs::JointState poke = getStateFromBag("poke");
 	goToLocation(poke);
 	clearMsgs(1.);
 	approach("xy", 0.2, velocity);
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
 }
 
 bool push(double velocity){
+	startSensoryDataCollection();
 	sensor_msgs::JointState push = getStateFromBag("push");
 	goToLocation(push);
 	//start recording
 	//clearMsgs(1.);
 	approach("y", 0.5, velocity);
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
 	//stop recording
 }
 
 bool press(double velocity){
+	startSensoryDataCollection();
 	sensor_msgs::JointState press = getStateFromBag("press");
 	goToLocation(press);
 	ros::Rate r(40);
@@ -647,6 +755,8 @@ bool press(double velocity){
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
 	clearMsgs(.5);
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
 }
 
 /*
@@ -655,6 +765,7 @@ bool press(double velocity){
  * moves downward for 5 seconds or if movement causes force control to react
  */
 bool squeeze(double velocity){
+	startSensoryDataCollection();
 	if(velocity > .07)
 		velocity = .07;
 	ros::Rate r(40);
@@ -682,6 +793,8 @@ bool squeeze(double velocity){
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
 	clearMsgs(.5);
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
 }
 
 /*
@@ -689,6 +802,7 @@ bool squeeze(double velocity){
  * limited at .8r/s
  */
 bool revolveJ6(double velocity){ 
+	startSensoryDataCollection();
 	ros::Time first_sent;
 	ros::Rate r(4);
 	jaco_msgs::JointVelocity T;
@@ -716,21 +830,142 @@ bool revolveJ6(double velocity){
 		j_vel_pub_.publish(T);
 		ROS_INFO("Sending message %d", i);
 	}
+	clearMsgs(2.0);
+	stopSensoryDataCollection();
+}
+
+void createBehaviorAndSubDirectories(string behaviorName, string trialFilePath){
+	//create behaviour directory
+	string behaviorFilePath = trialFilePath + "/" + behaviorName;
+	boost::filesystem::path behavior_dir (behaviorFilePath);
+	if(!boost::filesystem::exists(behavior_dir))
+		boost::filesystem::create_directory(behavior_dir);
+		
+	//create a new directory for vision
+	visionFilePath = behaviorFilePath + "/" + "vision_data";
+	boost::filesystem::path vision_dir (visionFilePath);
+	if(!boost::filesystem::exists(vision_dir))
+		boost::filesystem::create_directory(vision_dir);
+					
+	//create a new directory for audio
+	audioFilePath = behaviorFilePath + "/" + "audio_data";
+	boost::filesystem::path audio_dir (audioFilePath);
+	if(!boost::filesystem::exists(audio_dir))
+		boost::filesystem::create_directory(audio_dir);
+					
+	//create a new directory for haptic
+	hapticFilePath = behaviorFilePath + "/" + "haptic_data";
+	boost::filesystem::path haptic_dir (hapticFilePath);
+	if(!boost::filesystem::exists(haptic_dir))
+		boost::filesystem::create_directory(haptic_dir);
+}
+
+int storePointCloud(){
+	// call the point cloud logger
+	depth_srv.request.start = 1;
+	depth_srv.request.pointCloudFilePath = visionFilePath;
+				
+	//Check if the services are running
+	if (depth_client.call(depth_srv)){
+		ROS_INFO("Point_cloud_logger_service called...");
+	}
+	else{
+		ROS_ERROR("Failed to call point_cloud_logger_service. Server might not have been launched yet.");
+		return 1;
+	}
+				
+	//check if the look behaviour has been executed and the point cloud has been saved
+	if(depth_srv.response.saved == true){
+		depth_srv.request.start = 0;
+	}
+				
+	//call the client with the stop signal
+	if(depth_client.call(depth_srv)){
+		ROS_INFO("Point_cloud_logger_service stopped...");
+	}
+	
+	return(0);
 }
 
 bool loop1(){
-	approachFromHome();
-	grabFromApch(6000);
-	lift(.3);
-	hold(.5);
-	revolveJ6(.6);
-	shake(1.);
-	drop(.5);
-	poke(.2);
-	push(-.2);
-	press(0.2);
-	squeeze(.03);
-	goHome();
+	for(int object_num = 1; object_num <= totalObjects; object_num++){ 
+		//create the object directory
+		std::stringstream convert_object;
+		convert_object << object_num;
+		string objectFilePath = generalFilePath + "obj_"+ convert_object.str();
+		boost::filesystem::path object_dir (objectFilePath);
+		if(!boost::filesystem::exists(object_dir))
+			boost::filesystem::create_directory(object_dir);
+		
+		for(int trial_num = 1; trial_num <= totalTrials; trial_num++){
+			//create the trial directory
+			std::stringstream convert_trial;
+			convert_trial << trial_num;
+			string trialFilePath = objectFilePath + "/" + "trial_" + convert_trial.str();
+			boost::filesystem::path trial_dir (trialFilePath);
+			if(!boost::filesystem::exists(trial_dir))
+				boost::filesystem::create_directory(trial_dir);
+
+			//carry out the sequence of behaviours
+			approachFromHome();
+			//wait for 3 seconds after each action
+			clearMsgs(3.0);
+			//create the directories and store the point cloud before each action
+			createBehaviorAndSubDirectories("grasp", trialFilePath);
+			storePointCloud();
+			grabFromApch(6000);
+			//store a point cloud after the action is performed
+			storePointCloud();
+			
+			clearMsgs(3.0);
+			createBehaviorAndSubDirectories("lift", trialFilePath);
+			storePointCloud();
+			lift(.3);
+			storePointCloud();
+			clearMsgs(3.0);
+			createBehaviorAndSubDirectories("hold", trialFilePath);
+			storePointCloud();
+			hold(.5);
+			storePointCloud();
+			clearMsgs(3.0);
+			createBehaviorAndSubDirectories("revolve", trialFilePath);
+			storePointCloud();
+			revolveJ6(.6);
+			storePointCloud();
+			clearMsgs(3.0);
+			createBehaviorAndSubDirectories("shake", trialFilePath);
+			storePointCloud();
+			shake(1.);
+			storePointCloud();
+			clearMsgs(3.0);
+			createBehaviorAndSubDirectories("drop", trialFilePath);
+			storePointCloud();
+			drop(.5);
+			storePointCloud();
+			clearMsgs(3.0);
+			createBehaviorAndSubDirectories("poke", trialFilePath);
+			storePointCloud();
+			poke(.2);
+			storePointCloud();
+			clearMsgs(3.0);
+			createBehaviorAndSubDirectories("push", trialFilePath);
+			storePointCloud();
+			push(-.2);
+			storePointCloud();
+			clearMsgs(3.0);
+			createBehaviorAndSubDirectories("press", trialFilePath);
+			storePointCloud();
+			press(0.2);
+			storePointCloud();
+			clearMsgs(3.0);
+			createBehaviorAndSubDirectories("squeeze", trialFilePath);
+			storePointCloud();
+			squeeze(.03);
+			storePointCloud();
+			clearMsgs(3.0);
+			goHome();
+		}
+	}
 }
 
 int main(int argc, char **argv){
@@ -756,6 +991,15 @@ int main(int argc, char **argv){
 
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+  	
+	depth_client = n.serviceClient<grounded_logging::StorePointCloud>("point_cloud_logger_service");
+	image_client = n.serviceClient<grounded_logging::ProcessVision>("vision_logger_service");
+	audio_client = n.serviceClient<grounded_logging::ProcessAudio>("audio_logger_service");
+	
+	ROS_INFO("Waiting for action server to start.");
+	// wait for the action server to start
+	ac.waitForServer(); //will wait for infinite time
+	ROS_INFO("Action server started, sending goal.");
 
 	loop1();
 

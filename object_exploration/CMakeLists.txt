@@ -123,7 +123,7 @@ add_executable(interact_arm src/interact_arm.cpp)
 add_dependencies(interact_arm interact_arm_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(interact_arm ${catkin_LIBRARIES})
+target_link_libraries(interact_arm ${catkin_LIBRARIES} ${BOOST_LIBRARIES})
 
 #############
 ## Install ##
