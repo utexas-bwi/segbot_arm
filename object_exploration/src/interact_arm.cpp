@@ -65,6 +65,8 @@ double delta_effort[6];
 double effort_smoothed[6];
 double delta_effort_smoothed[6];
 
+geometry_msgs::Pose tool_pos_cur;
+
 //checks fingers position - used for object holding assurance
 void fingers_cb(const jaco_msgs::FingerPosition input){
 	f1 = input.finger1;
@@ -101,6 +103,9 @@ void joint_effort_cb(const sensor_msgs::JointStateConstPtr& input){
 	heard_efforts = true;
 }
 
+void toolpos_cb(const geometry_msgs::PoseStamped &input){
+	tool_pos_cur = input.pose;
+}
 bool clearMsgs(double duration){
 	ros::Time start = ros::Time::now();
 	ros::Duration timeout = ros::Duration(duration);
@@ -504,9 +509,24 @@ bool drop(double height){
 	//go to that height
 	sensor_msgs::JointState drop = getStateFromBag("drop");
 	goToLocation(drop);
-	//height of table should be a constant
-	//look at tool position height
-	//send cart vel commands to match height
+	ros::Rate r(25);
+	double base_vel = 0.1;
+	geometry_msgs::TwistStamped T;
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= 0.0;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+		
+	while(tool_pos_cur.position.z - height >= 0.05 || tool_pos_cur.position.z - height <= 0.05){
+		T.twist.linear.z = -base_vel;
+		c_vel_pub_.publish(T);
+		r.sleep();
+	} 
+	T.twist.linear.z= 0.0;
+	c_vel_pub_.publish(T);
+	
 	openFull();
 }
 
@@ -608,7 +628,7 @@ int main(int argc, char **argv){
 	//ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
   
 	//create subscriber to tool position topic
-	//ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
 
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
