@@ -22,9 +22,13 @@
 #include <tf/tf.h>
 
 #define PI 3.14159265
+#define RAD_TO_DEG 57.2957795
 
-#define TOLERANCE_RADIANS 0.05*PI
-#define MAX_VELOCITY_RADIANS 0.2*PI
+#define TOLERANCE_RADIANS (0.00125*PI)
+#define STALL_TIME_MULTIPLIER 1.35 //if we are still moving for 1.35 x the expected time, then stop, 
+
+
+#define MAX_VELOCITY_RADIANS (2*0.075*PI)
 
 using namespace std;
 
@@ -58,34 +62,64 @@ void waitForJointAngles(){
 jaco_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<float> goal_vector){
 	jaco_msgs::JointVelocity jv_goal;
 	
-	jv_goal.joint1 = -180/PI*goal_vector[0];
+	/*jv_goal.joint1 = -180/PI*goal_vector[0];
 	jv_goal.joint2 = 180/PI*goal_vector[1];
 	jv_goal.joint3 = -180*goal_vector[2];
 	jv_goal.joint4 = -180*goal_vector[3];
 	jv_goal.joint5 = -180*goal_vector[4];
-	jv_goal.joint6 = -180*goal_vector[5];
+	jv_goal.joint6 = -180*goal_vector[5];*/
+	
+	jv_goal.joint1 = -RAD_TO_DEG*goal_vector[0];
+	jv_goal.joint2 = RAD_TO_DEG*goal_vector[1];
+	jv_goal.joint3 = -RAD_TO_DEG*goal_vector[2];
+	jv_goal.joint4 = -RAD_TO_DEG*goal_vector[3];
+	jv_goal.joint5 = -RAD_TO_DEG*goal_vector[4];
+	jv_goal.joint6 = -RAD_TO_DEG*goal_vector[5];
 	
 	return jv_goal;
 }
-	
+
+double distanceToTravel(double current_position, double target_position, int joint_id){
+	if (joint_id != 1 && joint_id != 2){ //joints 1 and 2 (starting at 0) have hard limits
+		//decide which direction to move in for each joint (either positive or negative)
+		if (target_position > current_position){
+			if ( target_position - current_position <
+						current_position + 2*PI - target_position) {
+				//go along the positive direction
+					
+				return target_position -current_position;
+			}
+			else {
+				return 2*PI - target_position + current_position;
+			}
+				
+		}
+		else {
+			if ( current_position - target_position > 
+					target_position + 2*PI - current_position){
+				
+				return target_position + 2*PI - current_position;
+			}
+			else {
+				
+				return current_position - target_position;
+				
+			}
+		}
+	}
+	else {
+		return target_position - current_position;
+	}
+}
+
+
 bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::AngularVelCtrl::Response &res){
 	//get joint positions
-	waitForJointAngles();
 	target_joint_state = req.state;
 	
+	//get joint positions
+	waitForJointAngles();
 	starting_joint_state = current_state;
-	
-	ROS_INFO("Starting state:");
-	ROS_INFO("%f, %f, %f, %f, %f, %f",starting_joint_state.position[0],starting_joint_state.position[1],starting_joint_state.position[2],
-				starting_joint_state.position[3],starting_joint_state.position[4],starting_joint_state.position[5]);
-	
-	ROS_INFO("Target state:");
-	ROS_INFO("%f, %f, %f, %f, %f, %f",target_joint_state.position[0],target_joint_state.position[1],target_joint_state.position[2],
-				target_joint_state.position[3],target_joint_state.position[4],target_joint_state.position[5]);
-	//ROS_INFO_STREAM(target_joint_state);
-	
-	
-	//ROS_INFO_STREAM(starting_joint_state);
 	
 	//now, go to target from joint
 	ros::Rate r(40);
@@ -100,31 +134,41 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 	distance_to_travel.resize(6);
 	
 	for (unsigned int i = 0; i < 6; i ++){
-		//decide which direction to move in for each joint (either positive or negative)
-		if (target_joint_state.position[i] > starting_joint_state.position[i]){
-			if ( target_joint_state.position[i] - starting_joint_state.position[i] <
-					starting_joint_state.position[i] + 2*PI - target_joint_state.position[i]) {
-				//go along the positive direction
-				j_vel_directions[i] = 1.0;
-				distance_to_travel[i] = target_joint_state.position[i] - starting_joint_state.position[i];
+		
+		if (i != 1 && i != 2){ //joints 1 and 2 (starting at 0) have hard limits
+			//decide which direction to move in for each joint (either positive or negative)
+			if (target_joint_state.position[i] > starting_joint_state.position[i]){
+				if ( target_joint_state.position[i] - starting_joint_state.position[i] <
+						starting_joint_state.position[i] + 2*PI - target_joint_state.position[i]) {
+					//go along the positive direction
+					j_vel_directions[i] = 1.0;
+					distance_to_travel[i] = target_joint_state.position[i] - starting_joint_state.position[i];
+				}
+				else {
+					j_vel_directions[i] = -1.0;
+					distance_to_travel[i] = 2*PI - target_joint_state.position[i] + starting_joint_state.position[i];
+				}
+				
 			}
 			else {
-				j_vel_directions[i] = -1.0;
-				distance_to_travel[i] = 2*PI - target_joint_state.position[i] + starting_joint_state.position[i];
+				if ( starting_joint_state.position[i] - target_joint_state.position[i] > 
+						target_joint_state.position[i] + 2*PI - starting_joint_state.position[i]){
+					j_vel_directions[i] = 1.0;
+					distance_to_travel[i] = target_joint_state.position[i] + 2*PI - starting_joint_state.position[i];
+				}
+				else {
+					j_vel_directions[i] = -1.0;
+					distance_to_travel[i] = starting_joint_state.position[i] - target_joint_state.position[i];
+				
+				}
 			}
-			
 		}
 		else {
-			if ( starting_joint_state.position[i] - target_joint_state.position[i] > 
-					target_joint_state.position[i] + 2*PI - starting_joint_state.position[i]){
+			distance_to_travel[i] = target_joint_state.position[i] - starting_joint_state.position[i];
+			if (distance_to_travel[i] >= 0)
 				j_vel_directions[i] = 1.0;
-				distance_to_travel[i] = target_joint_state.position[i] + 2*PI - starting_joint_state.position[i];
-			}
-			else {
+			else
 				j_vel_directions[i] = -1.0;
-				distance_to_travel[i] = starting_joint_state.position[i] - target_joint_state.position[i];
-			
-			}
 		}
 		//float d_i = target_joint_state.position[i]-starting_joint_state.position[i];
 		
@@ -136,11 +180,25 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 				distance_to_travel[3],distance_to_travel[4],distance_to_travel[5]);
 	
 	
+	//find which joint has to travel the most; that joint travels at MAX_VELOCITY_RADIANS
+	int fastest_joint = -1;
+	double d_temp = -1.0;
+	for (unsigned int i = 0; i < 6; i ++){
+		if (fabs(distance_to_travel[i]) > d_temp){
+			d_temp = fabs(distance_to_travel[i]);
+			fastest_joint = i;
+		}
+	}
+	
+	double expected_duration = (double) d_temp / (double) MAX_VELOCITY_RADIANS;
+	ROS_INFO("[%f / %f = %f] Expected duration of movement",d_temp,MAX_VELOCITY_RADIANS,expected_duration);
 
 	//next, decide the speed
 	for (unsigned int i = 0; i < 6; i ++){
 		if (fabs(distance_to_travel[i]) > TOLERANCE_RADIANS){
-			j_vel_goal[i] = MAX_VELOCITY_RADIANS*j_vel_directions[i];
+			double v_i = (fabs(distance_to_travel[i])/d_temp)*MAX_VELOCITY_RADIANS;
+			j_vel_goal[i] = v_i*j_vel_directions[i];
+			//j_vel_goal[i] = MAX_VELOCITY_RADIANS*j_vel_directions[i];
 		}
 		else 
 			j_vel_goal[i]=0.0;
@@ -153,12 +211,18 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 	jaco_msgs::JointVelocity jv_goal;
 	double sum = 0.0;
 	
+	double t_start_sec =ros::Time::now().toSec();
+	double t_current;
+	
+	std::vector<float> remaining_distances;
+	remaining_distances.resize(6);
+	std::vector<float> remaining_distances_last = distance_to_travel;
+	bool stalled = false;
+	
 	//starti looping
 	while (ros::ok()){
 		ros::spinOnce();
-		
 		sum = 0.0;
-		
 		//check if any of the joints have reached their targets
 		for (unsigned int i = 0; i < 6; i ++){
 			if (fabs(current_state.position[i]- target_joint_state.position[i]) < TOLERANCE_RADIANS){	
@@ -166,18 +230,58 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 			}	
 			sum+=fabs(j_vel_goal[i]);
 		}
-		ROS_INFO("j vel sum = %f",sum);
 		
-		//publish joint commands
-		jv_goal = toJacoJointVelocityMsg(j_vel_goal);
-		
-		j_vel_pub.publish(jv_goal);
-		
-		r.sleep();
-		
+		//if we're done, just break
 		if (sum < 0.01)
 			break;
+		
+		//check if the distance to the target is growing -- this 
+		//can be a result of a colision or over-shooting the target
+		for (unsigned int i = 0; i < 6; i ++){
+			remaining_distances[i]=distanceToTravel(current_state.position[i],target_joint_state.position[i],i);
+			
+			//check if it's growing
+			if (fabs(remaining_distances[i]) > fabs(remaining_distances_last[i]) + TOLERANCE_RADIANS
+				&& j_vel_goal[i] != 0.0){
+				ROS_INFO("Something must be in the way (joint %i, %f, %f) or the joint has over-shot its target"
+							,i,remaining_distances[i],remaining_distances_last[i]);
+				
+				stalled = true;
+			}
+			else {
+				remaining_distances_last[i]=remaining_distances[i];
+			}
+		}
+		
+		if (stalled)
+			break;
+		
+		ROS_INFO("publishing j_vel: %f, %f, %f, %f, %f, %f",j_vel_goal[0],j_vel_goal[1],j_vel_goal[2],
+				j_vel_goal[3],j_vel_goal[4],j_vel_goal[5]);
+	
+	
+		//publish the goal
+		jv_goal = toJacoJointVelocityMsg(j_vel_goal);
+		j_vel_pub.publish(jv_goal);
+		
+		//sleep
+		r.sleep();
+		
+		//check if too much time has passed (e.g., 1.5 times expected_duration) and end as well
+		t_current = ros::Time::now().toSec();
+		
+		if (t_current - t_start_sec > expected_duration*STALL_TIME_MULTIPLIER){
+			ROS_INFO("Timeout!");
+			break;
+		}
+		
+		
 	}
+	
+	double t_end_sec =ros::Time::now().toSec();
+	double actual_duration = t_end_sec-t_start_sec;
+	ROS_INFO("Movement took %f seconds, expected was %f ",actual_duration,expected_duration);
+	
 	
 	//compute final error
 	std::vector<float> j_pos_error;
