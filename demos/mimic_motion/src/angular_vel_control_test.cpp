@@ -23,6 +23,9 @@
 #define RAD_TO_DEG 57.2957795
 
 #define TOLERANCE_RADIANS (0.00125*PI)
+#define STALL_TIME_MULTIPLIER 1.35 //if we are still moving for 1.35 x the expected time, then stop, 
+
+
 #define MAX_VELOCITY_RADIANS (2*0.075*PI)
 
 
@@ -75,6 +78,38 @@ jaco_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<float> goal_vector){
 	return jv_goal;
 }
 	
+double distanceToTravel(double current_position, double target_position, int joint_id){
+	if (joint_id != 1 && joint_id != 2){ //joints 1 and 2 (starting at 0) have hard limits
+		//decide which direction to move in for each joint (either positive or negative)
+		if (target_position > current_position){
+			if ( target_position - current_position <
+						current_position + 2*PI - target_position) {
+				//go along the positive direction
+					
+				return target_position -current_position;
+			}
+			else {
+				return 2*PI - target_position + current_position;
+			}
+				
+		}
+		else {
+			if ( current_position - target_position > 
+					target_position + 2*PI - current_position){
+				
+				return target_position + 2*PI - current_position;
+			}
+			else {
+				
+				return current_position - target_position;
+				
+			}
+		}
+	}
+	else {
+		return target_position - current_position;
+	}
+}
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
@@ -210,12 +245,17 @@ int main(int argc, char **argv) {
 	double t_start_sec =ros::Time::now().toSec();
 	double t_current;
 	
+	std::vector<float> remaining_distances;
+	remaining_distances.resize(6);
+	std::vector<float> remaining_distances_last = distance_to_travel;
+	bool stalled = false;
+	
 	//starti looping
 	while (ros::ok()){
 		ros::spinOnce();
 		
-		sum = 0.0;
 		
+		sum = 0.0;
 		//check if any of the joints have reached their targets
 		for (unsigned int i = 0; i < 6; i ++){
 			if (fabs(current_state.position[i]- target_joint_state.position[i]) < TOLERANCE_RADIANS){	
@@ -223,30 +263,63 @@ int main(int argc, char **argv) {
 			}	
 			sum+=fabs(j_vel_goal[i]);
 		}
+		
+		//if we're done, just break
+		if (sum < 0.01)
+			break;
+		
+		//check if the distance to the target is growing -- this 
+		//can be a result of a colision or over-shooting the target
+		for (unsigned int i = 0; i < 6; i ++){
+			remaining_distances[i]=distanceToTravel(current_state.position[i],target_joint_state.position[i],i);
+			
+			//check if it's growing
+			if (fabs(remaining_distances[i]) > fabs(remaining_distances_last[i]) + TOLERANCE_RADIANS
+				&& j_vel_goal[i] != 0.0){
+				ROS_INFO("Something must be in the way (joint %i, %f, %f) or the joint has over-shot its target"
+							,i,remaining_distances[i],remaining_distances_last[i]);
+				
+				stalled = true;
+			}
+			else {
+				remaining_distances_last[i]=remaining_distances[i];
+			}
+		}
+		
+		if (stalled)
+			break;
+		
+		
 		//ROS_INFO("j vel sum = %f",sum);
 		
 		//publish joint commands
+		/*ROS_INFO("current j_vel: %f, %f, %f, %f, %f, %f",current_state.velocity[0],current_state.velocity[1],
+				current_state.velocity[2],
+				current_state.velocity[3],current_state.velocity[4],current_state.velocity[5]);*/
+		//check how much left the joint has to travel
+			
+		
+	
 		ROS_INFO("publishing j_vel: %f, %f, %f, %f, %f, %f",j_vel_goal[0],j_vel_goal[1],j_vel_goal[2],
 				j_vel_goal[3],j_vel_goal[4],j_vel_goal[5]);
 	
 	
+		//publish the goal
 		jv_goal = toJacoJointVelocityMsg(j_vel_goal);
-		
 		j_vel_pub.publish(jv_goal);
 		
+		//sleep
 		r.sleep();
 		
-		//if we got there
-		if (sum < 0.01)
-			break;
-			
-		//to do: check if too much time has passed (e.g., 1.5 times expected_duration) and end as well
+		//check if too much time has passed (e.g., 1.5 times expected_duration) and end as well
 		t_current = ros::Time::now().toSec();
 		
-		if (t_current - t_start_sec > expected_duration*1.33){
+		if (t_current - t_start_sec > expected_duration*STALL_TIME_MULTIPLIER){
 			ROS_INFO("Timeout!");
 			break;
 		}
+		
+		
 	}
 	
 	double t_end_sec =ros::Time::now().toSec();
