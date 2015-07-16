@@ -84,7 +84,7 @@ public:
 	ROS_INFO("Making %s", filePath.c_str());	
 	myfile.open(filePath.c_str());
 	//write header
-	myfile << "efforts,joint_position,tool_position\n";
+	myfile << "efforts_q1,efforts_q2,efforts_q3,efforts_q4,efforts_q5,efforts_q6,joint_position_q1,joint_position_q2,joint_position_q3,joint_position_q4,joint_position_q5,joint_position_q6,tool_position_x,tool_position_y,tool_position_z\n";
 	return true;
   }
 
@@ -101,19 +101,15 @@ public:
 		while(!as_.isNewGoalAvailable() && goal->start){
 			ros::spinOnce();
 			for(int i = 0; i < 6; i++){
-				myfile << efforts.effort[i] <<"," << joint_state.position[i] << ",";
-				if(i < 3){
-					switch(i){
-						case 0:
-							myfile << toolpos.pose.position.x << ","; break;
-						case 1:
-							myfile << toolpos.pose.position.y << ","; break;
-						case 2:
-							myfile << toolpos.pose.position.z << ","; break;
-					}
-				}
-				myfile << "\n";
+				myfile << efforts.effort[i] <<",";
 			}
+			for(int i = 0; i < 6; i++){
+				myfile << joint_state.position[i] <<",";
+			}
+			myfile << toolpos.pose.position.x << ",";
+			myfile << toolpos.pose.position.y << ",";
+			myfile << toolpos.pose.position.z << ",";
+			myfile << "\n";
 		
 		  // check that preempt has not been requested by the client
 		  if (as_.isPreemptRequested() || !ros::ok()){
@@ -169,21 +165,20 @@ void write(std::string filePath){
 	myfile.open(path.c_str());
 	//header
 	ros::spinOnce();
-	myfile << "efforts,joint_position,tool_position\n";
+	myfile << "efforts_q1,efforts_q2,efforts_q3,efforts_q4,efforts_q5,efforts_q6,joint_position_q1,joint_position_q2,joint_position_q3,joint_position_q4,joint_position_q5,joint_position_q6,tool_position_x,tool_position_y,tool_position_z,time\n";
 	for(int i = 0; i < 6; i++){
-		myfile << efforts.effort[i] <<"," << joint_state.position[i] << ",";
-		if(i < 3){
-			switch(i){
-				case 0:
-					myfile << toolpos.pose.position.x << ","; break;
-				case 1:
-					myfile << toolpos.pose.position.y << ","; break;
-				case 2:
-					myfile << toolpos.pose.position.z << ","; break;
-			}
-		}
-		myfile << "\n";
+		myfile << efforts.effort[i] <<",";
 	}
+	for(int i = 0; i < 6; i++){
+		myfile << joint_state.position[i] <<",";
+	}
+	myfile << toolpos.pose.position.x << ",";
+	myfile << toolpos.pose.position.y << ",";
+	myfile << toolpos.pose.position.z << ",";
+	myfile << ros::Time::now();
+
+	myfile << "\n";
+
 	myfile.close();
 
 }
