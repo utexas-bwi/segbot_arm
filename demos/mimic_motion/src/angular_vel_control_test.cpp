@@ -22,7 +22,7 @@
 #define PI 3.14159265
 #define RAD_TO_DEG 57.2957795
 
-#define TOLERANCE_RADIANS 0.0025*PI
+#define TOLERANCE_RADIANS (0.00125*PI)
 #define MAX_VELOCITY_RADIANS (2*0.075*PI)
 
 
@@ -130,31 +130,41 @@ int main(int argc, char **argv) {
 	distance_to_travel.resize(6);
 	
 	for (unsigned int i = 0; i < 6; i ++){
-		//decide which direction to move in for each joint (either positive or negative)
-		if (target_joint_state.position[i] > starting_joint_state.position[i]){
-			if ( target_joint_state.position[i] - starting_joint_state.position[i] <
-					starting_joint_state.position[i] + 2*PI - target_joint_state.position[i]) {
-				//go along the positive direction
-				j_vel_directions[i] = 1.0;
-				distance_to_travel[i] = target_joint_state.position[i] - starting_joint_state.position[i];
+		
+		if (i != 1 && i != 2){ //joints 1 and 2 (starting at 0) have hard limits
+			//decide which direction to move in for each joint (either positive or negative)
+			if (target_joint_state.position[i] > starting_joint_state.position[i]){
+				if ( target_joint_state.position[i] - starting_joint_state.position[i] <
+						starting_joint_state.position[i] + 2*PI - target_joint_state.position[i]) {
+					//go along the positive direction
+					j_vel_directions[i] = 1.0;
+					distance_to_travel[i] = target_joint_state.position[i] - starting_joint_state.position[i];
+				}
+				else {
+					j_vel_directions[i] = -1.0;
+					distance_to_travel[i] = 2*PI - target_joint_state.position[i] + starting_joint_state.position[i];
+				}
+				
 			}
 			else {
-				j_vel_directions[i] = -1.0;
-				distance_to_travel[i] = 2*PI - target_joint_state.position[i] + starting_joint_state.position[i];
+				if ( starting_joint_state.position[i] - target_joint_state.position[i] > 
+						target_joint_state.position[i] + 2*PI - starting_joint_state.position[i]){
+					j_vel_directions[i] = 1.0;
+					distance_to_travel[i] = target_joint_state.position[i] + 2*PI - starting_joint_state.position[i];
+				}
+				else {
+					j_vel_directions[i] = -1.0;
+					distance_to_travel[i] = starting_joint_state.position[i] - target_joint_state.position[i];
+				
+				}
 			}
-			
 		}
 		else {
-			if ( starting_joint_state.position[i] - target_joint_state.position[i] > 
-					target_joint_state.position[i] + 2*PI - starting_joint_state.position[i]){
+			distance_to_travel[i] = target_joint_state.position[i] - starting_joint_state.position[i];
+			if (distance_to_travel[i] >= 0)
 				j_vel_directions[i] = 1.0;
-				distance_to_travel[i] = target_joint_state.position[i] + 2*PI - starting_joint_state.position[i];
-			}
-			else {
+			else
 				j_vel_directions[i] = -1.0;
-				distance_to_travel[i] = starting_joint_state.position[i] - target_joint_state.position[i];
-			
-			}
 		}
 		//float d_i = target_joint_state.position[i]-starting_joint_state.position[i];
 		
@@ -198,7 +208,7 @@ int main(int argc, char **argv) {
 	double sum = 0.0;
 	
 	double t_start_sec =ros::Time::now().toSec();
-
+	double t_current;
 	
 	//starti looping
 	while (ros::ok()){
@@ -231,6 +241,12 @@ int main(int argc, char **argv) {
 			break;
 			
 		//to do: check if too much time has passed (e.g., 1.5 times expected_duration) and end as well
+		t_current = ros::Time::now().toSec();
+		
+		if (t_current - t_start_sec > expected_duration*1.33){
+			ROS_INFO("Timeout!");
+			break;
+		}
 	}
 	
 	double t_end_sec =ros::Time::now().toSec();
