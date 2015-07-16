@@ -84,7 +84,7 @@ public:
 	ROS_INFO("Making %s", filePath.c_str());	
 	myfile.open(filePath.c_str());
 	//write header
-	myfile << "efforts_q1,efforts_q2,efforts_q3,efforts_q4,efforts_q5,efforts_q6,joint_position_q1,joint_position_q2,joint_position_q3,joint_position_q4,joint_position_q5,joint_position_q6,tool_position_x,tool_position_y,tool_position_z\n";
+	myfile << "efforts_q1,efforts_q2,efforts_q3,efforts_q4,efforts_q5,efforts_q6,joint_position_q1,joint_position_q2,joint_position_q3,joint_position_q4,joint_position_q5,joint_position_q6,tool_position_x,tool_position_y,tool_position_z,timestamp\n";
 	return true;
   }
 
@@ -109,6 +109,7 @@ public:
 			myfile << toolpos.pose.position.x << ",";
 			myfile << toolpos.pose.position.y << ",";
 			myfile << toolpos.pose.position.z << ",";
+			myfile << boost::lexical_cast<std::string>(ros::Time::now());
 			myfile << "\n";
 		
 		  // check that preempt has not been requested by the client
