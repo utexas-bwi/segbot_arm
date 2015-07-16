@@ -889,12 +889,12 @@ int storePointCloud(){
 		ROS_ERROR("Failed to call point_cloud_logger_service. Server might not have been launched yet.");
 		return 1;
 	}
-				
-	//check if the look behaviour has been executed and the point cloud has been saved
-	if(depth_srv.response.saved == true){
-		depth_srv.request.start = 0;
-	}
-				
+	// Wait for 2 seconds to make sure that a point cloud is captured	
+	clearMsgs(2);
+	
+	//Send a stop request
+	depth_srv.request.start = 0;
+
 	//call the client with the stop signal
 	if(depth_client.call(depth_srv)){
 		ROS_INFO("Point_cloud_logger_service stopped...");

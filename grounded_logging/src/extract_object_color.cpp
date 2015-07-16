@@ -12,14 +12,20 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/kdtree/kdtree.h>
+// For traversing the filesystem
+#include <boost/filesystem.hpp>
 
 using namespace std;
+using namespace boost::filesystem;
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
 const double length_off_table = 0.15;
+
+//Total number of objects and trials for ease of file traversal
+int total_objects = 1, total_trials = 1, total_behaviors = 10;
 
 // General point cloud to store the whole image
 PointCloudT::Ptr image_cloud (new PointCloudT), cloud_blob(new PointCloudT), cloud_plane(new PointCloudT);
@@ -69,8 +75,20 @@ int main (int argc, char** argv)
     pcl::PCDReader reader;
    
 	// The general file path
-    std::string generalFilePath = "/home/bwi/priyanka_image_data/pointClouds/test0_1436751414.0383992.pcd"
+    std::string generalFilePath = "/home/bwi/grounded_learning_experiments/";
 	//TODO add file traversal so that all .pcd files in the above path are accessed consecutively
+	for(int object_num = 1; object_num <= total_objects; object_num++){
+		for(int trial_num = 1; trial_num <= total_trials; trial_num++){
+			path dir_path{generalFilePath + "obj_" + object_num + "/trial_" + trial_num};
+			if(!exists(dir_path))
+				return;
+			
+			directory_iterator end_itr;       // default construction yields past-the-end
+			for(directory_iterator itr(dir_path); itr != end_itr; ++itr){
+				
+			}
+		}
+	}
 	std::string filePath = generalFilePath + "";
 	reader.read(filePath, *image_cloud);
 	

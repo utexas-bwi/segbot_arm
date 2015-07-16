@@ -22,7 +22,6 @@ PointCloudT::Ptr image_cloud (new PointCloudT);
 pcl::PassThrough<PointT> pass;
 
 int pcd_count = 0;
-bool saved = false;
 
 bool recording_samples;
 //string to store the filename
@@ -53,12 +52,9 @@ void collect_point_cloud_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 		pcl::io::savePCDFileASCII(filename, *image_cloud);
 		ROS_INFO("Saved pcd file %s", filename.c_str());
 		
-		// set saved to true
-		saved = true;
 		pcd_count++;
 	}
 	if(pcd_count == 1){
-		saved = false;
 		return;
 	}
 }
@@ -69,16 +65,12 @@ bool point_cloud_service_callback(grounded_logging::StorePointCloud::Request &re
 	if (req.start == 1){
 		recording_samples = true;
 		pointCloudFileName = req.pointCloudFilePath;
-		if(saved == true)
-			res.saved = true;
 	}
 	
 	else{
 		//set a flag to stop recording
 		recording_samples = false;
 		pcd_count = 0;
-		if(saved == false)
-			res.saved = false;
 	}
 	
 	res.success = true;

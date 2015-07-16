@@ -102,10 +102,10 @@ int main(int argc, char **argv)
 					return 1;
 				}
 				
-				//check if the look behaviour has been executed and the point cloud has been saved
-				if(depth_srv.response.saved == true){
-						depth_srv.request.start = 0;
-				}
+				ros::Duration(2).sleep();
+				
+				//Send a stop request
+				depth_srv.request.start = 0;
 				
 				//call the client with the stop signal
 				if(depth_client.call(depth_srv)){
@@ -176,10 +176,11 @@ int main(int argc, char **argv)
 					return 1;
 				}
 				
-				//check if the look behaviour has been executed and the point cloud has been saved
-				if(depth_srv.response.saved == true){
-						depth_srv.request.start = 0;
-				}
+				//Sleep for 2 seconds to make sure a point cloud is captured
+				ros::Duration(2).sleep();
+				
+				//Send a stop request
+				depth_srv.request.start = 0;
 				
 				//call the client with the stop signal
 				if(depth_client.call(depth_srv)){
