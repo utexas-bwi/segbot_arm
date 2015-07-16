@@ -468,11 +468,15 @@ void lift(double vel){
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
-
+/*
+ * limited at .4 so arm stays in view of camera
+ */
 bool hold(double height){
 	startSensoryDataCollection();
 	if(height < MINHEIGHT)
 		height = MINHEIGHT;
+	if(height > .4)
+		height = .4;
 	//go to that height
 	ros::Rate r(25);
 	double base_vel = 0.1;
@@ -683,7 +687,7 @@ bool drop(double height){
 	if(height < MINHEIGHT)
 		height = MINHEIGHT;
 	//go to that height
-	sensor_msgs::JointState drop = getStateFromBag("drop");
+	sensor_msgs::JointState drop = getStateFromBag("drop_2");
 	goToLocation(drop);
 	ros::Rate r(25);
 	double base_vel = 0.1;
@@ -706,6 +710,8 @@ bool drop(double height){
 	c_vel_pub_.publish(T);
 	
 	openFull();
+	sensor_msgs::JointState hide = getStateFromBag("hide");
+	goToLocation(hide);
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
@@ -1008,6 +1014,6 @@ int main(int argc, char **argv){
 	audio_client = n.serviceClient<grounded_logging::ProcessAudio>("audio_logger_service");
 
 	loop1();
-
+	
 	return 0;
 }
