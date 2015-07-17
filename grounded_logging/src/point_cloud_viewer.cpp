@@ -20,7 +20,6 @@ int main (int argc, char** argv)
     
     //Start the cloud viewer
     std::cerr << "Start Cloud Viewer..." << std::endl;
-    std::cerr << "z-filtered point cloud" << std::endl;
     pcl::visualization::CloudViewer viewer("Filtered cloud image");
     viewer.showCloud (cloud);
     while (!viewer.wasStopped ());
