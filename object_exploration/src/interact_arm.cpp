@@ -728,6 +728,10 @@ bool drop(double height){
 bool poke(double velocity){
 	startSensoryDataCollection();
 	closeComplt(7000);
+/*	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
+	goToLocation(grab_sub);
+	clearMsgs(.5);
+*/
 	sensor_msgs::JointState poke = getStateFromBag("grab_right");
 	goToLocation(poke);
 	clearMsgs(1.);
@@ -964,12 +968,12 @@ bool loop1(){
 			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("revolve", trialFilePath);
 			storePointCloud();
-			revolveJ6(.6);
+			revolveJ6(1.);
 			storePointCloud();
 			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("shake", trialFilePath);
 			storePointCloud();
-			shake(1.);
+			shake(1.5);
 			storePointCloud();
 			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("drop", trialFilePath);
@@ -1036,6 +1040,7 @@ int main(int argc, char **argv){
 	/*approachFromHome();
 	grabFromApch(6000);
 	clearMsgs(3.0);
+	
 	lift(.3);
 	hold(.5);
 	revolveJ6(.6);
@@ -1045,7 +1050,12 @@ int main(int argc, char **argv){
 	push(-.3);
 	press(0.2);
 	squeeze(.03);
-	goHome();*/
-
+	goHome();	
+*/
+	//sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
+	//goToLocation(grab_sub);
+	//clearMsgs(.5);
+	//sensor_msgs::JointState grab = getStateFromBag("push_right");
+	//goToLocation(grab);
 	return 0;
 }
