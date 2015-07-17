@@ -34,24 +34,6 @@ void collect_point_cloud_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 				
 		//convert the msg to PCL format
 		pcl::fromROSMsg (*msg, *image_cloud);
-			
-		//get the start time of recording
-		double begin = ros::Time::now().toSec();
-		string startTime = boost::lexical_cast<std::string>(begin);
-			
-		// append start timestamp with filenames
-		std::string filename = pointCloudFileName+"/test_"+startTime+".pcd";
-			
-		//Before saving, do a z-filter	
-		pass.setInputCloud (image_cloud);
-		pass.setFilterFieldName ("z");
-		pass.setFilterLimits (0.0, 2.15);
-		pass.filter (*image_cloud);
-		
-		//Save the cloud to a .pcd file
-		pcl::io::savePCDFileASCII(filename, *image_cloud);
-		ROS_INFO("Saved pcd file %s", filename.c_str());
-		
 		pcd_count++;
 	}
 	if(pcd_count == 1){
@@ -64,13 +46,32 @@ bool point_cloud_service_callback(grounded_logging::StorePointCloud::Request &re
 							      grounded_logging::StorePointCloud::Response &res){
 	if (req.start == 1){
 		recording_samples = true;
-		pointCloudFileName = req.pointCloudFilePath;
+		string pointCloudFilePath = req.pointCloudFilePath;
+		
+		//get the start time of recording
+		double begin = ros::Time::now().toSec();
+		string startTime = boost::lexical_cast<std::string>(begin);
+			
+		// append start timestamp with filenames
+		pointCloudFileName = pointCloudFilePath+"/test_"+startTime+".pcd";
 	}
 	
 	else{
 		//set a flag to stop recording
 		recording_samples = false;
 		pcd_count = 0;
+			
+		//Before saving, do a z-filter	
+		pass.setInputCloud (image_cloud);
+		pass.setFilterFieldName ("z");
+		pass.setFilterLimits (0.0, 2.15);
+		pass.filter (*image_cloud);
+		
+		//Save the cloud to a .pcd file
+		pcl::io::savePCDFileASCII(pointCloudFileName, *image_cloud);
+		ROS_INFO("Saved pcd file %s", pointCloudFileName.c_str());
+		
+		image_cloud->clear();	
 	}
 	
 	res.success = true;
