@@ -188,6 +188,9 @@ add_executable(look_behavior src/look_behavior.cpp)
 ## Declare a cpp executable
 add_executable(grounded_logging_client src/grounded_logging_client.cpp)
 
+## Declare a cpp executable
+add_executable(extract_object_color src/extract_object_color.cpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(grounded_logging_node grounded_logging_generate_messages_cpp)
@@ -218,6 +221,8 @@ add_dependencies(point_cloud_viewer grounded_logging_gencpp)
 
 target_link_libraries(grounded_logging_client ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(grounded_logging_client grounded_logging_gencpp)
+
+target_link_libraries(extract_object_color ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 #############
 ## Install ##
