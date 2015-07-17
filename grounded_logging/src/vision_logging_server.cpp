@@ -58,6 +58,9 @@ void sig_handler(int sig)
 };
 
 //callback funtion to store depth images
+void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
+	pcl::fromROSMsg (*msg, *image_cloud);
+}
 /*void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 	if(recording_samples == true){
 		 if ((msg->width * msg->height) == 0)
@@ -145,18 +148,57 @@ bool vision_service_callback(grounded_logging::ProcessVision::Request &req,
 	if (req.start == 1){
 		//start recording
 		recording_samples = true;
+		ros::spinOnce();
+		//get the start time of recording
+		double begin = ros::Time::now().toSec();
+		string startTime = boost::lexical_cast<std::string>(begin);
 		
-		//also store the filenames that are in the request
+		// append start timestamp with filenames
+		std::stringstream convert;
+		convert << pcd_count;
 		generalImageFileName = req.generalImageFilePath;
-		//generalDepthImageName = req.generalDepthImagePath;       
-	}
+		std::string filename = generalImageFileName+convert.str()+"_"+startTime+".pcd";
+		
+		//Before saving, do a z-filter	
+		pass.setInputCloud (image_cloud);
+		pass.setFilterFieldName ("z");
+		pass.setFilterLimits (0.0, 2.15);
+		pass.filter (*image_cloud);
+		
+		// stringstream to store compressed point cloud
+		std::stringstream compressedData;
+
+		// instantiate point cloud compression for encoding and decoding
+		PointCloudEncoder = new pcl::io::OctreePointCloudCompression<PointT> (compressionProfile, true);
+		PointCloudDecoder = new pcl::io::OctreePointCloudCompression<PointT> ();
+    
+		//ROS_INFO("Starting compression");
+		
+		// compress point cloud
+		PointCloudEncoder->encodePointCloud (image_cloud, compressedData);
+
+		// decompress point cloud
+		PointCloudDecoder->decodePointCloud (compressedData, image_cloud_compressed);	
+		
+		//ROS_INFO("Saving compressed cloud to file");
+		
+		//Save the cloud to a .pcd file
+		pcl::io::savePCDFileASCII(filename, *image_cloud);
+		ROS_INFO("Saved pcd file %s", filename.c_str());
+		
+		// delete point cloud compression instances
+		delete (PointCloudEncoder);
+		delete (PointCloudDecoder);
+		
+		pcd_count++;
+	}     
 	else{
 		//set a flag to stop recording
 		recording_samples = false;
 		image_count = 0;
 		pcd_count = 0;
 	}
-	
+	recording_samples = false;
 	res.success = true;
 	return true;
 }
