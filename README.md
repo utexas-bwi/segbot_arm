@@ -9,8 +9,19 @@ $ git clone https://github.com/utexas-bwi/jaco-ros.git
 
 and compile with catkin.
 
-Next, install MoveIt! by typing:
+Before compiling, install the following dependencies:
+
+1. Install MoveIt! by typing:
 
 $ sudo apt-get install ros-indigo-moveit-*
+
+2. Install libsndfile by typing:
+
+$ sudo apt-get install libsndfile1-dev
+
+3. Install libfft3:
+
+$ sudo apt-get install libfftw3-dev
+
 
 
