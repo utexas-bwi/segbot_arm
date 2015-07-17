@@ -110,15 +110,15 @@ include_directories(
 ## Declare a cpp executable
 add_executable(copy src/copy.cpp)
 target_link_libraries(copy ${catkin_LIBRARIES} )
-
+add_dependencies(copy jaco_msgs_gencpp)
 ## Declare a cpp executable
 add_executable(push_button_demo src/push_button_demo.cpp)
 target_link_libraries(push_button_demo ${catkin_LIBRARIES} )
-
+add_dependencies(push_button_demo jaco_msgs_gencpp)
 ## Declare a cpp executable
 add_executable(angular_vel_control_test src/angular_vel_control_test.cpp)
 target_link_libraries(angular_vel_control_test ${catkin_LIBRARIES} )
-
+add_dependencies(angular_vel_control_test jaco_msgs_gencpp)
 
 ## Declare a cpp executable
 #add_executable(press_object_demo src/press_object_demo.cpp)

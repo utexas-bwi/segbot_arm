@@ -8,3 +8,20 @@ To run these packages, you must first install the utexas-bwi fork of the jaco ro
 $ git clone https://github.com/utexas-bwi/jaco-ros.git
 
 and compile with catkin.
+
+Before compiling, install the following dependencies:
+
+Install MoveIt! by typing:
+
+$ sudo apt-get install ros-indigo-moveit-*
+
+Install libsndfile by typing:
+
+$ sudo apt-get install libsndfile1-dev
+
+Install libfft3:
+
+$ sudo apt-get install libfftw3-dev
+
+
+

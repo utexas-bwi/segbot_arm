@@ -55,6 +55,9 @@ bool g_caught_sigint = false;
 // total number of object and trials to help with folder generation
 int totalObjects = 2, totalTrials = 2;
 
+//the starting object and trial number
+int startingObjectNum, startingTrialNum;
+
 //global strings to store the modality data
 string visionFilePath, audioFilePath, hapticFilePath;
 
@@ -926,7 +929,7 @@ int storePointCloud(){
 }
 
 bool loop1(){
-	for(int object_num = 1; object_num <= totalObjects; object_num++){ 
+	for(int object_num = startingObjectNum; object_num <= totalObjects; object_num++){ 
 		//create the object directory
 		std::stringstream convert_object;
 		convert_object << object_num;
@@ -935,7 +938,7 @@ bool loop1(){
 		if(!boost::filesystem::exists(object_dir))
 			boost::filesystem::create_directory(object_dir);
 		
-		for(int trial_num = 1; trial_num <= totalTrials; trial_num++){
+		for(int trial_num = startingTrialNum; trial_num <= totalTrials; trial_num++){
 			//create the trial directory
 			std::stringstream convert_trial;
 			convert_trial << trial_num;
@@ -946,62 +949,57 @@ bool loop1(){
 
 			//carry out the sequence of behaviours
 			approachFromHome();
-			//wait for 3 seconds after each action
-			clearMsgs(3.0);
 			//create the directories and store the point cloud before each action
 			createBehaviorAndSubDirectories("grasp", trialFilePath);
 			storePointCloud();
 			grabFromApch(6000);
 			//store a point cloud after the action is performed
 			storePointCloud();
-			
-			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("lift", trialFilePath);
 			storePointCloud();
 			lift(.3);
 			storePointCloud();
-			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("hold", trialFilePath);
 			storePointCloud();
 			hold(.5);
 			storePointCloud();
-			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("revolve", trialFilePath);
 			storePointCloud();
 			revolveJ6(1.);
 			storePointCloud();
-			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("shake", trialFilePath);
 			storePointCloud();
 			shake(1.5);
 			storePointCloud();
-			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("drop", trialFilePath);
 			storePointCloud();
+			//wait for 3 seconds after some behaviours
 			drop(.5);
 			storePointCloud();
+			ROS_INFO("3 second waiting period started...");
 			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("poke", trialFilePath);
 			storePointCloud();
 			poke(.2);
 			storePointCloud();
+			ROS_INFO("3 second waiting period started...");
 			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("push", trialFilePath);
 			storePointCloud();
 			push(-.2);
 			storePointCloud();
+			ROS_INFO("3 second waiting period started...");
 			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("press", trialFilePath);
 			storePointCloud();
 			press(0.2);
 			storePointCloud();
-			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("squeeze", trialFilePath);
 			storePointCloud();
 			squeeze(.03);
 			storePointCloud();
-			clearMsgs(3.0);
 			goHome();
+			ROS_INFO("10 second waiting period between trials started...");
 			clearMsgs(10.0);
 		}
 	}
@@ -1010,7 +1008,22 @@ bool loop1(){
 int main(int argc, char **argv){
 	ros::init(argc, argv, "interact_arm");
     ros::NodeHandle n;	
-
+	
+	//Check if the number of arguments is 1 or 3
+	//If 1 then start from the beginning for the object and trial numbers
+	//If 3 then start from the given numbers provided by the user
+	if (argc == 1)
+	{
+		startingObjectNum = 1;
+		startingTrialNum = 1;
+	}
+	
+	if (argc == 3)
+	{
+		startingObjectNum = atoll(argv[1]);
+		startingTrialNum = atoll(argv[2]);
+	}
+  
 	//publisher for cartesian velocity
 	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
 	j_vel_pub_ = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 2);

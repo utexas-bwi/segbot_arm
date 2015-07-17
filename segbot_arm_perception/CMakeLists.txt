@@ -126,7 +126,7 @@ target_link_libraries(log_perception_action ${catkin_LIBRARIES} ${Boost_LIBRARIE
 
 add_executable(log_perception_action_client src/log_perception_action_client.cpp)
 target_link_libraries(log_perception_action_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-
+add_dependencies(log_perception_action_client segbot_arm_perception_gencpp)
 
 add_executable(button_detection_node src/button_detection_node.cpp)
 target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
