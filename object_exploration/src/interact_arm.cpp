@@ -211,6 +211,16 @@ bool clearMsgs(double duration){
 	}
 	return true;
 }
+bool goToLocation(sensor_msgs::JointState js){
+	moveit_utils::AngularVelCtrl srv;
+	srv.request.state = js;
+	if(angular_client.call(srv))
+		ROS_INFO("Sending angular commands");
+	else
+		ROS_INFO("Cannot contact angular velocity service. Is it running?");
+	clearMsgs(.5);
+	return srv.response.success;
+}
 
 int goHome(){
 	jaco_msgs::HomeArm srv;
@@ -323,11 +333,11 @@ void approach(double distance){
 		ros::spinOnce();
 		if(distance > 0){
 			T.twist.linear.x = base_vel;
-			T.twist.linear.y = -base_vel;
+			T.twist.linear.y = base_vel;
 		}
 		else {
 			T.twist.linear.x = -base_vel;
-			T.twist.linear.y = base_vel;
+			T.twist.linear.y = -base_vel;
 		}
 		c_vel_pub_.publish(T);
 		r.sleep();
@@ -368,7 +378,7 @@ void approach(std::string dimension, double distance, double velocity){
 			T.twist.linear.z = velocity;
 		else if(!dimension.compare("xy") || !dimension.compare("yx")){
 			T.twist.linear.x = velocity;
-			T.twist.linear.y = -velocity;
+			T.twist.linear.y = velocity;
 		}
 		c_vel_pub_.publish(T);
 		r.sleep();
@@ -429,14 +439,14 @@ void lift(double vel){
 	ros::Rate r(4);
 	ros::spinOnce();
 	double distance_init = .2;
-	double distance = .3;
+	double distance = .25;
 	geometry_msgs::TwistStamped T;
 	T.twist.linear.x= 0.0;
 	T.twist.linear.y= 0.0;
 	T.twist.angular.x= 0.0;
 	T.twist.angular.y= 0.0;
 	T.twist.angular.z= 0.0;
-	
+	/*
 	for(int i = 0; i < std::abs(distance_init)/vel/.25; i++){
 		ros::spinOnce();
 		if(distance > 0)
@@ -446,9 +456,10 @@ void lift(double vel){
 		c_vel_pub_.publish(T);
 		r.sleep();
 	}
-	T.twist.linear.z= 0.0;
-	c_vel_pub_.publish(T);
-	sleep(2);
+	*/
+	sensor_msgs::JointState drop = getStateFromBag("drop_right");
+	goToLocation(drop);
+	clearMsgs(1.);
 	//start logging here
 	
 	for(int i = 0; i < std::abs(distance)/vel/.25; i++){
@@ -555,7 +566,8 @@ void pushFromSide(double distance){
 
 bool grabFromApch(int fingerPos){
 	startSensoryDataCollection();
-	approach(.02);
+	approach(.15);
+	clearMsgs(.3);
 	closeComplt(fingerPos);
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
@@ -566,7 +578,7 @@ bool shake(double vel){
 	int iterations = 2;
 	int count = 0;
 	double step = .25;
-	double distance = 45; //degrees
+	double distance = 35; //degrees
 	if(vel > 1.5)
 		vel = 1.5;
 	jaco_msgs::JointVelocity T;
@@ -672,22 +684,12 @@ bool shake(double vel){
 	stopSensoryDataCollection();
 
 }
-bool goToLocation(sensor_msgs::JointState js){
-	moveit_utils::AngularVelCtrl srv;
-	srv.request.state = js;
-	if(angular_client.call(srv))
-		ROS_INFO("Sending angular commands");
-	else
-		ROS_INFO("Cannot contact angular velocity service. Is it running?");
-	clearMsgs(.5);
-	return srv.response.success;
-}
 bool drop(double height){
 	startSensoryDataCollection();
 	if(height < MINHEIGHT)
 		height = MINHEIGHT;
 	//go to that height
-	sensor_msgs::JointState drop = getStateFromBag("drop_2");
+	sensor_msgs::JointState drop = getStateFromBag("drop_right");
 	goToLocation(drop);
 	ros::Rate r(25);
 	double base_vel = 0.1;
@@ -698,20 +700,27 @@ bool drop(double height){
 	T.twist.angular.x= 0.0;
 	T.twist.angular.y= 0.0;
 	T.twist.angular.z= 0.0;
-		
+	clearMsgs(.7);
 	while(tool_pos_cur.position.z - MINHEIGHT >= 0.05 + height){
 		ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
 		T.twist.linear.z = -base_vel;
 		c_vel_pub_.publish(T);
 		r.sleep();
 		ros::spinOnce();
+	}
+	while(tool_pos_cur.position.z - MINHEIGHT <= 0.05 - height){
+		ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
+		T.twist.linear.z = base_vel;
+		c_vel_pub_.publish(T);
+		r.sleep();
+		ros::spinOnce();
 	} 
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
-	
+	clearMsgs(1.);
 	openFull();
-	sensor_msgs::JointState hide = getStateFromBag("hide");
-	goToLocation(hide);
+	//sensor_msgs::JointState hide = getStateFromBag("hide");
+	//goToLocation(hide);
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
@@ -719,21 +728,21 @@ bool drop(double height){
 bool poke(double velocity){
 	startSensoryDataCollection();
 	closeComplt(7000);
-	sensor_msgs::JointState poke = getStateFromBag("poke");
+	sensor_msgs::JointState poke = getStateFromBag("grab_right");
 	goToLocation(poke);
 	clearMsgs(1.);
-	approach("xy", 0.2, velocity);
+	approach("xy", 0.4, velocity);
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
 
 bool push(double velocity){
 	startSensoryDataCollection();
-	sensor_msgs::JointState push = getStateFromBag("push");
+	sensor_msgs::JointState push = getStateFromBag("push_right");
 	goToLocation(push);
 	//start recording
 	//clearMsgs(1.);
-	approach("y", 0.5, velocity);
+	approach("y", 0.7, -velocity);
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
 	//stop recording
@@ -741,7 +750,7 @@ bool push(double velocity){
 
 bool press(double velocity){
 	startSensoryDataCollection();
-	sensor_msgs::JointState press = getStateFromBag("press");
+	sensor_msgs::JointState press = getStateFromBag("press_right");
 	goToLocation(press);
 	ros::Rate r(40);
 	geometry_msgs::TwistStamped T;
@@ -847,7 +856,16 @@ bool approachFromHome(){
 	goHome();
 	openFull();
 	//readTrajectory("home_to_grasp_real");
+	/*sensor_msgs::JointState sub_grab = getStateFromBag("sub_grab");
+	goToLocation(sub_grab);
+	clearMsgs(1.);
 	sensor_msgs::JointState grab = getStateFromBag("grab");
+	goToLocation(grab);
+	*/
+	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
+	goToLocation(grab_sub);
+	clearMsgs(.5);
+	sensor_msgs::JointState grab = getStateFromBag("grab_right");
 	goToLocation(grab);
 }
 void createBehaviorAndSubDirectories(string behaviorName, string trialFilePath){
@@ -1014,6 +1032,20 @@ int main(int argc, char **argv){
 	audio_client = n.serviceClient<grounded_logging::ProcessAudio>("audio_logger_service");
 
 	loop1();
-	
+	//carry out the sequence of behaviours
+	/*approachFromHome();
+	grabFromApch(6000);
+	clearMsgs(3.0);
+	lift(.3);
+	hold(.5);
+	revolveJ6(.6);
+	shake(1.);
+	drop(.5);
+	poke(.3);
+	push(-.3);
+	press(0.2);
+	squeeze(.03);
+	goHome();*/
+
 	return 0;
 }
