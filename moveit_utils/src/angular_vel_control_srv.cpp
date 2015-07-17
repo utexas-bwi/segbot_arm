@@ -116,9 +116,10 @@ double distanceToTravel(double current_position, double target_position, int joi
 bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::AngularVelCtrl::Response &res){
 	//get joint positions
 	target_joint_state = req.state;
+	ROS_INFO("Starting: %f, %f, %f, %f, %f, %f",starting_joint_state.position[0],starting_joint_state.position[1],starting_joint_state.position[2],
+				starting_joint_state.position[3],starting_joint_state.position[4],starting_joint_state.position[5]);
 	ROS_INFO("Directions: %f, %f, %f, %f, %f, %f",target_joint_state.position[0],target_joint_state.position[1],target_joint_state.position[2],
 				target_joint_state.position[3],target_joint_state.position[4],target_joint_state.position[5]);
-	
 	//get joint positions
 	waitForJointAngles();
 	starting_joint_state = current_state;
