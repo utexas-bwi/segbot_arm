@@ -24,15 +24,13 @@
 #define PI 3.14159265
 #define RAD_TO_DEG 57.2957795
 
-#define TOLERANCE_RADIANS (0.00125*PI)
+#define TOLERANCE_RADIANS (0.01125*PI)
 #define STALL_TIME_MULTIPLIER 1.35 //if we are still moving for 1.35 x the expected time, then stop, 
 
 
 #define MAX_VELOCITY_RADIANS (2*0.075*PI)
 
 using namespace std;
-
-
 
 sensor_msgs::JointState current_state;
 sensor_msgs::JointState target_joint_state;
@@ -78,7 +76,7 @@ jaco_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<float> goal_vector){
 	
 	return jv_goal;
 }
-
+	
 double distanceToTravel(double current_position, double target_position, int joint_id){
 	if (joint_id != 1 && joint_id != 2){ //joints 1 and 2 (starting at 0) have hard limits
 		//decide which direction to move in for each joint (either positive or negative)
@@ -112,20 +110,29 @@ double distanceToTravel(double current_position, double target_position, int joi
 	}
 }
 
-
 bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::AngularVelCtrl::Response &res){
 	//get joint positions
 	target_joint_state = req.state;
-	ROS_INFO("Starting: %f, %f, %f, %f, %f, %f",starting_joint_state.position[0],starting_joint_state.position[1],starting_joint_state.position[2],
-				starting_joint_state.position[3],starting_joint_state.position[4],starting_joint_state.position[5]);
-	ROS_INFO("Directions: %f, %f, %f, %f, %f, %f",target_joint_state.position[0],target_joint_state.position[1],target_joint_state.position[2],
-				target_joint_state.position[3],target_joint_state.position[4],target_joint_state.position[5]);
+	
 	//get joint positions
 	waitForJointAngles();
 	starting_joint_state = current_state;
 	
+	ROS_INFO("Starting state:");
+	ROS_INFO("%f, %f, %f, %f, %f, %f",starting_joint_state.position[0],starting_joint_state.position[1],starting_joint_state.position[2],
+				starting_joint_state.position[3],starting_joint_state.position[4],starting_joint_state.position[5]);
+	
+	ROS_INFO("Target state:");
+	ROS_INFO("%f, %f, %f, %f, %f, %f",target_joint_state.position[0],target_joint_state.position[1],target_joint_state.position[2],
+				target_joint_state.position[3],target_joint_state.position[4],target_joint_state.position[5]);
+	//ROS_INFO_STREAM(target_joint_state);
+	
+	
+	//ROS_INFO_STREAM(starting_joint_state);
+	
 	//now, go to target from joint
 	ros::Rate r(40);
+	
 	
 	std::vector<float> j_vel_goal;
 	j_vel_goal.resize(6);
@@ -224,6 +231,8 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 	//starti looping
 	while (ros::ok()){
 		ros::spinOnce();
+		
+		
 		sum = 0.0;
 		//check if any of the joints have reached their targets
 		for (unsigned int i = 0; i < 6; i ++){
@@ -248,7 +257,7 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 				ROS_INFO("Something must be in the way (joint %i, %f, %f) or the joint has over-shot its target"
 							,i,remaining_distances[i],remaining_distances_last[i]);
 				
-				stalled = true;
+				//stalled = true;
 			}
 			else {
 				remaining_distances_last[i]=remaining_distances[i];
@@ -258,6 +267,17 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 		if (stalled)
 			break;
 		
+		
+		//ROS_INFO("j vel sum = %f",sum);
+		
+		//publish joint commands
+		/*ROS_INFO("current j_vel: %f, %f, %f, %f, %f, %f",current_state.velocity[0],current_state.velocity[1],
+				current_state.velocity[2],
+				current_state.velocity[3],current_state.velocity[4],current_state.velocity[5]);*/
+		//check how much left the joint has to travel
+			
+		
+	
 		ROS_INFO("publishing j_vel: %f, %f, %f, %f, %f, %f",j_vel_goal[0],j_vel_goal[1],j_vel_goal[2],
 				j_vel_goal[3],j_vel_goal[4],j_vel_goal[5]);
 	
@@ -276,8 +296,6 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 			ROS_INFO("Timeout!");
 			break;
 		}
-		
-		
 	}
 	
 	double t_end_sec =ros::Time::now().toSec();
@@ -293,8 +311,8 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 		j_pos_error[i] = fabs(target_joint_state.position[i]-current_state.position[i]);
 		ROS_INFO("Joint %i\tTarget: %f\tCurrent: %f\tError: %f",i,target_joint_state.position[i],current_state.position[i],j_pos_error[i]);
 	}
-	res.success = true;
 	
+	res.success = true;
 	return res.success;
 }
 int main(int argc, char **argv) {
