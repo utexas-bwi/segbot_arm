@@ -13,11 +13,12 @@ find_package(catkin REQUIRED
 	roscpp
 	rospy
  	message_generation
+ 	actionlib_msgs
 )
 
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+## find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -62,15 +63,14 @@ catkin_python_setup()
    PlanarSegmentation.srv
    TableDetectionObjectExtraction.srv
    FeatureExtraction.srv
-   LogPerception.srv
  )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+ add_action_files(
+   DIRECTORY action
+   FILES
+   LogPerception.action
+)
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
@@ -78,6 +78,7 @@ catkin_python_setup()
    std_msgs
    sensor_msgs
    geometry_msgs
+   actionlib_msgs
 )
 
 ###################################
@@ -94,7 +95,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES segbot_arm_perception
 #  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+  DEPENDS actionlib_msgs
 )
 
 ###########
@@ -119,13 +120,13 @@ add_executable(planar_segmentation_client src/planar_segmentation_client.cpp)
 add_dependencies(planar_segmentation_client segbot_arm_perception_gencpp)
 target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(log_perception src/log_perception.cpp)
-add_dependencies(log_perception segbot_arm_perception_gencpp)
-target_link_libraries(log_perception ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_executable(log_perception_action src/log_perception_action.cpp)
+add_dependencies(log_perception_action segbot_arm_perception_gencpp)
+target_link_libraries(log_perception_action ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(log_perception_client src/log_perception_client.cpp)
-add_dependencies(log_perception_client segbot_arm_perception_gencpp)
-target_link_libraries(log_perception_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_executable(log_perception_action_client src/log_perception_action_client.cpp)
+target_link_libraries(log_perception_action_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
 
 add_executable(button_detection_node src/button_detection_node.cpp)
 target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})

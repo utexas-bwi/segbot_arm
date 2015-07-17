@@ -21,7 +21,7 @@
 using namespace std;
 
 //For writing to the .wav file
-const int format = SF_FORMAT_WAV | SF_FORMAT_FLOAT;        // SF_FORMAT_FLOAT or SF_FORMAT_PCM_16 depending on what you are storing
+const int format = SF_FORMAT_WAV | SF_FORMAT_FLOAT;         // SF_FORMAT_FLOAT or SF_FORMAT_PCM_16 depending on what you are storing
 const int channel = 1;        								// 1-Mono and 2-Stereo
 const static int SAMPLE_RATE = 44100;						// Frequency of the microphone
 const static int BUFF_SIZE = 128;
@@ -55,21 +55,7 @@ void sig_handler(int sig)
 	g_caught_sigint = true;
 	snd_pcm_close (capture_handle);
 	exit (0);
-};
-
-// function to return the timestamp in local time
-/*std::string get_time_stamp(){
-	ltime = time(NULL);        // get current calendar time
-	string timeStamp = asctime(localtime(&ltime));
-	// Replace spaces, colons and slashes as they are not allowed in filenames
-	for(int i = 0; i<timeStamp.length(); ++i){
-        if (timeStamp[i] == '/' || timeStamp[i] == ':' || timeStamp[i] == '\n')
-            timeStamp[i] = '-';
-        if (timeStamp[i] == ' ')
-			timeStamp[i] = '_';
-    }
-    return timeStamp;
-}*/
+}
 
 // callback function to process the published audio msgs
 void listen_audio_data(const std_msgs::Float64MultiArrayConstPtr& msg){
@@ -98,16 +84,16 @@ bool audio_service_callback(grounded_logging::ProcessAudio::Request &req,
 		recording_samples = true;
 		
 		//also store the filenames that are in the request
-		wavFileName = req.outputRawFileName;
-		outputDftFileName = req.outputDftFileName;
+		wavFileName = req.outputRawFilePath;
+		outputDftFileName = req.outputDftFilePath;
 		
 		//get the start time of recording
 		double begin = ros::Time::now().toSec();
 		string startTime = boost::lexical_cast<std::string>(begin);
 		
 		// append start timestamp with filenames
-		wavFileName.append("_"+startTime+".wav");
-		outputDftFileName.append("_"+startTime+".txt");
+		wavFileName.append("/test_"+startTime+".wav");
+		outputDftFileName.append("/test_"+startTime+".txt");
 		ROS_INFO("Filename1: %s", wavFileName.c_str());
 		ROS_INFO("Filename2: %s", outputDftFileName.c_str());
 		
@@ -158,15 +144,21 @@ int main (int argc, char** argv)
 	ros::init (argc, argv, "audio_logging_server");
 	ros::NodeHandle nh;
 	
+	//to store the topic to publish to
+	string audio_samples_;
+	
 	// Intialize FFT
 	fft_calc = new FFT_calculator(NFFT,FFT_WIN,NOVERLAP);	
 	fft_calc->init_RT_mode();	
+	
+	//get the topic from the launch file
+	nh.param<std::string>("audio_samples", audio_samples_, "/audio_samples");
 		
 	//Set up the service
 	ros::ServiceServer service = nh.advertiseService("audio_logger_service", audio_service_callback);
 	
 	//subscribe to audio topic
-	ros::Subscriber sub = nh.subscribe ("/audio_samples", 1000, listen_audio_data);
+	ros::Subscriber sub = nh.subscribe (audio_samples_, 1000, listen_audio_data);
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);

@@ -17,21 +17,20 @@
 #include "jaco_msgs/JointAngles.h"
 #include "jaco_msgs/JointVelocity.h"
 
+#include "moveit_utils/AngularVelCtrl.h"
+
 #include <tf/tf.h>
 
 #define PI 3.14159265
 #define RAD_TO_DEG 57.2957795
 
-#define TOLERANCE_RADIANS (0.00125*PI)
+#define TOLERANCE_RADIANS (0.01125*PI)
 #define STALL_TIME_MULTIPLIER 1.35 //if we are still moving for 1.35 x the expected time, then stop, 
 
 
 #define MAX_VELOCITY_RADIANS (2*0.075*PI)
 
-
 using namespace std;
-
-
 
 sensor_msgs::JointState current_state;
 sensor_msgs::JointState target_joint_state;
@@ -111,30 +110,9 @@ double distanceToTravel(double current_position, double target_position, int joi
 	}
 }
 
-int main(int argc, char **argv) {
-	// Intialize ROS with this node name
-	ros::init(argc, argv, "joint_vel_test");
-
-	ros::NodeHandle n;
-
-	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
-	
-	//publisher for velocity commands
-    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
-    
-    //user input
-    char in;
-	
-	std::cout << "Move the arm to target position and press '1'" << std::endl;		
-	std::cin >> in;
-
+bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::AngularVelCtrl::Response &res){
 	//get joint positions
-	waitForJointAngles();
-	target_joint_state = current_state;
-	
-	std::cout << "Move the arm to starting position and press '1'" << std::endl;		
-	std::cin >> in;
+	target_joint_state = req.state;
 	
 	//get joint positions
 	waitForJointAngles();
@@ -279,7 +257,7 @@ int main(int argc, char **argv) {
 				ROS_INFO("Something must be in the way (joint %i, %f, %f) or the joint has over-shot its target"
 							,i,remaining_distances[i],remaining_distances_last[i]);
 				
-				stalled = true;
+				//stalled = true;
 			}
 			else {
 				remaining_distances_last[i]=remaining_distances[i];
@@ -318,8 +296,6 @@ int main(int argc, char **argv) {
 			ROS_INFO("Timeout!");
 			break;
 		}
-		
-		
 	}
 	
 	double t_end_sec =ros::Time::now().toSec();
@@ -335,5 +311,25 @@ int main(int argc, char **argv) {
 		j_pos_error[i] = fabs(target_joint_state.position[i]-current_state.position[i]);
 		ROS_INFO("Joint %i\tTarget: %f\tCurrent: %f\tError: %f",i,target_joint_state.position[i],current_state.position[i],j_pos_error[i]);
 	}
+	
+	res.success = true;
+	return res.success;
+}
+int main(int argc, char **argv) {
+	// Intialize ROS with this node name
+	ros::init(argc, argv, "joint_vel_test");
 
+	ros::NodeHandle n;
+
+	//create subscriber to joint angles
+	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
+	
+	//publisher for velocity commands
+    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+    
+    ros::ServiceServer srv = n.advertiseService("angular_vel_control", service_cb);
+
+	ros::spin();
+	
+	return 0;
 }

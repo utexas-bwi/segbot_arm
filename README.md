@@ -8,3 +8,9 @@ To run these packages, you must first install the utexas-bwi fork of the jaco ro
 $ git clone https://github.com/utexas-bwi/jaco-ros.git
 
 and compile with catkin.
+
+Next, install MoveIt! by typing:
+
+$ sudo apt-get install ros-indigo-moveit-*
+
+
