@@ -109,7 +109,7 @@ int main (int argc, char** argv)
  										reader.read(filePath, *image_cloud);
 										
 										//Plane separating
-										pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+										/*pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
 										pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
 										// Create the segmentation object
 										pcl::SACSegmentation<PointT> seg;
@@ -176,7 +176,7 @@ int main (int argc, char** argv)
 										
 										
 										//Write it to a .csv file
-										/*string csvFilePath = itr2->path.string() + "/" + ;
+										string csvFilePath = itr2->path.string() + "/" + ;
 										std::ofstream outputCsvFile(outputDftFileName.c_str());
 										if(!outputDftFile.is_open()){
 											std::cout<< "Could not open the file to store\n";
