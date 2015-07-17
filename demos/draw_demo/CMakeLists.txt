@@ -39,7 +39,7 @@ include_directories(
 
 add_executable (recordTrajectories src/recordTrajectory.cpp)
 target_link_libraries(recordTrajectories ${catkin_LIBRARIES})
-
+add_dependencies(recordTrajectories jaco_msgs_gencpp)
 
 add_executable (visionDistance src/visionDistance.cpp)
 target_link_libraries(visionDistance ${catkin_LIBRARIES} ${OpenCV_LIBS})
@@ -48,15 +48,15 @@ target_link_libraries(visionDistance ${catkin_LIBRARIES} ${OpenCV_LIBS})
 #fingers open/close executable
 add_executable (fingersWorkout src/moveFingers.cpp)
 target_link_libraries(fingersWorkout ${catkin_LIBRARIES})
-
+add_dependencies(fingersWorkout jaco_msgs_gencpp)
 #recordpoints exe
 add_executable (recordPoints src/recordPoints.cpp)
 target_link_libraries(recordPoints ${catkin_LIBRARIES})
-
+add_dependencies(recordPoints jaco_msgs_gencpp)
 #shapes exe
 add_executable (drawShapes src/shapes.cpp)
 target_link_libraries(drawShapes ${catkin_LIBRARIES})
-
+add_dependencies(drawShapes jaco_msgs_gencpp)
 #draw exe
 add_executable (draw src/draw.cpp)
 target_link_libraries(draw ${catkin_LIBRARIES})
