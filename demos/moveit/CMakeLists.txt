@@ -121,6 +121,8 @@ add_executable(move_group_rviz_mimic src/move_group_rviz_mimic.cpp)
  target_link_libraries(move_group_rviz_mimic ${catkin_LIBRARIES})
 
 add_dependencies(move_group moveit_utils_gencpp)
+add_dependencies(move_group_rviz_mimic moveit_utils_gencpp)
+
 #############
 ## Install ##
 #############
