@@ -866,6 +866,8 @@ bool squeeze(double velocity){
  */
 bool revolveJ6(double velocity){ 
 	startSensoryDataCollection();
+	sensor_msgs::JointState drop = getStateFromBag("drop_right");
+	goToLocation(drop);
 	ros::Time first_sent;
 	ros::Rate r(4);
 	jaco_msgs::JointVelocity T;
