@@ -131,6 +131,11 @@ add_dependencies(log_perception_action_client segbot_arm_perception_gencpp)
 add_executable(button_detection_node src/button_detection_node.cpp)
 target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
+
+add_executable(table_object_detection_node src/table_object_detection_node.cpp)
+target_link_libraries(table_object_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+
 add_executable(feature_extraction_server src/feature_extraction_server.cpp)
 add_dependencies(feature_extraction_server segbot_arm_perception_gencpp)
 target_link_libraries(feature_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
