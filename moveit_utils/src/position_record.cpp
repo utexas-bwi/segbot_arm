@@ -94,9 +94,9 @@ int main(int argc, char **argv){
 			bag.open(path + "/positions/" + filename + ".bag", rosbag::bagmode::Read);
 			
 			rosbag::View view(bag, rosbag::TopicQuery("joint_states"));
-			//rosbag::View view(bag, rosbag::TopicQuery("tool_position"));
 
 			sensor_msgs::JointState temp;
+			geometry_msgs::PoseStamped ps_temp;
 			BOOST_FOREACH(rosbag::MessageInstance const m, view){
 				sensor_msgs::JointState::ConstPtr js = m.instantiate<sensor_msgs::JointState>();
 				if(js != NULL){
@@ -105,6 +105,21 @@ int main(int argc, char **argv){
 						temp.position[1], temp.position[2]);
 				}
 				geometry_msgs::PoseStamped::ConstPtr ps = m.instantiate<geometry_msgs::PoseStamped>();
+				if(ps != NULL){
+					ps_temp = *ps;
+					ROS_INFO("Loaded bag file successfully: here is x: %f, y: %f, z: %f", ps_temp.pose.position.x, ps_temp.pose.position.y, ps_temp.pose.position.z);
+					ROS_INFO("Orientation: x: %f, y: %f, z: %f, w: %f", ps_temp.pose.orientation.x, ps_temp.pose.orientation.y, ps_temp.pose.orientation.z, ps_temp.pose.orientation.w);	
+				}
+			}	
+			
+			rosbag::View view2(bag, rosbag::TopicQuery("tool_position"));
+			BOOST_FOREACH(rosbag::MessageInstance const m, view2){
+				geometry_msgs::PoseStamped::ConstPtr ps = m.instantiate<geometry_msgs::PoseStamped>();
+				if(ps != NULL){
+					ps_temp = *ps;
+					ROS_INFO("Loaded bag file successfully: here is x: %f, y: %f, z: %f", ps_temp.pose.position.x, ps_temp.pose.position.y, ps_temp.pose.position.z);
+					ROS_INFO("Orientation: x: %f, y: %f, z: %f, w: %f", ps_temp.pose.orientation.x, ps_temp.pose.orientation.y, ps_temp.pose.orientation.z, ps_temp.pose.orientation.w);	
+				}
 			}	
 			bag.close();
 			
