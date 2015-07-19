@@ -600,6 +600,7 @@ void pushFromSide(double distance){
 
 bool grabFromApch(int fingerPos){
 	startSensoryDataCollection();
+	openFull();
 	approach(.15);
 	clearMsgs(.3);
 	closeComplt(fingerPos);
@@ -892,12 +893,17 @@ bool revolveJ6(double velocity){
 		j_vel_pub_.publish(T);
 		ROS_INFO("Sending message %d", i);
 	}
+	for(int i = 0; i < round(360/velocity/.25) + 1; i++){
+		r.sleep();
+		T.joint6 = -velocity;
+		j_vel_pub_.publish(T);
+		ROS_INFO("Sending message %d", i);
+	}
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
 bool approachFromHome(){
 	goHome();
-	openFull();
 	//readTrajectory("home_to_grasp_real");
 	/*sensor_msgs::JointState sub_grab = getStateFromBag("sub_grab");
 	goToLocation(sub_grab);
