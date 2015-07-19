@@ -22,11 +22,11 @@
 #define PI 3.14159265
 #define RAD_TO_DEG 57.2957795
 
-#define TOLERANCE_RADIANS (0.00125*PI)
+#define TOLERANCE_RADIANS (0.00125*PI/2)
 #define STALL_TIME_MULTIPLIER 1.35 //if we are still moving for 1.35 x the expected time, then stop, 
 
 
-#define MAX_VELOCITY_RADIANS (2*0.075*PI)
+#define MAX_VELOCITY_RADIANS (1*0.075*PI)
 
 
 using namespace std;

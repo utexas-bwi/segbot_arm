@@ -95,7 +95,12 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 }
 
 
-
+bool touchesPlane(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients, double tolerance){
+	//first, we find the point in the blob closest to the plane
+	
+	return true;
+	
+}
 
 void computeClusters(PointCloudT::Ptr in, double tolerance){
 	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
