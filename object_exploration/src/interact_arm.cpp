@@ -217,12 +217,40 @@ bool clearMsgs(double duration){
 bool goToLocation(sensor_msgs::JointState js){
 	moveit_utils::AngularVelCtrl srv;
 	srv.request.state = js;
-	if(angular_client.call(srv))
+	/*if(angular_client.call(srv))
 		ROS_INFO("Sending angular commands");
 	else
 		ROS_INFO("Cannot contact angular velocity service. Is it running?");
 	clearMsgs(.5);
-	return srv.response.success;
+	return srv.response.success;*/
+	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	jaco_msgs::ArmJointAnglesGoal goal;
+	goal.angles.joint1 = js.position[0];
+	goal.angles.joint2 = js.position[1];
+	goal.angles.joint3 = js.position[2];
+	goal.angles.joint4 = js.position[3];
+	goal.angles.joint5 = js.position[4];
+	goal.angles.joint6 = js.position[5];
+	//ROS_INFO("Joint6: %f", fromFile.position[5]);
+	ac.waitForServer();
+	ac.sendGoal(goal);
+	ROS_INFO("Trajectory goal sent");
+	ac.waitForResult();
+	
+}
+
+bool goToLocation(geometry_msgs::PoseStamped ps){
+	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	jaco_msgs::ArmPoseGoal goalPose;
+	goalPose.pose.header.frame_id = ps.header.frame_id;
+	goalPose.pose.pose = ps.pose;
+	goalPose.pose.pose.orientation.y *= -1;
+	ac.waitForServer();
+	ROS_DEBUG("Waiting for server.");
+	ROS_INFO("Sending goal.");
+	ac.sendGoal(goalPose);
+	ac.waitForResult();
+	
 }
 
 int goHome(){
@@ -304,6 +332,9 @@ geometry_msgs::PoseStamped getToolFromBag(std::string bagName){
 		geometry_msgs::PoseStamped::ConstPtr traj = m.instantiate<geometry_msgs::PoseStamped>();
 		if (traj != NULL){
 			fromFile = *traj;
+			ROS_INFO("Loaded bag file successfully: here is x: %f, y: %f, z: %f", fromFile.pose.position.x, fromFile.pose.position.y, fromFile.pose.position.z);
+					ROS_INFO("Orientation: x: %f, y: %f, z: %f, w: %f", fromFile.pose.orientation.x, fromFile.pose.orientation.y, fromFile.pose.orientation.z, fromFile.pose.orientation.w);	
+				
 		}
 	}	
 	bag.close();
@@ -692,6 +723,8 @@ bool drop(double height){
 	if(height < MINHEIGHT)
 		height = MINHEIGHT;
 	//go to that height
+	//sensor_msgs::JointState drop_sub = getStateFromBag("drop_sub");
+	//goToLocation(drop_sub);
 	sensor_msgs::JointState drop = getStateFromBag("drop_right");
 	goToLocation(drop);
 	ros::Rate r(25);
@@ -756,12 +789,16 @@ bool push(double velocity){
 }
 
 bool press(double velocity){
+	sensor_msgs::JointState leg = getStateFromBag("press_sub");
+	clearMsgs(.4);
+	goToLocation(leg);
 	startSensoryDataCollection();
 	sensor_msgs::JointState press = getStateFromBag("press_right");
+	clearMsgs(.4);
 	goToLocation(press);
 	ros::Rate r(40);
 	geometry_msgs::TwistStamped T;
-	
+	clearMsgs(.4);
 	T.twist.linear.x= 0.0;
 	T.twist.linear.y= 0.0;
 	T.twist.linear.z= 0.0;
@@ -770,7 +807,6 @@ bool press(double velocity){
 	T.twist.angular.z= 0.0;
 	
 	geometry_msgs::Pose tool_pose_last = tool_pos_cur;
-	ros::spinOnce();
 	while(tool_pos_cur.position.z <= tool_pose_last.position.z){
 		T.twist.linear.z = -velocity;
 		c_vel_pub_.publish(T);
@@ -850,7 +886,7 @@ bool revolveJ6(double velocity){
 	velocity *= 180/3.14596;
 	
 	ROS_INFO("Expecting %f messages", 360/velocity/.25);
-	for(int i = 0; i < round(360/velocity/.25); i++){
+	for(int i = 0; i < round(360/velocity/.25) + 1; i++){
 		r.sleep();
 		T.joint6 = velocity;
 		j_vel_pub_.publish(T);
@@ -1022,6 +1058,7 @@ int main(int argc, char **argv){
 	{
 		startingObjectNum = atoll(argv[1]);
 		startingTrialNum = atoll(argv[2]);
+		ROS_INFO("Starting from Object %d and Trial %d",startingObjectNum,startingTrialNum);
 	}
   
 	//publisher for cartesian velocity
@@ -1049,6 +1086,7 @@ int main(int argc, char **argv){
 	audio_client = n.serviceClient<grounded_logging::ProcessAudio>("audio_logger_service");
 
 	loop1();
+	
 	//carry out the sequence of behaviours
 	/*approachFromHome();
 	grabFromApch(6000);
