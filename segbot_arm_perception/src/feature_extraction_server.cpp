@@ -65,7 +65,7 @@ class ColorHistogram {
         cloud_size = cloud.points.size();
         for (int i = 0; i < cloud_size; i++) {
             // Max value of 255
-            double round = 256 / dim;
+            double round = (double)255 / dim;
             int r = (int)((double)(cloud.points[i].r) / round);
             int g = (int)((double)(cloud.points[i].g) / round);
             int b = (int)((double)(cloud.points[i].b) / round);
