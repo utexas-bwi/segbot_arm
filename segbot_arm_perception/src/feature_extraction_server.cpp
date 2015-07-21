@@ -64,8 +64,9 @@ class ColorHistogram {
         ROS_INFO("Computing color histogram...");
         cloud_size = cloud.points.size();
         for (int i = 0; i < cloud_size; i++) {
-            // Max value of 255
-            double round = 256 / dim;
+            // Max value of 255. We want 256 because we want the rgb division to result in
+            // a value always slightly smaller than the dim due to index starting from 0
+            double round = (double)256 / dim;
             int r = (int)((double)(cloud.points[i].r) / round);
             int g = (int)((double)(cloud.points[i].g) / round);
             int b = (int)((double)(cloud.points[i].b) / round);
