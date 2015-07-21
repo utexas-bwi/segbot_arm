@@ -603,6 +603,7 @@ bool grabFromApch(int fingerPos){
 	openFull();
 	approach(.15);
 	clearMsgs(.3);
+	approach("z", .1, -.06);
 	closeComplt(fingerPos);
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
@@ -781,6 +782,7 @@ bool push(double velocity){
 	startSensoryDataCollection();
 	sensor_msgs::JointState push = getStateFromBag("push_right");
 	goToLocation(push);
+	clearMsgs(3.0);
 	//start recording
 	//clearMsgs(1.);
 	approach("y", 0.7, -velocity);
@@ -906,6 +908,7 @@ bool revolveJ6(double velocity){
 }
 bool approachFromHome(){
 	goHome();
+	closeComplt(7000);
 	//readTrajectory("home_to_grasp_real");
 	/*sensor_msgs::JointState sub_grab = getStateFromBag("sub_grab");
 	goToLocation(sub_grab);
@@ -1027,7 +1030,6 @@ bool loop1(){
 			poke(.2);
 			storePointCloud();
 			ROS_INFO("3 second waiting period started...");
-			clearMsgs(3.0);
 			createBehaviorAndSubDirectories("push", trialFilePath);
 			storePointCloud();
 			push(-.2);
@@ -1094,7 +1096,8 @@ int main(int argc, char **argv){
 	audio_client = n.serviceClient<grounded_logging::ProcessAudio>("audio_logger_service");
 
 	loop1();
-	
+	//approachFromHome();
+	//grabFromApch(7000);
 	//carry out the sequence of behaviours
 	/*approachFromHome();
 	grabFromApch(6000);
