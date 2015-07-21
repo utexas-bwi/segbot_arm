@@ -214,6 +214,33 @@ bool clearMsgs(double duration){
 	}
 	return true;
 }
+int storePointCloud(){
+	// call the point cloud logger
+	depth_srv.request.start = 1;
+	depth_srv.request.pointCloudFilePath = visionFilePath;
+				
+	//Check if the services are running
+	if (depth_client.call(depth_srv)){
+		ROS_INFO("Point_cloud_logger_service called...");
+	}
+	else{
+		ROS_ERROR("Failed to call point_cloud_logger_service. Server might not have been launched yet.");
+		return 1;
+	}
+	// Wait for 2 seconds to make sure that a point cloud is captured	
+	clearMsgs(2);
+	
+	//Send a stop request
+	depth_srv.request.start = 0;
+
+	//call the client with the stop signal
+	if(depth_client.call(depth_srv)){
+		ROS_INFO("Point_cloud_logger_service stopped...");
+	}
+	
+	return(0);
+}
+
 bool goToLocation(sensor_msgs::JointState js){
 	moveit_utils::AngularVelCtrl srv;
 	srv.request.state = js;
@@ -599,11 +626,11 @@ void pushFromSide(double distance){
 
 
 bool grabFromApch(int fingerPos){
-	startSensoryDataCollection();
 	openFull();
+	startSensoryDataCollection();
 	approach(.15);
 	clearMsgs(.3);
-	approach("z", .1, -.06);
+	approach("z", .15, -.03);
 	closeComplt(fingerPos);
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
@@ -764,7 +791,6 @@ bool drop(double height){
 }
 
 bool poke(double velocity){
-	startSensoryDataCollection();
 	closeComplt(7000);
 /*	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
 	goToLocation(grab_sub);
@@ -772,21 +798,26 @@ bool poke(double velocity){
 */
 	sensor_msgs::JointState poke = getStateFromBag("grab_right");
 	goToLocation(poke);
+	startSensoryDataCollection();
 	clearMsgs(1.);
 	approach("xy", 0.4, velocity);
-	clearMsgs(2.0);
+	approach("xy", 0.1, -velocity);
+	clearMsgs(1.0);
 	stopSensoryDataCollection();
 }
 
 bool push(double velocity){
-	startSensoryDataCollection();
+	storePointCloud();
 	sensor_msgs::JointState push = getStateFromBag("push_right");
 	goToLocation(push);
 	clearMsgs(3.0);
+	ROS_INFO("Starting sensory collection");
+	startSensoryDataCollection();
 	//start recording
 	//clearMsgs(1.);
 	approach("y", 0.7, -velocity);
-	clearMsgs(2.0);
+	approach("y", 0.1, velocity);
+	clearMsgs(1.0);
 	stopSensoryDataCollection();
 	//stop recording
 }
@@ -795,10 +826,10 @@ bool press(double velocity){
 	sensor_msgs::JointState leg = getStateFromBag("press_sub");
 	clearMsgs(.4);
 	goToLocation(leg);
-	startSensoryDataCollection();
 	sensor_msgs::JointState press = getStateFromBag("press_right");
 	clearMsgs(.4);
 	goToLocation(press);
+	startSensoryDataCollection();
 	ros::Rate r(40);
 	geometry_msgs::TwistStamped T;
 	clearMsgs(.4);
@@ -819,8 +850,7 @@ bool press(double velocity){
 	} 
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
-	clearMsgs(.5);
-	clearMsgs(2.0);
+	clearMsgs(1.0);
 	stopSensoryDataCollection();
 }
 
@@ -854,10 +884,10 @@ bool squeeze(double velocity){
 		r.sleep();
 		tool_pose_last = tool_pos_cur;
 		ros::spinOnce();
-	} 
-	T.twist.linear.z= 0.0;
+	}
+	T.twist.linear.z = velocity;
 	c_vel_pub_.publish(T);
-	clearMsgs(.5);
+	
 	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
@@ -867,13 +897,12 @@ bool squeeze(double velocity){
  * limited at .8r/s
  */
 bool revolveJ6(double velocity){ 
-	startSensoryDataCollection();
 	sensor_msgs::JointState drop = getStateFromBag("drop_right");
 	goToLocation(drop);
 	ros::Time first_sent;
 	ros::Rate r(4);
 	jaco_msgs::JointVelocity T;
-	
+	startSensoryDataCollection();
 	if(velocity > 0)
 		if(velocity > .8)
 			velocity = .8;
@@ -895,15 +924,15 @@ bool revolveJ6(double velocity){
 		r.sleep();
 		T.joint6 = velocity;
 		j_vel_pub_.publish(T);
-		ROS_INFO("Sending message %d", i);
+		//ROS_INFO("Sending message %d", i);
 	}
 	for(int i = 0; i < round(360/velocity/.25) + 1; i++){
 		r.sleep();
 		T.joint6 = -velocity;
 		j_vel_pub_.publish(T);
-		ROS_INFO("Sending message %d", i);
+		//ROS_INFO("Sending message %d", i);
 	}
-	clearMsgs(2.0);
+	clearMsgs(1.0);
 	stopSensoryDataCollection();
 }
 bool approachFromHome(){
@@ -946,33 +975,6 @@ void createBehaviorAndSubDirectories(string behaviorName, string trialFilePath){
 	boost::filesystem::path haptic_dir (hapticFilePath);
 	if(!boost::filesystem::exists(haptic_dir))
 		boost::filesystem::create_directory(haptic_dir);
-}
-
-int storePointCloud(){
-	// call the point cloud logger
-	depth_srv.request.start = 1;
-	depth_srv.request.pointCloudFilePath = visionFilePath;
-				
-	//Check if the services are running
-	if (depth_client.call(depth_srv)){
-		ROS_INFO("Point_cloud_logger_service called...");
-	}
-	else{
-		ROS_ERROR("Failed to call point_cloud_logger_service. Server might not have been launched yet.");
-		return 1;
-	}
-	// Wait for 2 seconds to make sure that a point cloud is captured	
-	clearMsgs(2);
-	
-	//Send a stop request
-	depth_srv.request.start = 0;
-
-	//call the client with the stop signal
-	if(depth_client.call(depth_srv)){
-		ROS_INFO("Point_cloud_logger_service stopped...");
-	}
-	
-	return(0);
 }
 
 bool loop1(){
@@ -1029,9 +1031,8 @@ bool loop1(){
 			storePointCloud();
 			poke(.2);
 			storePointCloud();
-			ROS_INFO("3 second waiting period started...");
 			createBehaviorAndSubDirectories("push", trialFilePath);
-			storePointCloud();
+			//storePointCloud moved inside push function
 			push(-.2);
 			storePointCloud();
 			ROS_INFO("3 second waiting period started...");
