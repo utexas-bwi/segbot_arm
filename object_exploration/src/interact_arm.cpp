@@ -53,7 +53,7 @@ using namespace boost::assign;
 bool g_caught_sigint = false;
 
 // total number of object and trials to help with folder generation
-int totalObjects = 2, totalTrials = 2;
+int totalObjects = 2, totalTrials = 1;
 
 //the starting object and trial number
 int startingObjectNum, startingTrialNum;
@@ -164,6 +164,13 @@ void stopSensoryDataCollection(){
 	ac.sendGoal(goal);
 }
 
+// Function to wait before the placement of the objects
+void pressEnter(){
+	cout << "Press the ENTER key to continue";
+	while (cin.get() != '\n')
+		cout << "Please press ENTER\n";
+}
+
 //checks fingers position - used for object holding assurance
 void fingers_cb(const jaco_msgs::FingerPosition input){
 	f1 = input.finger1;
@@ -227,8 +234,8 @@ int storePointCloud(){
 		ROS_ERROR("Failed to call point_cloud_logger_service. Server might not have been launched yet.");
 		return 1;
 	}
-	// Wait for 2 seconds to make sure that a point cloud is captured	
-	clearMsgs(2);
+	// Wait for 1 seconds to make sure that a point cloud is captured	
+	clearMsgs(1);
 	
 	//Send a stop request
 	depth_srv.request.start = 0;
@@ -288,6 +295,11 @@ bool goToLocation(sensor_msgs::JointState js, bool fast){
 		goal.speedLimitationActive = true;
 		goal.speedParam1 = 30.0f;
 		goal.speedParam2 = 30.0f;
+	}
+	else {
+		goal.speedLimitationActive = true;
+		goal.speedParam1 = 20.0f;
+		goal.speedParam2 = 20.0f;
 	}
 	ac.waitForServer();
 	ac.sendGoal(goal);
@@ -478,7 +490,7 @@ void approach(std::string dimension, double distance, double velocity){
 	T.twist.linear.y = 0.0;
 	T.twist.linear.z = 0.0;
 	c_vel_pub_.publish(T);
-	clearMsgs(.5);
+	clearMsgs(.3);
 }
 void approach(char dimension, double distance){
 	ros::Rate r(4);
@@ -550,7 +562,6 @@ void lift(double vel){
 	*/
 	sensor_msgs::JointState drop = getStateFromBag("drop_right");
 	goToLocation(drop);
-	clearMsgs(1.);
 	//start logging here
 	
 	for(int i = 0; i < std::abs(distance)/vel/.25; i++){
@@ -610,7 +621,6 @@ bool hold(double height){
 		}
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
-	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
 bool readTrajectory(std::string filename){
@@ -672,8 +682,8 @@ bool shake(double vel){
 	int count = 0;
 	double step = .25;
 	double distance = 40; //degrees
-	if(vel > 1.5)
-		vel = 1.5;
+	if(vel > 1)
+		vel = 1;
 	jaco_msgs::JointVelocity T;
 	ros::Rate r(4);
 	T.joint1 = 0.0;
@@ -708,9 +718,10 @@ bool shake(double vel){
 		for(int i = 0; i < distance/vel/step; i++){
 			ROS_INFO("Got vel: %f",vel);
 			
+			T.joint3 = vel;
 			T.joint4 = vel;
 			T.joint5 = vel;
-			T.joint6 = vel;
+			T.joint6 = 4*vel;
 			
 			j_vel_pub_.publish(T);
 			r.sleep();
@@ -724,13 +735,15 @@ bool shake(double vel){
 		for(int i = 0; i < distance/vel/step; i++){
 			ROS_INFO("Got vel: %f",vel);
 			
+			T.joint3 = -vel;
 			T.joint4 = -vel;
 			T.joint5 = -vel;
-			T.joint6 = vel;
+			T.joint6 = 4*vel;
 			
 			j_vel_pub_.publish(T);
 			r.sleep();
 		}
+		T.joint3 = 0.0;
 		T.joint4 = 0.0;
 		T.joint5 = 0.0;
 		T.joint6 = 0.0;
@@ -738,14 +751,15 @@ bool shake(double vel){
 		j_vel_pub_.publish(T);
 		for(int i = 0; i < distance/vel/step; i++){
 			ROS_INFO("Got vel: %f",vel);
-			
+			T.joint3 = -vel;
 			T.joint4 = -vel;
 			T.joint5 = -vel;
-			T.joint6 = -vel;
+			T.joint6 = -4*vel;
 			
 			j_vel_pub_.publish(T);
 			r.sleep();
 		}
+		T.joint3 = 0.0;
 		T.joint4 = 0.0;
 		T.joint5 = 0.0;
 		T.joint6 = 0.0;
@@ -753,14 +767,15 @@ bool shake(double vel){
 		j_vel_pub_.publish(T);
 		for(int i = 0; i < distance/vel/step; i++){
 			ROS_INFO("Got vel: %f",vel);
-			
+			T.joint3 = vel;
 			T.joint4 = vel;
 			T.joint5 = vel;
-			T.joint6 = -vel;
+			T.joint6 = -4*vel;
 			
 			j_vel_pub_.publish(T);
 			r.sleep();
 		}
+		T.joint3 = 0.0;
 		T.joint4 = 0.0;
 		T.joint5 = 0.0;
 		T.joint6 = 0.0;
@@ -768,12 +783,13 @@ bool shake(double vel){
 		j_vel_pub_.publish(T);
 		count++;
 	}
+	T.joint3 = 0.0;
 	T.joint4 = 0.0;
 	T.joint5 = 0.0;
 	T.joint6 = 0.0;
 	
 	j_vel_pub_.publish(T);
-	clearMsgs(2.0);
+	clearMsgs(.4);
 	stopSensoryDataCollection();
 
 }
@@ -816,8 +832,9 @@ bool drop(double height){
 	openFull();
 	//sensor_msgs::JointState hide = getStateFromBag("hide");
 	//goToLocation(hide);
-	clearMsgs(2.0);
 	stopSensoryDataCollection();
+	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
+	goToLocation(grab_sub, true);
 }
 
 bool poke(double velocity){
@@ -834,14 +851,13 @@ bool poke(double velocity){
 	stopSensoryDataCollection();
 	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
 	goToLocation(grab_sub, true);
-	clearMsgs(1.0);
 }
 
 bool push(double velocity){
-	storePointCloud();
 	sensor_msgs::JointState push = getStateFromBag("push_right");
 	goToLocation(push);
-	clearMsgs(3.0);
+	pressEnter();
+	storePointCloud();
 	ROS_INFO("Starting sensory collection");
 	startSensoryDataCollection();
 	//start recording
@@ -881,7 +897,6 @@ bool press(double velocity){
 	} 
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
-	clearMsgs(1.0);
 	stopSensoryDataCollection();
 }
 
@@ -919,7 +934,7 @@ bool squeeze(double velocity){
 	T.twist.linear.z = velocity;
 	c_vel_pub_.publish(T);
 	
-	clearMsgs(2.0);
+	clearMsgs(.3);
 	stopSensoryDataCollection();
 }
 
@@ -963,7 +978,7 @@ bool revolveJ6(double velocity){
 		j_vel_pub_.publish(T);
 		//ROS_INFO("Sending message %d", i);
 	}
-	clearMsgs(1.0);
+	clearMsgs(.3);
 	stopSensoryDataCollection();
 }
 bool approachFromHome(){
@@ -1028,10 +1043,10 @@ bool loop1(){
 				boost::filesystem::create_directory(trial_dir);
 
 			//carry out the sequence of behaviours
-			approachFromHome();
 			//create the directories and store the point cloud before each action
 			createBehaviorAndSubDirectories("grasp", trialFilePath);
 			storePointCloud();
+			approachFromHome();
 			grabFromApch(6000);
 			//store a point cloud after the action is performed
 			storePointCloud();
@@ -1053,11 +1068,9 @@ bool loop1(){
 			storePointCloud();
 			createBehaviorAndSubDirectories("drop", trialFilePath);
 			storePointCloud();
-			//wait for 3 seconds after some behaviours
 			drop(.5);
 			storePointCloud();
-			ROS_INFO("3 second waiting period started...");
-			clearMsgs(3.0);
+			pressEnter();
 			createBehaviorAndSubDirectories("poke", trialFilePath);
 			storePointCloud();
 			poke(.2);
@@ -1066,8 +1079,7 @@ bool loop1(){
 			//storePointCloud moved inside push function
 			push(-.2);
 			storePointCloud();
-			ROS_INFO("3 second waiting period started...");
-			clearMsgs(3.0);
+			pressEnter();
 			createBehaviorAndSubDirectories("press", trialFilePath);
 			storePointCloud();
 			press(0.2);
@@ -1077,8 +1089,7 @@ bool loop1(){
 			squeeze(.03);
 			storePointCloud();
 			goHome();
-			ROS_INFO("10 second waiting period between trials started...");
-			clearMsgs(10.0);
+			pressEnter();
 		}
 	}
 }
@@ -1127,11 +1138,13 @@ int main(int argc, char **argv){
 	image_client = n.serviceClient<grounded_logging::ProcessVision>("vision_logger_service");
 	audio_client = n.serviceClient<grounded_logging::ProcessAudio>("audio_logger_service");
 
-	loop1();
+	//loop1();
 	//approachFromHome();
 	//grabFromApch(7000);
 	//carry out the sequence of behaviours
+	shake(1.5);
 	/*approachFromHome();
+	 
 	grabFromApch(6000);
 	clearMsgs(3.0);
 	
