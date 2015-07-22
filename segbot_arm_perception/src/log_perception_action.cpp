@@ -154,7 +154,9 @@ void toolpos_cb(const geometry_msgs::PoseStamped &msg){
 }
 
 void jointstate_cb(const sensor_msgs::JointStateConstPtr& input){
-	joint_state = *input;
+	if((*input).position.size() > 4){
+		joint_state = *input;
+	}
 }
 
 void fingers_cb(const jaco_msgs::FingerPosition input){
