@@ -1044,9 +1044,11 @@ bool loop1(){
 
 			//carry out the sequence of behaviours
 			//create the directories and store the point cloud before each action
-			createBehaviorAndSubDirectories("grasp", trialFilePath);
+			createBehaviorAndSubDirectories("look", trialFilePath);
 			storePointCloud();
 			approachFromHome();
+			createBehaviorAndSubDirectories("grasp", trialFilePath);
+			storePointCloud();
 			grabFromApch(6000);
 			//store a point cloud after the action is performed
 			storePointCloud();
@@ -1138,11 +1140,11 @@ int main(int argc, char **argv){
 	image_client = n.serviceClient<grounded_logging::ProcessVision>("vision_logger_service");
 	audio_client = n.serviceClient<grounded_logging::ProcessAudio>("audio_logger_service");
 
-	//loop1();
+	loop1();
 	//approachFromHome();
 	//grabFromApch(7000);
 	//carry out the sequence of behaviours
-	shake(1.5);
+	//shake(1.5);
 	/*approachFromHome();
 	 
 	grabFromApch(6000);
