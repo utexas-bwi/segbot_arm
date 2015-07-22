@@ -266,6 +266,36 @@ bool goToLocation(sensor_msgs::JointState js){
 	
 }
 
+bool goToLocation(sensor_msgs::JointState js, bool fast){
+	moveit_utils::AngularVelCtrl srv;
+	srv.request.state = js;
+	/*if(angular_client.call(srv))
+		ROS_INFO("Sending angular commands");
+	else
+		ROS_INFO("Cannot contact angular velocity service. Is it running?");
+	clearMsgs(.5);
+	return srv.response.success;*/
+	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	jaco_msgs::ArmJointAnglesGoal goal;
+	goal.angles.joint1 = js.position[0];
+	goal.angles.joint2 = js.position[1];
+	goal.angles.joint3 = js.position[2];
+	goal.angles.joint4 = js.position[3];
+	goal.angles.joint5 = js.position[4];
+	goal.angles.joint6 = js.position[5];
+	//ROS_INFO("Joint6: %f", fromFile.position[5]);
+	if(fast){
+		goal.speedLimitationActive = true;
+		goal.speedParam1 = 30.0f;
+		goal.speedParam2 = 30.0f;
+	}
+	ac.waitForServer();
+	ac.sendGoal(goal);
+	ROS_INFO("Trajectory goal sent");
+	ac.waitForResult();
+	
+}
+
 bool goToLocation(geometry_msgs::PoseStamped ps){
 	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	jaco_msgs::ArmPoseGoal goalPose;
@@ -641,7 +671,7 @@ bool shake(double vel){
 	int iterations = 2;
 	int count = 0;
 	double step = .25;
-	double distance = 35; //degrees
+	double distance = 40; //degrees
 	if(vel > 1.5)
 		vel = 1.5;
 	jaco_msgs::JointVelocity T;
@@ -696,7 +726,7 @@ bool shake(double vel){
 			
 			T.joint4 = -vel;
 			T.joint5 = -vel;
-			T.joint6 = -vel;
+			T.joint6 = vel;
 			
 			j_vel_pub_.publish(T);
 			r.sleep();
@@ -726,7 +756,7 @@ bool shake(double vel){
 			
 			T.joint4 = vel;
 			T.joint5 = vel;
-			T.joint6 = vel;
+			T.joint6 = -vel;
 			
 			j_vel_pub_.publish(T);
 			r.sleep();
@@ -801,9 +831,10 @@ bool poke(double velocity){
 	startSensoryDataCollection();
 	clearMsgs(1.);
 	approach("xy", 0.4, velocity);
-	approach("xy", 0.1, -velocity);
-	clearMsgs(1.0);
 	stopSensoryDataCollection();
+	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
+	goToLocation(grab_sub, true);
+	clearMsgs(1.0);
 }
 
 bool push(double velocity){
@@ -816,16 +847,16 @@ bool push(double velocity){
 	//start recording
 	//clearMsgs(1.);
 	approach("y", 0.7, -velocity);
-	approach("y", 0.1, velocity);
-	clearMsgs(1.0);
 	stopSensoryDataCollection();
-	//stop recording
+	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
+	goToLocation(grab_sub, true);
+	clearMsgs(1.0);
 }
 
 bool press(double velocity){
 	sensor_msgs::JointState leg = getStateFromBag("press_sub");
 	clearMsgs(.4);
-	goToLocation(leg);
+	goToLocation(leg, true);
 	sensor_msgs::JointState press = getStateFromBag("press_right");
 	clearMsgs(.4);
 	goToLocation(press);
@@ -946,7 +977,7 @@ bool approachFromHome(){
 	goToLocation(grab);
 	*/
 	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
-	goToLocation(grab_sub);
+	goToLocation(grab_sub, true);
 	clearMsgs(.5);
 	sensor_msgs::JointState grab = getStateFromBag("grab_right");
 	goToLocation(grab);
