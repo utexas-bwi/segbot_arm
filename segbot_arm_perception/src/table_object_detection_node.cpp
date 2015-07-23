@@ -211,7 +211,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	seg.setModelType (pcl::SACMODEL_PLANE);
 	seg.setMethodType (pcl::SAC_RANSAC);
 	seg.setMaxIterations (1000);
-	seg.setDistanceThreshold (0.005);
+	seg.setDistanceThreshold (0.01);
 
 	// Create the filtering object
 	pcl::ExtractIndices<PointT> extract;
