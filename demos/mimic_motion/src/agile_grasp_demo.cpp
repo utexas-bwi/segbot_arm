@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
 	//debugging publisher
-	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("table_object_detection_node/cloud", 10);
+	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud_debug", 10);
 	cloud_grasp_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud", 10);
 	
 	
