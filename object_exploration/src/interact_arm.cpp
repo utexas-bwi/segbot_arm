@@ -53,7 +53,7 @@ using namespace boost::assign;
 bool g_caught_sigint = false;
 
 // total number of object and trials to help with folder generation
-int totalObjects = 2, totalTrials = 1;
+int totalObjects = 30, totalTrials = 1;
 
 //the starting object and trial number
 int startingObjectNum, startingTrialNum;
@@ -129,7 +129,7 @@ int startSensoryDataCollection(){
 	// wait for the action server to start
 	ac.waitForServer(); //will wait for infinite time
 	ROS_INFO("Action server started, sending goal.");
-				
+	
 	// send a goal to the action
 	goal.filePath = hapticFilePath;
 	goal.start = true;
@@ -538,11 +538,10 @@ void approach(char dimension, double distance){
 }
 //lifts ef specified distance
 void lift(double vel){
-	startSensoryDataCollection();
 	ros::Rate r(4);
 	ros::spinOnce();
 	double distance_init = .2;
-	double distance = .25;
+	double distance = .4;
 	geometry_msgs::TwistStamped T;
 	T.twist.linear.x= 0.0;
 	T.twist.linear.y= 0.0;
@@ -563,7 +562,8 @@ void lift(double vel){
 	sensor_msgs::JointState drop = getStateFromBag("drop_right");
 	goToLocation(drop);
 	//start logging here
-	
+	startSensoryDataCollection();
+
 	for(int i = 0; i < std::abs(distance)/vel/.25; i++){
 		ros::spinOnce();
 		if(distance > 0)
@@ -575,10 +575,6 @@ void lift(double vel){
 	}
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
-	
-	//log
-	sleep(2);
-	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
 /*
@@ -672,7 +668,6 @@ bool grabFromApch(int fingerPos){
 	clearMsgs(.3);
 	approach("z", .15, -.03);
 	closeComplt(fingerPos);
-	clearMsgs(2.0);
 	stopSensoryDataCollection();
 }
 
