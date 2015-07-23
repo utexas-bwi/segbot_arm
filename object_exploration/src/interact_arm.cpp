@@ -53,7 +53,7 @@ using namespace boost::assign;
 bool g_caught_sigint = false;
 
 // total number of object and trials to help with folder generation
-int totalObjects = 30, totalTrials = 1;
+int totalObjects = 32, totalTrials = 2;
 
 //the starting object and trial number
 int startingObjectNum, startingTrialNum;
