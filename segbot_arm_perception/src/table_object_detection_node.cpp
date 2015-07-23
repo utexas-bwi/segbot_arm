@@ -39,6 +39,8 @@
 
 #include <pcl/kdtree/kdtree.h>
 
+#include "segbot_arm_perception/TabletopPerception.h"
+
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
@@ -58,6 +60,8 @@ std::vector<PointCloudT::Ptr > clusters;
 std::vector<PointCloudT::Ptr > clusters_on_plane;
 
 sensor_msgs::PointCloud2 cloud_ros;
+
+ros::Publisher cloud_pub;
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -96,9 +100,22 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 
 
 bool touchesPlane(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients, double tolerance){
-	//first, we find the point in the blob closest to the plane
 	
-	return true;
+	
+	//first, we find the point in the blob closest to the plane
+	for (unsigned int i = 0; i < blob->points.size(); i++){
+		pcl::PointXYZ p_i;
+		p_i.x=blob->points.at(i).x;
+
+		double distance = pcl::pointToPlaneDistance(p_i, plane_coefficients);
+		
+		if (distance < tolerance)
+			return true;
+		
+	}
+	
+	
+	return false;
 	
 }
 
@@ -131,6 +148,120 @@ void computeClusters(PointCloudT::Ptr in, double tolerance){
   }
 }
 
+void waitForCloud(){
+	ros::Rate r(30);
+	
+	while (ros::ok()){
+		ros::spinOnce();
+		
+		r.sleep();
+		
+		if (new_cloud_available_flag){
+			new_cloud_available_flag = false;
+			break;
+		}
+	}
+	
+}
+
+bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_perception::TabletopPerception::Response &res)
+{
+	//get the point cloud
+	waitForCloud();
+	
+
+	// Apply z filter -- we don't care for anything X m away in the z direction
+	pcl::PassThrough<PointT> pass;
+	pass.setInputCloud (cloud);
+	pass.setFilterFieldName ("z");
+	pass.setFilterLimits (0.0, 1.15);
+	pass.filter (*cloud);
+	
+	// Create the filtering object: downsample the dataset using a leaf size of 1cm
+	pcl::VoxelGrid<PointT> vg;
+	pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>);
+	vg.setInputCloud (cloud);
+	vg.setLeafSize (0.0025f, 0.0025f, 0.0025f);
+	vg.filter (*cloud_filtered);
+	
+	pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+	pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+	// Create the segmentation object
+	pcl::SACSegmentation<PointT> seg;
+	// Optional
+	seg.setOptimizeCoefficients (true);
+	// Mandatory
+	seg.setModelType (pcl::SACMODEL_PLANE);
+	seg.setMethodType (pcl::SAC_RANSAC);
+	seg.setMaxIterations (1000);
+	seg.setDistanceThreshold (0.01);
+
+	// Create the filtering object
+	pcl::ExtractIndices<PointT> extract;
+
+	// Segment the largest planar component from the remaining cloud
+	seg.setInputCloud (cloud_filtered);
+	seg.segment (*inliers, *coefficients);
+
+	// Extract the plane
+	extract.setInputCloud (cloud_filtered);
+	extract.setIndices (inliers);
+	extract.setNegative (false);
+	extract.filter (*cloud_plane);
+
+	//extract everything else
+	extract.setNegative (true);
+	extract.filter (*cloud_blobs);
+
+	//get the plane coefficients
+	Eigen::Vector4f plane_coefficients;
+	plane_coefficients(0)=coefficients->values[0];
+	plane_coefficients(1)=coefficients->values[1];
+	plane_coefficients(2)=coefficients->values[2];
+	plane_coefficients(3)=coefficients->values[3];
+	
+	//Step 3: Eucledian Cluster Extraction
+	computeClusters(cloud_blobs,0.04);
+	
+	clusters_on_plane.clear();
+
+	for (unsigned int i = 0; i < clusters.size(); i++){
+		
+		if (touchesPlane(clusters.at(i),plane_coefficients,0.04)){
+			clusters_on_plane.push_back(clusters.at(i));
+		}
+	}
+	
+	//fill in response
+	
+	//plane cloud and coefficient
+	pcl::toROSMsg(*cloud_plane,res.cloud_plane);
+	for (int i = 0; i < 4; i ++){
+		res.cloud_plane_coef[i] = plane_coefficients(i);
+	}
+	
+	//blobs on the plane
+	for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
+		pcl::toROSMsg(*cloud_plane,cloud_ros);
+		res.cloud_clusters.push_back(cloud_ros);
+	}
+	
+	//for debugging purposes
+	//now, put the clouds in cluster_on_plane in one cloud and publish it
+	cloud_blobs->clear();
+
+	for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
+		*cloud_blobs += *clusters_on_plane.at(i);
+	}
+			
+	pcl::toROSMsg(*cloud_blobs,cloud_ros);
+	cloud_ros.header.frame_id = cloud->header.frame_id;
+	cloud_pub.publish(cloud_ros);
+
+	
+	return true;
+}
+
 int main (int argc, char** argv)
 {
 	// Initialize ROS
@@ -142,8 +273,11 @@ int main (int argc, char** argv)
 	ros::Subscriber sub = nh.subscribe (param_topic, 1, cloud_cb);
 
 	//debugging publisher
-	ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("table_object_detection_node/cloud", 10);
+	cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("table_object_detection_node/cloud", 10);
 
+	//service
+	ros::ServiceServer service = nh.advertiseService("tabletop_object_detection_service", seg_cb);
+	
 	
 	tf::TransformListener listener;
 
