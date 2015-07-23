@@ -23,5 +23,7 @@ Install libfft3:
 
 $ sudo apt-get install libfftw3-dev
 
+Install our fork of agile_grasp ROS indigo package by cloning from:
 
+https://github.com/jsinapov/agile_grasp
 
