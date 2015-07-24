@@ -13,7 +13,18 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   jaco_msgs
   actionlib
+  segbot_arm_perception
+  pcl_ros
+  pcl_conversions
 )
+
+## System dependencies are found with CMake's conventions
+# find_package(Boost REQUIRED COMPONENTS system)
+find_package(PCL 1.7 REQUIRED)
+
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -119,6 +130,12 @@ add_dependencies(push_button_demo jaco_msgs_gencpp)
 add_executable(angular_vel_control_test src/angular_vel_control_test.cpp)
 target_link_libraries(angular_vel_control_test ${catkin_LIBRARIES} )
 add_dependencies(angular_vel_control_test jaco_msgs_gencpp)
+
+
+## Declare a cpp executable
+add_executable(agile_grasp_demo src/agile_grasp_demo.cpp)
+target_link_libraries(agile_grasp_demo ${catkin_LIBRARIES} )
+add_dependencies(agile_grasp_demo jaco_msgs_gencpp)
 
 ## Declare a cpp executable
 #add_executable(press_object_demo src/press_object_demo.cpp)

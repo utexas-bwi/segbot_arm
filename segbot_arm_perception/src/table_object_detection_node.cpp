@@ -45,9 +45,6 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
-// Select mode
-const bool save_pl_mode = false;
-
 // Mutex: //
 boost::mutex cloud_mutex;
 
@@ -266,13 +263,15 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	
 	//plane cloud and coefficient
 	pcl::toROSMsg(*cloud_plane,res.cloud_plane);
+	res.cloud_plane.header.frame_id = cloud->header.frame_id;
 	for (int i = 0; i < 4; i ++){
 		res.cloud_plane_coef[i] = plane_coefficients(i);
 	}
 	
 	//blobs on the plane
 	for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
-		pcl::toROSMsg(*cloud_plane,cloud_ros);
+		pcl::toROSMsg(*clusters_on_plane.at(i),cloud_ros);
+		cloud_ros.header.frame_id = cloud->header.frame_id;
 		res.cloud_clusters.push_back(cloud_ros);
 	}
 	
