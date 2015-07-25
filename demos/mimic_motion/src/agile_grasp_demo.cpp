@@ -216,14 +216,14 @@ int main(int argc, char **argv) {
 	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 	  
 	//subscriber for grasps
-	//ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps",1, grasps_cb);  
+	ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps_handles",1, grasps_cb);  
 	  
 	  
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
 	//publish pose array
-	pose_array_pub = n.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo//pose_array", 10);
+	pose_array_pub = n.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo/pose_array", 10);
 	
 	//debugging publisher
 	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud_debug", 10);
@@ -278,6 +278,7 @@ int main(int argc, char **argv) {
 	poses_msg.header.stamp = cloud_ros.header.stamp;
 	poses_msg.header.frame_id = cloud_ros.header.frame_id;
 	
+	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
 	for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
 		geometry_msgs::Pose p_i;
@@ -288,9 +289,9 @@ int main(int argc, char **argv) {
 		
 		double angle = 0.0;
 		
-		p_i.orientation.x = current_grasps.grasps.at(i).axis.x * sin(angle/2);
-		p_i.orientation.y = current_grasps.grasps.at(i).axis.y * sin(angle/2);
-		p_i.orientation.z = current_grasps.grasps.at(i).axis.z * sin(angle/2);
+		p_i.orientation.x = current_grasps.grasps.at(i).approach.x * sin(angle/2);
+		p_i.orientation.y = current_grasps.grasps.at(i).approach.y * sin(angle/2);
+		p_i.orientation.z = current_grasps.grasps.at(i).approach.z * sin(angle/2);
 		p_i.orientation.w = cos(angle/2);
 		
 		poses_msg.poses.push_back(p_i);

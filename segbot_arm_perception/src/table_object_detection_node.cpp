@@ -203,8 +203,10 @@ void waitForCloudK(int k){
 			
 			counter ++;
 			
-			if (counter >= k)
+			if (counter >= k){
+				cloud_aggregated->header = cloud->header;
 				break;
+			}
 		}
 	}
 	
