@@ -15,6 +15,8 @@
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 
+#include "agile_grasp/Grasps.h"
+
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_perception/TabletopPerception.h"
 
@@ -73,7 +75,11 @@ ros::Publisher cloud_pub;
 ros::Publisher cloud_grasp_pub;
  
 sensor_msgs::PointCloud2 cloud_ros;
- 
+
+bool heardGrasps = false;
+agile_grasp::Grasps current_grasps;
+
+
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 	
@@ -102,6 +108,27 @@ void fingers_cb (const jaco_msgs::FingerPosition msg) {
   current_finger = msg;
 }
 
+void grasps_cb(const agile_grasp::Grasps &msg){
+	current_grasps = msg;
+	
+	heardGrasps = true;
+}
+
+void listenForGrasps(float rate){
+	ros::Rate r(rate);
+	
+	while (ros::ok()){
+		ros::spinOnce();
+		
+		if (heardGrasps)
+			return;
+		
+		r.sleep();
+		
+		
+	}
+	
+}
 
 void movePose(float d_z) {
   actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
@@ -185,6 +212,10 @@ int main(int argc, char **argv) {
 	//subscriber for fingers
 	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 	  
+	//subscriber for grasps
+	//ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps",1, grasps_cb);  
+	  
+	  
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
@@ -230,7 +261,22 @@ int main(int argc, char **argv) {
 	pcl::toPCLPointCloud2(*detected_objects.at(selected_object),pc_target);
 	pcl_conversions::fromPCL(pc_target,cloud_ros);
 	
+	//publish to agile_grasp
 	cloud_grasp_pub.publish(cloud_ros);
+	
+	//wait for response at 30 Hz
+	listenForGrasps(30.0);
+	
+	for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
+		geometry_msgs::Pose p_i;
+		
+		p_i.position.x = current_grasps.grasps.at(i).center.x;
+		p_i.position.y = current_grasps.grasps.at(i).center.y;
+		p_i.position.z = current_grasps.grasps.at(i).center.z;
+		
+		p_i.orientation.x = current_grasps.grasps.at(i).axis.x;
+		
+	}
 
 	return 0;
 }

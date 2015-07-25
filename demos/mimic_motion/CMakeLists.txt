@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   segbot_arm_perception
   pcl_ros
   pcl_conversions
+  agile_grasp
 )
 
 ## System dependencies are found with CMake's conventions
@@ -135,7 +136,7 @@ add_dependencies(angular_vel_control_test jaco_msgs_gencpp)
 ## Declare a cpp executable
 add_executable(agile_grasp_demo src/agile_grasp_demo.cpp)
 target_link_libraries(agile_grasp_demo ${catkin_LIBRARIES} )
-add_dependencies(agile_grasp_demo jaco_msgs_gencpp)
+add_dependencies(agile_grasp_demo jaco_msgs_gencpp agile_grasp_gencpp)
 
 ## Declare a cpp executable
 #add_executable(press_object_demo src/press_object_demo.cpp)
