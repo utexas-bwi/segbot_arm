@@ -50,6 +50,7 @@ boost::mutex cloud_mutex;
 
 bool new_cloud_available_flag = false;
 PointCloudT::Ptr cloud (new PointCloudT);
+PointCloudT::Ptr cloud_aggregated (new PointCloudT);
 PointCloudT::Ptr cloud_plane (new PointCloudT);
 PointCloudT::Ptr cloud_blobs (new PointCloudT);
 PointCloudT::Ptr empty_cloud (new PointCloudT);
@@ -181,11 +182,39 @@ void waitForCloud(){
 	
 }
 
+/* collects a cloud by aggregating k successive frames */
+void waitForCloudK(int k){
+	ros::Rate r(30);
+	
+	cloud_aggregated->clear();
+	
+	int counter = 0;
+	
+	while (ros::ok()){
+		ros::spinOnce();
+		
+		r.sleep();
+		
+		if (new_cloud_available_flag){
+			
+			*cloud_aggregated+=*cloud;
+			
+			new_cloud_available_flag = false;
+			
+			counter ++;
+			
+			if (counter >= k)
+				break;
+		}
+	}
+	
+}
+
 bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_perception::TabletopPerception::Response &res)
 {
-	//get the point cloud
-	waitForCloud();
-	
+	//get the point cloud by aggregating k successive input clouds
+	waitForCloudK(5);
+	cloud = cloud_aggregated;
 
 	// Apply z filter -- we don't care for anything X m away in the z direction
 	pcl::PassThrough<PointT> pass;
