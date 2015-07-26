@@ -8,6 +8,7 @@
 
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/PoseArray.h>
 #include <std_msgs/Float32.h>
 
 //actions
@@ -70,9 +71,11 @@ sensor_msgs::JointState current_effort;
 jaco_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 
+//publishers
 ros::Publisher pub_velocity;
 ros::Publisher cloud_pub;
 ros::Publisher cloud_grasp_pub;
+ros::Publisher pose_array_pub;
  
 sensor_msgs::PointCloud2 cloud_ros;
 
@@ -219,6 +222,9 @@ int main(int argc, char **argv) {
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
+	//publish pose array
+	pose_array_pub = n.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo//pose_array", 10);
+	
 	//debugging publisher
 	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud_debug", 10);
 	cloud_grasp_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud", 10);
@@ -267,6 +273,12 @@ int main(int argc, char **argv) {
 	//wait for response at 30 Hz
 	listenForGrasps(30.0);
 	
+	geometry_msgs::PoseArray poses_msg;
+	poses_msg.header.seq = 1;
+	poses_msg.header.stamp = cloud_ros.header.stamp;
+	poses_msg.header.frame_id = cloud_ros.header.frame_id;
+	
+	
 	for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
 		geometry_msgs::Pose p_i;
 		
@@ -274,9 +286,18 @@ int main(int argc, char **argv) {
 		p_i.position.y = current_grasps.grasps.at(i).center.y;
 		p_i.position.z = current_grasps.grasps.at(i).center.z;
 		
-		p_i.orientation.x = current_grasps.grasps.at(i).axis.x;
+		double angle = 0.0;
+		
+		p_i.orientation.x = current_grasps.grasps.at(i).axis.x * sin(angle/2);
+		p_i.orientation.y = current_grasps.grasps.at(i).axis.y * sin(angle/2);
+		p_i.orientation.z = current_grasps.grasps.at(i).axis.z * sin(angle/2);
+		p_i.orientation.w = cos(angle/2);
+		
+		poses_msg.poses.push_back(p_i);
 		
 	}
+
+	pose_array_pub.publish(poses_msg);
 
 	return 0;
 }
