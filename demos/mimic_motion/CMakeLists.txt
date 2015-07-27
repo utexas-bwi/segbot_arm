@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   pcl_conversions
   agile_grasp
+  tf_conversions
 )
 
 ## System dependencies are found with CMake's conventions

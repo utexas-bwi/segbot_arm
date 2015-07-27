@@ -6,10 +6,19 @@
 #include <cstdlib>
 #include <std_msgs/String.h>
 
+#include <Eigen/Dense>
+#include <eigen_conversions/eigen_msg.h>
+
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseArray.h>
 #include <std_msgs/Float32.h>
+
+//tf stuff
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
+#include <tf/transform_broadcaster.h>
+
 
 //actions
 #include <actionlib/client/simple_action_client.h>
@@ -197,6 +206,109 @@ int selectObjectToGrasp(std::vector<PointCloudT::Ptr > candidates){
 	return index;
 }
 
+Eigen::Matrix3d reorderHandAxes(const Eigen::Matrix3d& Q)
+{
+	std::vector<int> axis_order_;
+	axis_order_.push_back(2);
+	axis_order_.push_back(0);
+	axis_order_.push_back(1);
+	
+	Eigen::Matrix3d R = Eigen::MatrixXd::Zero(3, 3);
+	R.col(axis_order_[0]) = Q.col(0); // grasp approach vector
+	R.col(axis_order_[1]) = Q.col(1); // hand axis
+	R.col(axis_order_[2]) = Q.col(2); // hand binormal
+	return R;
+}
+
+
+
+geometry_msgs::PoseStamped graspToPose(agile_grasp::Grasp grasp, double hand_offset, std::string frame_id){
+	
+	
+	
+	Eigen::Vector3d center_; // grasp position
+	Eigen::Vector3d surface_center_; //  grasp position projected back onto the surface of the object
+	Eigen::Vector3d axis_; //  hand axis
+	Eigen::Vector3d approach_; //  grasp approach vector
+	Eigen::Vector3d binormal_; //  vector orthogonal to the hand axis and the grasp approach direction
+	
+	tf::vectorMsgToEigen(grasp.axis, axis_);
+	tf::vectorMsgToEigen(grasp.approach, approach_);
+	tf::vectorMsgToEigen(grasp.center, center_);
+	tf::vectorMsgToEigen(grasp.surface_center, surface_center_);
+	
+	approach_ = -1.0 * approach_; // make approach vector point away from handle centroid
+	binormal_ = axis_.cross(approach_); // binormal (used as rotation axis to generate additional approach vectors)
+	
+	//step 1: calculate hand orientation
+	
+	// calculate first hand orientation
+	Eigen::Matrix3d R = Eigen::MatrixXd::Zero(3, 3);
+	R.col(0) = -1.0 * approach_;
+	R.col(1) = axis_;
+	R.col(2) << R.col(0).cross(R.col(1));
+			
+	// rotate by 180deg around the grasp approach vector to get the "opposite" hand orientation
+	Eigen::Transform<double, 3, Eigen::Affine> T(Eigen::AngleAxis<double>(M_PI, approach_));
+	
+	// calculate second hand orientation
+	Eigen::Matrix3d Q = Eigen::MatrixXd::Zero(3, 3);
+	Q.col(0) = T * approach_;
+	Q.col(1) = T * axis_;
+	Q.col(2) << Q.col(0).cross(Q.col(1));
+	
+	// reorder rotation matrix columns according to axes ordering of the robot hand
+	Eigen::Matrix3d R1 = reorderHandAxes(R);
+	Eigen::Matrix3d R2 = reorderHandAxes(Q);
+	
+	
+	// convert Eigen rotation matrices to TF quaternions and normalize them
+	tf::Matrix3x3 TF1, TF2;
+	tf::matrixEigenToTF(R1, TF1);
+	tf::matrixEigenToTF(R2, TF2);
+	tf::Quaternion quat1, quat2;
+	TF1.getRotation(quat1);
+	TF2.getRotation(quat2);
+	quat1.normalize();
+	quat2.normalize();
+	
+	std::vector<tf::Quaternion> quats;
+	quats.push_back(quat1);
+	quats.push_back(quat2);
+	
+	//use the first quaterneon for now
+	tf::Quaternion quat = quats.at(0);
+	
+	//angles to try
+	double theta = 0.0;
+	
+	// calculate grasp position
+	Eigen::Vector3d position;
+	Eigen::Vector3d approach = -1.0 * approach_;
+	if (theta != 0)
+	{
+		// project grasp bottom position onto the line defined by grasp surface position and approach vector
+		Eigen::Vector3d s, b, a;
+		position = (center_ - surface_center_).dot(approach) * approach;
+		position += surface_center_;
+	}
+	else
+		position = center_;
+		
+	// translate grasp position by <hand_offset_> along the grasp approach vector
+	position = position + hand_offset * approach;
+			
+	geometry_msgs::PoseStamped pose_st;
+	pose_st.header.stamp = ros::Time(0);
+	pose_st.header.frame_id = frame_id;
+	tf::pointEigenToMsg(position, pose_st.pose.position);
+    tf::quaternionTFToMsg(quat, pose_st.pose.orientation);
+		
+	
+	
+	return pose_st;
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "agile_grasp_demo");
@@ -280,21 +392,13 @@ int main(int argc, char **argv) {
 	
 	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
+	double hand_offset = 0.0;
+	
 	for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
-		geometry_msgs::Pose p_i;
+		geometry_msgs::PoseStamped p_i = graspToPose(current_grasps.grasps.at(i),hand_offset,cloud_ros.header.frame_id);
+
 		
-		p_i.position.x = current_grasps.grasps.at(i).center.x;
-		p_i.position.y = current_grasps.grasps.at(i).center.y;
-		p_i.position.z = current_grasps.grasps.at(i).center.z;
-		
-		double angle = 0.0;
-		
-		p_i.orientation.x = current_grasps.grasps.at(i).approach.x * sin(angle/2);
-		p_i.orientation.y = current_grasps.grasps.at(i).approach.y * sin(angle/2);
-		p_i.orientation.z = current_grasps.grasps.at(i).approach.z * sin(angle/2);
-		p_i.orientation.w = cos(angle/2);
-		
-		poses_msg.poses.push_back(p_i);
+		poses_msg.poses.push_back(p_i.pose);
 		
 	}
 
