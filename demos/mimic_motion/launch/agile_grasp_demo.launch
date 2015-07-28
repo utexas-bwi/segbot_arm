@@ -23,7 +23,7 @@
               0, 0, 0, 1] </rosparam>
     <param name="min_inliers" value="10" />
     <param name="plotting" value="2" />
-    <param name="marker_lifetime" value="50" />
+    <param name="marker_lifetime" value="500" />
 	</node>
 
 </launch>

@@ -85,7 +85,9 @@ ros::Publisher pub_velocity;
 ros::Publisher cloud_pub;
 ros::Publisher cloud_grasp_pub;
 ros::Publisher pose_array_pub;
+ros::Publisher pose_pub;
  
+
 sensor_msgs::PointCloud2 cloud_ros;
 
 bool heardGrasps = false;
@@ -242,12 +244,24 @@ geometry_msgs::PoseStamped graspToPose(agile_grasp::Grasp grasp, double hand_off
 	
 	//step 1: calculate hand orientation
 	
+	// rotate by 180deg around the grasp approach vector to get the "opposite" hand orientation
+	Eigen::Transform<double, 3, Eigen::Affine> T_R(Eigen::AngleAxis<double>(M_PI/2, approach_));
+	
+	//to do: compute the second possible grasp by rotating -M_PI/2 instead
+	
 	// calculate first hand orientation
 	Eigen::Matrix3d R = Eigen::MatrixXd::Zero(3, 3);
 	R.col(0) = -1.0 * approach_;
-	R.col(1) = axis_;
+	R.col(1) = T_R * axis_;
 	R.col(2) << R.col(0).cross(R.col(1));
 			
+	Eigen::Matrix3d R1 = reorderHandAxes(R);
+	tf::Matrix3x3 TF1;		
+	tf::matrixEigenToTF(R1, TF1);
+	tf::Quaternion quat1;
+	TF1.getRotation(quat1);		
+	quat1.normalize();
+	
 	// rotate by 180deg around the grasp approach vector to get the "opposite" hand orientation
 	Eigen::Transform<double, 3, Eigen::Affine> T(Eigen::AngleAxis<double>(M_PI, approach_));
 	
@@ -258,18 +272,14 @@ geometry_msgs::PoseStamped graspToPose(agile_grasp::Grasp grasp, double hand_off
 	Q.col(2) << Q.col(0).cross(Q.col(1));
 	
 	// reorder rotation matrix columns according to axes ordering of the robot hand
-	Eigen::Matrix3d R1 = reorderHandAxes(R);
+	//Eigen::Matrix3d R1 = reorderHandAxes(R);
 	Eigen::Matrix3d R2 = reorderHandAxes(Q);
-	
-	
+
 	// convert Eigen rotation matrices to TF quaternions and normalize them
-	tf::Matrix3x3 TF1, TF2;
-	tf::matrixEigenToTF(R1, TF1);
+	tf::Matrix3x3 TF2;
 	tf::matrixEigenToTF(R2, TF2);
-	tf::Quaternion quat1, quat2;
-	TF1.getRotation(quat1);
+	tf::Quaternion quat2;
 	TF2.getRotation(quat2);
-	quat1.normalize();
 	quat2.normalize();
 	
 	std::vector<tf::Quaternion> quats;
@@ -337,10 +347,20 @@ int main(int argc, char **argv) {
 	//publish pose array
 	pose_array_pub = n.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo/pose_array", 10);
 	
+	//publish pose 
+	pose_pub = n.advertise<geometry_msgs::PoseStamped>("/agile_grasp_demo/pose_out", 10);
+	
+	
 	//debugging publisher
 	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud_debug", 10);
 	cloud_grasp_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud", 10);
 	
+	//user input
+    char in;
+	
+	std::cout << "Press '1' to start the demo" << std::endl;		
+	std::cin >> in;
+
 	
 	
 	//step 1: query table_object_detection_node to segment the blobs on the table
@@ -392,17 +412,23 @@ int main(int argc, char **argv) {
 	
 	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
-	double hand_offset = 0.0;
+	double hand_offset = -0.1;
 	
+	
+	std::vector<geometry_msgs::PoseStamped> poses;
 	for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
 		geometry_msgs::PoseStamped p_i = graspToPose(current_grasps.grasps.at(i),hand_offset,cloud_ros.header.frame_id);
-
+		poses.push_back(p_i);
 		
 		poses_msg.poses.push_back(p_i.pose);
 		
 	}
 
 	pose_array_pub.publish(poses_msg);
+
+
+	//publish individual pose
+	pose_pub.publish(poses.at(0));
 
 	return 0;
 }
