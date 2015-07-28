@@ -94,6 +94,13 @@ bool heardGrasps = false;
 agile_grasp::Grasps current_grasps;
 
 
+struct GraspCartesianCommand {
+	geometry_msgs::PoseStamped approach_pose;
+	geometry_msgs::PoseStamped grasp_pose;
+};
+
+
+
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 	
@@ -103,13 +110,11 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
   //ROS_INFO_STREAM(current_state);
 }
 
-
 //Joint state cb
 void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
   current_effort = *input;
   //ROS_INFO_STREAM(current_effort);
 }
-
 
 //Joint state cb
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
@@ -143,6 +148,8 @@ void listenForGrasps(float rate){
 	}
 	
 }
+
+
 
 void movePose(float d_z) {
   actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
@@ -192,6 +199,17 @@ void moveFinger(int finger_value) {
     ac.waitForResult();
 }
 
+/*double angular_difference(Eigen::Quaternionf c,Eigen::Quaternionf d){
+	Eigen::Vector4f dv;
+	dv[0] = d.w(); dv[1] = d.x(); dv[2] = d.y(); dv[3] = d.z();
+	Eigen::Matrix<float, 3,4> inv;
+	inv(0,0) = -c.x(); inv(0,1) = c.w(); inv(0,2) = -c.z(); inv(0,3) = c.y();
+	inv(1,0) = -c.y(); inv(1,1) = c.z(); inv(1,2) = c.w();	inv(1,3) = -c.x();
+	inv(2,0) = -c.z(); inv(2,1) = -c.y();inv(2,2) = c.x();  inv(2,3) = c.w();
+	
+	return inv * dv * -2.0;
+}*/
+
 int selectObjectToGrasp(std::vector<PointCloudT::Ptr > candidates){
 	//currently, we just pick the one with the most points
 	int max_num_points = -1;
@@ -222,11 +240,7 @@ Eigen::Matrix3d reorderHandAxes(const Eigen::Matrix3d& Q)
 	return R;
 }
 
-
-
 geometry_msgs::PoseStamped graspToPose(agile_grasp::Grasp grasp, double hand_offset, std::string frame_id){
-	
-	
 	
 	Eigen::Vector3d center_; // grasp position
 	Eigen::Vector3d surface_center_; //  grasp position projected back onto the surface of the object
@@ -263,7 +277,7 @@ geometry_msgs::PoseStamped graspToPose(agile_grasp::Grasp grasp, double hand_off
 	quat1.normalize();
 	
 	// rotate by 180deg around the grasp approach vector to get the "opposite" hand orientation
-	Eigen::Transform<double, 3, Eigen::Affine> T(Eigen::AngleAxis<double>(M_PI, approach_));
+	/*Eigen::Transform<double, 3, Eigen::Affine> T(Eigen::AngleAxis<double>(M_PI, approach_));
 	
 	// calculate second hand orientation
 	Eigen::Matrix3d Q = Eigen::MatrixXd::Zero(3, 3);
@@ -284,10 +298,10 @@ geometry_msgs::PoseStamped graspToPose(agile_grasp::Grasp grasp, double hand_off
 	
 	std::vector<tf::Quaternion> quats;
 	quats.push_back(quat1);
-	quats.push_back(quat2);
+	quats.push_back(quat2);*/
 	
 	//use the first quaterneon for now
-	tf::Quaternion quat = quats.at(0);
+	tf::Quaternion quat = quat1;
 	
 	//angles to try
 	double theta = 0.0;
@@ -412,17 +426,28 @@ int main(int argc, char **argv) {
 	
 	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
-	double hand_offset = -0.1;
+	//next, compute approach and grasp poses for each detected grasp
+	double hand_offset_grasp = -0.1;
+	double hand_offset_approach = -0.15;
 	
-	
+	std::vector<GraspCartesianCommand> grasp_commands;
 	std::vector<geometry_msgs::PoseStamped> poses;
 	for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
-		geometry_msgs::PoseStamped p_i = graspToPose(current_grasps.grasps.at(i),hand_offset,cloud_ros.header.frame_id);
-		poses.push_back(p_i);
+		geometry_msgs::PoseStamped p_grasp_i = graspToPose(current_grasps.grasps.at(i),hand_offset_grasp,cloud_ros.header.frame_id);
+		geometry_msgs::PoseStamped p_approach_i = graspToPose(current_grasps.grasps.at(i),hand_offset_approach,cloud_ros.header.frame_id);
 		
-		poses_msg.poses.push_back(p_i.pose);
+		poses.push_back(p_grasp_i);
+		poses_msg.poses.push_back(p_grasp_i.pose);
 		
+		GraspCartesianCommand gc_i;
+		gc_i.approach_pose = p_approach_i;
+		gc_i.grasp_pose = p_grasp_i;
+		grasp_commands.push_back(gc_i);
 	}
+	
+	//now, select the target grasp
+	
+
 
 	pose_array_pub.publish(poses_msg);
 
