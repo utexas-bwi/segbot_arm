@@ -35,7 +35,7 @@ ros::Publisher pub_angular_velocity;
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
   current_state = *input;
-  ROS_INFO_STREAM(current_state);
+  //ROS_INFO_STREAM(current_state);
 }
 
 
@@ -65,8 +65,9 @@ void movePose(float d_z) {
 
   // Set goal pose coordinates
 
-  goalPose.pose.header.frame_id = "mico_api_origin";
+  goalPose.pose.header.frame_id = "mico_link_base";
   
+  ROS_INFO("Current pose:");
   ROS_INFO_STREAM(current_pose);
 
   goalPose.pose.pose.position.x = current_pose.pose.position.x;
@@ -77,6 +78,7 @@ void movePose(float d_z) {
   goalPose.pose.pose.orientation.z = current_pose.pose.orientation.z;
   goalPose.pose.pose.orientation.w = current_pose.pose.orientation.w;
 
+	ROS_INFO("Goal pose:");	
 	ROS_INFO_STREAM(goalPose);
 
   ac.waitForServer();
@@ -206,7 +208,7 @@ int main(int argc, char **argv) {
       finger_open_close_toggle++;
   }*/
   
-  for (int i = 0; i < 20; i ++){
+  for (int i = 0; i < 50; i ++){
 	  ros::spinOnce();
       ros::Duration(0.05).sleep();
   }
@@ -218,8 +220,8 @@ int main(int argc, char **argv) {
       ros::Duration(0.05).sleep();
   }*/
   
-  moveArmAngularVelocity();
-  //movePose(-0.05);
+  //moveArmAngularVelocity();
+  movePose(-0.05);
 //  moveFinger(int finger_value);
   return 0;
 }
