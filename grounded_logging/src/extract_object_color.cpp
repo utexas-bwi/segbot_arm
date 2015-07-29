@@ -12,6 +12,11 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/kdtree/kdtree.h>
+#include <pcl/conversions.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/common/centroid.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
 // For traversing the filesystem
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp> 
@@ -25,11 +30,14 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 
 const double length_off_table = 0.15;
 
-//Name of the folder to search for
+//Name of the vision folder to search for
 const std::string & vision_folder = "vision_data";
 
+//Name of the look behaviour folder to search for
+const std::string & look_folder = "look";
+
 //Total number of objects and trials for ease of file traversal
-int total_objects = 1, total_trials = 1, total_behaviors = 10;
+int total_objects = 32, total_trials = 6, total_behaviors = 11;
 
 // General point cloud to store the whole image
 PointCloudT::Ptr image_cloud (new PointCloudT), cloud_blob(new PointCloudT), cloud_plane(new PointCloudT);
@@ -79,8 +87,8 @@ int main (int argc, char** argv)
     pcl::PCDReader reader;
    
 	// The general file path
-    std::string generalFilePath = "/home/bwi/grounded_learning_experiments/";
-	//TODO add file traversal so that all .pcd files in the above path are accessed consecutively
+    std::string generalFilePath = "/home/users/pkhante/grounded_learning_experiments/";
+	//File traversal so that all .pcd files in the above path are accessed consecutively
 	for(int object_num = 1; object_num <= total_objects; object_num++){
 		for(int trial_num = 1; trial_num <= total_trials; trial_num++){
 			std::stringstream convert1, convert2;
@@ -93,12 +101,10 @@ int main (int argc, char** argv)
 			
 			directory_iterator end_itr;       // default construction yields past-the-end
 			for(directory_iterator itr(dir_path); itr != end_itr; ++itr){
-				if ( is_directory(itr->status()) ){
+					if(itr->path().filename().string() == look_folder){    // if the folder is the look behaviour then get the pcd file
 					directory_iterator end_itr2;       // default construction yields past-the-end
 					for(directory_iterator itr2(itr->path()); itr2 != end_itr2; ++itr2){
-						//cout<<itr2->path() << "\n";
 						if(itr2->path().filename().string() == vision_folder){
-							//ROS_INFO("Found the vision folder");
 							//Go through all the files and find the .pcd files
 							directory_iterator itr3(itr2->path()), eod;
 							BOOST_FOREACH(path const &p, std::make_pair(itr3, eod)){ 
@@ -106,10 +112,12 @@ int main (int argc, char** argv)
 									if(p.extension() == ".pcd"){
 										//cout << p.stem();
 										string filePath = itr2->path().string() + "/" + p.filename().string();
+										//ROS_INFO("Filepath: %s", filePath.c_str());
  										reader.read(filePath, *image_cloud);
+ 										//ROS_INFO("Size: %ld", image_cloud->points.size());
 										
 										//Plane separating
-										/*pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+										pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
 										pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
 										// Create the segmentation object
 										pcl::SACSegmentation<PointT> seg;
@@ -125,25 +133,29 @@ int main (int argc, char** argv)
 										pcl::ExtractIndices<PointT> extract;
 
 										// Segment the largest planar component from the remaining cloud
-										seg.setInputCloud (cloud_filtered);
+										seg.setInputCloud (image_cloud);
 										seg.segment (*inliers, *coefficients);
 
 										// Extract the plane
-										extract.setInputCloud (cloud_filtered);
+										extract.setInputCloud (image_cloud);
 										extract.setIndices (inliers);
 										extract.setNegative (false);
 										extract.filter (*cloud_plane);
+										ROS_INFO("Cloud_plane Size: %ld", cloud_plane->points.size());
+
 
 										//extract everything else
 										extract.setNegative (true);
 										extract.filter (*cloud_blob);
+										ROS_INFO("Cloud_blob Size: %ld", cloud_blob->points.size());
+
 										
 										//get the plane coefficients
 										Eigen::Vector4f plane_coefficients;
-										for (int i = 0; i < coefficients->values.size(); i++) {
-											res.cloud_plane_coef[i] = coefficients->values[i];
-											plane_coefficients(i) = coefficients->values[i];
-										}
+										plane_coefficients(0)=coefficients->values[0];
+										plane_coefficients(1)=coefficients->values[1];
+										plane_coefficients(2)=coefficients->values[2];
+										plane_coefficients(3)=coefficients->values[3];
 										
 										//Eucledian Cluster Extraction
 										std::vector<PointCloudT> cloud_clusters;
@@ -174,11 +186,22 @@ int main (int argc, char** argv)
 										
 										ROS_INFO("Number of clusters = %d", (int)cloud_clusters_on_plane.size());
 										
+										// Start visualizing the current plane
+										std::cerr << "Start Cloud Viewer..." << std::endl;
+										pcl::visualization::CloudViewer viewer ("plane segmentation");
+										viewer.showCloud (cloud_blob);
+										while (!viewer.wasStopped ());
 										
-										//Write it to a .csv file
-										string csvFilePath = itr2->path.string() + "/" + ;
-										std::ofstream outputCsvFile(outputDftFileName.c_str());
-										if(!outputDftFile.is_open()){
+										pcl::PCDWriter writer;
+										std::stringstream ss;
+										ss << "object_extraction.pcd";
+										ROS_INFO("Saving the .csv file");
+										writer.write<pcl::PointXYZRGB> (ss.str (), *cloud_blob, false);
+										
+										//TODO Write it to a .csv file
+										/*string csvFilePath = itr2->path.string() + "/pointCloudData.csv";
+										std::ofstream outputCsvFile(csvFilePath.c_str());
+										if(!csvFilePath.is_open()){
 											std::cout<< "Could not open the file to store\n";
 											return -1;
 										}*/
@@ -191,9 +214,5 @@ int main (int argc, char** argv)
 			}
 		}
 	}
-	    
 	return 0;
 }
-
-
-
