@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   message_generation
   moveit_ros_planning_interface
+  moveit_utils
 )
 
 ## System dependencies are found with CMake's conventions
@@ -110,7 +111,7 @@ add_executable(object_interact src/object_interact.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(object_interact moveit_utils_generate_messages_cpp)
+add_dependencies(object_interact moveit_utils_gencpp moveit_utils_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(object_interact ${catkin_LIBRARIES})
