@@ -27,11 +27,12 @@ bool recording_samples;
 //string to store the filename
 string pointCloudFileName;
 
+//callback function
 void collect_point_cloud_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 	if(recording_samples == true && pcd_count == 0){
 		if ((msg->width * msg->height) == 0)
-				return;
-				
+			return;
+					
 		//convert the msg to PCL format
 		pcl::fromROSMsg (*msg, *image_cloud);
 		pcd_count++;
@@ -41,7 +42,7 @@ void collect_point_cloud_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 	}
 }
 
-//callback funtion
+//callback funtion for the service
 bool point_cloud_service_callback(grounded_logging::StorePointCloud::Request &req, 
 							      grounded_logging::StorePointCloud::Response &res){
 	if (req.start == 1){
