@@ -19,15 +19,8 @@ if(ALSA_FOUND)
   set( ALSA_INCLUDE_DIRS ${ALSA_INCLUDE_DIR} )
 endif()
 
-#fftw - "libfftw3-3" and "libfftw3-dev"
-find_library(FFTW3_LIBRARY
-     NAMES fftw3 fftw)
-set(FFTW_LIBRARIES ${FFTW3_LIBRARY})
-if(UNIX AND NOT WIN32)
-     find_library(FFTW3_libm_LIBRARY
-         NAMES m)
-     list(APPEND FFTW_LIBRARIES ${FFTW3_libm_LIBRARY})
-endif()
+#fftw
+include (FindFFTW.cmake)
 
 FIND_PATH(LIBSNDFILE_INCLUDE_DIR sndfile.hh)
 
