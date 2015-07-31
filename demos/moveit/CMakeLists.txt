@@ -111,10 +111,12 @@ include_directories(
 add_executable(move_group src/move_group.cpp)
 add_executable(planning_pipeline src/planning_pipeline.cpp)
 add_executable(move_group_rviz_mimic src/move_group_rviz_mimic.cpp)
+add_executable(fkine src/fkine.cpp)
 
 
 add_dependencies(move_group moveit_utils_gencpp)
 add_dependencies(move_group_rviz_mimic moveit_utils_gencpp)
+add_dependencies(fkine moveit_utils_gencpp)
 
 
 ## Add cmake target dependencies of the executable/library
@@ -125,6 +127,7 @@ add_dependencies(move_group_rviz_mimic moveit_utils_gencpp)
  target_link_libraries(move_group ${catkin_LIBRARIES} )
  target_link_libraries(planning_pipeline ${catkin_LIBRARIES})
  target_link_libraries(move_group_rviz_mimic ${catkin_LIBRARIES})
+ target_link_libraries(fkine ${catkin_LIBRARIES})
 
 #############
 ## Install ##
