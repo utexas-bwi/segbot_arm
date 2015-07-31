@@ -1,18 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(object_interact)
+project(segbot_arm_launch)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  std_msgs
-  geometry_msgs
-  message_generation
-  moveit_ros_planning_interface
-  moveit_utils
-)
+find_package(catkin REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -71,7 +63,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   std_msgs  # Or other packages containing msgs
 # )
 
 ###################################
@@ -85,8 +77,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES moveit
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  LIBRARIES segbot_arm_launch
+#  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
 
@@ -97,24 +89,24 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
-include_directories(
-  ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} 
-)
 
 ## Declare a cpp library
-# add_library(moveit
-#   src/${PROJECT_NAME}/moveit.cpp
+# add_library(segbot_arm_launch
+#   src/${PROJECT_NAME}/segbot_arm_launch.cpp
 # )
 
 ## Declare a cpp executable
-add_executable(object_interact src/object_interact.cpp)
+# add_executable(segbot_arm_launch_node src/segbot_arm_launch_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(object_interact moveit_utils_gencpp moveit_utils_generate_messages_cpp)
+# add_dependencies(segbot_arm_launch_node segbot_arm_launch_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(object_interact ${catkin_LIBRARIES})
+# target_link_libraries(segbot_arm_launch_node
+#   ${catkin_LIBRARIES}
+# )
+
 #############
 ## Install ##
 #############
@@ -130,7 +122,7 @@ target_link_libraries(object_interact ${catkin_LIBRARIES})
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS moveit moveit_node
+# install(TARGETS segbot_arm_launch segbot_arm_launch_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -155,7 +147,7 @@ target_link_libraries(object_interact ${catkin_LIBRARIES})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_moveit.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_segbot_arm_launch.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

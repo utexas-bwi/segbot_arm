@@ -134,6 +134,7 @@ target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES}
 
 
 add_executable(table_object_detection_node src/table_object_detection_node.cpp)
+add_dependencies(table_object_detection_node segbot_arm_perception_gencpp)
 target_link_libraries(table_object_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
