@@ -17,6 +17,8 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/common/centroid.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/surface/convex_hull.h>
+#include <pcl/segmentation/extract_polygonal_prism_data.h>
 // For traversing the filesystem
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp> 
@@ -28,7 +30,7 @@ using namespace boost::filesystem;
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
-const double length_off_table = 0.15;
+const double length_off_table = 0.10;
 
 //Name of the vision folder to search for
 const std::string & vision_folder = "vision_data";
@@ -37,10 +39,10 @@ const std::string & vision_folder = "vision_data";
 const std::string & look_folder = "look";
 
 //Total number of objects and trials for ease of file traversal
-int total_objects = 32, total_trials = 6, total_behaviors = 11;
+int total_objects = 32, total_trials = 6;
 
 // General point cloud to store the whole image
-PointCloudT::Ptr image_cloud (new PointCloudT), cloud_blob(new PointCloudT), cloud_plane(new PointCloudT);
+PointCloudT::Ptr image_cloud (new PointCloudT), cloud_blob(new PointCloudT), cloud_plane(new PointCloudT), convexHull(new PointCloudT);
 
 // function to compute the clusters
 bool computeClusters(PointCloudT::Ptr in, std::vector<PointCloudT> &cloud_clusters,
@@ -112,7 +114,7 @@ int main (int argc, char** argv)
 									if(p.extension() == ".pcd"){
 										//cout << p.stem();
 										string filePath = itr2->path().string() + "/" + p.filename().string();
-										//ROS_INFO("Filepath: %s", filePath.c_str());
+										ROS_INFO("Filepath: %s", filePath.c_str());
  										reader.read(filePath, *image_cloud);
  										//ROS_INFO("Size: %ld", image_cloud->points.size());
 										
@@ -127,7 +129,7 @@ int main (int argc, char** argv)
 										seg.setModelType (pcl::SACMODEL_PLANE);
 										seg.setMethodType (pcl::SAC_RANSAC);
 										seg.setMaxIterations (1000);
-										seg.setDistanceThreshold (0.01); // 1 cm plane
+										seg.setDistanceThreshold (0.022); // 2.2 cm plane
 
 										// Create the filtering object
 										pcl::ExtractIndices<PointT> extract;
@@ -141,15 +143,53 @@ int main (int argc, char** argv)
 										extract.setIndices (inliers);
 										extract.setNegative (false);
 										extract.filter (*cloud_plane);
-										ROS_INFO("Cloud_plane Size: %ld", cloud_plane->points.size());
-
-
+										//ROS_INFO("Cloud_plane Size: %ld", cloud_plane->points.size());
+										
+										// Retrieve the convex hull.
+										pcl::ConvexHull<PointT> hull;
+										hull.setInputCloud(cloud_plane);
+										// Make sure that the resulting hull is bidimensional.
+										hull.setDimension(2);
+										hull.reconstruct(*convexHull);
+										
+										if (hull.getDimension() == 2)
+										{
+											// Prism object.
+											pcl::ExtractPolygonalPrismData<PointT> prism;
+											prism.setInputCloud(image_cloud);
+											prism.setInputPlanarHull(convexHull);
+											// First parameter: minimum Z value. Set to 0, segments objects lying on the plane (can be negative).
+											// Second parameter: maximum Z value. Tune it according to the height of the objects you expect.
+											prism.setHeightLimits(0.02f, 0.25f);
+											pcl::PointIndices::Ptr objectIndices(new pcl::PointIndices);
+								 
+											prism.segment(*objectIndices);
+								 
+											// Get and show all points retrieved by the hull.
+											extract.setIndices(objectIndices);
+											extract.filter(*cloud_blob);
+											//ROS_INFO("Cloud_blob Size: %ld", cloud_blob->points.size());
+											
+											//use visualizer only for debugging purposes. Code seg faults after some time.
+											pcl::visualization::CloudViewer viewerObjects("Objects on table");
+											viewerObjects.showCloud(cloud_blob);
+											while (!viewerObjects.wasStopped())
+											{
+												// Do nothing but wait.
+											}
+										}
+										else std::cout << "The chosen hull is not planar." << std::endl;
+										
+										image_cloud->clear();
+										cloud_plane->clear();
+										cloud_blob->clear();
+										convexHull->clear();
+										
 										//extract everything else
-										extract.setNegative (true);
+										/*extract.setNegative (true);
 										extract.filter (*cloud_blob);
 										ROS_INFO("Cloud_blob Size: %ld", cloud_blob->points.size());
 
-										
 										//get the plane coefficients
 										Eigen::Vector4f plane_coefficients;
 										plane_coefficients(0)=coefficients->values[0];
@@ -163,6 +203,7 @@ int main (int argc, char** argv)
 										
 										// Extract clusters
 										computeClusters(cloud_blob, cloud_clusters, 0.04);
+										ROS_INFO("Size of cloud_clusters: %ld", cloud_clusters.size());
 										
 										// Only use the clusters with centroid close to the plane as they will belong to the object
 										std::vector<PointCloudT*> cloud_clusters_on_plane;
@@ -179,10 +220,14 @@ int main (int argc, char** argv)
 											double is_above_table = center.x * plane_coefficients(0) +
 																	center.y * plane_coefficients(1) +
 																	center.z + plane_coefficients(2) + plane_coefficients(3);
+											ROS_INFO("is_above_table: %f", is_above_table);
+											
 											if ((distance < length_off_table) && (is_above_table > 0)) {
 												 cloud_clusters_on_plane.push_back(&cloud_clusters[i]);
 											}
 										}
+										
+										ROS_INFO("Size of cloud_clusters_on_plane: %ld", cloud_clusters_on_plane.size());
 										
 										ROS_INFO("Number of clusters = %d", (int)cloud_clusters_on_plane.size());
 										
@@ -192,14 +237,19 @@ int main (int argc, char** argv)
 										viewer.showCloud (cloud_blob);
 										while (!viewer.wasStopped ());
 										
-										pcl::PCDWriter writer;
+										image_cloud->clear();
+										cloud_plane->clear();
+										cloud_blob->clear();
+										convexHull->clear();*/
+										
+										/*pcl::PCDWriter writer;
 										std::stringstream ss;
 										ss << "object_extraction.pcd";
 										ROS_INFO("Saving the .csv file");
 										writer.write<pcl::PointXYZRGB> (ss.str (), *cloud_blob, false);
 										
 										//TODO Write it to a .csv file
-										/*string csvFilePath = itr2->path.string() + "/pointCloudData.csv";
+										string csvFilePath = itr2->path.string() + "/pointCloudData.csv";
 										std::ofstream outputCsvFile(csvFilePath.c_str());
 										if(!csvFilePath.is_open()){
 											std::cout<< "Could not open the file to store\n";
