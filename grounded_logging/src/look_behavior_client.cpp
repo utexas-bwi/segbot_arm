@@ -2,6 +2,9 @@
 #include <signal.h>
 #include <math.h>
 #include <cstdlib>
+#include <iostream>
+#include <sstream>
+#include <signal.h> 
 #include <std_msgs/String.h>
 
 //srv for talking to table_object_detection_node.cpp
@@ -17,8 +20,13 @@
 
 using namespace std;
 
+bool g_caught_sigint = false;
+
+// counter to keep track of the objects
+int obj_num = 1;
+
 //Filepath to store the data
-std::string generalFilePath = "/home/bwi/look_behaviour";
+std::string pointCloudFilePath = "/home/bwi/look_behaviour";
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -30,8 +38,15 @@ std::vector<PointCloudT::Ptr > detected_objects;
 sensor_msgs::PointCloud2 cloud_ros;
 ros::Publisher object_cloud_pub;
 
+// function to handle Ctrl-C
+void sig_handler(int sig)
+{
+	g_caught_sigint = true;
+	exit (0);
+};
+
 //currently, we just pick the one with the most points
-int selectObjectToGrasp(std::vector<PointCloudT::Ptr > candidates){
+int selectObjectToSave(std::vector<PointCloudT::Ptr > candidates){
 	int max_num_points = -1;
 	int index = -1;
 	
@@ -67,8 +82,10 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	
-	//step 2: extract the data from the response
+	// clear out the vector of detected objects
 	detected_objects.clear();
+	
+	//step 2: extract the data from the response
 	for (unsigned int i = 0; i < srv.response.cloud_clusters.size(); i++){
 		PointCloudT::Ptr object_i (new PointCloudT);
 		pcl::PCLPointCloud2 pc_i;
@@ -87,16 +104,40 @@ int main(int argc, char **argv)
 		plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
 	
 	//step 3: select which object to grasp
-	int selected_object = selectObjectToGrasp(detected_objects);
+	int selected_object = selectObjectToSave(detected_objects);
 	
-	//publish object to find grasp topic
+	//publish object to find topic
 	pcl::PCLPointCloud2 pc_target;
 	pcl::toPCLPointCloud2(*detected_objects.at(selected_object),pc_target);
 	pcl_conversions::fromPCL(pc_target,cloud_ros);
 	
 	//publish to extract_object
 	ROS_INFO("Publishing object point cloud...");
-	object_cloud_pub.publish(cloud_ros);
+	while (ros::ok()){
+		ros::spinOnce();
+		object_cloud_pub.publish(cloud_ros);
+		
+		// Ask the user if he wants to save the point cloud
+		cout << "Do you want to save this point cloud? (y/n)";
+		if (cin.get() == 'y'){
+			//get the start time of recording
+			double begin = ros::Time::now().toSec();
+			string startTime = boost::lexical_cast<std::string>(begin);
+			
+			std::stringstream convert;
+			convert << obj_num;	
+			
+			// append start timestamp with filenames
+			string pointCloudFileName = pointCloudFilePath+"/test"+convert.str()+"_"+startTime+".pcd";
+				
+			//Save the cloud to a .pcd file
+			pcl::io::savePCDFileASCII(pointCloudFileName, *detected_objects.at(selected_object));
+			ROS_INFO("Saved pcd file %s", pointCloudFileName.c_str());
+			obj_num++;
+		}
+		if(cin.get() == 'n')
+			continue;
+	}
 	
 	return(0);
 }
