@@ -16,11 +16,11 @@
 #include <sensor_msgs/JointState.h>
 
 bool g_caught_sigint = false;
+bool gotJoints = false;
 
 geometry_msgs::PoseStamped pose_current;
 sensor_msgs::JointState js_cur;
 
-std::vector<double> angles_current;
 void sig_handler(int sig){
 	g_caught_sigint = true;
 	ROS_INFO("caugt sigint, init shutdown seq...");
@@ -33,11 +33,10 @@ void toolpos_cb(const geometry_msgs::PoseStamped &msg){
 }
 //Joint state cb
 void joint_state_cb(const sensor_msgs::JointState &input){
-	angles_current.clear();
-	for(int i = 0; i < 6; i++){
-		angles_current.push_back(input.position.at(i));
+	if(input.position.size() > 4){
+		js_cur = input;
+		gotJoints = true;
 	}
-	js_cur = input;
 }
 
 // Blocking call for user input
@@ -93,7 +92,9 @@ int main(int argc, char **argv)
 
 
 	ROS_INFO("Grabbing current joint state for comparison.");
-	ros::spinOnce();
+	while(!gotJoints){
+		ros::spinOnce();
+	}
 	sensor_msgs::JointState q_true = js_cur;
 
 	//Load request with the desired link
@@ -109,7 +110,8 @@ int main(int argc, char **argv)
 	ROS_INFO("Making FK call");
  	if(fkine_client.call(fkine_request, fkine_response)){
  		pose_pub.publish(fkine_response.pose_stamped.at(0));
- 		ROS_INFO("Call successful. Pose published.");
+ 		ros::spinOnce();
+ 		ROS_INFO("Call successful. Pose published to /fkine/pose/ .");
  	} else {
  		ROS_INFO("Call failed. Terminating.");
  		ros::shutdown();
