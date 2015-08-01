@@ -1,4 +1,6 @@
 #include <ros/ros.h>
+#include <signal.h>
+
 // MoveIt!
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model/robot_model.h>
@@ -44,13 +46,14 @@ int main(int argc, char **argv)
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
 	ros::NodeHandle node_handle;
-	
+	signal(SIGINT, sig_handler);
+
 	// Start a service client
 	ros::ServiceClient service_client = node_handle.serviceClient<moveit_msgs::GetPositionFK> ("compute_fk");
 	ros::Publisher robot_state_publisher = node_handle.advertise<moveit_msgs::DisplayRobotState>( "tutorial_robot_state", 1);
 	
-	//button position publisher
-	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("target_trajectory/pose", 10);
+	//publish FK pose
+	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("fkine/pose", 10);
 	
 	//make controller service
 	//ros::ServiceClient client = node_handle.serviceClient<moveit_utils::MicoController>("mico_controller");
@@ -64,37 +67,31 @@ int main(int argc, char **argv)
 		sleep(1.0);
 	}
 
+	/*
+	 * Forward Kinematic service calls
+	 */
+
 	moveit_msgs::GetPositionFK::Request service_request;
 	moveit_msgs::GetPositionFK::Response service_response;
 
-	robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
-	robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
-	robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
-	const robot_state::JointModelGroup* joint_model_group = kinematic_model->getJointModelGroup("arm");
 
 	ROS_INFO("Grabbing current joint state for comparison.");
 	ros::spinOnce();
 	sensor_msgs::JointState q_true = js_cur;
 
+	//Load request with the desired link
 	service_request.fk_link_names.push_back("mico_end_effector");
+
+	//and the current frame
 	service_request.header.frame_id = "mico_link_base";
+
+	//finally we let moveit know what joint positions we want to compute
+	//in this case, the current state
 	service_request.robot_state.joint_state = q_true;
-
-	/*service_request.ik_request.group_name = "arm";
-	service_request.ik_request.pose_stamped.header.frame_id = "mico_link_base";
-	service_request.ik_request.pose_stamped.pose = pose_current.pose;
-	*/
-
-
 
 	ROS_INFO("Making FK call");
  	if(service_client.call(service_request, service_response))
  			pose_pub.publish(service_response.pose_stamped.at(0));
-	//geometry_msgs::PoseStamped stampOut;
-	//stampOut.header.frame_id = "mico_link_base";
-	//stampOut.pose = target_pose1;
-	//stampOut.pose.orientation = target_pose1.orientation;
-	
 
 	ros::shutdown();
 	return 0;
