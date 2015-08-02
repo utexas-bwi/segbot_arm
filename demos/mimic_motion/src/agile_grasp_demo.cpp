@@ -59,6 +59,11 @@
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
 
+#include <moveit_msgs/DisplayRobotState.h>
+// Kinematics
+#include <moveit_msgs/GetPositionFK.h>
+#include <moveit_msgs/GetPositionIK.h>
+
 #define PI 3.14159265
 
 /* define what kind of point clouds we're using */
@@ -84,6 +89,10 @@ sensor_msgs::JointState current_effort;
 jaco_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 bool heardPose = false;
+bool heardJoinstState = false;
+
+geometry_msgs::PoseStamped current_moveit_pose;
+
 
 //publishers
 ros::Publisher pub_velocity;
@@ -91,6 +100,7 @@ ros::Publisher cloud_pub;
 ros::Publisher cloud_grasp_pub;
 ros::Publisher pose_array_pub;
 ros::Publisher pose_pub;
+ros::Publisher pose_fk_pub;
  
 sensor_msgs::PointCloud2 cloud_ros;
 
@@ -110,6 +120,7 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 	
 	if (input->position.size() == NUM_JOINTS){
 		current_state = *input;
+		heardJoinstState = true;
 	}
   //ROS_INFO_STREAM(current_state);
 }
@@ -139,15 +150,15 @@ void grasps_cb(const agile_grasp::Grasps &msg){
 }
 
 
-void listenForPose(float rate){
+void listenForArmData(float rate){
 	heardPose = false;
-	
+	heardJoinstState = false;
 	ros::Rate r(rate);
 	
 	while (ros::ok()){
 		ros::spinOnce();
 		
-		if (heardPose)
+		if (heardPose && heardJoinstState)
 			return;
 		
 		r.sleep();
@@ -346,8 +357,6 @@ geometry_msgs::PoseStamped graspToPose(agile_grasp::Grasp grasp, double hand_off
 	pose_st.header.frame_id = frame_id;
 	tf::pointEigenToMsg(position, pose_st.pose.position);
     tf::quaternionTFToMsg(quat, pose_st.pose.orientation);
-		
-	
 	
 	return pose_st;
 }
@@ -364,13 +373,13 @@ bool acceptGrasp(GraspCartesianCommand gcc, PointCloudT::Ptr object, Eigen::Vect
 	p_g.y=gcc.grasp_pose.pose.position.y;
 	p_g.z=gcc.grasp_pose.pose.position.z;
 	
-	
-		
 	if (pcl::pointToPlaneDistance(p_a, plane_c) < MAX_DISTANCE_TO_PLANE 
 		|| pcl::pointToPlaneDistance(p_g, plane_c) < MAX_DISTANCE_TO_PLANE){
 		
 		return false;
 	}
+	
+	
 	
 	return true;
 }
@@ -397,6 +406,71 @@ bool moveToPose(geometry_msgs::PoseStamped g){
 	return true;
 }
 
+moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs::PoseStamped p){
+	ros::ServiceClient ikine_client = n.serviceClient<moveit_msgs::GetPositionIK> ("/compute_ik");
+	
+	
+	moveit_msgs::GetPositionIK::Request ikine_request;
+	moveit_msgs::GetPositionIK::Response ikine_response;
+	ikine_request.ik_request.group_name = "arm";
+	ikine_request.ik_request.pose_stamped = p;
+	
+	/* Call the service */
+	if(ikine_client.call(ikine_request, ikine_response)){
+		ROS_INFO("IK service call success:");
+		ROS_INFO_STREAM(ikine_response);
+	} else {
+		ROS_INFO("IK service call FAILED. Exiting");
+	}
+	
+	return ikine_response;
+}
+
+void updateFK(ros::NodeHandle n){
+	ros::ServiceClient fkine_client = n.serviceClient<moveit_msgs::GetPositionFK> ("/compute_fk");
+	
+	moveit_msgs::GetPositionFK::Request fkine_request;
+	moveit_msgs::GetPositionFK::Response fkine_response;
+
+	
+	//wait to get lates joint state values
+	listenForArmData(30.0);
+	sensor_msgs::JointState q_true = current_state;
+	
+	//Load request with the desired link
+	fkine_request.fk_link_names.push_back("mico_end_effector");
+
+	//and the current frame
+	fkine_request.header.frame_id = "mico_link_base";
+
+	//finally we let moveit know what joint positions we want to compute
+	//in this case, the current state
+	fkine_request.robot_state.joint_state = q_true;
+
+	ROS_INFO("Making FK call");
+ 	if(fkine_client.call(fkine_request, fkine_response)){
+ 		pose_fk_pub.publish(fkine_response.pose_stamped.at(0));
+ 		ros::spinOnce();
+ 		current_moveit_pose = fkine_response.pose_stamped.at(0);
+ 		ROS_INFO("Call successful. Response:");
+ 		ROS_INFO_STREAM(fkine_response);
+ 	} else {
+ 		ROS_ERROR("Call failed. Terminating.");
+ 		//ros::shutdown();
+ 	}
+ 	
+ 	
+ 	//
+}
+
+
+// Blocking call for user input
+void pressEnter(){
+	std::cout << "Press the ENTER key to continue";
+	while (std::cin.get() != '\n')
+		std::cout << "Please press ENTER\n";
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "agile_grasp_demo");
@@ -404,7 +478,7 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
 
 	//create subscriber to joint torques
 	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
@@ -426,6 +500,7 @@ int main(int argc, char **argv) {
 	
 	//publish pose 
 	pose_pub = n.advertise<geometry_msgs::PoseStamped>("/agile_grasp_demo/pose_out", 10);
+	pose_fk_pub = n.advertise<geometry_msgs::PoseStamped>("/agile_grasp_demo/pose_fk_out", 10);
 	
 	//debugging publisher
 	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud_debug", 10);
@@ -492,7 +567,7 @@ int main(int argc, char **argv) {
 	geometry_msgs::PoseArray poses_msg;
 	poses_msg.header.seq = 1;
 	poses_msg.header.stamp = cloud_ros.header.stamp;
-	poses_msg.header.frame_id = cloud_ros.header.frame_id;
+	poses_msg.header.frame_id = "mico_api_origin";
 	
 	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
@@ -522,20 +597,26 @@ int main(int argc, char **argv) {
 			listener.transformPose("mico_api_origin", gc_i.approach_pose, gc_i.approach_pose);
 			listener.transformPose("mico_api_origin", gc_i.grasp_pose, gc_i.grasp_pose);
 			
-			grasp_commands.push_back(gc_i);
-			
-			poses.push_back(p_grasp_i);
-			poses_msg.poses.push_back(p_grasp_i.pose);
+			//filter two -- if IK fails
+			moveit_msgs::GetPositionIK::Response  ik_response_approach = computeIK(n,gc_i.approach_pose);
+			moveit_msgs::GetPositionIK::Response  ik_response_grasp = computeIK(n,gc_i.grasp_pose);
+	
+			if (ik_response_approach.error_code.val == 1 && ik_response_grasp.error_code.val == 1){
+				grasp_commands.push_back(gc_i);
+				poses.push_back(p_grasp_i);
+				poses_msg.poses.push_back(gc_i.approach_pose.pose);
+			}
 		}
 		
 		
 	}
 	
 	//make sure we're working with the correct tool pose
-	listenForPose(30.0);
+	listenForArmData(30.0);
 	ROS_INFO("[agile_grasp_demo.cpp] Heard arm pose.");
 	
 	//now, select the target grasp
+	updateFK(n);
 	
 	//find the grasp with closest orientatino to current pose
 	double min_diff = 1000000.0;

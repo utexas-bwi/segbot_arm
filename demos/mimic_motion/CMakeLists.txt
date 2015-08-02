@@ -18,6 +18,9 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   agile_grasp
   tf_conversions
+  moveit_ros_planning_interface
+  moveit_utils
+  moveit_msgs
 )
 
 ## System dependencies are found with CMake's conventions

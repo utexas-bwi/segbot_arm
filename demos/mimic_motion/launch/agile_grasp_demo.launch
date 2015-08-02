@@ -25,5 +25,9 @@
     <param name="plotting" value="2" />
     <param name="marker_lifetime" value="500" />
 	</node>
+	
+	<!-- launch moveit -->
+	
+	<include file="$(find moveit_utils)/launch/mico_moveit.launch" />
 
 </launch>
