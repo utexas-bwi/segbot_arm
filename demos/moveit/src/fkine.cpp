@@ -51,8 +51,10 @@ void pressEnter(){
  * No formatting, or rounding
  */
 void printJointState(sensor_msgs::JointState js){
-	ROS_INFO("Q1: %f, Q2: %f, Q3: %f, Q4: %f, Q5: %f, Q6: %f",
-		js.position.at(0), js.position.at(1),js.position.at(2),js.position.at(3),js.position.at(4),js.position.at(5));
+	//ROS_INFO("Q1: %f, Q2: %f, Q3: %f, Q4: %f, Q5: %f, Q6: %f",
+	//	js.position.at(0), js.position.at(1),js.position.at(2),js.position.at(3),js.position.at(4),js.position.at(5));
+		
+	ROS_INFO_STREAM(js);
 }
 
 int main(int argc, char **argv)
@@ -69,7 +71,7 @@ int main(int argc, char **argv)
 	ros::Publisher robot_state_publisher = node_handle.advertise<moveit_msgs::DisplayRobotState>( "tutorial_robot_state", 1);
 	
 	//publish FK pose
-	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("fkine/pose", 10);
+	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("/fkine/pose", 10);
 	
 	//make controller service
 	//ros::ServiceClient client = node_handle.serviceClient<moveit_utils::MicoController>("mico_controller");
