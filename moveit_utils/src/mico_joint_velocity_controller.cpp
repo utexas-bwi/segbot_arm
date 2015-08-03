@@ -23,7 +23,8 @@ void sig_handler(int sig){
     exit(1);
 }
 void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
-	js_cur = *js;
+	if (js->position.size() > 4)
+		js_cur = *js;
 };
 float update_velocity(float p_cur, float p_goal, double time_remaining){
 	return (float)(p_goal - p_cur)/time_remaining;
@@ -34,7 +35,7 @@ float update_velocity(float p_cur, float p_goal, double time_remaining){
 jaco_msgs::JointVelocity check_state(jaco_msgs::JointVelocity jv_cur, double time_remaining){
 	jaco_msgs::JointVelocity jv_update;
 	for(int i = 1; i <= 6; i++){
-		if((js_cur.position.at(i) + tol) >= js_goal.at(i) && (js_cur.position.at(i) - tol <= js_goal.at(i))){
+		if((js_cur.position.at(i-1) + tol) >= js_goal.at(i-1) && (js_cur.position.at(i-1) - tol <= js_goal.at(i-1))){
 			switch(i) {
 				case 1	: jv_update.joint1 = 0; break;
 				case 2	: jv_update.joint2 = 0; break;
@@ -67,6 +68,10 @@ void fill_goal(trajectory_msgs::JointTrajectory jt, int length){
 
 bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
 
+	ROS_INFO("Mico controller service called:");
+	ROS_INFO_STREAM(req.trajectory.joint_trajectory);
+	
+	
 	trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
     jaco_msgs::JointVelocity jv_goal;
 	bool next_point = false;
@@ -76,6 +81,8 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 	double last_sent;
 	ros::Time first_sent;
 	int trajectory_length = trajectory.points.size();
+	
+
 	
 	if(trajectory_length == 0)
 		ROS_INFO("Trajectory message empty. No movement generated.");

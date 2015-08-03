@@ -64,6 +64,10 @@
 #include <moveit_msgs/GetPositionFK.h>
 #include <moveit_msgs/GetPositionIK.h>
 
+#include <moveit_utils/AngularVelCtrl.h>
+#include <moveit_utils/MicoMoveitJointPose.h>
+#include <moveit_utils/MicoMoveitCartesianPose.h>
+
 #define PI 3.14159265
 
 /* define what kind of point clouds we're using */
@@ -79,6 +83,7 @@ using namespace std;
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
 
+#define NUM_JOINTS_ARMONLY 6
 #define NUM_JOINTS 8 //6+2 for the arm
 
 //some defines related to filtering candidate grasps
@@ -109,8 +114,13 @@ agile_grasp::Grasps current_grasps;
 
 
 struct GraspCartesianCommand {
+	sensor_msgs::JointState approach_q;
 	geometry_msgs::PoseStamped approach_pose;
+	
+	sensor_msgs::JointState grasp_q;
 	geometry_msgs::PoseStamped grasp_pose;
+	
+	
 };
 
 
@@ -471,6 +481,87 @@ void pressEnter(){
 		std::cout << "Please press ENTER\n";
 }
 
+void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
+	//check if this is specified just for the arm
+	sensor_msgs::JointState q_target;
+	if (target.position.size() != NUM_JOINTS_ARMONLY){
+		//in this case, the first four values are for the base joints
+		for (int i = 4; i < target.position.size(); i ++){
+			q_target.position.push_back(target.position.at(i));
+			q_target.name.push_back(target.name.at(i));
+		}
+		q_target.header = target.header;
+	}
+	else 
+		q_target = target;
+	
+	ROS_INFO("Target joint state:");
+	ROS_INFO_STREAM(q_target);
+	
+	moveit_utils::AngularVelCtrl::Request	req;
+	moveit_utils::AngularVelCtrl::Response	resp;
+	
+	ros::ServiceClient ikine_client = n.serviceClient<moveit_utils::AngularVelCtrl> ("/angular_vel_control");
+	
+	req.state = q_target;
+	
+	pressEnter();
+	
+	if(ikine_client.call(req, resp)){
+ 		ROS_INFO("Call successful. Response:");
+ 		ROS_INFO_STREAM(resp);
+ 	} else {
+ 		ROS_ERROR("Call failed. Terminating.");
+ 		//ros::shutdown();
+ 	}
+	
+}
+
+void moveToJointStateMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_target/*sensor_msgs::JointState q_target*/){
+	moveit_utils::MicoMoveitCartesianPose::Request 	req;
+	moveit_utils::MicoMoveitCartesianPose::Response res;
+	
+	req.target = p_target;
+	
+	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose> ("/mico_cartesianpose_service");
+	if(client.call(req, res)){
+ 		ROS_INFO("Call successful. Response:");
+ 		ROS_INFO_STREAM(res);
+ 	} else {
+ 		ROS_ERROR("Call failed. Terminating.");
+ 		//ros::shutdown();
+ 	}
+	
+	/*moveit::planning_interface::MoveGroup group("arm");
+    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;   
+    group.setPlanningTime(5.0); //10 second maximum for collision computation*/
+
+	
+	
+	/*moveit_utils::MicoMoveitJointPose::Request req;
+	moveit_utils::MicoMoveitJointPose::Response res;
+	*/
+	/*for(int i = 0; i < NUM_JOINTS_ARMONLY; i++){
+        switch(i) {
+            case 0  :    req.target.joint1 = q_target.position[0]; break;
+            case 1  :    req.target.joint2 = q_target.position[1]; break;
+            case 2  :    req.target.joint3 = q_target.position[2]; break;
+            case 3  :    req.target.joint4 = q_target.position[3]; break;
+            case 4  :    req.target.joint5 = q_target.position[4]; break;
+            case 5  :    req.target.joint6 = q_target.position[5]; break;
+        }
+	//ROS_INFO("Requested angle: %f", q_vals.at(i));
+    }
+	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitJointPose> ("/mico_jointpose_service");
+	if(client.call(req, res)){
+ 		ROS_INFO("Call successful. Response:");
+ 		ROS_INFO_STREAM(res);
+ 	} else {
+ 		ROS_ERROR("Call failed. Terminating.");
+ 		//ros::shutdown();
+ 	}*/
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "agile_grasp_demo");
@@ -602,6 +693,11 @@ int main(int argc, char **argv) {
 			moveit_msgs::GetPositionIK::Response  ik_response_grasp = computeIK(n,gc_i.grasp_pose);
 	
 			if (ik_response_approach.error_code.val == 1 && ik_response_grasp.error_code.val == 1){
+				//store the IK results
+				gc_i.approach_q = ik_response_approach.solution.joint_state;
+				gc_i.grasp_q = ik_response_grasp.solution.joint_state;
+				
+				
 				grasp_commands.push_back(gc_i);
 				poses.push_back(p_grasp_i);
 				poses_msg.poses.push_back(gc_i.approach_pose.pose);
@@ -639,12 +735,18 @@ int main(int argc, char **argv) {
 	pose_pub.publish(grasp_commands.at(min_diff_index).approach_pose);
 	std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
 	std::cin >> in;
-	moveToPose(grasp_commands.at(min_diff_index).approach_pose);
 	
+	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
+	
+	
+	//moveToJointState(n,grasp_commands.at(min_diff_index).approach_q);
+	/*moveToPose(grasp_commands.at(min_diff_index).approach_pose);
+	*/
 	pose_pub.publish(grasp_commands.at(min_diff_index).grasp_pose);
 	std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
 	std::cin >> in;
-	moveToPose(grasp_commands.at(min_diff_index).grasp_pose);
-
+	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
+	
+	
 	return 0;
 }

@@ -215,7 +215,7 @@ void waitForCloudK(int k){
 bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_perception::TabletopPerception::Response &res)
 {
 	//get the point cloud by aggregating k successive input clouds
-	waitForCloudK(10);
+	waitForCloudK(15);
 	cloud = cloud_aggregated;
 
 	// Apply z filter -- we don't care for anything X m away in the z direction
