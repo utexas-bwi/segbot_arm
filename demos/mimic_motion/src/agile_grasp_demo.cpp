@@ -68,6 +68,9 @@
 #include <moveit_utils/MicoMoveitJointPose.h>
 #include <moveit_utils/MicoMoveitCartesianPose.h>
 
+#include <geometry_msgs/TwistStamped.h>
+
+
 #define PI 3.14159265
 
 /* define what kind of point clouds we're using */
@@ -562,6 +565,39 @@ void moveToJointStateMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_targ
  	}*/
 }
 
+void cartesianVelocityMove(double dx, double dy, double dz, double duration){
+	int rateHertz = 40;
+	geometry_msgs::TwistStamped velocityMsg;
+	
+	ros::Rate r(rateHertz);
+	for(int i = 0; i < (int)duration * rateHertz; i++) {
+		
+		
+		velocityMsg.twist.linear.x = dx;
+		velocityMsg.twist.linear.y = dy;
+		velocityMsg.twist.linear.z = dz;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		
+		pub_velocity.publish(velocityMsg);
+		ROS_INFO("Published cartesian vel. command");
+		r.sleep();
+	}
+	
+}
+
+void lift(ros::NodeHandle n, double x){
+	listenForArmData(30.0);
+	
+	geometry_msgs::PoseStamped p_target = current_pose;
+	
+	p_target.pose.position.z += x;
+	moveToJointStateMoveIt(n,p_target);
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "agile_grasp_demo");
@@ -606,7 +642,8 @@ int main(int argc, char **argv) {
 	std::cout << "Press '1' to start the demo" << std::endl;		
 	std::cin >> in;
 
-	
+	cartesianVelocityMove(0,0,0.2,1.0);
+	cartesianVelocityMove(0,0,-0.2,1.0);
 	
 	//step 1: query table_object_detection_node to segment the blobs on the table
 	ros::ServiceClient client_tabletop_perception = n.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
@@ -663,8 +700,8 @@ int main(int argc, char **argv) {
 	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
 	//next, compute approach and grasp poses for each detected grasp
-	double hand_offset_grasp = -0.06;
-	double hand_offset_approach = -0.15;
+	double hand_offset_grasp = -0.04;
+	double hand_offset_approach = -0.13;
 	
 	//wait for transform from visual space to arm space
 	listener.waitForTransform(cloud_ros.header.frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
@@ -735,18 +772,29 @@ int main(int argc, char **argv) {
 	pose_pub.publish(grasp_commands.at(min_diff_index).approach_pose);
 	std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
 	std::cin >> in;
-	
 	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
 	
-	
-	//moveToJointState(n,grasp_commands.at(min_diff_index).approach_q);
-	/*moveToPose(grasp_commands.at(min_diff_index).approach_pose);
-	*/
+
 	pose_pub.publish(grasp_commands.at(min_diff_index).grasp_pose);
 	std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
 	std::cin >> in;
 	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
 	
+	listenForArmData(30.0);
+	//close fingers
+	std::cout << "Press '1' to close fingers or Ctrl-z to quit..." << std::endl;		
+	std::cin >> in;
+	moveFinger(7300);
+	listenForArmData(30.0);
+	
+	//lift for a while
+	std::cout << "Press '1' to lift or Ctrl-z to quit..." << std::endl;		
+	std::cin >> in;
+	//cartesianVelocityMove(0,0,0.2,1.0);
+	lift(n,0.1);
+	lift(n,-0.09);
+	moveFinger(100);
+
 	
 	return 0;
 }
