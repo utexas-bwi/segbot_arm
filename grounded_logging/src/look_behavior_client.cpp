@@ -26,7 +26,8 @@ bool g_caught_sigint = false;
 int obj_num = 1;
 
 //Filepath to store the data
-std::string pointCloudFilePath = "/home/bwi/look_behaviour";
+//Change the trial folder name each time --> Not very sophisticated but works for now
+std::string pointCloudFilePath = "/home/bwi/look_behaviour/trial_1";
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -104,7 +105,7 @@ int main(int argc, char **argv)
 		for (int i = 0; i < 4; i ++)
 			plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
 		
-		//step 3: select which object to grasp
+		//step 3: select which object to display
 		int selected_object = selectObjectToSave(detected_objects);
 		
 		//publish object to find topic
