@@ -1,0 +1,8 @@
+#goal definition
+float64 velocity
+---
+#result definition
+bool executing
+---
+#feedback
+bool success

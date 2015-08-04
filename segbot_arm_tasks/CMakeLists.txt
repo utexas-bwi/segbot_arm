@@ -63,15 +63,17 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate actions in the 'action' folder
  add_action_files(
-#   DIRECTORY action
+   DIRECTORY action
    FILES
    MicoShake.action
+   MicoRotateHand.action
  )
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
    std_msgs
+   jaco_msgs
    actionlib_msgs
  )
 
@@ -110,13 +112,16 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(mico_shake_action src/mico_shake_action.cpp)
+add_executable(mico_rotate_hand_action src/mico_rotate_hand_action.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(mico_shake_action segbot_arm_tasks_generate_messages_cpp)
+add_dependencies(mico_rotate_hand_action segbot_arm_tasks_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(mico_shake_action ${catkin_LIBRARIES})
+target_link_libraries(mico_rotate_hand_action ${catkin_LIBRARIES})
 
 #############
 ## Install ##
