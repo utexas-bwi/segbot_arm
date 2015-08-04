@@ -22,12 +22,11 @@ using namespace std;
 
 bool g_caught_sigint = false;
 
-// counter to keep track of the objects
-int obj_num = 1;
+//the starting object and trial number
+int startingObjectNum, startingTrialNum;
 
 //Filepath to store the data
-//Change the trial folder name each time --> Not very sophisticated but works for now
-std::string pointCloudFilePath = "/home/bwi/look_behaviour/trial_1";
+std::string pointCloudFilePath = "/home/bwi/look_behaviour";
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -66,6 +65,22 @@ int main(int argc, char **argv)
 	//Initialize ROS
 	ros::init (argc, argv, "look_behaviour_client");
 	ros::NodeHandle nh;
+	
+	//Check if the number of arguments is 1 or 3
+	//If 1 then start from the beginning for the object and trial numbers
+	//If 3 then start from the given numbers provided by the user
+	if (argc == 1)
+	{
+		startingObjectNum = 1;
+		startingTrialNum = 1;
+	}
+	
+	if (argc == 3)
+	{
+		startingObjectNum = atoll(argv[1]);
+		startingTrialNum = atoll(argv[2]);
+		ROS_INFO("Starting from Object %d and Trial %d",startingObjectNum,startingTrialNum);
+	}
 	
 	//debugging publisher
 	object_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("look_behaviour_client/object_cloud", 10);
@@ -126,16 +141,22 @@ int main(int argc, char **argv)
 			double begin = ros::Time::now().toSec();
 			string startTime = boost::lexical_cast<std::string>(begin);
 				
-			std::stringstream convert;
-			convert << obj_num;	
+			std::stringstream convert1;
+			convert1 << startingObjectNum;	
+			
+			std::stringstream convert2;
+			convert2 << startingTrialNum;	
 				
 			// append start timestamp with filenames
-			string pointCloudFileName = pointCloudFilePath+"/test"+convert.str()+"_"+startTime+".pcd";
+			string pointCloudFileName = pointCloudFilePath+"/test"+convert1.str()+"_trial"+convert2.str()+"_"+startTime+".pcd";
 					
 			//Save the cloud to a .pcd file
 			pcl::io::savePCDFileASCII(pointCloudFileName, *detected_objects.at(selected_object));
 			ROS_INFO("Saved pcd file %s", pointCloudFileName.c_str());
-			obj_num++;
+			startingObjectNum++;
+			if(startingTrialNum == 6)
+				startingTrialNum = 0;
+			startingTrialNum++;
 		}
 		if(cin.get() == 'n')
 			continue;
