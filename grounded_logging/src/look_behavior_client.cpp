@@ -71,65 +71,66 @@ int main(int argc, char **argv)
 		
 	//step 1: query table_object_detection_node to segment the blobs on the table
 	ros::ServiceClient client_tabletop_perception = nh.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
-	segbot_arm_perception::TabletopPerception srv; //the srv request is just empty
-	if (client_tabletop_perception.call(srv))
-	{
-		ROS_INFO("Received response from tabletop_object_detection_service");
-	}
-	else
-	{
-		ROS_ERROR("Failed to call tabletop_object_detection_service");
-		return 1;
-	}
-	
-	// clear out the vector of detected objects
-	detected_objects.clear();
-	
-	//step 2: extract the data from the response
-	for (unsigned int i = 0; i < srv.response.cloud_clusters.size(); i++){
-		PointCloudT::Ptr object_i (new PointCloudT);
-		pcl::PCLPointCloud2 pc_i;
-		pcl_conversions::toPCL(srv.response.cloud_clusters.at(i),pc_i);
-		pcl::fromPCLPointCloud2(pc_i,*object_i);
-		detected_objects.push_back(object_i);
-	}
-	
-	if (detected_objects.size() == 0){
-		ROS_WARN("No objects detected...aborting.");
-		return 1;
-	}
-	
-	Eigen::Vector4f plane_coef_vector;
-	for (int i = 0; i < 4; i ++)
-		plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
-	
-	//step 3: select which object to grasp
-	int selected_object = selectObjectToSave(detected_objects);
-	
-	//publish object to find topic
-	pcl::PCLPointCloud2 pc_target;
-	pcl::toPCLPointCloud2(*detected_objects.at(selected_object),pc_target);
-	pcl_conversions::fromPCL(pc_target,cloud_ros);
-	
-	//publish to extract_object
-	ROS_INFO("Publishing object point cloud...");
 	while (ros::ok()){
+		segbot_arm_perception::TabletopPerception srv; //the srv request is just empty
+		if (client_tabletop_perception.call(srv))
+		{
+			ROS_INFO("Received response from tabletop_object_detection_service");
+		}
+		else
+		{
+			ROS_ERROR("Failed to call tabletop_object_detection_service");
+			return 1;
+		}
+		
+		// clear out the vector of detected objects
+		detected_objects.clear();
+		
+		//step 2: extract the data from the response
+		for (unsigned int i = 0; i < srv.response.cloud_clusters.size(); i++){
+			PointCloudT::Ptr object_i (new PointCloudT);
+			pcl::PCLPointCloud2 pc_i;
+			pcl_conversions::toPCL(srv.response.cloud_clusters.at(i),pc_i);
+			pcl::fromPCLPointCloud2(pc_i,*object_i);
+			detected_objects.push_back(object_i);
+		}
+		
+		if (detected_objects.size() == 0){
+			ROS_WARN("No objects detected...aborting.");
+			return 1;
+		}
+		
+		Eigen::Vector4f plane_coef_vector;
+		for (int i = 0; i < 4; i ++)
+			plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
+		
+		//step 3: select which object to grasp
+		int selected_object = selectObjectToSave(detected_objects);
+		
+		//publish object to find topic
+		pcl::PCLPointCloud2 pc_target;
+		pcl::toPCLPointCloud2(*detected_objects.at(selected_object),pc_target);
+		pcl_conversions::fromPCL(pc_target,cloud_ros);
+		
+		//publish to extract_object
+		ROS_INFO("Publishing object point cloud...");
+
 		ros::spinOnce();
 		object_cloud_pub.publish(cloud_ros);
-		
+			
 		// Ask the user if he wants to save the point cloud
 		cout << "Do you want to save this point cloud? (y/n)";
 		if (cin.get() == 'y'){
 			//get the start time of recording
 			double begin = ros::Time::now().toSec();
 			string startTime = boost::lexical_cast<std::string>(begin);
-			
+				
 			std::stringstream convert;
 			convert << obj_num;	
-			
+				
 			// append start timestamp with filenames
 			string pointCloudFileName = pointCloudFilePath+"/test"+convert.str()+"_"+startTime+".pcd";
-				
+					
 			//Save the cloud to a .pcd file
 			pcl::io::savePCDFileASCII(pointCloudFileName, *detected_objects.at(selected_object));
 			ROS_INFO("Saved pcd file %s", pointCloudFileName.c_str());
