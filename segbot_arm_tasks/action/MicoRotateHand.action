@@ -2,7 +2,7 @@
 float64 velocity
 ---
 #result definition
-bool executing
+bool success
 ---
 #feedback
-bool success
+bool executing
