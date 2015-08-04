@@ -2,7 +2,7 @@
 bool start
 ---
 #result definition
-bool executing
+bool success
 ---
 #feedback
-bool success
+bool executing

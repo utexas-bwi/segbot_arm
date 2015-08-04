@@ -100,8 +100,8 @@ public:
 	double tempDistance;
 	bool firstOrLast = true;
 	while(count < iterations){
-		//feedback_.executing = true;
-		//as_.publishFeedback(feedback_);
+		feedback_.executing = true;
+		as_.publishFeedback(feedback_);
 		for(int i = 0; i < distance/vel/step; i++){
 			ROS_INFO("Got vel: %f",vel);
 			
@@ -170,8 +170,8 @@ public:
 		j_vel_pub_.publish(T);
 		count++;
 	}
-	//feedback_.executing = false;
-	//as_.publishFeedback(feedback_);
+	feedback_.executing = false;
+	as_.publishFeedback(feedback_);
 
 	T.joint3 = 0.0;
 	T.joint4 = 0.0;
@@ -179,8 +179,8 @@ public:
 	T.joint6 = 0.0;
 	
 	j_vel_pub_.publish(T);
-	//result_.success = true;
-	//as_.setSucceeded(result_);
+	result_.success = true;
+	as_.setSucceeded(result_);
   }
 };
 
