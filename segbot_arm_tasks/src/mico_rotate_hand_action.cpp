@@ -1,10 +1,10 @@
 /*
-* This ROS action performs a shake using joint velocity commands
+* This ROS action performs some portion of a revolution of the 6th joint in the Mico manipulator
 *
 * This assumes that the end effector is already gripping a desired object
 * This does not check for self or external collisions.
 *
-* Current state: proof of concept
+* Current state: untested
 * 
 * Author Maxwell J Svetlik
 */
@@ -80,11 +80,17 @@ public:
 	velocity *= 180/3.14596;
 	
 	ROS_INFO("Expecting %f messages", 360/velocity/.25);
+	//feedback_.executing = true;
+	//as_.publishFeedback(feedback_);
 	for(int i = 0; i < round(360/velocity/.25) + 1; i++){
 		r.sleep();
 		T.joint6 = velocity;
 		j_vel_pub_.publish(T);
 	}
+	//feedback_.executing = false;
+	//as_.publishFeedback(feedback_);
+	//result_.success = true;
+	//as_.setSucceeded(result_);
 	//the following code is necessary if jaco action servers are used subsequently
 	//otherwise its just cumbersome.
 	/*for(int i = 0; i < round(360/velocity/.25) + 1; i++){
@@ -106,6 +112,8 @@ int main(int argc, char** argv){
 	
 	j_vel_pub_ = n.advertise<jaco_msgs::JointVelocity>(joint_velocity_, 2);
 	
+	MicoRotateHandAction server(ros::this_node::getName());
+
 	ROS_INFO("MicoRotateHandAction server loaded.");
 	ros::spin();
 }
