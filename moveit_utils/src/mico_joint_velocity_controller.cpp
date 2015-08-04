@@ -137,7 +137,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 	/*
 	* Corrective velocity at very end
 	*/
-	int i = trajectory_length - 1;
+	/*int i = trajectory_length - 1;
 	ros::spinOnce();
 	ROS_INFO("Sending corrective velocity message");
 	jv_goal.joint1 = -180/PI*(trajectory.points.at(trajectory_length - 1).positions.at(0) - js_cur.position.at(0))*4;
@@ -151,7 +151,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 	ros::spinOnce();
 	ROS_INFO("Expecting pos: %f, %f, %f, %f, %f, %f", trajectory.points.at(i).positions.at(0), trajectory.points.at(i).positions.at(1), trajectory.points.at(i).positions.at(2), trajectory.points.at(i).positions.at(3), trajectory.points.at(i).positions.at(4), trajectory.points.at(i).positions.at(5));
 	ROS_INFO("At       pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
-
+*/
 	res.done = true;
 	return true;
 }

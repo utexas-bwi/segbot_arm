@@ -24,6 +24,9 @@
 #include <actionlib/client/simple_action_client.h>
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
+#include "jaco_msgs/ArmJointAnglesAction.h"
+
+
 
 #include "agile_grasp/Grasps.h"
 
@@ -83,6 +86,9 @@ PointCloudT::Ptr cloud_plane (new PointCloudT);
 
 using namespace std;
 
+//true if Ctrl-C is pressed
+bool g_caught_sigint=false;
+
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
 
@@ -127,6 +133,14 @@ struct GraspCartesianCommand {
 };
 
 
+/* what happens when ctr-c is pressed */
+void sig_handler(int sig)
+{
+  g_caught_sigint = true;
+  ROS_INFO("caught sigint, init shutdown sequence...");
+  ros::shutdown();
+  exit(1);
+};
 
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
@@ -221,6 +235,27 @@ void movePose(float d_z) {
   ac.sendGoal(goalPose);
   ac.waitForResult();
 
+}
+
+void moveToCurrentAngles(){
+	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	
+	jaco_msgs::ArmJointAnglesGoal goalJoints;
+	
+	listenForArmData(30.0);
+	
+	goalJoints.angles.joint1 = current_state.position[0];
+	goalJoints.angles.joint2 = current_state.position[1];
+	goalJoints.angles.joint3 = current_state.position[2];
+	goalJoints.angles.joint4 = current_state.position[3];
+	goalJoints.angles.joint5 = current_state.position[4];
+	goalJoints.angles.joint6 = current_state.position[5];
+	
+	ac.waitForServer();
+
+    ac.sendGoal(goalJoints);
+
+    ac.waitForResult();
 }
 
 // Range = [6, 7300] ([open, close])
@@ -439,6 +474,18 @@ moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs:
 	return ikine_response;
 }
 
+void spinSleep(double duration){
+	int rateHertz = 40;
+	
+	ros::Rate r(rateHertz);
+	for(int i = 0; i < (int)duration * rateHertz; i++) {
+		
+		
+		ros::spinOnce();
+		r.sleep();
+	}
+}
+
 void updateFK(ros::NodeHandle n){
 	ros::ServiceClient fkine_client = n.serviceClient<moveit_msgs::GetPositionFK> ("/compute_fk");
 	
@@ -636,14 +683,34 @@ int main(int argc, char **argv) {
 	//used to compute transfers
 	tf::TransformListener listener;
 	
+	//register ctrl-c
+	signal(SIGINT, sig_handler);
+
+	
 	//user input
     char in;
 	
-	std::cout << "Press '1' to start the demo" << std::endl;		
-	std::cin >> in;
+	
 
-	cartesianVelocityMove(0,0,0.2,1.0);
-	cartesianVelocityMove(0,0,-0.2,1.0);
+	//cartesianVelocityMove(0,0,0.2,1.0);
+	//lift(n,0.1);
+	//cartesianVelocityMove(0,0,-0.2,1.0);
+	
+	//open and open again fingers
+	//pressEnter();
+	//moveFinger(7200);
+	
+	/*lift(n,-0.1);
+	spinSleep(3.0);
+	moveToCurrentAngles();
+	moveFinger(7200);
+	lift(n,0.1);	
+	spinSleep(3.0);
+	moveToCurrentAngles();
+	moveFinger(100);*/
+	
+	ROS_INFO("Demo starting...");
+	pressEnter();
 	
 	//step 1: query table_object_detection_node to segment the blobs on the table
 	ros::ServiceClient client_tabletop_perception = n.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
@@ -700,7 +767,7 @@ int main(int argc, char **argv) {
 	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
 	//next, compute approach and grasp poses for each detected grasp
-	double hand_offset_grasp = -0.04;
+	double hand_offset_grasp = -0.02;
 	double hand_offset_approach = -0.13;
 	
 	//wait for transform from visual space to arm space
@@ -765,36 +832,47 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	if (min_diff_index == -1){
+		ROS_WARN("No feasible grasps found, aborting.");
+		return 0;
+	}
+
 	pose_array_pub.publish(poses_msg);
 
 
 	//publish individual pose
 	pose_pub.publish(grasp_commands.at(min_diff_index).approach_pose);
-	std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
-	std::cin >> in;
+	pressEnter();
 	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
 	
-
-	pose_pub.publish(grasp_commands.at(min_diff_index).grasp_pose);
-	std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
-	std::cin >> in;
-	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
 	
-	listenForArmData(30.0);
+	//open fingers
+	//pressEnter();
+	//moveFinger(100);
+
+
+	sleep(1.0);
+	pose_pub.publish(grasp_commands.at(min_diff_index).grasp_pose);
+	/*std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
+	std::cin >> in;*/
+	
+	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
+	spinSleep(3.0);
+	
+	//listenForArmData(30.0);
 	//close fingers
-	std::cout << "Press '1' to close fingers or Ctrl-z to quit..." << std::endl;		
-	std::cin >> in;
-	moveFinger(7300);
-	listenForArmData(30.0);
+	//pressEnter();
+	moveFinger(7200);
+	
 	
 	//lift for a while
-	std::cout << "Press '1' to lift or Ctrl-z to quit..." << std::endl;		
-	std::cin >> in;
+	//pressEnter();
 	//cartesianVelocityMove(0,0,0.2,1.0);
 	lift(n,0.1);
 	lift(n,-0.09);
+	spinSleep(3.0);
 	moveFinger(100);
-
+	lift(n,0.1);
 	
 	return 0;
 }

@@ -144,13 +144,13 @@ void moveArmVelocity() {
 }
 
 
-void moveArmAngularVelocity() {
+void moveArmAngularVelocity(double j6) {
 
 	int rateHertz = 40;
 	
 	
 	ros::Rate r(rateHertz);
-	for(int i = 0; i < (int)5 * rateHertz; i++) {
+	for(int i = 0; i < (int)1 * rateHertz; i++) {
 		
 		jaco_msgs::JointVelocity msg;
 		msg.joint1 = 0.0;
@@ -158,7 +158,7 @@ void moveArmAngularVelocity() {
 		msg.joint3 = 0.0;
 		msg.joint4 = 0.0;
 		msg.joint5 = 0.0;
-		msg.joint6 = -48;
+		msg.joint6 = -j6;
 		
 		
 		
@@ -220,8 +220,11 @@ int main(int argc, char **argv) {
       ros::Duration(0.05).sleep();
   }*/
   
-  //moveArmAngularVelocity();
-  movePose(-0.05);
-//  moveFinger(int finger_value);
+	moveArmAngularVelocity(48);
+	moveFinger(100);
+	/*moveArmAngularVelocity(48);
+	moveFinger(100);
+	moveArmAngularVelocity(-48);
+	moveFinger(7200);*/
   return 0;
 }
