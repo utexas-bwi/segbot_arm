@@ -185,7 +185,7 @@ public:
 };
 
 int main(int argc, char** argv){
-	ros::init(argc, argv, "arm_shack_task");
+	ros::init(argc, argv, "arm_shake_task");
 	ros::NodeHandle n;
 	signal(SIGINT, sig_handler);
 	std::string joint_velocity_;
@@ -193,6 +193,8 @@ int main(int argc, char** argv){
 	n.param<std::string>("joint_velocity", joint_velocity_, "/mico_arm_driver/in/joint_velocity");
 	
 	j_vel_pub_ = n.advertise<jaco_msgs::JointVelocity>(joint_velocity_, 2);
+	
+	MicoShakeAction server(ros::this_node::getName());
 	
 	ROS_INFO("MicoShakeAction server loaded.");
 	ros::spin();
