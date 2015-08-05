@@ -153,9 +153,10 @@ int main(int argc, char **argv)
 			//Save the cloud to a .pcd file
 			pcl::io::savePCDFileASCII(pointCloudFileName, *detected_objects.at(selected_object));
 			ROS_INFO("Saved pcd file %s", pointCloudFileName.c_str());
-			startingObjectNum++;
-			if(startingTrialNum == 6)
+			if(startingTrialNum == 6){
 				startingTrialNum = 0;
+				startingObjectNum++;
+			}
 			startingTrialNum++;
 		}
 		if(cin.get() == 'n')
