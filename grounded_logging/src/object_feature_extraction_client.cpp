@@ -31,13 +31,14 @@ int total_objects = 32;
 std::string generalFilePath = "/home/users/pkhante/look_behaviour/";
 
 // Filepath of the csv file
-std::string data_file_path = "/home/users/pkhante/look_behaviour/extracted_feature_data.csv";
+// Change the name of the file for every run of colour histogram or FPFH histogram
+std::string data_file_path = "/home/users/pkhante/look_behaviour/extracted_feature_fpfh.csv";
 
-// Write the feature vector to disk in libSVM format.
-// It also writes the object id corresponding to the feature to another file
+// Write the feature vector to disk in a CSV file format
+// It also writes the object id and trial number corresponding to the feature to the file
 bool write_feature_to_disk_csv(std::vector<double>& feature_vector,
                                std::string feature_object_index_and_trial_number) {
-    // Set filename for each run of the program
+    // Ask for filename for each run of the program
     /*while (data_file_name.empty()) {
         ROS_INFO("Output file name: ");
         std::getline (std::cin, data_file_name);
@@ -55,7 +56,6 @@ bool write_feature_to_disk_csv(std::vector<double>& feature_vector,
         }
         write_feature_file << "\n";
         write_feature_file.close();
-        //ROS_INFO("Finished writing to the file");
     } else {
         ROS_ERROR("Cannot open file");
     }
@@ -74,11 +74,10 @@ int main(int argc, char** argv) {
 	
     //File traversal so that all .pcd files in the above path are accessed consecutively
 	for(int object_num = 1; object_num <= total_objects; object_num++){
-		ROS_INFO("Inside for");
 		std::stringstream convert1;
 		convert1 << object_num;
 		string folderPath = generalFilePath + "obj_" + convert1.str();
-		ROS_INFO("FolderPath : %s", folderPath.c_str());
+		//ROS_INFO("FolderPath : %s", folderPath.c_str());
 		path dir_path(folderPath);
 		if(!exists(dir_path)){
 			ROS_INFO("Exiting as folder does not exist");
@@ -95,7 +94,7 @@ int main(int argc, char** argv) {
  					
 				std::size_t found = p.filename().string().find("_");
  				string obj_and_trial_num = p.filename().string().substr(0, found+7);
- 				ROS_INFO("Object and trial number: %s", obj_and_trial_num.c_str());
+ 				//ROS_INFO("Object and trial number: %s", obj_and_trial_num.c_str());
  					
  				segbot_arm_perception::FeatureExtraction feature_srv;
 				toROSMsg(*image_cloud, feature_srv.request.cloud);
