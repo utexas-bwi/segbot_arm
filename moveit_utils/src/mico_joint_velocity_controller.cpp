@@ -81,7 +81,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 	double last_sent;
 	ros::Time first_sent;
 	int trajectory_length = trajectory.points.size();
-	
+	bool done = false;
 
 	
 	if(trajectory_length == 0)
@@ -111,25 +111,53 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 			//current implementation: assume that the traj velocities will take each joint to correct point
 			//written but not invoked is to check the target and goal pos of the joints, and preempting 
 			//further movement when required.
-			
-			while(!next_point){
-				//rather than check conditionally, re-up on the message
-				ros::spinOnce();
-				j_vel_pub.publish(jv_goal);
-				last_sent = ros::Time::now().toSec();
-				//ROS_INFO("first_sent: %f tfs: %f", (ros::Time::now() - first_sent).toSec(), (tfs - last).toSec());
-				//}
-				if(((ros::Time::now() - first_sent).toSec() >= ((1-tol) * (tfs - last).toSec()))){ //movement should be preempted
-					ROS_INFO("Expecting pos: %f, %f, %f, %f, %f, %f", trajectory.points.at(i).positions.at(0), trajectory.points.at(i).positions.at(1), trajectory.points.at(i).positions.at(2), trajectory.points.at(i).positions.at(3), trajectory.points.at(i).positions.at(4), trajectory.points.at(i).positions.at(5));
-					ROS_INFO("At       pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
-					jaco_msgs::JointVelocity empty_goal;
-					j_vel_pub.publish(empty_goal);
-					next_point = true;
+
+			if(true){
+				while(!done){
+					ros::spinOnce();
+					std::vector<char> zeros;
+					for(int j = 0; j < 6; j++){
+						double tolerance = (1-tol) * abs(trajectory.points.at(i).positions.at(j) - js_cur.position.at(j)); 
+						if(trajectory.points.at(i).positions.at(j) - tolerance == js_cur.position.at(j) ||  
+							trajectory.points.at(i).positions.at(j) + tolerance == js_cur.position.at(j)){
+							switch(j) {
+								case 0	: jv_goal.joint1 = 0; zeros.push_back('1'); break; 
+								case 1	: jv_goal.joint2 = 0; zeros.push_back('1'); break;
+								case 2	: jv_goal.joint3 = 0; zeros.push_back('1'); break;
+								case 3	: jv_goal.joint4 = 0; zeros.push_back('1'); break;
+								case 4	: jv_goal.joint5 = 0; zeros.push_back('1'); break;
+								case 5	: jv_goal.joint6 = 0; zeros.push_back('1'); break;
+							}
+						}
+						j_vel_pub.publish(jv_goal);
+						done = true;
+						for(int t = 0; t < 6; t++)
+							if(zeros.at(t) != '1')
+								done = false;
+						zeros.clear();
+					}
 				}
-				r.sleep();
 			}
-			next_point = false;
-			last = trajectory.points.at(i).time_from_start;
+			else{
+				while(!next_point){
+					//rather than check conditionally, re-up on the message
+					ros::spinOnce();
+					j_vel_pub.publish(jv_goal);
+					last_sent = ros::Time::now().toSec();
+					//ROS_INFO("first_sent: %f tfs: %f", (ros::Time::now() - first_sent).toSec(), (tfs - last).toSec());
+					//}
+					if(((ros::Time::now() - first_sent).toSec() >= ((1-tol) * (tfs - last).toSec()))){ //movement should be preempted
+						ROS_INFO("Expecting pos: %f, %f, %f, %f, %f, %f", trajectory.points.at(i).positions.at(0), trajectory.points.at(i).positions.at(1), trajectory.points.at(i).positions.at(2), trajectory.points.at(i).positions.at(3), trajectory.points.at(i).positions.at(4), trajectory.points.at(i).positions.at(5));
+						ROS_INFO("At       pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
+						jaco_msgs::JointVelocity empty_goal;
+						j_vel_pub.publish(empty_goal);
+						next_point = true;
+					}
+					r.sleep();
+				}
+				next_point = false;
+				last = trajectory.points.at(i).time_from_start;
+			}
 		}
 		//ROS_INFO("At       pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
 
