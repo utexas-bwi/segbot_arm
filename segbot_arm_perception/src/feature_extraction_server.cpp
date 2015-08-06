@@ -77,7 +77,7 @@ class ColorHistogram {
         return hist3[r][g][b];
     }
     // Breaks program, don't use
-    std::string rosPrintHist() {
+   std::string rosPrintHist() {
         for (int i = 0; i < dim; i++) {
             ROS_INFO("i = %d", i);
             ROS_INFO("[");
@@ -156,7 +156,7 @@ std::vector<double> computeCVFH(PointCloudT::Ptr &cloud) {
     cvfh.setInputCloud (cloud);
     cvfh.setInputNormals (cloud_normals);
 
-// Create an empty kdtree representation, and pass it to the FPFH estimation object.
+    // Create an empty kdtree representation, and pass it to the FPFH estimation object.
     // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
     pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
     cvfh.setSearchMethod (tree);
@@ -206,8 +206,7 @@ pcl::PointCloud<pcl::VFHSignature308>::Ptr computeVFH(PointCloudT::Ptr &cloud) {
     return vfhs;
 }
 
-
-pcl::PointCloud<pcl::FPFHSignature33>::Ptr computeFPFH(PointCloudT::Ptr &cloud) {
+std::vector<double> computeFPFH(PointCloudT::Ptr &cloud) {
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals = computeNormals(cloud);
     ROS_INFO("Computing FPFH...");
 
@@ -233,9 +232,22 @@ pcl::PointCloud<pcl::FPFHSignature33>::Ptr computeFPFH(PointCloudT::Ptr &cloud) 
 
     // Compute the features
     fpfh.compute (*fpfhs);
+	
+    // Convert into normalized vector
+    int histogram_sum = 0;
+    std::vector<double> histogram_double_vector (308);
+    for (int i = 0; i < histogram_double_vector.size(); i++) {
+        histogram_double_vector[i] = fpfhs->points[0].histogram[i];
+        histogram_sum += fpfhs->points[0].histogram[i];
+    }
+    for (int i = 0; i < histogram_double_vector.size(); i++) {
+        histogram_double_vector[i] /= (double)histogram_sum;
+    }
 
-    // fpfhs->points.size () should have the same size as the input cloud->points.size ()*
-    return fpfhs;
+    return histogram_double_vector;
+    
+    // fpfhs->points.size() should have the same size as the input cloud->points.size ()*
+    // return fpfhs;      Put this back in the function definition if returning fpfhs---> pcl::PointCloud<pcl::FPFHSignature33>::Ptr 
 }
 
 
@@ -297,7 +309,7 @@ bool feature_extraction_cb(
     PointCloudT::Ptr cloud(new PointCloudT);
     pcl::fromROSMsg(req.cloud, *cloud);
     const int kColorHistBins = 4;
-
+	
     ROS_INFO("Publishing cloud size %d for feature extraction...", (int)cloud->points.size());
     toROSMsg(*cloud, cloud_ros);
     cloud_ros.header.frame_id = cloud->header.frame_id;
@@ -314,7 +326,7 @@ bool feature_extraction_cb(
     for (int i = 0; i < color_counter.size(); i++) {
         color_counter[i] = i;
         // TODO Uncomment this
-        res.feature_vector.push_back(color_vector[i]);
+        //res.feature_vector.push_back(color_vector[i]);
     }
     feature_counter_offset += color_counter.size();
     feature_scale_factor = color_counter.size();
@@ -329,17 +341,30 @@ bool feature_extraction_cb(
         // res.feature_vector.push_back(feature_vector[i]);
     }
     feature_counter_offset += feature_counter.size();
+    
+    // PFH or FPFH
+    std::vector<double> point_feature_vector = computeFPFH(cloud);
+    std::vector<double> point_feature_counter (point_feature_vector.size());
+    for (int i =0; i < point_feature_counter.size(); i++) {
+        point_feature_vector[i] *= (double)point_feature_counter.size() / feature_scale_factor;
+        point_feature_counter[i] = feature_counter_offset + i;
+        // TODO Uncomment this
+        res.feature_vector.push_back(point_feature_vector[i]);
+    }
+    feature_counter_offset += point_feature_counter.size();
 
-    // // Plot histogram
-    // plotter->clearPlots();
-    // // Bug in plotter, need to call twice
-    // plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
-    // plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
-    // plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
-    // plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
+    // Plot histogram
+    plotter->clearPlots();
+    // Bug in plotter, need to call twice
+    //plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
+    //plotter->addPlotData (color_counter, color_vector, "Color histogram", vtkChart::POINTS);
+    //plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
+    //plotter->addPlotData (feature_counter, feature_vector, "Feature histogram", vtkChart::POINTS);
+    plotter->addPlotData (point_feature_counter, point_feature_vector, "Feature histogram", vtkChart::POINTS);
+    plotter->addPlotData (point_feature_counter, point_feature_vector, "Feature histogram", vtkChart::POINTS);
 
-    // ROS_INFO("Plotting data...");
-    // plotter->spinOnce(10);
+    ROS_INFO("Plotting data...");
+    plotter->spinOnce(10);
 
     return true;
 }
