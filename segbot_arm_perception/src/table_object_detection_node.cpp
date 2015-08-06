@@ -64,6 +64,8 @@ ros::Publisher cloud_pub;
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
 
+double plane_distance_tolerance = 0.04;
+
 // Check if a file exist or not
 bool file_exist(std::string& name) {
     struct stat buffer;
@@ -283,7 +285,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 
 	for (unsigned int i = 0; i < clusters.size(); i++){
 		
-		if (filter(clusters.at(i),plane_coefficients,0.04)){
+		if (filter(clusters.at(i),plane_coefficients,plane_distance_tolerance)){
 			clusters_on_plane.push_back(clusters.at(i));
 		}
 	}
