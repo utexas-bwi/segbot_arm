@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include <math.h>  
 #include <fstream>
 #include <iostream>
 // For traversing the filesystem
@@ -20,6 +21,15 @@ const std::string & hold_folder = "hold";
 
 //Total number of objects and trials for ease of file traversal
 int total_objects = 1, total_trials = 1;
+
+// Create a vector to put in the dft datapoints
+vector<vector<double> > dft_data;
+
+// Create a vector to put the intermediate values to calculate the variance
+vector<vector <double> > distance_from_mean;
+
+// Some variables for the various calculations
+double mean, variance, standard_deviation, threshold;
 
 int main (int argc, char** argv)
 {
@@ -63,41 +73,68 @@ int main (int argc, char** argv)
 										for(int i=0; getline(infile, line); ++i){
 											num_of_lines++;
 										}
-										
+				
 										//ROS_INFO("Number of lines: %d", num_of_lines);
-										
-										// Create a matrix of that size to put in the dft datapoints
-										double dft_data[num_of_lines][65];
 										
 										ifstream infile2(filePath.c_str());
 										while(infile2.good()){
 											string str_value, newline;
-											for(int i=0; i<num_of_lines; ++i){
+											for(int i=0; i<num_of_lines; i++){
 												getline(infile2, newline, '\n');
 												//ROS_INFO("value: %s",newline.c_str());
 												std::istringstream buffer(newline);
-												for(int j=0; j<65; ++j){
+												vector <double> dft_row;
+												for(int j=0; j<65; j++){
 													getline(buffer, str_value, ',');
 													//ROS_INFO("value: %s",str_value.c_str());
 													double datapoint = atof(str_value.c_str());
-													//ROS_INFO("value: %f", datapoint);
-													dft_data[i][j] = datapoint;
+													//ROS_INFO("datapoint: %f", datapoint);
+													dft_row.push_back(datapoint);
 												}
+												dft_data.push_back(dft_row);
 											}
 										}
-										// Prints out zero from here onwards!!!!!!!!!!!!!!!!!!!
-										double co = dft_data[1][0];
-										ROS_INFO("Value: %f", co);
+										
+										// Calcuate the sum of all the points
 										double total_sum;
-										for(int i=0; i<num_of_lines; ++i){
-											for(int j=0; j<65; ++j){
+										for(int i=0; i<num_of_lines; i++){
+											for(int j=0; j<65; j++){
 												total_sum = total_sum + dft_data[i][j]; 
 											}
 										}
 										ROS_INFO("Total sum: %f",total_sum);
-										double mean = total_sum/(num_of_lines*65);
-										//ROS_INFO("Mean: %f",mean);
 										
+										// Calculate the mean of all the points
+										mean = total_sum/(num_of_lines*65);
+										ROS_INFO("Mean: %f",mean);
+										
+										for(int i=0; i<num_of_lines; i++){
+											vector <double> difference_row;
+											for(int j=0; j<65; j++){
+												double squared_difference = pow((dft_data[i][j] - mean), 2);
+												difference_row.push_back(squared_difference);
+											}
+											distance_from_mean.push_back(difference_row);
+										}
+										
+										double sum;
+										for(int i=0; i<num_of_lines; i++){
+											for(int j=0; j<65; j++){
+												sum = sum + distance_from_mean[i][j]; 
+											}
+										}
+										
+										// Calculate the variance
+										variance = sum/(num_of_lines*65);
+										//ROS_INFO("Variance: %f",variance);
+										
+										// Calculate the standard deviation
+										standard_deviation = sqrt(variance);
+										ROS_INFO("Standard deviation: %f",standard_deviation);
+										
+										// Calculate the threshold below which to make the datapoints to be zero in the dft
+										threshold = mean + 2*standard_deviation;
+										ROS_INFO("Threshold: %f",threshold);
 									}
 								}
 							}
