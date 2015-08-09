@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   jaco_msgs
   actionlib
-  segbot_arm_perception
   pcl_ros
   pcl_conversions
   agile_grasp
@@ -64,6 +63,7 @@ add_definitions(${PCL_DEFINITIONS})
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
+
 ## Generate messages in the 'msg' folder
 # add_message_files(
 #   FILES
@@ -105,6 +105,7 @@ catkin_package(
 #  LIBRARIES mimic_motion
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
+  DEPENDS segbot_arm_perception
 )
 
 ###########
