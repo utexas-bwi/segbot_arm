@@ -829,6 +829,7 @@ bool drop(double height){
 	openFull();
 	//sensor_msgs::JointState hide = getStateFromBag("hide");
 	//goToLocation(hide);
+	clearMsgs(3.);
 	stopSensoryDataCollection();
 	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
 	goToLocation(grab_sub, true);
