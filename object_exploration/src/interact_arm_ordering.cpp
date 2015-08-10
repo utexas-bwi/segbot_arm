@@ -539,12 +539,31 @@ void approach(char dimension, double distance){
 	c_vel_pub_.publish(T);
 }
 
+/*
+void lift_or_lower(double vel, double duration){
+	ros::Rate r(40);
+	
+	eometry_msgs::TwistStamped T;
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= vel;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	
+	for (int i = 0; i < (int)(40*duration); i++){
+				ros::spinOnce();
+
+		c_vel_pub_.publish(T);
+		r.sleep();
+	}
+}*/
+
 //lifts ef specified distance
-void lift(double vel){
+void lift(double vel, double distance){
 	ros::Rate r(4);
 	ros::spinOnce();
 	double distance_init = .2;
-	double distance = .4;
 	geometry_msgs::TwistStamped T;
 	T.twist.linear.x= 0.0;
 	T.twist.linear.y= 0.0;
@@ -1030,7 +1049,7 @@ bool loop1(){
 			goToLocation(loc);
 			createBehaviorAndSubDirectories("lift", trialFilePath);
 			storePointCloud();
-			lift(0.2);//speed to go up
+			lift(0.2,.4);//speed to go up
 			storePointCloud();
 			createBehaviorAndSubDirectories("hold", trialFilePath);
 			storePointCloud();
@@ -1039,7 +1058,7 @@ bool loop1(){
 			pressEnter();
 			createBehaviorAndSubDirectories("lower", trialFilePath);
 			storePointCloud();
-			lift(-0.1);//negative velocity to go down
+			lift(-0.1, .55);//negative velocity to go down
 			storePointCloud();
 			pressEnter();
 			if(SHAKEANDROTATE){
