@@ -143,7 +143,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 			ROS_INFO("Joint velocity goal for point %i:",i);
 			ROS_INFO_STREAM(jv_goal);
 			
-			pressEnter();
+			//pressEnter();
 			
 			tfs = trajectory.points.at(i).time_from_start;
 			last_sent = ros::Time::now().toSec();
