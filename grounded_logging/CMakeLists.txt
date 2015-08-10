@@ -195,6 +195,9 @@ add_executable(look_behavior_client src/look_behavior_client.cpp)
 ## Declare a cpp executable
 add_executable(object_feature_extraction_client src/object_feature_extraction_client.cpp)
 
+## Declare a cpp executable
+add_executable(denoise_dft src/denoise_dft.cpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(grounded_logging_node grounded_logging_generate_messages_cpp)
@@ -233,6 +236,8 @@ add_dependencies(look_behavior_client grounded_logging_gencpp)
 
 target_link_libraries(object_feature_extraction_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(object_feature_extraction_client grounded_logging_gencpp)
+
+target_link_libraries(denoise_dft ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 #############
 ## Install ##

@@ -48,6 +48,8 @@
 #define foreach BOOST_FOREACH
 #define MINHEIGHT -0.05 		//defines the height of the table relative to the mico_base
 #define ALPHA .7				//constant for temporal smoothing in effort cb
+#define SHAKEANDROTATE true 	//defines whether the shake and rotate behaviors are performed
+								//note that this was implicitly true for the first experiments done
 using namespace std;
 using namespace boost::assign;
 bool g_caught_sigint = false;
@@ -827,6 +829,7 @@ bool drop(double height){
 	openFull();
 	//sensor_msgs::JointState hide = getStateFromBag("hide");
 	//goToLocation(hide);
+	clearMsgs(3.);
 	stopSensoryDataCollection();
 	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
 	goToLocation(grab_sub, true);
@@ -1055,14 +1058,16 @@ bool loop1(){
 			storePointCloud();
 			hold(.5);
 			storePointCloud();
-			createBehaviorAndSubDirectories("revolve", trialFilePath);
-			storePointCloud();
-			revolveJ6(1.);
-			storePointCloud();
-			createBehaviorAndSubDirectories("shake", trialFilePath);
-			storePointCloud();
-			shake(1.5);
-			storePointCloud();
+			if(SHAKEANDROTATE){
+				createBehaviorAndSubDirectories("revolve", trialFilePath);
+				storePointCloud();
+				revolveJ6(1.);
+				storePointCloud();
+				createBehaviorAndSubDirectories("shake", trialFilePath);
+				storePointCloud();
+				shake(1.5);
+				storePointCloud();
+			}
 			createBehaviorAndSubDirectories("drop", trialFilePath);
 			storePointCloud();
 			drop(.5);
