@@ -1055,6 +1055,13 @@ bool loop1(){
 			createBehaviorAndSubDirectories("hold", trialFilePath);
 			storePointCloud();
 			hold(.5);
+			createBehaviorAndSubDirectories("revolve", trialFilePath);
+			storePointCloud();
+			revolveJ6(1.);
+			storePointCloud();
+			createBehaviorAndSubDirectories("shake", trialFilePath);
+			storePointCloud();
+			shake(1.5);
 			storePointCloud();
 			createBehaviorAndSubDirectories("drop", trialFilePath);
 			storePointCloud();
