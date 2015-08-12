@@ -24,6 +24,8 @@
     <param name="min_inliers" value="10" />
     <param name="plotting" value="2" />
     <param name="marker_lifetime" value="500" />
+    <param name="hand_outer_diameter" value="0.10" />
+    <param name="hand_depth" value="0.06" />
 	</node>
 	
 	<!-- launch moveit -->

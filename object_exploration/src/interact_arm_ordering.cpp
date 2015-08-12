@@ -48,7 +48,8 @@
 #define foreach BOOST_FOREACH
 #define MINHEIGHT -0.05 		//defines the height of the table relative to the mico_base
 #define ALPHA .7				//constant for temporal smoothing in effort cb
-
+#define SHAKEANDROTATE false 	//defines whether the shake and rotate behaviors are performed
+								//note that this was implicitly true for the first experiments done
 using namespace std;
 using namespace boost::assign;
 bool g_caught_sigint = false;
@@ -537,12 +538,32 @@ void approach(char dimension, double distance){
 
 	c_vel_pub_.publish(T);
 }
+
+/*
+void lift_or_lower(double vel, double duration){
+	ros::Rate r(40);
+	
+	eometry_msgs::TwistStamped T;
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.linear.z= vel;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+	
+	for (int i = 0; i < (int)(40*duration); i++){
+				ros::spinOnce();
+
+		c_vel_pub_.publish(T);
+		r.sleep();
+	}
+}*/
+
 //lifts ef specified distance
-void lift(double vel){
+void lift(double vel, double distance){
 	ros::Rate r(4);
 	ros::spinOnce();
 	double distance_init = .2;
-	double distance = .4;
 	geometry_msgs::TwistStamped T;
 	T.twist.linear.x= 0.0;
 	T.twist.linear.y= 0.0;
@@ -560,12 +581,11 @@ void lift(double vel){
 		r.sleep();
 	}
 	*/
-	sensor_msgs::JointState drop = getStateFromBag("drop_right");
-	goToLocation(drop);
+
 	//start logging here
 	startSensoryDataCollection();
 
-	for(int i = 0; i < std::abs(distance)/vel/.25; i++){
+	for(int i = 0; i < std::abs(distance/vel/.25); i++){
 		ros::spinOnce();
 		if(distance > 0)
 			T.twist.linear.z= vel;
@@ -578,46 +598,21 @@ void lift(double vel){
 	c_vel_pub_.publish(T);
 	stopSensoryDataCollection();
 }
+
 /*
  * limited at .4 so arm stays in view of camera
  */
-bool hold(double height){
+bool hold(double duration){
 	startSensoryDataCollection();
-	if(height < MINHEIGHT)
-		height = MINHEIGHT;
-	if(height > .4)
-		height = .4;
-	//go to that height
-	ros::Rate r(25);
-	double base_vel = 0.1;
-	geometry_msgs::TwistStamped T;
-	T.twist.linear.x= 0.0;
-	T.twist.linear.y= 0.0;
-	T.twist.linear.z= 0.0;
-	T.twist.angular.x= 0.0;
-	T.twist.angular.y= 0.0;
-	T.twist.angular.z= 0.0;
-	clearMsgs(.4);
-	ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
-
-	if( tool_pos_cur.position.z - MINHEIGHT < height)
-		while(tool_pos_cur.position.z - MINHEIGHT <= 0.05 + height){
-			ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
-			T.twist.linear.z = base_vel;
-			c_vel_pub_.publish(T);
-			r.sleep();
-			ros::spinOnce();
-		}
-	else
-		while(tool_pos_cur.position.z - MINHEIGHT >= height + 0.05){
-			ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
-			T.twist.linear.z = -base_vel;
-			c_vel_pub_.publish(T);
-			r.sleep();
-			ros::spinOnce();
-		}
-	T.twist.linear.z= 0.0;
-	c_vel_pub_.publish(T);
+	
+	ros::Rate r(40);
+	
+	for (int i = 0; i < duration*40; i ++){
+		r.sleep();
+		ros::spinOnce();
+	}
+	
+	
 	stopSensoryDataCollection();
 }
 bool readTrajectory(std::string filename){
@@ -796,8 +791,8 @@ bool drop(double height){
 	//go to that height
 	//sensor_msgs::JointState drop_sub = getStateFromBag("drop_sub");
 	//goToLocation(drop_sub);
-	sensor_msgs::JointState drop = getStateFromBag("drop_right");
-	goToLocation(drop);
+	//sensor_msgs::JointState drop = getStateFromBag("drop_right");
+	//goToLocation(drop);
 	ros::Rate r(25);
 	double base_vel = 0.1;
 	geometry_msgs::TwistStamped T;
@@ -828,6 +823,7 @@ bool drop(double height){
 	openFull();
 	//sensor_msgs::JointState hide = getStateFromBag("hide");
 	//goToLocation(hide);
+	clearMsgs(3.);
 	stopSensoryDataCollection();
 	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
 	goToLocation(grab_sub, true);
@@ -1048,43 +1044,58 @@ bool loop1(){
 			grabFromApch(6000);
 			//store a point cloud after the action is performed
 			storePointCloud();
+			pressEnter();
+			sensor_msgs::JointState loc = getStateFromBag("drop_right");
+			goToLocation(loc);
 			createBehaviorAndSubDirectories("lift", trialFilePath);
 			storePointCloud();
-			lift(.3);
+			lift(0.2,.4);//speed to go up
 			storePointCloud();
 			createBehaviorAndSubDirectories("hold", trialFilePath);
 			storePointCloud();
-			hold(.5);
-			createBehaviorAndSubDirectories("revolve", trialFilePath);
+			hold(2.5);//height from the mico_api_origin
 			storePointCloud();
-			revolveJ6(1.);
+			pressEnter();
+			createBehaviorAndSubDirectories("lower", trialFilePath);
 			storePointCloud();
-			createBehaviorAndSubDirectories("shake", trialFilePath);
+			lift(-0.1, .55);//negative velocity to go down
 			storePointCloud();
-			shake(1.5);
-			storePointCloud();
+			pressEnter();
+			if(SHAKEANDROTATE){
+				createBehaviorAndSubDirectories("revolve", trialFilePath);
+				storePointCloud();
+				revolveJ6(1.0);//speed param, this is max
+				storePointCloud();
+				createBehaviorAndSubDirectories("shake", trialFilePath);
+				storePointCloud();
+				shake(1.5);//speed param, also maxed out
+				storePointCloud();
+			}
 			createBehaviorAndSubDirectories("drop", trialFilePath);
 			storePointCloud();
-			drop(.5);
+			drop(.5);//height to drop from
 			storePointCloud();
 			pressEnter();
 			createBehaviorAndSubDirectories("poke", trialFilePath);
 			storePointCloud();
-			poke(.2);
+			poke(.2);//speed, perhaps could be faster
 			storePointCloud();
 			createBehaviorAndSubDirectories("push", trialFilePath);
 			//storePointCloud moved inside push function
-			push(-.2);
+			push(-.2);//speed
 			storePointCloud();
 			pressEnter();
 			createBehaviorAndSubDirectories("press", trialFilePath);
 			storePointCloud();
-			press(0.2);
+			press(0.2);//velocities in downward direction
 			storePointCloud();
-			createBehaviorAndSubDirectories("squeeze", trialFilePath);
-			storePointCloud();
-			squeeze(.03);
-			storePointCloud();
+			
+			
+			//createBehaviorAndSubDirectories("squeeze", trialFilePath);
+			//storePointCloud();
+			//squeeze(.03);
+			//storePointCloud();
+			
 			goHome();
 			pressEnter();
 		}

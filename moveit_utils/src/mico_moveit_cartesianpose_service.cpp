@@ -38,6 +38,8 @@ void sig_handler(int sig){
     exit(1);
 };
 bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_utils::MicoMoveitCartesianPose::Response &res){
+    ROS_INFO("[mico_moveit_cartesianpose_service.cpp] Request received!");
+    
     moveit_utils::MicoController srv_controller;
     moveit::planning_interface::MoveGroup group("arm");
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
@@ -49,6 +51,7 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
     group.setPoseTarget(req.target);
     group.setStartState(*group.getCurrentState());
 
+	ROS_INFO("[mico_moveit_cartesianpose_service.cpp] starting to plan...");
     bool success = group.plan(my_plan);
     ROS_INFO("planning success: %c", success);
     //call service

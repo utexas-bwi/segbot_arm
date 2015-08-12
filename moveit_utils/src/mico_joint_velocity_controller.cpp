@@ -9,7 +9,11 @@
 #include <sensor_msgs/JointState.h>
 #include "moveit_utils/MicoController.h" //depending on needs, may need to create new srv
 
-#define PI 3.1459
+#define PI 3.14159265
+#define RAD_TO_DEG 57.2957795
+
+#define TOLERANCE_RADIANS (0.01125*PI)
+
 ros::Publisher j_vel_pub;
 bool g_caught_sigint=false;
 sensor_msgs::JointState js_cur;
@@ -66,6 +70,28 @@ void fill_goal(trajectory_msgs::JointTrajectory jt, int length){
 	}
 }
 
+
+jaco_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<double> goal_vector){
+	jaco_msgs::JointVelocity jv_goal;
+	
+	jv_goal.joint1 = -RAD_TO_DEG*goal_vector[0];
+	jv_goal.joint2 = RAD_TO_DEG*goal_vector[1];
+	jv_goal.joint3 = -RAD_TO_DEG*goal_vector[2];
+	jv_goal.joint4 = -RAD_TO_DEG*goal_vector[3];
+	jv_goal.joint5 = -RAD_TO_DEG*goal_vector[4];
+	jv_goal.joint6 = -RAD_TO_DEG*goal_vector[5];
+	
+	return jv_goal;
+}
+
+
+// Blocking call for user input
+void pressEnter(){
+	std::cout << "Press the ENTER key to continue";
+	while (std::cin.get() != '\n')
+		std::cout << "Please press ENTER\n";
+}
+
 bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
 
 	ROS_INFO("Mico controller service called:");
@@ -76,7 +102,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
     jaco_msgs::JointVelocity jv_goal;
 	bool next_point = false;
 	
-	ros::Rate r(1000);
+	ros::Rate r(40);
 	
 	double last_sent;
 	ros::Time first_sent;
@@ -91,18 +117,34 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 		fill_goal(trajectory, trajectory_length);
 		ros::Duration last(0.0); //holds the last trajectory's time from start, and the current traj's tfs
 		ros::Duration tfs(0.0);
-		//ROS_INFO_STREAM(trajectory);
-		for(int i = 0; i < trajectory_length; i++){
+		ROS_INFO("Current joint state:");
+		ROS_INFO_STREAM(js_cur);
+		ROS_INFO("Trajectroy:");
+		ROS_INFO_STREAM(trajectory);
+		for(int i = 1; i < trajectory_length - 1; i++){
 			bool done = false;
 			//set the target velocity
 			ros::spinOnce();
-			jv_goal.joint1 = -180/PI*trajectory.points.at(i).velocities.at(0);
+			
+			jv_goal = toJacoJointVelocityMsg(trajectory.points.at(i).velocities);
+			
+			/*jv_goal.joint1 = -180/PI*trajectory.points.at(i).velocities.at(0);
 			jv_goal.joint2 = 180/PI*trajectory.points.at(i).velocities.at(1);
 			jv_goal.joint3 = -180/PI*trajectory.points.at(i).velocities.at(2);
 			jv_goal.joint4 = -180/PI*trajectory.points.at(i).velocities.at(3);
 			jv_goal.joint5 = -180/PI*trajectory.points.at(i).velocities.at(4);
-			jv_goal.joint6 = -180/PI*trajectory.points.at(i).velocities.at(5);
-	
+			jv_goal.joint6 = -180/PI*trajectory.points.at(i).velocities.at(5);*/
+			
+			ROS_INFO("Target joint state:");
+			ROS_INFO_STREAM(trajectory.points[i]);
+			ROS_INFO("Current joint state:");
+			ROS_INFO_STREAM(js_cur);
+			
+			ROS_INFO("Joint velocity goal for point %i:",i);
+			ROS_INFO_STREAM(jv_goal);
+			
+			//pressEnter();
+			
 			tfs = trajectory.points.at(i).time_from_start;
 			last_sent = ros::Time::now().toSec();
 			first_sent = ros::Time::now();
@@ -112,16 +154,81 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 			//current implementation: assume that the traj velocities will take each joint to correct point
 			//written but not invoked is to check the target and goal pos of the joints, and preempting 
 			//further movement when required.
+			
+			/*std::vector<double> distances;
+			std::vector<double> starting;
+			std::vector<int> directions;
+			ros::spinOnce();
+			
+			for(int j = 0; j < 6; j++){
+				if(trajectory.points.at(i).velocities.at(j) < 0)
+					directions.push_back(-1);
+				else
+					directions.push_back(1);
+				distances.push_back(abs(trajectory.points.at(i).positions.at(j) - js_cur.position.at(j)));
+				starting.push_back(js_cur.position.at(j));
 
+			}*/
+			//std::vector<char> zeros;
+			
 			if(false){
+				if(i == 0 || i == trajectory_length - 1)
+					done = true;
+				
+				//while we haven't reached the next point, do
 				while(!done){
-					ros::spinOnce();
-					std::vector<char> zeros;
-					for(int j = 0; j < 5; j++){
-						//double tolerance = (1-tol) * abs(trajectory.points.at(i).positions.at(j) - js_cur.position.at(j)); 
-						double tolerance = 0.;
-						if(trajectory.points.at(i).positions.at(j) - tolerance <= js_cur.position.at(j) ||  
-							trajectory.points.at(i).positions.at(j) + tolerance >= js_cur.position.at(j)){
+					
+					double sum = 0.0;
+					//check if any of the joints have reached their targets
+					std::vector<double> jv_goal_array;
+					jv_goal_array.resize(6);
+					for (unsigned int j = 0; j < 6; j ++){
+						if (fabs(js_cur.position[j]- trajectory.points[i].positions[j]) < TOLERANCE_RADIANS){	
+							jv_goal_array[j]=0.0;
+							//ROS_INFO("Joint %i has reached it's target.",j);
+						}
+						else {
+							jv_goal_array[j]=trajectory.points.at(i).velocities[j];
+						}	
+						sum+=fabs(jv_goal_array[j]);
+					}
+					
+					//ROS_INFO("Sum of joint velocities: %f",sum);
+					
+					//check if we're done
+					if (sum < 0.01){
+						done = true;
+						ROS_INFO("Advancing to next point.");
+					}
+					else {
+						
+						
+						jv_goal = toJacoJointVelocityMsg(jv_goal_array);
+						
+						//ROS_INFO("JV message:");
+						//ROS_INFO_STREAM(jv_goal);
+						
+						
+						j_vel_pub.publish(jv_goal);
+						ros::spinOnce();
+						r.sleep();
+						
+					}
+					
+					
+					/*for(int j = 0; j < 6; j++){
+						
+						
+						
+						//double tolerance = (tol) * (abs(trajectory.points.at(i).positions.at(j) - js_cur.position.at(j))); 
+						
+						/*double tolerance = 0.1;
+						ros::spinOnce();
+						double target = trajectory.points.at(i).positions.at(j);
+						if(target > 1.5*PI)
+							target -= 2*PI;
+						if( js_cur.position.at(j) + tolerance >= target &&
+							 js_cur.position.at(j) - tolerance <= target){
 							switch(j) {
 								case 0	: jv_goal.joint1 = 0; zeros.push_back('1'); break; 
 								case 1	: jv_goal.joint2 = 0; zeros.push_back('1'); break;
@@ -130,9 +237,26 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 								case 4	: jv_goal.joint5 = 0; zeros.push_back('1'); break;
 								case 5	: jv_goal.joint6 = 0; zeros.push_back('1'); break;
 							}
+						}*/
+						//ROS_INFO("cur: %f", js_cur.position.at(j));
+						//ROS_INFO("Starting: %f", starting.at(j));
+						//ROS_INFO("Distance: %f", distances.at(j));
+						/*if(abs(js_cur.position.at(j) - starting.at(j)) >= abs(distances.at(j))){
+							switch(j) {
+								case 0	: jv_goal.joint1 = 0; zeros.push_back('1'); break;
+								case 1	: jv_goal.joint2 = 0; zeros.push_back('1'); break;
+								case 2	: jv_goal.joint3 = 0; zeros.push_back('1'); break;
+								case 3	: jv_goal.joint4 = 0; zeros.push_back('1'); break;
+								case 4	: jv_goal.joint5 = 0; zeros.push_back('1'); break;
+								case 5	: jv_goal.joint6 = 0; zeros.push_back('1'); break;
+							}
 						}
-						j_vel_pub.publish(jv_goal);
-					}
+						
+					}*/
+					
+				
+					
+					
 					/*ROS_INFO("expecting q1: %f, q2: %f, q3: %f, q4: %f, q5: %f, q6: %f",
 					 trajectory.points.at(i).positions.at(0), trajectory.points.at(i).positions.at(1), trajectory.points.at(i).positions.at(2),
 					 trajectory.points.at(i).positions.at(3),trajectory.points.at(i).positions.at(4),trajectory.points.at(i).positions.at(5));
@@ -141,9 +265,8 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 
 					ROS_INFO("Vector size: %lu", zeros.size());
 					*/
-					if(zeros.size() == 5)
-						done = true;
-					zeros.clear();
+					
+
 				}
 			}
 			else{
