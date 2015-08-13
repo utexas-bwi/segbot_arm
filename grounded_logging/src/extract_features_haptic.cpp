@@ -18,7 +18,7 @@ std::string generalFilePath = "/home/users/pkhante/grounded_learning_experiments
 const std::string & haptic_folder = "haptic_data";
 
 //Total number of objects and trials for ease of file traversal
-int total_objects = 1, total_trials = 1;
+int total_objects = 32, total_trials = 6;
 
 // Create a vector to put in the dft datapoints
 vector<vector<double> > haptic_data;
@@ -69,7 +69,7 @@ int main (int argc, char** argv)
 										num_of_lines++;
 									}
 									
-									ROS_INFO("Number of lines: %d", num_of_lines);
+									//ROS_INFO("Number of lines: %d", num_of_lines);
 																		
 									ifstream infile2(filePath.c_str());
 									if (infile2.is_open())
@@ -97,7 +97,7 @@ int main (int argc, char** argv)
 														haptic_row.push_back(value);
 													}
 												}
-												++count;
+												count++;
 											}
 											haptic_data.push_back(haptic_row);
 										}
@@ -105,8 +105,7 @@ int main (int argc, char** argv)
 									
 									// Create a vector to store the downsampled 10X6 matrix
 									double  histData[10][6];
-
-									int tBinLength = (int)floor((double)num_of_lines/(double)timeBins);
+									int tBinLength = (int)floor((double)(num_of_lines-1)/(double)timeBins);
 									int fBinLength = (int)floor((double)haptic_data[0].size()/(double)effortBins);
 									
 									//ROS_INFO("Fwidth: %d", fBinLength);
@@ -115,11 +114,11 @@ int main (int argc, char** argv)
 									for (int fIndex = 0; fIndex < effortBins; fIndex++){
 										for (int tIndex = 0; tIndex < timeBins; tIndex++){
 											int tStart = tIndex*tBinLength;
-											int tEnd = min((tIndex+1)*tBinLength, num_of_lines);
+											int tEnd = min((tIndex+1)*tBinLength, num_of_lines-1);
 											
 											int fStart = fIndex*fBinLength;
 											int fEnd = min((fIndex+1)*(fBinLength), (int)haptic_data[0].size());
-											
+										
 											int c = 0;
 											double value = 0;
 											for (int i = tStart; i < tEnd; i ++){
@@ -130,12 +129,20 @@ int main (int argc, char** argv)
 											}
 											value = value/(double)c;
 											
-											//System.out.println(fIndex + "\t" + fStart + "\t" + fEnd);
-											//System.out.println(tIndex + "\t" + tStart + "\t" + tEnd);
+											//ROS_INFO("Index: %d  %d   %d", fIndex, fStart, fEnd);
+											//ROS_INFO("INdex: %d  %d   %d", tIndex, tStart, tEnd);
 											
 											histData[tIndex][fIndex] = value;
 										}
 									}
+									
+									// Print out the histogram matrix
+									/*for(int x=0; x<10; x++){
+										for (int y=0; y<10; y++){
+											cout<<histData[x][y];
+										}
+										cout<<endl<<endl<<endl;
+									}*/
 									
 									// Write the historgram matrix to a file
 									string file_to_write = generalFilePath + "obj_" + convert1.str() + "/trial_" + convert2.str()+"/"+folder_name+"/"+haptic_folder+"/haptic_extracted_features.txt";
