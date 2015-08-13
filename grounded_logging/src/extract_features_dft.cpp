@@ -116,8 +116,8 @@ int main (int argc, char** argv)
 											}
 											value = value/(double)c;
 											
-											//System.out.println(fIndex + "\t" + fStart + "\t" + fEnd);
-											//System.out.println(tIndex + "\t" + tStart + "\t" + tEnd);
+											//ROS_INFO("Index: %d  %d   %d", fIndex, fStart, fEnd);
+											//ROS_INFO("INdex: %d  %d   %d", tIndex, tStart, tEnd);
 											
 											histData[tIndex][fIndex] = value;
 										}
