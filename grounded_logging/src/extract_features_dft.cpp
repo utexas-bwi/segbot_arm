@@ -11,7 +11,10 @@ using namespace std;
 using namespace boost::filesystem;
 
 // The general file path
-std::string generalFilePath = "/home/users/pkhante/grounded_learning_experiments/";
+string generalFilePath = "/home/users/pkhante/grounded_learning_experiments/";
+
+// File path to save data
+string saveFilePath = "/home/users/pkhante/extracted_feature_vectors/";
 
 //Name of the audio folder to search for
 const std::string & audio_folder = "audio_data";
@@ -68,7 +71,7 @@ int main (int argc, char** argv)
 										num_of_lines++;
 									}
 			
-									//ROS_INFO("Number of lines: %d", num_of_lines);
+									ROS_INFO("Number of lines: %d", num_of_lines);
 									
 									ifstream infile2(filePath.c_str());
 									while(infile2.good()){
@@ -132,17 +135,22 @@ int main (int argc, char** argv)
 									}*/
 									
 									// Write the historgram matrix to a file
-									string file_to_write = generalFilePath + "obj_" + convert1.str() + "/trial_" + convert2.str()+"/"+folder_name+"/"+audio_folder+"/dft_extracted_features.csv";
-									//ROS_INFO("File to write path: %s", file_to_write.c_str());
+									string file_to_write = saveFilePath+"/"+folder_name+"_audio"+"/dft_extracted_features.csv";
+									ROS_INFO("File to write path: %s", file_to_write.c_str());
 									ofstream dft_file(file_to_write.c_str(), std::ios::out | std::ios::app);
 									ROS_INFO("Writing to the file...");
 									if(dft_file.is_open()){
 										for(int x=0; x<10; x++){
+											dft_file << "test"+convert1.str()+"_trial"+convert2.str();
+											dft_file << ",";
 											for (int y=0; y<10; y++){
 												dft_file << histData[x][y];
-												dft_file << ",";
+												if(y==9)
+													dft_file << "\n";
+												else
+													dft_file << ",";
 											}
-											dft_file << "\n";
+											
 										}
 										dft_file.close();
 										ROS_INFO("File saved");

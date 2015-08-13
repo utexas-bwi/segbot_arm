@@ -14,6 +14,9 @@ using namespace boost::filesystem;
 // The general file path
 std::string generalFilePath = "/home/users/pkhante/grounded_learning_experiments/";
 
+// File path to save data
+string saveFilePath = "/home/users/pkhante/extracted_feature_vectors/";
+
 //Name of the audio folder to search for
 const std::string & haptic_folder = "haptic_data";
 
@@ -145,17 +148,21 @@ int main (int argc, char** argv)
 									}*/
 									
 									// Write the historgram matrix to a file
-									string file_to_write = generalFilePath + "obj_" + convert1.str() + "/trial_" + convert2.str()+"/"+folder_name+"/"+haptic_folder+"/haptic_extracted_features.txt";
+									string file_to_write = saveFilePath+"/"+folder_name+"_haptics"+"/haptic_extracted_features.csv";
 									//ROS_INFO("File to write path: %s", file_to_write.c_str());
 									ofstream haptic_file(file_to_write.c_str(), std::ios::out | std::ios::app);
 									ROS_INFO("Writing to the file...");
 									if(haptic_file.is_open()){
 										for(int x=0; x<10; x++){
+											haptic_file << "test"+convert1.str()+"_trial"+convert2.str();
+											haptic_file << ",";
 											for (int y=0; y<6; y++){
 												haptic_file << histData[x][y];
-												haptic_file << ",";
+												if(y==5)
+													haptic_file << "\n";
+												else
+													haptic_file << ",";
 											}
-											haptic_file << "\n";
 										}
 										haptic_file.close();
 										ROS_INFO("File saved");
