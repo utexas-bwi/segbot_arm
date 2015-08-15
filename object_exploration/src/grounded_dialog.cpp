@@ -64,30 +64,49 @@ int writeToScreen(std::vector<int> object_names){
     cv::Rect roi(cv::Rect(0,0,img_width, img_height));
     cv::Mat targetROI = dst(roi);
     ROS_INFO("numrows: %d", num_rows);
+    roi_x = 0;
+    roi_y = 0;
 	for(int i = 0; i < num_rows; i++){
 		roi_y += border_size;
-		roi_x += border_size;
+		roi_x = border_size;
+
 		if((i+1) == num_rows){ //output non standard no. images
+			roi_x = border_size;
+			ROS_INFO("Placing a non-standard row of images");
 			for(int j = 0; j < object_names.size() % 9; j++){
 				std::string str = boost::lexical_cast<std::string>(1+ j + (i*9));
-				std::string path ="/home/users/max/Pictures/" + str + ".png";
+				std::string path ="/home/maxwell/Pictures/object_exploration/" + str + ".JPG";
 				ROS_INFO("Getting %s", path.c_str());
 				Mat src = imread(path);
 				Mat img;
 				if(!src.data)
 					ROS_INFO("Couldn't get image data");
 				resize(src,img,Size(img_width, img_height));
+				ROS_INFO("Placing image %d at ROI (%d,%d)", j,roi_x,roi_y);
+				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+				img.copyTo(targetROI);
+				roi_x += img_width;
+				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+				roi_x += border_size;
+			}
+		} else{
+			for(int j = 1; j <= 9; j++){
+				std::string str = boost::lexical_cast<std::string>(1+ j + (i*9));
+				std::string path ="/home/maxwell/Pictures/object_exploration/" + str + ".JPG";
+				ROS_INFO("Getting %s", path.c_str());
+				Mat src = imread(path);
+				Mat img;
+				if(!src.data)
+					ROS_INFO("Couldn't get image data");
+				resize(src,img,Size(img_width, img_height));
+				ROS_INFO("Placing image %d at ROI (%d,%d)", j,roi_x,roi_y);
     			targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
 				img.copyTo(targetROI);
 				roi_x += img_width;
     			targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
     			roi_x += border_size;
-			}
-		}
-		else{
-			for(int j = 0; i < 9; i++){
-				//
-			}
+				}
+			roi_y += img_height;
 		}
 	}
 	cv::namedWindow("OpenCV Window");
@@ -131,9 +150,10 @@ int main (int argc, char **argv){
   ros::ServiceClient gui_client = n.serviceClient<bwi_msgs::QuestionDialog>("question_dialog");
   bwi_msgs::QuestionDialog srv;
   dst = cv::Mat(abs_height, abs_width, CV_8UC3, cv::Scalar(0,0,0));
+
   std::vector<int> photo_temp;
-  photo_temp.push_back(1);
-  photo_temp.push_back(2);
+  for(int i = 1; i <= 10; i++)
+  	photo_temp.push_back(i);
 
   if(1){
   	srv.request.type = 1;
