@@ -173,11 +173,17 @@ int main (int argc, char** argv)
 									// Clear out the haptic_data
 									haptic_data.clear();
 								}	
+								break;
 							}
+							break;
 						}
+						break;
 					}
+					break;
 				}
+				break;
 			}
+			break;
 		}
 	}
 	return 0;
