@@ -41,9 +41,9 @@
  * If sizes end up being scaled based on number of images, these represent minimums
  *
  * Optimized for Marvin's laptop screen, which is 1024x768 meaning if half the vertical
- 	realestate is used for images:
- 		9 images across
- 		3 images down
+	realestate is used for images:
+		9 images across
+		3 images down
  */
 const int img_width 		= 95; 		//pixels
 const int img_height 		= 127; 		//pixels
@@ -51,7 +51,7 @@ const float aspect_ratio 	= .75;
 const int border_size 		= 5; 		//pixels
 const int abs_width 		= 1024; 	//pixels
 const int abs_height 		= 384; 		//pixels
-
+const int title_height		= 12;		//pixels
 using namespace cv;
 
 Mat dst,frame,img,ROI;
@@ -59,40 +59,52 @@ Mat dst,frame,img,ROI;
 
 int writeToScreen(std::vector<int> object_names){
 	int num_rows = (object_names.size() / 9) + 1;
-	int roi_x, roi_y;
+	int roi_x, roi_y, text_x, text_y;
 
-    cv::Rect roi(cv::Rect(0,0,img_width, img_height));
-    cv::Mat targetROI = dst(roi);
-    ROS_INFO("numrows: %d", num_rows);
-    roi_x = 0;
-    roi_y = 0;
+	cv::Rect roi(cv::Rect(0,0,img_width, img_height));
+	cv::Mat targetROI = dst(roi);
+	ROS_INFO("numrows: %d", num_rows);
+	roi_x = 0;
+	roi_y = 0;
+	text_x = 0;
+	text_y = title_height;
 	for(int i = 0; i < num_rows; i++){
-		roi_y += border_size;
+		roi_y += border_size + title_height + border_size;
+		text_y = roi_y - title_height/2;
 		roi_x = border_size;
-
+		text_x = border_size + (img_width/2);
+		
 		if((i+1) == num_rows){ //output non standard no. images
 			roi_x = border_size;
 			ROS_INFO("Placing a non-standard row of images");
 			for(int j = 0; j < object_names.size() % 9; j++){
-				std::string str = boost::lexical_cast<std::string>(1+ j + (i*9));
-				std::string path ="/home/maxwell/Pictures/object_exploration/" + str + ".JPG";
+				int object_num = 1 + j + (i*9);
+				std::string str = boost::lexical_cast<std::string>(object_num);
+				std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
 				ROS_INFO("Getting %s", path.c_str());
 				Mat src = imread(path);
 				Mat img;
 				if(!src.data)
 					ROS_INFO("Couldn't get image data");
 				resize(src,img,Size(img_width, img_height));
-				ROS_INFO("Placing image %d at ROI (%d,%d)", j,roi_x,roi_y);
+				ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
+				ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
+				if(object_num > 9){ //if a double digit number, center text
+					text_x -= 6;
+				}
+				cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
 				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
 				img.copyTo(targetROI);
 				roi_x += img_width;
+				text_x += img_width;
 				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
 				roi_x += border_size;
+				text_x += border_size;
 			}
 		} else{
 			for(int j = 1; j <= 9; j++){
-				std::string str = boost::lexical_cast<std::string>(1+ j + (i*9));
-				std::string path ="/home/maxwell/Pictures/object_exploration/" + str + ".JPG";
+				std::string str = boost::lexical_cast<std::string>(j + (i*9));
+				std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
 				ROS_INFO("Getting %s", path.c_str());
 				Mat src = imread(path);
 				Mat img;
@@ -100,46 +112,30 @@ int writeToScreen(std::vector<int> object_names){
 					ROS_INFO("Couldn't get image data");
 				resize(src,img,Size(img_width, img_height));
 				ROS_INFO("Placing image %d at ROI (%d,%d)", j,roi_x,roi_y);
-    			targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+				cv::putText(dst, boost::lexical_cast<std::string>(j + (i*9)),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
+				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
 				img.copyTo(targetROI);
 				roi_x += img_width;
-    			targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
-    			roi_x += border_size;
-				}
+				text_x += img_width;
+				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+				roi_x += border_size;
+				text_x += border_size;
+			}
 			roi_y += img_height;
 		}
 	}
 	cv::namedWindow("OpenCV Window");
-    // show the image on window
-    cv::imshow("OpenCV Window", dst);
-    cv::waitKey(1000);
+	// show the image on window
+	cv::imshow("OpenCV Window", dst);
+	cv::waitKey(0);
 
 }
 
-int showImage(){
-    Mat src1 = imread("/home/users/max/Pictures/temp.png");//, CV_LOAD_IMAGE_COLOR);   // Read the file
-    Mat src2 = imread("/home/users/max/Pictures/temp2.png");//, CV_LOAD_IMAGE_COLOR);   // Read the file
-	Mat image1, image2;
-	int dstWidth = 900;
-	int dstHeight = 600;
-	resize(src1,image1,Size(dstWidth/2,dstHeight/2));
-	resize(src2,image2,Size(dstWidth/2,dstHeight/2));
+int ask_mult_choice(){
 
-    cv::Rect roi(cv::Rect(0,0,image1.cols, image1.rows));
-    cv::Mat targetROI = dst(roi);
-    image1.copyTo(targetROI);
-    targetROI = dst(cv::Rect(0,image1.rows,image1.cols, image1.rows));
+}
 
-    // create image window named "My Image"
-    cv::namedWindow("OpenCV Window");
-    // show the image on window
-    cv::imshow("OpenCV Window", dst);
-    // wait key for 5000 ms
-    cv::waitKey(1000);
-    image2.copyTo(targetROI);
-    cv::imshow("OpenCV Window", dst);
-    cv::waitKey(1000);
-
+int ask_free_resp(){
 
 }
 
@@ -151,23 +147,23 @@ int main (int argc, char **argv){
   bwi_msgs::QuestionDialog srv;
   dst = cv::Mat(abs_height, abs_width, CV_8UC3, cv::Scalar(0,0,0));
 
+  //simulated vector recieved from clustering alg.
   std::vector<int> photo_temp;
   for(int i = 1; i <= 10; i++)
-  	photo_temp.push_back(i);
+	photo_temp.push_back(i);
 
   if(1){
-  	srv.request.type = 1;
-  	srv.request.message = "Does this work?";
-  	srv.request.timeout = 0.0;
-  	std::vector<std::string> temp;
-  	temp.push_back("Yes");
-  	temp.push_back("No");
-  	srv.request.options = temp;
-  	//showImage();
-  	writeToScreen(photo_temp);
-  	if(gui_client.call(srv)){
-  		ROS_INFO("Hey, I got a response: %s", srv.response.text.c_str());
-  	}
+	srv.request.type = 1;
+	srv.request.message = "Does this work?";
+	srv.request.timeout = 0.0;
+	std::vector<std::string> temp;
+	temp.push_back("Yes");
+	temp.push_back("No");
+	srv.request.options = temp;
+	writeToScreen(photo_temp);
+	if(gui_client.call(srv)){
+		ROS_INFO("Hey, I got a response: %s", srv.response.text.c_str());
+	}
   }
 
   return(0);
