@@ -210,6 +210,9 @@ add_executable(extract_finger_position_vector src/extract_finger_position_vector
 ## Declare a cpp executable
 add_executable(average_over_trials src/average_over_trials.cpp)
 
+## Declare a cpp executable
+add_executable(colour_and_shape_average src/colour_and_shape_average.cpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(grounded_logging_node grounded_logging_generate_messages_cpp)
@@ -262,6 +265,9 @@ add_dependencies(extract_finger_position_vector grounded_logging_gencpp)
 
 target_link_libraries(average_over_trials ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(average_over_trials grounded_logging_gencpp)
+
+target_link_libraries(colour_and_shape_average ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(colour_and_shape_average grounded_logging_gencpp)
 
 #############
 ## Install ##
