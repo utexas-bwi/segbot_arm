@@ -25,6 +25,7 @@
 #include <std_msgs/String.h>
 #include <std_msgs/Int32.h>
 #include <boost/lexical_cast.hpp>
+#include <boost/thread.hpp>
 #include "bwi_msgs/QuestionDialog.h"
 #include "ros/ros.h"
 #include <string>
@@ -55,8 +56,101 @@ const int title_height		= 12;		//pixels
 using namespace cv;
 
 Mat dst,frame,img,ROI;
+ros::ServiceClient gui_client;
 
 
+/*class Worker{
+public:
+	void ask_mult_choice(std::vector<int> photo_temp){
+		bool response = false;
+		bwi_msgs::QuestionDialog srv;
+
+		srv.request.type = 1;
+		srv.request.message = "Does this work?";
+		srv.request.timeout = 30.0;
+		std::vector<std::string> temp;
+		temp.push_back("No");
+		temp.push_back("Yes");
+		srv.request.options = temp;
+		//boost::thread workerThread(writeToScreen, photo_temp);
+		//writeToScreen(photo_temp);
+		if(gui_client.call(srv)){
+			response = srv.response.index == 0 ? false : true;
+			ROS_INFO("Hey, I got a response: %d", response);
+		} else {
+			ROS_INFO("Something went wrong");
+		}
+		mult_resp = response;
+	};
+
+	int ask_free_resp(){
+		bwi_msgs::QuestionDialog srv;
+		srv.request.type = 2;
+		srv.request.message = "Please specify what attribute is shared";
+		srv.request.timeout = 30.0;
+
+		if(gui_client.call(srv)){
+			ROS_INFO("Hey, I got a response: ");
+		} else {
+			ROS_INFO("Something went wrong");
+		}
+	};
+  	int mult_resp;
+};*/
+
+/*
+ * General method to send free response questions to the GUI
+ */
+std::string ask_free_resp(std::string question){
+	bwi_msgs::QuestionDialog srv;
+
+	srv.request.type = 2;
+	srv.request.message = question;
+	srv.request.timeout = 30.0;
+
+	if(gui_client.call(srv)){
+		ROS_INFO("Hey, I got a response");
+		return srv.response.text;
+	} else {
+		ROS_INFO("Something went wrong");
+	}
+	return NULL;
+}
+
+/*
+ * General method for sending multiple choice questions to the GUI
+ */
+bool ask_mult_choice(std::string question){
+	bool response = false;
+	bwi_msgs::QuestionDialog srv;
+
+	srv.request.type = 1;
+	srv.request.message = question;
+	srv.request.timeout = 30.0;
+	std::vector<std::string> temp;
+	temp.push_back("No");
+	temp.push_back("Yes");
+	srv.request.options = temp;
+	//boost::thread workerThread(writeToScreen, photo_temp);
+	//writeToScreen(photo_temp);
+	if(gui_client.call(srv)){
+		response = srv.response.index == 0 ? false : true;
+		ROS_INFO("Hey, I got a response: %d", response);
+	} else {
+		ROS_INFO("Something went wrong");
+	}
+	return response;
+}
+
+/*
+ * Function uses input structures as a map for displaying images.
+ * Images are displayed on half the screen.
+ *
+ * For concurrent windows (GUI and output of this function), must run this on a separate thread.
+ *
+ * TODO: able to update window/thread without closing the window completely.
+ 		 resize images once, rather than on-the-fly (for speed)
+ */
 int writeToScreen(std::vector<int> object_names){
 	int num_rows = (object_names.size() / 9) + 1;
 	int roi_x, roi_y, text_x, text_y;
@@ -126,45 +220,45 @@ int writeToScreen(std::vector<int> object_names){
 	}
 	cv::namedWindow("OpenCV Window");
 	// show the image on window
-	cv::imshow("OpenCV Window", dst);
-	cv::waitKey(0);
+	while(true){
+		cv::imshow("OpenCV Window", dst);
+		cv::waitKey(0);
+		break;
+	}
 
 }
 
-int ask_mult_choice(){
+/*
+ * To be the script & main loop for the question-answer interface logic
+ */
 
-}
+void sequence(std::vector<int> photo_temp){
+	//Worker mult;
 
-int ask_free_resp(){
+	boost::thread workerThread(writeToScreen, photo_temp);
 
+	bool common_att = ask_mult_choice("Do any shown objects share a common attribute?");
+	if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
+		//ask only once per tree : "Can you specify that attribute?"
+		ask_free_resp("Please specify what attribute is shared");
+	}
 }
 
 int main (int argc, char **argv){
-  ros::init(argc, argv, "grounded_dialog_gui");
-  ros::NodeHandle n;
+	ros::init(argc, argv, "grounded_dialog_gui");
+	ros::NodeHandle n;
 
-  ros::ServiceClient gui_client = n.serviceClient<bwi_msgs::QuestionDialog>("question_dialog");
-  bwi_msgs::QuestionDialog srv;
-  dst = cv::Mat(abs_height, abs_width, CV_8UC3, cv::Scalar(0,0,0));
+	gui_client = n.serviceClient<bwi_msgs::QuestionDialog>("question_dialog");
+	bwi_msgs::QuestionDialog srv;
+	dst = cv::Mat(abs_height, abs_width, CV_8UC3, cv::Scalar(0,0,0));
 
-  //simulated vector recieved from clustering alg.
-  std::vector<int> photo_temp;
-  for(int i = 1; i <= 10; i++)
-	photo_temp.push_back(i);
+	sleep(2);
+	//simulated vector recieved from clustering alg.
+	std::vector<int> photo_temp;
+	for(int i = 1; i <= 10; i++)
+		photo_temp.push_back(i);
 
-  if(1){
-	srv.request.type = 1;
-	srv.request.message = "Does this work?";
-	srv.request.timeout = 0.0;
-	std::vector<std::string> temp;
-	temp.push_back("Yes");
-	temp.push_back("No");
-	srv.request.options = temp;
-	writeToScreen(photo_temp);
-	if(gui_client.call(srv)){
-		ROS_INFO("Hey, I got a response: %s", srv.response.text.c_str());
-	}
-  }
+	sequence(photo_temp);
 
   return(0);
 }
