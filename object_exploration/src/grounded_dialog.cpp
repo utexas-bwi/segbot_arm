@@ -58,46 +58,6 @@ using namespace cv;
 Mat dst,frame,img,ROI;
 ros::ServiceClient gui_client;
 
-
-/*class Worker{
-public:
-	void ask_mult_choice(std::vector<int> photo_temp){
-		bool response = false;
-		bwi_msgs::QuestionDialog srv;
-
-		srv.request.type = 1;
-		srv.request.message = "Does this work?";
-		srv.request.timeout = 30.0;
-		std::vector<std::string> temp;
-		temp.push_back("No");
-		temp.push_back("Yes");
-		srv.request.options = temp;
-		//boost::thread workerThread(writeToScreen, photo_temp);
-		//writeToScreen(photo_temp);
-		if(gui_client.call(srv)){
-			response = srv.response.index == 0 ? false : true;
-			ROS_INFO("Hey, I got a response: %d", response);
-		} else {
-			ROS_INFO("Something went wrong");
-		}
-		mult_resp = response;
-	};
-
-	int ask_free_resp(){
-		bwi_msgs::QuestionDialog srv;
-		srv.request.type = 2;
-		srv.request.message = "Please specify what attribute is shared";
-		srv.request.timeout = 30.0;
-
-		if(gui_client.call(srv)){
-			ROS_INFO("Hey, I got a response: ");
-		} else {
-			ROS_INFO("Something went wrong");
-		}
-	};
-  	int mult_resp;
-};*/
-
 /*
  * General method to send free response questions to the GUI
  */
@@ -141,6 +101,22 @@ bool ask_mult_choice(std::string question){
 	}
 	return response;
 }
+
+/*
+ * General method for displaying messages to the GUI
+ */
+ void print_to_gui(std::string message){
+ 	bwi_msgs::QuestionDialog srv;
+
+	srv.request.type = 0;
+	srv.request.message = message;
+	srv.request.timeout = 0.0;
+	if(gui_client.call(srv)){
+		ROS_INFO("Outputing message");
+	} else {
+		ROS_INFO("Something went wrong outputting the message to gui");
+	}
+ }
 
 /*
  * Function uses input structures as a map for displaying images.
@@ -280,6 +256,7 @@ void sequence(std::vector<int> photo_temp){
 				recluster()
 		*/
 	}
+	print_to_gui("Thank you for clearing that up!");
 }
 
 int main (int argc, char **argv){
