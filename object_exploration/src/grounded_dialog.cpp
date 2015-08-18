@@ -106,7 +106,7 @@ std::string ask_free_resp(std::string question){
 
 	srv.request.type = 2;
 	srv.request.message = question;
-	srv.request.timeout = 30.0;
+	srv.request.timeout = 0.0;
 
 	if(gui_client.call(srv)){
 		ROS_INFO("Hey, I got a response");
@@ -126,7 +126,7 @@ bool ask_mult_choice(std::string question){
 
 	srv.request.type = 1;
 	srv.request.message = question;
-	srv.request.timeout = 30.0;
+	srv.request.timeout = 0.0;
 	std::vector<std::string> temp;
 	temp.push_back("No");
 	temp.push_back("Yes");
@@ -233,14 +233,52 @@ int writeToScreen(std::vector<int> object_names){
  */
 
 void sequence(std::vector<int> photo_temp){
-	//Worker mult;
+	bool askedSharedAtt = false;
 
 	boost::thread workerThread(writeToScreen, photo_temp);
 
 	bool common_att = ask_mult_choice("Do any shown objects share a common attribute?");
 	if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
 		//ask only once per tree : "Can you specify that attribute?"
-		ask_free_resp("Please specify what attribute is shared");
+		if(!askedSharedAtt){
+			askedSharedAtt = true;
+			std::string resp = ask_free_resp("Please specify what attribute is shared");
+			//parse resp, checking if each attribute exists in table
+			/*
+
+			parse here
+
+			if(contained in table)
+				grab labels as values, using attribute as key
+				for each label
+					int answer = ask_mult_choice("Are they " + <label> + " in " + attribute)
+					if(answer)
+						put(label)
+			else
+				std::string answer = ask_free_resp("What <att-from-above> are they?")
+				put(answer)  as label
+			*/
+		}
+		/*
+		else
+			int answer = ask_mul_choice("Is there any attribute common to most of the objects?")
+			if(answer)
+				//weird arrow on tree, ask about this
+				int answer = ask_mult_choice("How many objects don't fit the attribute?", "1 or 2", ">2")
+				if(answer)
+					recluster()
+				else
+					std::string answer = ask_free_resp("Please specify the object numbers of the outliers")
+					for each OBJECT : answer
+						display only object number OBJECT
+						std::string answer = ask_free_resp("What is the attribute of this object?")
+						store answer as a label for object
+					display previous cluster sans all outliers
+					std::string answer = ask_free_resp("What <attr-from-above> are they?")
+					store answer as label for cluster
+			else
+				recluster()
+		*/
 	}
 }
 
