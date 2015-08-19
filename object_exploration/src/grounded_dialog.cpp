@@ -50,8 +50,8 @@ const int img_width 		= 95; 		//pixels
 const int img_height 		= 127; 		//pixels
 const float aspect_ratio 	= .75;
 const int border_size 		= 5; 		//pixels
-const int abs_width 		= 1024; 	//pixels
-const int abs_height 		= 384; 		//pixels
+const int abs_width 		= 910; 	//pixels
+const int abs_height 		= 450; 		//pixels
 const int title_height		= 12;		//pixels
 using namespace cv;
 
@@ -127,6 +127,7 @@ bool ask_mult_choice(std::string question){
  * TODO: able to update window/thread without closing the window completely.
  		 resize images once, rather than on-the-fly (for speed)
  */
+
 int writeToScreen(std::vector<int> object_names){
 	int num_rows = (object_names.size() / 9) + 1;
 	int roi_x, roi_y, text_x, text_y;
@@ -173,7 +174,8 @@ int writeToScreen(std::vector<int> object_names){
 			}
 		} else{
 			for(int j = 1; j <= 9; j++){
-				std::string str = boost::lexical_cast<std::string>(j + (i*9));
+				int object_num = j + (i*9);
+				std::string str = boost::lexical_cast<std::string>(object_num);
 				std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
 				ROS_INFO("Getting %s", path.c_str());
 				Mat src = imread(path);
@@ -181,15 +183,19 @@ int writeToScreen(std::vector<int> object_names){
 				if(!src.data)
 					ROS_INFO("Couldn't get image data");
 				resize(src,img,Size(img_width, img_height));
-				ROS_INFO("Placing image %d at ROI (%d,%d)", j,roi_x,roi_y);
-				cv::putText(dst, boost::lexical_cast<std::string>(j + (i*9)),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
+				ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
+				ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
+
+				cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
 				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
 				img.copyTo(targetROI);
-				roi_x += img_width;
-				text_x += img_width;
-				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
-				roi_x += border_size;
-				text_x += border_size;
+				if(j != 9){
+					roi_x += img_width;
+					text_x += img_width;
+					targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+					roi_x += border_size;
+					text_x += border_size;
+				}
 			}
 			roi_y += img_height;
 		}
@@ -270,7 +276,7 @@ int main (int argc, char **argv){
 	sleep(2);
 	//simulated vector recieved from clustering alg.
 	std::vector<int> photo_temp;
-	for(int i = 1; i <= 10; i++)
+	for(int i = 1; i <= 20; i++)
 		photo_temp.push_back(i);
 
 	sequence(photo_temp);
