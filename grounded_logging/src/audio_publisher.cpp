@@ -41,7 +41,9 @@ main (int argc, char *argv[])
 		ROS_INFO("Ready to publish audio data.");
 	
 		//open a handle to the microphone
-		capture_handle = open_mic_capture("hw:2,0",SAMPLE_RATE);
+		capture_handle = open_mic_capture("hw:1,0",SAMPLE_RATE);
+
+		ROS_INFO("Audio capture handle opened.");
 
 		//read from the microphone
 		int i,j;

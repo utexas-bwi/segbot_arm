@@ -17,6 +17,8 @@
 #include "moveit_utils/MicoController.h"
 #include "geometry_msgs/Pose.h"
 #include "jaco_msgs/HomeArm.h"
+#include "jaco_msgs/Start.h"
+#include "jaco_msgs/Stop.h"
 #include <ros/package.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
@@ -64,7 +66,7 @@ int startingObjectNum, startingTrialNum;
 string visionFilePath, audioFilePath, hapticFilePath;
 
 //Filepath to store the data
-std::string generalFilePath = "/home/bwi/grounded_learning_experiments/";
+std::string generalFilePath = "/home/bwi/object_ordering/";
 
 //Finger vars
 float f1;
@@ -86,6 +88,9 @@ ros::ServiceClient movement_client;
 ros::ServiceClient home_client;
 ros::ServiceClient angular_client;
 
+ros::ServiceClient start_force_control_client;
+ros::ServiceClient stop_force_control_client;
+
 //efforts and force detection
 bool heard_efforts = false;
 sensor_msgs::JointState current_efforts;
@@ -98,6 +103,13 @@ double effort_smoothed[6];
 double delta_effort_smoothed[6];
 
 geometry_msgs::Pose tool_pos_cur;
+
+// Function to wait before the placement of the objects
+void pressEnter(){
+	cout << "Press the ENTER key to continue";
+	while (cin.get() != '\n')
+		cout << "Please press ENTER\n";
+}
 
 // function to start storing the vision, audio and haptic data while the behaviour is being executed
 int startSensoryDataCollection(){
@@ -166,12 +178,7 @@ void stopSensoryDataCollection(){
 	ac.sendGoal(goal);
 }
 
-// Function to wait before the placement of the objects
-void pressEnter(){
-	cout << "Press the ENTER key to continue";
-	while (cin.get() != '\n')
-		cout << "Please press ENTER\n";
-}
+
 
 //checks fingers position - used for object holding assurance
 void fingers_cb(const jaco_msgs::FingerPosition input){
@@ -324,6 +331,21 @@ bool goToLocation(geometry_msgs::PoseStamped ps){
 	
 }
 
+bool setForceControl(bool mode){
+	if (mode == true){
+		jaco_msgs::Start srv;
+		if (start_force_control_client.call(srv))
+			ROS_INFO("Force control turned ON.");
+		else ROS_WARN("Could not start force control");
+	}
+	else {
+		jaco_msgs::Stop srv;
+		if (stop_force_control_client.call(srv))
+			ROS_INFO("Force control turned OFF");
+		else ROS_WARN("Could not stop force control");
+	}
+}
+
 int goHome(){
 	jaco_msgs::HomeArm srv;
 	if(home_client.call(srv))
@@ -421,7 +443,7 @@ geometry_msgs::PoseStamped getToolFromBag(std::string bagName){
 	ac.waitForResult(); */
 	return fromFile;
 }
-void approach(double distance){
+void approach(double distance, double z = 0){
 	ros::Rate r(4);
 	ros::spinOnce();
 	double base_vel = .1;
@@ -444,6 +466,7 @@ void approach(double distance){
 			T.twist.linear.x = -base_vel;
 			T.twist.linear.y = -base_vel;
 		}
+		T.twist.linear.z = z;
 		c_vel_pub_.publish(T);
 		r.sleep();
 	}
@@ -581,6 +604,8 @@ void lift(double vel, double distance){
 		r.sleep();
 	}
 	*/
+	
+	
 
 	//start logging here
 	startSensoryDataCollection();
@@ -596,6 +621,7 @@ void lift(double vel, double distance){
 	}
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
+	
 	stopSensoryDataCollection();
 }
 
@@ -659,11 +685,16 @@ void pushFromSide(double distance){
 
 bool grabFromApch(int fingerPos){
 	openFull();
-	startSensoryDataCollection();
-	approach(.15);
+	
+	approach(.15,-0.0275);
 	clearMsgs(.3);
-	approach("z", .15, -.03);
+	//approach("z", .15, -.03);
+
+	
+	startSensoryDataCollection();
+	clearMsgs(.3);
 	closeComplt(fingerPos);
+	clearMsgs(.3);
 	stopSensoryDataCollection();
 }
 
@@ -785,48 +816,23 @@ bool shake(double vel){
 
 }
 bool drop(double height){
+	
 	startSensoryDataCollection();
-	if(height < MINHEIGHT)
-		height = MINHEIGHT;
-	//go to that height
-	//sensor_msgs::JointState drop_sub = getStateFromBag("drop_sub");
-	//goToLocation(drop_sub);
-	//sensor_msgs::JointState drop = getStateFromBag("drop_right");
-	//goToLocation(drop);
-	ros::Rate r(25);
-	double base_vel = 0.1;
-	geometry_msgs::TwistStamped T;
-	T.twist.linear.x= 0.0;
-	T.twist.linear.y= 0.0;
-	T.twist.linear.z= 0.0;
-	T.twist.angular.x= 0.0;
-	T.twist.angular.y= 0.0;
-	T.twist.angular.z= 0.0;
-	clearMsgs(.7);
-	while(tool_pos_cur.position.z - MINHEIGHT >= 0.05 + height){
-		ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
-		T.twist.linear.z = -base_vel;
-		c_vel_pub_.publish(T);
-		r.sleep();
-		ros::spinOnce();
-	}
-	while(tool_pos_cur.position.z - MINHEIGHT <= 0.05 - height){
-		ROS_INFO("At %f going to %f", tool_pos_cur.position.z, height);
-		T.twist.linear.z = base_vel;
-		c_vel_pub_.publish(T);
-		r.sleep();
-		ros::spinOnce();
-	} 
-	T.twist.linear.z= 0.0;
-	c_vel_pub_.publish(T);
-	clearMsgs(1.);
+	
+	//sleep for 1.0 sec
+	clearMsgs(1.0);
 	openFull();
-	//sensor_msgs::JointState hide = getStateFromBag("hide");
-	//goToLocation(hide);
-	clearMsgs(3.);
+	
+	//sleep for 3.0 sec
+	clearMsgs(3.0);
+	
 	stopSensoryDataCollection();
+	
 	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
 	goToLocation(grab_sub, true);
+	
+	//close fingers
+	closeComplt(7000);
 }
 
 bool poke(double velocity){
@@ -849,12 +855,15 @@ bool push(double velocity){
 	sensor_msgs::JointState push = getStateFromBag("push_right");
 	goToLocation(push);
 	pressEnter();
+	clearMsgs(0.5);
+	
 	storePointCloud();
 	ROS_INFO("Starting sensory collection");
 	startSensoryDataCollection();
 	//start recording
 	//clearMsgs(1.);
 	approach("y", 0.7, -velocity);
+	clearMsgs(0.5);
 	stopSensoryDataCollection();
 	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
 	goToLocation(grab_sub, true);
@@ -868,10 +877,11 @@ bool press(double velocity){
 	sensor_msgs::JointState press = getStateFromBag("press_right");
 	clearMsgs(.4);
 	goToLocation(press);
-	startSensoryDataCollection();
+	
+	//move a bit back first
 	ros::Rate r(40);
+	
 	geometry_msgs::TwistStamped T;
-	clearMsgs(.4);
 	T.twist.linear.x= 0.0;
 	T.twist.linear.y= 0.0;
 	T.twist.linear.z= 0.0;
@@ -879,16 +889,53 @@ bool press(double velocity){
 	T.twist.angular.y= 0.0;
 	T.twist.angular.z= 0.0;
 	
+	double duration = 2.0;
+	for (int i = 0; i < duration*40; i ++){
+		T.twist.linear.x = -0.1;
+		c_vel_pub_.publish(T);
+		r.sleep();
+		ros::spinOnce();
+	}
+	
+	pressEnter();
+	clearMsgs(.5);
+	
+	startSensoryDataCollection();
+	
+	clearMsgs(.2);
+	
+	//now press
+	duration = 6.0;
 	geometry_msgs::Pose tool_pose_last = tool_pos_cur;
+	int counter =0;
+	for (int i = 0; i < duration*40; i ++){
+		T.twist.linear.x = 0.0;
+		T.twist.linear.z= -0.1;
+		c_vel_pub_.publish(T);
+		r.sleep();
+		ros::spinOnce();
+		
+		if (tool_pos_cur.position.z > tool_pose_last.position.z){
+			ROS_INFO("Something is in the way!");
+			counter++;
+			if (counter > 4)
+				break;
+		}
+		
+		tool_pose_last = tool_pos_cur;
+	}
+	
+	/*geometry_msgs::Pose tool_pose_last = tool_pos_cur;
 	while(tool_pos_cur.position.z <= tool_pose_last.position.z){
 		T.twist.linear.z = -velocity;
 		c_vel_pub_.publish(T);
 		r.sleep();
 		tool_pose_last = tool_pos_cur;
 		ros::spinOnce();
-	} 
+	} */
 	T.twist.linear.z= 0.0;
 	c_vel_pub_.publish(T);
+	clearMsgs(.4);
 	stopSensoryDataCollection();
 }
 
@@ -1016,51 +1063,77 @@ void createBehaviorAndSubDirectories(string behaviorName, string trialFilePath){
 }
 
 bool loop1(){
-	for(int object_num = startingObjectNum; object_num <= totalObjects; object_num++){ 
-		//create the object directory
-		std::stringstream convert_object;
-		convert_object << object_num;
-		string objectFilePath = generalFilePath + "obj_"+ convert_object.str();
-		boost::filesystem::path object_dir (objectFilePath);
-		if(!boost::filesystem::exists(object_dir))
-			boost::filesystem::create_directory(object_dir);
+	
+	for (int trial_num = startingTrialNum; trial_num <= totalTrials; trial_num++){
 		
-		for(int trial_num = startingTrialNum; trial_num <= totalTrials; trial_num++){
-			//create the trial directory
+		for (int object_num = startingObjectNum; object_num <= totalObjects; object_num++){
+			ROS_INFO("Starting trial %i with object %i",trial_num, object_num);
+			ROS_INFO("Position object for grasping.");
+			pressEnter();
+			
+			//create the object directory if it doesn't exist
+			std::stringstream convert_object;
+			convert_object << object_num;
+			string objectFilePath = generalFilePath + "obj_"+ convert_object.str();
+			boost::filesystem::path object_dir (objectFilePath);
+			if(!boost::filesystem::exists(object_dir))
+				boost::filesystem::create_directory(object_dir);
+				
+			//create the trial directory if it doesn't exist
 			std::stringstream convert_trial;
 			convert_trial << trial_num;
 			string trialFilePath = objectFilePath + "/" + "trial_" + convert_trial.str();
 			boost::filesystem::path trial_dir (trialFilePath);
 			if(!boost::filesystem::exists(trial_dir))
 				boost::filesystem::create_directory(trial_dir);
-
-			//carry out the sequence of behaviours
-			//create the directories and store the point cloud before each action
+			
+			//LOOK behavior
 			createBehaviorAndSubDirectories("look", trialFilePath);
 			storePointCloud();
+			
+			//approach and GRASP behavior
 			approachFromHome();
 			createBehaviorAndSubDirectories("grasp", trialFilePath);
 			storePointCloud();
 			grabFromApch(6000);
+			
 			//store a point cloud after the action is performed
 			storePointCloud();
-			pressEnter();
+			
+			//pressEnter();
+			
+			//turn off force control so we can lift the heavier objects
+			setForceControl(false);
+			
+			//position for lift
 			sensor_msgs::JointState loc = getStateFromBag("drop_right");
 			goToLocation(loc);
+			
+			
+			
+			//LIFT behavior
 			createBehaviorAndSubDirectories("lift", trialFilePath);
 			storePointCloud();
 			lift(0.2,.4);//speed to go up
 			storePointCloud();
+			
+			//HOLD behavior
 			createBehaviorAndSubDirectories("hold", trialFilePath);
 			storePointCloud();
-			hold(2.5);//height from the mico_api_origin
+			hold(1.5);//height from the mico_api_origin
 			storePointCloud();
-			pressEnter();
+			
+			//pressEnter();
+			
+			//LOWER behavior
 			createBehaviorAndSubDirectories("lower", trialFilePath);
 			storePointCloud();
-			lift(-0.1, .55);//negative velocity to go down
+			lift(-0.1, .6);//negative velocity to go down
 			storePointCloud();
-			pressEnter();
+			
+			//pressEnter();
+			
+			//SHAKE AND ROTATE
 			if(SHAKEANDROTATE){
 				createBehaviorAndSubDirectories("revolve", trialFilePath);
 				storePointCloud();
@@ -1071,20 +1144,32 @@ bool loop1(){
 				shake(1.5);//speed param, also maxed out
 				storePointCloud();
 			}
+			
+			//DROP behavior
 			createBehaviorAndSubDirectories("drop", trialFilePath);
 			storePointCloud();
 			drop(.5);//height to drop from
 			storePointCloud();
-			pressEnter();
+			
+			//turn force control back on
+			setForceControl(true);
+			
+			//pressEnter();
+			
+			/*
 			createBehaviorAndSubDirectories("poke", trialFilePath);
 			storePointCloud();
 			poke(.2);//speed, perhaps could be faster
-			storePointCloud();
+			storePointCloud();*/
+			
+			//PUSH behavior
 			createBehaviorAndSubDirectories("push", trialFilePath);
-			//storePointCloud moved inside push function
 			push(-.2);//speed
 			storePointCloud();
-			pressEnter();
+			
+			//pressEnter();
+			
+			//PRESS behavior
 			createBehaviorAndSubDirectories("press", trialFilePath);
 			storePointCloud();
 			press(0.2);//velocities in downward direction
@@ -1099,6 +1184,9 @@ bool loop1(){
 			goHome();
 			pressEnter();
 		}
+		
+		//if we're doing more trials, next time start with object 1
+		startingObjectNum = 1;
 	}
 }
 
@@ -1129,6 +1217,9 @@ int main(int argc, char **argv){
 	movement_client = n.serviceClient<moveit_utils::MicoController>("mico_controller");
 	home_client = n.serviceClient<jaco_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
 	angular_client = n.serviceClient<moveit_utils::AngularVelCtrl>("angular_vel_control");
+	
+	start_force_control_client =  n.serviceClient<jaco_msgs::Start>("/mico_arm_driver/in/start_force_control");
+	stop_force_control_client =  n.serviceClient<jaco_msgs::Stop>("/mico_arm_driver/in/stop_force_control");
 	
 	//create subscriber to joint angles
 	//ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
