@@ -50,9 +50,10 @@ const int img_width 		= 95; 		//pixels
 const int img_height 		= 127; 		//pixels
 const float aspect_ratio 	= .75;
 const int border_size 		= 5; 		//pixels
-const int abs_width 		= 910; 	//pixels
+const int abs_width 		= 1500; 		//pixels
 const int abs_height 		= 450; 		//pixels
 const int title_height		= 12;		//pixels
+const int images_row		= round(abs_width / (img_width + border_size));
 using namespace cv;
 
 Mat dst,frame,img,ROI;
@@ -129,12 +130,12 @@ bool ask_mult_choice(std::string question){
  */
 
 int writeToScreen(std::vector<int> object_names){
-	int num_rows = (object_names.size() / 9) + 1;
+	int num_rows = (object_names.size() / images_row) + 1;
 	int roi_x, roi_y, text_x, text_y;
 
 	cv::Rect roi(cv::Rect(0,0,img_width, img_height));
 	cv::Mat targetROI = dst(roi);
-	ROS_INFO("numrows: %d", num_rows);
+	ROS_INFO("numrows: %d", images_row);
 	roi_x = 0;
 	roi_y = 0;
 	text_x = 0;
@@ -148,8 +149,8 @@ int writeToScreen(std::vector<int> object_names){
 		if((i+1) == num_rows){ //output non standard no. images
 			roi_x = border_size;
 			ROS_INFO("Placing a non-standard row of images");
-			for(int j = 0; j < object_names.size() % 9; j++){
-				int object_num = 1 + j + (i*9);
+			for(int j = 0; j < object_names.size() % images_row; j++){
+				int object_num = 1 + j + (i*images_row);
 				std::string str = boost::lexical_cast<std::string>(object_num);
 				std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
 				ROS_INFO("Getting %s", path.c_str());
@@ -160,7 +161,7 @@ int writeToScreen(std::vector<int> object_names){
 				resize(src,img,Size(img_width, img_height));
 				ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
 				ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
-				if(object_num > 9){ //if a double digit number, center text
+				if(object_num > images_row){ //if a double digit number, center text
 					text_x -= 6;
 				}
 				cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
@@ -170,11 +171,11 @@ int writeToScreen(std::vector<int> object_names){
 				text_x += img_width;
 				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
 				roi_x += border_size;
-				text_x += border_size;
+				text_x += border_size + border_size;
 			}
 		} else{
-			for(int j = 1; j <= 9; j++){
-				int object_num = j + (i*9);
+			for(int j = 1; j <= images_row; j++){
+				int object_num = j + (i*images_row);
 				std::string str = boost::lexical_cast<std::string>(object_num);
 				std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
 				ROS_INFO("Getting %s", path.c_str());
@@ -189,7 +190,7 @@ int writeToScreen(std::vector<int> object_names){
 				cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
 				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
 				img.copyTo(targetROI);
-				if(j != 9){
+				if(j != images_row){
 					roi_x += img_width;
 					text_x += img_width;
 					targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
