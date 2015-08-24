@@ -16,6 +16,9 @@ string generalFilePath = "/home/users/pkhante/grounded_learning_experiments/";
 // File path to save data
 string saveFilePath = "/home/users/pkhante/extracted_feature_vectors/";
 
+// Filepath to extract object list ---> Just to make things easier
+std::string objectListPath = "/home/users/pkhante/extracted_feature_vectors/object_list.csv";
+
 //Name of the audio folder to search for
 const std::string & audio_folder = "audio_data";
 
@@ -24,6 +27,9 @@ int total_objects = 32, total_trials = 6;
 
 // Create a vector to put in the dft datapoints
 vector<vector<double> > dft_data;
+
+// Arraylist to store the objects
+std::vector<string> object_list;
 
 int timeBins = 10;
 int freqBins = 10;
@@ -34,6 +40,16 @@ int main (int argc, char** argv)
 	ros::init (argc, argv, "extract_features_dft");
 	ros::NodeHandle nh;
 	ROS_INFO("Ready to extract features from the dft files...");
+	
+	// Extract the object name
+	ifstream infile(objectListPath.c_str());
+	if (infile.is_open())
+	{
+		string line;
+		while(getline(infile, line)){	
+			object_list.push_back(line);
+		}
+	}
 	
 	for(int object_num = 1; object_num <= total_objects; object_num++){
 		for(int trial_num = 1; trial_num <= total_trials; trial_num++){
@@ -71,7 +87,7 @@ int main (int argc, char** argv)
 										num_of_lines++;
 									}
 			
-									ROS_INFO("Number of lines: %d", num_of_lines);
+									//ROS_INFO("Number of lines: %d", num_of_lines);
 									
 									ifstream infile2(filePath.c_str());
 									while(infile2.good()){
@@ -135,22 +151,21 @@ int main (int argc, char** argv)
 									}*/
 									
 									// Write the historgram matrix to a file
-									string file_to_write = saveFilePath+"/"+folder_name+"_audio"+"/dft_extracted_features.csv";
+									string file_to_write = saveFilePath+"audio/"+folder_name+"_audio"+"/dft_extracted_features.csv";
 									ROS_INFO("File to write path: %s", file_to_write.c_str());
 									ofstream dft_file(file_to_write.c_str(), std::ios::out | std::ios::app);
 									ROS_INFO("Writing to the file...");
 									if(dft_file.is_open()){
+										dft_file << object_list[object_num-1]+"_"+convert2.str();
+										dft_file << ",";
 										for(int x=0; x<10; x++){
-											dft_file << "test"+convert1.str()+"_trial"+convert2.str();
-											dft_file << ",";
 											for (int y=0; y<10; y++){
 												dft_file << histData[x][y];
-												if(y==9)
+												if (x == 9 && y == 9)
 													dft_file << "\n";
 												else
 													dft_file << ",";
 											}
-											
 										}
 										dft_file.close();
 										ROS_INFO("File saved");

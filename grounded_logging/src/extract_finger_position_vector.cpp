@@ -17,6 +17,9 @@ std::string generalFilePath = "/home/users/pkhante/grounded_learning_experiments
 // File path to save data
 string saveFilePath = "/home/users/pkhante/extracted_feature_vectors/";
 
+// Filepath to extract object list ---> Just to make things easier
+std::string objectListPath = "/home/users/pkhante/extracted_feature_vectors/object_list.csv";
+
 //Name of the audio folder to search for
 const std::string & haptic_folder = "haptic_data";
 
@@ -25,6 +28,9 @@ int total_objects = 32, total_trials = 6;
 
 // Create a vector to put in the dft datapoints
 vector<vector<double> > finger_position_data;
+
+// Arraylist to store the objects
+std::vector<string> object_list;
 
 //Name of the hold behaviour folder to search for
 const std::string & grasp_folder = "grasp";
@@ -38,6 +44,16 @@ int main (int argc, char** argv)
 	ros::init (argc, argv, "extract_finger_position_vector");
 	ros::NodeHandle nh;
 	ROS_INFO("Ready to extract finger positions from the haptic files...");
+	
+	// Extract the object name
+	ifstream infile(objectListPath.c_str());
+	if (infile.is_open())
+	{
+		string line;
+		while(getline(infile, line)){	
+			object_list.push_back(line);
+		}
+	}
 	
 	for(int object_num = 1; object_num <= total_objects; object_num++){
 		for(int trial_num = 1; trial_num <= total_trials; trial_num++){
@@ -149,12 +165,12 @@ int main (int argc, char** argv)
 										ofstream haptic_file(file_to_write.c_str(), std::ios::out | std::ios::app);
 										ROS_INFO("Writing to the file...");
 										if(haptic_file.is_open()){
+											haptic_file << object_list[object_num-1]+"_"+convert2.str();
+											haptic_file << ",";
 											for(int x=0; x<10; x++){
-												haptic_file << "test"+convert1.str()+"_trial"+convert2.str();
-												haptic_file << ",";
 												for (int y=0; y<2; y++){
 													haptic_file << histData[x][y];
-													if(y==1)
+													if(x==9 && y ==1)
 														haptic_file << "\n";
 													else
 														haptic_file << ",";
