@@ -33,6 +33,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <sys/stat.h>
+#include <iostream>
+#include <fstream>
+
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -46,18 +50,82 @@
 		9 images across
 		3 images down
  */
-const int img_width 		= 95; 		//pixels
-const int img_height 		= 127; 		//pixels
-const float aspect_ratio 	= .75;
-const int border_size 		= 5; 		//pixels
-const int abs_width 		= 1500; 		//pixels
-const int abs_height 		= 450; 		//pixels
-const int title_height		= 12;		//pixels
-const int images_row		= round(abs_width / (img_width + border_size));
+const int img_width 			= 95; 		//pixels
+const int img_height 			= 127; 		//pixels
+const float aspect_ratio 		= .75;
+const int border_size 			= 5; 		//pixels
+const int abs_width 			= 1500; 		//pixels
+const int abs_height 			= 450; 		//pixels
+const int title_height			= 12;		//pixels
+const int images_row			= round(abs_width / (img_width + border_size));
+const std::string filePath		= "/home/users/max/";
+const std::string responseName	= "groundedResponse.txt";
+const std::string requestName	= "groundedRequest.txt";
+
 using namespace cv;
 
 Mat dst,frame,img,ROI;
 ros::ServiceClient gui_client;
+
+
+/*
+ * Returns whether or not response file exists
+ */
+bool responseFileExists(){
+	struct stat buffer;
+	std::string fullPath = filePath + responseName;
+	return (stat (fullPath.c_str(), &buffer) == 0);
+}
+
+/*
+ * Writes request file
+ * ID: 0 = remove
+ 		1 = get next cluster
+ 		2 = 
+
+ 	Returns success
+ */
+bool writeRequestFile(int ID, std::vector<int> objects){
+	std::ofstream myfile((filePath + requestName).c_str());
+	if(myfile.is_open()){
+		myfile << ID << "\n";
+		if(ID == 0){
+			for(int i = 0; i < objects.size(); i++){
+				myfile << objects[i] << "\n";
+			}
+		}
+		myfile.close();
+	}
+	else {
+		ROS_INFO("Unable to create file");
+		return false;
+	}
+	return true;
+}
+
+bool readResponseFile(){
+	std::string line;
+	int lineNum = 0;
+	int ID;
+	std::vector<int> objects;
+	std::ifstream myfile((filePath + responseName).c_str());
+	if(myfile.is_open()){
+	    while(getline(myfile,line)){
+	    	if(lineNum == 0)
+	    		ID = atoi(line.c_str()); //must convert string -> int
+	    	else{
+	    		if(ID == 0){
+	    			objects.push_back(atoi(line.c_str()));
+	    		}
+	    	}
+	    	lineNum++;
+
+		}
+		myfile.close();
+	}
+	else
+		ROS_INFO("Unable to open response file");
+}
 
 /*
  * General method to send free response questions to the GUI
@@ -281,6 +349,5 @@ int main (int argc, char **argv){
 		photo_temp.push_back(i);
 
 	sequence(photo_temp);
-
   return(0);
 }
