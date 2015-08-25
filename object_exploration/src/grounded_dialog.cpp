@@ -32,6 +32,7 @@
 #include <vector>
 #include <stdlib.h>
 #include <stdio.h>
+#include <map>
 
 #include <sys/stat.h>
 #include <iostream>
@@ -54,13 +55,15 @@ const int img_width 			= 95; 		//pixels
 const int img_height 			= 127; 		//pixels
 const float aspect_ratio 		= .75;
 const int border_size 			= 5; 		//pixels
-const int abs_width 			= 1500; 		//pixels
+const int abs_width 			= 1500; 	//pixels
 const int abs_height 			= 450; 		//pixels
 const int title_height			= 12;		//pixels
 const int images_row			= round(abs_width / (img_width + border_size));
 const std::string filePath		= "/home/users/max/";
 const std::string responseName	= "groundedResponse.txt";
 const std::string requestName	= "groundedRequest.txt";
+
+std::map<int,std::vector<std::string> > label_table;
 
 using namespace cv;
 
@@ -85,7 +88,7 @@ bool responseFileExists(){
 
  	Returns success
  */
-bool writeRequestFile(int ID, std::vector<int> objects){
+bool writeRequestFile(int ID, std::vector<string> objects){
 	std::ofstream myfile((filePath + requestName).c_str());
 	if(myfile.is_open()){
 		myfile << ID << "\n";
@@ -103,28 +106,35 @@ bool writeRequestFile(int ID, std::vector<int> objects){
 	return true;
 }
 
+/*
+ * Reads the response file from external program
+ * IDs : 1 = output of object names in subsequent lines
+ */
+
 bool readResponseFile(){
 	std::string line;
 	int lineNum = 0;
 	int ID;
-	std::vector<int> objects;
+	std::vector<std::string> objects;
 	std::ifstream myfile((filePath + responseName).c_str());
 	if(myfile.is_open()){
 	    while(getline(myfile,line)){
 	    	if(lineNum == 0)
-	    		ID = atoi(line.c_str()); //must convert string -> int
+	    		ID = atoi(line.c_str());
 	    	else{
 	    		if(ID == 0){
-	    			objects.push_back(atoi(line.c_str()));
+	    			objects.push_back(line.c_str());
 	    		}
 	    	}
 	    	lineNum++;
-
 		}
 		myfile.close();
 	}
-	else
+	else{
 		ROS_INFO("Unable to open response file");
+		return false;
+	}
+	return true;
 }
 
 /*
