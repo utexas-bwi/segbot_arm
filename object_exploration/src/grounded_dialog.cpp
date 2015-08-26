@@ -26,6 +26,7 @@
 #include <std_msgs/Int32.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include "bwi_msgs/QuestionDialog.h"
 #include "ros/ros.h"
 #include <string>
@@ -68,7 +69,7 @@ const std::string requestName	= "groundedRequest.txt";
 std::map<std::string, std::vector<std::string> > label_table;
 int clusterNum;
 std::string clusterAttribute;
-
+static std::vector<int> cur_cluster;
 using namespace cv;
 
 Mat dst,frame,img,ROI;
@@ -212,84 +213,87 @@ bool ask_mult_choice(std::string question, std::string choice1, std::string choi
  		 resize images once, rather than on-the-fly (for speed)
  */
 
-int writeToScreen(std::vector<int> object_names){
-	int num_rows = (object_names.size() / images_row) + 1;
+int writeToScreen(std::vector<int> *object_names){
 	int roi_x, roi_y, text_x, text_y;
-
-	cv::Rect roi(cv::Rect(0,0,img_width, img_height));
-	cv::Mat targetROI = dst(roi);
-	ROS_INFO("numrows: %d", images_row);
-	roi_x = 0;
-	roi_y = 0;
-	text_x = 0;
-	text_y = title_height;
-	for(int i = 0; i < num_rows; i++){
-		roi_y += border_size + title_height + border_size;
-		text_y = roi_y - title_height/2;
-		roi_x = border_size;
-		text_x = border_size + (img_width/2);
-		
-		if((i+1) == num_rows){ //output non standard no. images
+	while(true){
+		std::vector<int>& cluster = *object_names;
+		int num_rows = (cluster.size() / images_row) + 1;
+	
+		cv::Rect roi(cv::Rect(0,0,img_width, img_height));
+		cv::Mat targetROI = dst(roi);
+		ROS_INFO("numrows: %d", images_row);
+		roi_x = 0;
+		roi_y = 0;
+		text_x = 0;
+		text_y = title_height;
+		for(int i = 0; i < num_rows; i++){
+			roi_y += border_size + title_height + border_size;
+			text_y = roi_y - title_height/2;
 			roi_x = border_size;
-			ROS_INFO("Placing a non-standard row of images");
-			for(int j = 0; j < object_names.size() % images_row; j++){
-				int object_num = 1 + j + (i*images_row);
-				std::string str = boost::lexical_cast<std::string>(object_num);
-				std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
-				ROS_INFO("Getting %s", path.c_str());
-				Mat src = imread(path);
-				Mat img;
-				if(!src.data)
-					ROS_INFO("Couldn't get image data");
-				resize(src,img,Size(img_width, img_height));
-				ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
-				ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
-				if(object_num > images_row){ //if a double digit number, center text
-					text_x -= 6;
-				}
-				cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
-				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
-				img.copyTo(targetROI);
-				roi_x += img_width;
-				text_x += img_width;
-				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
-				roi_x += border_size;
-				text_x += border_size + border_size;
-			}
-		} else{
-			for(int j = 1; j <= images_row; j++){
-				int object_num = j + (i*images_row);
-				std::string str = boost::lexical_cast<std::string>(object_num);
-				std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
-				ROS_INFO("Getting %s", path.c_str());
-				Mat src = imread(path);
-				Mat img;
-				if(!src.data)
-					ROS_INFO("Couldn't get image data");
-				resize(src,img,Size(img_width, img_height));
-				ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
-				ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
-
-				cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
-				targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
-				img.copyTo(targetROI);
-				if(j != images_row){
+			text_x = border_size + (img_width/2);
+			
+			if((i+1) == num_rows){ //output non standard no. images
+				roi_x = border_size;
+				ROS_INFO("Placing a non-standard row of images");
+				for(int j = 0; j < cluster.size() % images_row; j++){
+					int object_num = 1 + j + (i*images_row);
+					std::string str = boost::lexical_cast<std::string>(object_num);
+					std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
+					ROS_INFO("Getting %s", path.c_str());
+					Mat src = imread(path);
+					Mat img;
+					if(!src.data)
+						ROS_INFO("Couldn't get image data");
+					resize(src,img,Size(img_width, img_height));
+					ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
+					ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
+					if(object_num > images_row){ //if a double digit number, center text
+						text_x -= 6;
+					}
+					cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
+					targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+					img.copyTo(targetROI);
 					roi_x += img_width;
 					text_x += img_width;
 					targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
 					roi_x += border_size;
-					text_x += border_size;
+					text_x += border_size + border_size;
 				}
-			}
-			roi_y += img_height;
+			} else{
+				for(int j = 1; j <= images_row; j++){
+					int object_num = j + (i*images_row);
+					std::string str = boost::lexical_cast<std::string>(object_num);
+					std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
+					ROS_INFO("Getting %s", path.c_str());
+					Mat src = imread(path);
+					Mat img;
+					if(!src.data)
+						ROS_INFO("Couldn't get image data");
+					resize(src,img,Size(img_width, img_height));
+					ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
+					ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
+
+					cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
+					targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+					img.copyTo(targetROI);
+					if(j != images_row){
+						roi_x += img_width;
+						text_x += img_width;
+						targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+						roi_x += border_size;
+						text_x += border_size;
+					}
+				}
+				roi_y += img_height;
 		}
 	}
 	cv::namedWindow("OpenCV Window");
 	// show the image on window
-	while(true){
+
 		cv::imshow("OpenCV Window", dst);
-		cv::waitKey(0);
-		break;
+		cv::waitKey(3000);
+		//boost::this_thread::sleep(boost::posix_time::seconds(100));
+		//break;
 	}
 
 }
@@ -312,7 +316,7 @@ std::vector<std::string> splitString(std::string input){
 void sequence(std::vector<int> photo_temp){
 	bool firstTime = false;
 
-	boost::thread workerThread(writeToScreen, photo_temp);
+	boost::thread workerThread(writeToScreen, &cur_cluster);
 
 	bool common_att = ask_mult_choice("Do any shown objects share a common attribute?", "No", "Yes");
 	if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
@@ -372,20 +376,23 @@ void sequence(std::vector<int> photo_temp){
 				std::vector<std::string> feature_vec = splitString(resp);
 				clusterAttribute = feature_vec.at(0);
 			}
-			else {
-				if(ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2")){
-					std::vector<std::string> outliers = splitString(
-							ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
-					for(int i = 0; i < outliers.size(); i++){
-						//display only outliers.at(i);
-						std::string answer = ask_free_resp("What is the attribute of this object?");
-						//store answer as label
-						//store in outlier map to be combined to any cluster with the same label
-					}
-					//write this to request with appropriate ID
-					//wait for response
-					//update visible object vector
+			if(ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2")){
+				std::vector<std::string> outliers = splitString(
+						ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
+				for(int i = 0; i < outliers.size(); i++){
+					//display only outliers.at(i);
+					std::string answer = ask_free_resp("What is the attribute of this object?");
+					//store answer as label
+					//store in outlier map to be combined to any cluster with the same label
 				}
+				//write this to request with appropriate ID
+				//wait for response
+				//update visible object vector
+				cur_cluster.clear();
+				cur_cluster.push_back(1);
+				//workerThread.interrupt();
+				//boost::thread workerThread(writeToScreen, cur_cluster);
+				sleep(20);
 			}
 		}
 		else{
@@ -430,7 +437,7 @@ int main (int argc, char **argv){
 	std::vector<int> photo_temp;
 	for(int i = 1; i <= 20; i++)
 		photo_temp.push_back(i);
-
+	cur_cluster = photo_temp;
 	sequence(photo_temp);
 	return(0);
 }
