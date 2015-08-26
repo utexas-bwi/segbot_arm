@@ -161,8 +161,9 @@ std::string ask_free_resp(std::string question){
 
 /*
  * General method for sending multiple choice questions to the GUI
+ * Returns whether or not the answer was yes to choice2
  */
-bool ask_mult_choice(std::string question){
+bool ask_mult_choice(std::string question, std::string choice1, std::string choice2){
 	bool response = false;
 	bwi_msgs::QuestionDialog srv;
 
@@ -170,8 +171,8 @@ bool ask_mult_choice(std::string question){
 	srv.request.message = question;
 	srv.request.timeout = 0.0;
 	std::vector<std::string> temp;
-	temp.push_back("No");
-	temp.push_back("Yes");
+	temp.push_back(choice1);
+	temp.push_back(choice2);
 	srv.request.options = temp;
 	//boost::thread workerThread(writeToScreen, photo_temp);
 	//writeToScreen(photo_temp);
@@ -312,7 +313,7 @@ void sequence(std::vector<int> photo_temp){
 
 	boost::thread workerThread(writeToScreen, photo_temp);
 
-	bool common_att = ask_mult_choice("Do any shown objects share a common attribute?");
+	bool common_att = ask_mult_choice("Do any shown objects share a common attribute?", "No", "Yes");
 	if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
 		//ask only once per tree : "Can you specify that attribute?"
 		if(!askedSharedAtt){
@@ -329,7 +330,8 @@ void sequence(std::vector<int> photo_temp){
 					std::vector<std::string> values = it->second;
 					std::vector<std::string> values_buffer; //used to track new labels to be added to values
 					for(int j = 0; j < values.size(); j++){
-						int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + feature_vec.at(i));
+						int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + feature_vec.at(i),
+								"No", "Yes");
 						if(mult_choice_ans)
 							values_buffer.push_back(values.at(j));
 					}
@@ -341,7 +343,9 @@ void sequence(std::vector<int> photo_temp){
 						splitString(att_from_above)));
 				}
 			}
+
 			/*
+			for reference, the algorithm coded above:
 
 			parse here
 
@@ -355,6 +359,25 @@ void sequence(std::vector<int> photo_temp){
 				std::string answer = ask_free_resp("What <att-from-above> are they?")
 				put(answer)  as label
 			*/
+		}
+		else{
+			if(ask_mult_choice("Is there any attribute common to most of the objects?", "No", "Yes")){
+				if(ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2")){
+					std::vector<std::string> outliers = splitString(
+							ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
+					for(int i = 0; i < outliers.size(); i++){
+						//display only outliers.at(i);
+						std::string answer = ask_free_resp("What is the attribute of this object?");
+						//store answer as label
+					}
+					//write this to request with appropriate ID
+					//wait for response
+					//update visible object vector
+				}
+			}
+			else{
+				//recluster
+			}
 		}
 		/*
 		else
