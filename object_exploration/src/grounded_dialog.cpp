@@ -33,6 +33,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <map>
+#include <iterator>
+#include <sstream>
 
 #include <sys/stat.h>
 #include <iostream>
@@ -53,7 +55,7 @@
  */
 const int img_width 			= 95; 		//pixels
 const int img_height 			= 127; 		//pixels
-const float aspect_ratio 		= .75;
+const float aspect_ratio 		= 0.75;
 const int border_size 			= 5; 		//pixels
 const int abs_width 			= 1500; 	//pixels
 const int abs_height 			= 450; 		//pixels
@@ -63,7 +65,8 @@ const std::string filePath		= "/home/users/max/";
 const std::string responseName	= "groundedResponse.txt";
 const std::string requestName	= "groundedRequest.txt";
 
-std::map<int,std::vector<std::string> > label_table;
+std::map<std::string, std::vector<std::string> > label_table;
+int clusterNum;
 
 using namespace cv;
 
@@ -290,6 +293,17 @@ int writeToScreen(std::vector<int> object_names){
 }
 
 /*
+ * Breaks input string delimited by ' ' (spaces) and stuffs a vector
+ */
+std::vector<std::string> splitString(std::string input){
+	std::vector<std::string> vec;
+	std::istringstream iss(input);
+	copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
+		back_inserter(vec));
+	return vec;
+}
+
+/*
  * To be the script & main loop for the question-answer interface logic
  */
 
@@ -304,7 +318,29 @@ void sequence(std::vector<int> photo_temp){
 		if(!askedSharedAtt){
 			askedSharedAtt = true;
 			std::string resp = ask_free_resp("Please specify what attribute is shared");
+
 			//parse resp, checking if each attribute exists in table
+			std::vector<std::string> feature_vec = splitString(resp);
+			for(int i = 0; i < feature_vec.size(); i++){ //check if attributes are consistent with existing labels
+				std::map<std::string, std::vector<std::string> >::iterator it;
+				it = label_table.find(feature_vec.at(i));
+
+				if(it != label_table.end()){
+					std::vector<std::string> values = it->second;
+					std::vector<std::string> values_buffer; //used to track new labels to be added to values
+					for(int j = 0; j < values.size(); j++){
+						int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + feature_vec.at(i));
+						if(mult_choice_ans)
+							values_buffer.push_back(values.at(j));
+					}
+				}
+				else {
+					ROS_INFO("Attribute not found in table.");
+					std::string att_from_above = ask_free_resp("What " + feature_vec.at(i) + " are they?");
+					label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
+						splitString(att_from_above)));
+				}
+			}
 			/*
 
 			parse here
@@ -352,12 +388,13 @@ int main (int argc, char **argv){
 	bwi_msgs::QuestionDialog srv;
 	dst = cv::Mat(abs_height, abs_width, CV_8UC3, cv::Scalar(0,0,0));
 
-	sleep(2);
+	sleep(2); //must wait for gui to initizalize
+
 	//simulated vector recieved from clustering alg.
 	std::vector<int> photo_temp;
 	for(int i = 1; i <= 20; i++)
 		photo_temp.push_back(i);
 
 	sequence(photo_temp);
-  return(0);
+	return(0);
 }
