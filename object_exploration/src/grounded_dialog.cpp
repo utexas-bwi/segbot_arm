@@ -360,6 +360,7 @@ void sequence(std::vector<int> photo_temp){
 				put(answer)  as label
 			*/
 		}
+	}
 		else{
 			if(ask_mult_choice("Is there any attribute common to most of the objects?", "No", "Yes")){
 				if(ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2")){
@@ -399,7 +400,7 @@ void sequence(std::vector<int> photo_temp){
 			else
 				recluster()
 		*/
-	}
+	
 	print_to_gui("Thank you for clearing that up!");
 }
 
