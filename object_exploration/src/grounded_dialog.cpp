@@ -67,6 +67,7 @@ const std::string requestName	= "groundedRequest.txt";
 
 std::map<std::string, std::vector<std::string> > label_table;
 int clusterNum;
+std::string clusterAttribute;
 
 using namespace cv;
 
@@ -309,19 +310,21 @@ std::vector<std::string> splitString(std::string input){
  */
 
 void sequence(std::vector<int> photo_temp){
-	bool askedSharedAtt = false;
+	bool firstTime = false;
 
 	boost::thread workerThread(writeToScreen, photo_temp);
 
 	bool common_att = ask_mult_choice("Do any shown objects share a common attribute?", "No", "Yes");
 	if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
 		//ask only once per tree : "Can you specify that attribute?"
-		if(!askedSharedAtt){
-			askedSharedAtt = true;
+		if(!firstTime){
+			firstTime = true;
 			std::string resp = ask_free_resp("Please specify what attribute is shared");
 
 			//parse resp, checking if each attribute exists in table
 			std::vector<std::string> feature_vec = splitString(resp);
+			clusterAttribute = feature_vec.at(0);
+
 			for(int i = 0; i < feature_vec.size(); i++){ //check if attributes are consistent with existing labels
 				std::map<std::string, std::vector<std::string> >::iterator it;
 				it = label_table.find(feature_vec.at(i));
@@ -361,8 +364,15 @@ void sequence(std::vector<int> photo_temp){
 			*/
 		}
 	}
-		else{
-			if(ask_mult_choice("Is there any attribute common to most of the objects?", "No", "Yes")){
+	else{
+		if(ask_mult_choice("Is there any attribute common to most of the objects?", "No", "Yes")){
+			if(!firstTime){
+				firstTime = true;
+				std::string resp = ask_free_resp("Please specify what attribute is shared");
+				std::vector<std::string> feature_vec = splitString(resp);
+				clusterAttribute = feature_vec.at(0);
+			}
+			else {
 				if(ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2")){
 					std::vector<std::string> outliers = splitString(
 							ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
@@ -370,16 +380,18 @@ void sequence(std::vector<int> photo_temp){
 						//display only outliers.at(i);
 						std::string answer = ask_free_resp("What is the attribute of this object?");
 						//store answer as label
+						//store in outlier map to be combined to any cluster with the same label
 					}
 					//write this to request with appropriate ID
 					//wait for response
 					//update visible object vector
 				}
 			}
-			else{
-				//recluster
-			}
 		}
+		else{
+			//recluster
+		}
+	}
 		/*
 		else
 			int answer = ask_mul_choice("Is there any attribute common to most of the objects?")
