@@ -215,12 +215,17 @@ bool ask_mult_choice(std::string question, std::string choice1, std::string choi
 
 int writeToScreen(std::vector<int> *object_names){
 	int roi_x, roi_y, text_x, text_y;
+	cv::namedWindow("OpenCV Window");
+
 	while(true){
 		std::vector<int>& cluster = *object_names;
 		int num_rows = (cluster.size() / images_row) + 1;
-	
 		cv::Rect roi(cv::Rect(0,0,img_width, img_height));
-		cv::Mat targetROI = dst(roi);
+		cv::Rect backgrnd(cv::Rect(0,0,abs_width, abs_height));
+		cv::Mat targetROI = dst(backgrnd);
+		targetROI = cv::Scalar(0,0,0);
+		targetROI = dst(roi);
+
 		ROS_INFO("numrows: %d", images_row);
 		roi_x = 0;
 		roi_y = 0;
@@ -238,7 +243,7 @@ int writeToScreen(std::vector<int> *object_names){
 				for(int j = 0; j < cluster.size() % images_row; j++){
 					int object_num = 1 + j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
-					std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
+					std::string path ="/home/maxwell/Pictures/object_exploration/" + str + ".JPG";
 					ROS_INFO("Getting %s", path.c_str());
 					Mat src = imread(path);
 					Mat img;
@@ -287,12 +292,11 @@ int writeToScreen(std::vector<int> *object_names){
 				roi_y += img_height;
 		}
 	}
-	cv::namedWindow("OpenCV Window");
+
 	// show the image on window
 
 		cv::imshow("OpenCV Window", dst);
 		cv::waitKey(3000);
-		//boost::this_thread::sleep(boost::posix_time::seconds(100));
 		//break;
 	}
 
@@ -389,9 +393,7 @@ void sequence(std::vector<int> photo_temp){
 				//wait for response
 				//update visible object vector
 				cur_cluster.clear();
-				cur_cluster.push_back(1);
-				//workerThread.interrupt();
-				//boost::thread workerThread(writeToScreen, cur_cluster);
+				cur_cluster.push_back(9);
 				sleep(20);
 			}
 		}
@@ -435,7 +437,7 @@ int main (int argc, char **argv){
 
 	//simulated vector recieved from clustering alg.
 	std::vector<int> photo_temp;
-	for(int i = 1; i <= 20; i++)
+	for(int i = 1; i <= 9; i++)
 		photo_temp.push_back(i);
 	cur_cluster = photo_temp;
 	sequence(photo_temp);
