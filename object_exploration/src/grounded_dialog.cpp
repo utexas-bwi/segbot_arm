@@ -69,7 +69,7 @@ const std::string requestName	= "groundedRequest.txt";
 std::map<std::string, std::vector<std::string> > label_table;
 int clusterNum;
 std::string clusterAttribute;
-static std::vector<int> cur_cluster;
+static std::vector<std::string> cur_cluster;
 using namespace cv;
 
 Mat dst,frame,img,ROI;
@@ -213,12 +213,12 @@ bool ask_mult_choice(std::string question, std::string choice1, std::string choi
  		 resize images once, rather than on-the-fly (for speed)
  */
 
-int writeToScreen(std::vector<int> *object_names){
+int writeToScreen(std::vector<std::string> *object_names){
 	int roi_x, roi_y, text_x, text_y;
 	cv::namedWindow("OpenCV Window");
 
 	while(true){
-		std::vector<int>& cluster = *object_names;
+		std::vector<std::string>& cluster = *object_names;
 		int num_rows = (cluster.size() / images_row) + 1;
 		cv::Rect roi(cv::Rect(0,0,img_width, img_height));
 		cv::Rect backgrnd(cv::Rect(0,0,abs_width, abs_height));
@@ -241,9 +241,9 @@ int writeToScreen(std::vector<int> *object_names){
 				roi_x = border_size;
 				ROS_INFO("Placing a non-standard row of images");
 				for(int j = 0; j < cluster.size() % images_row; j++){
-					int object_num = 1 + j + (i*images_row);
+					int object_num = j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
-					std::string path ="/home/maxwell/Pictures/object_exploration/" + str + ".JPG";
+					std::string path ="/home/maxwell/Pictures/object_exploration/" + cluster.at(object_num) + ".JPG";
 					ROS_INFO("Getting %s", path.c_str());
 					Mat src = imread(path);
 					Mat img;
@@ -265,10 +265,10 @@ int writeToScreen(std::vector<int> *object_names){
 					text_x += border_size + border_size;
 				}
 			} else{
-				for(int j = 1; j <= images_row; j++){
+				for(int j = 0; j <= images_row; j++){
 					int object_num = j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
-					std::string path ="/home/users/max/Pictures/object_exploration/" + str + ".JPG";
+					std::string path ="/home/users/max/Pictures/object_exploration/" + cluster.at(object_num) + ".JPG";
 					ROS_INFO("Getting %s", path.c_str());
 					Mat src = imread(path);
 					Mat img;
@@ -317,7 +317,7 @@ std::vector<std::string> splitString(std::string input){
  * To be the script & main loop for the question-answer interface logic
  */
 
-void sequence(std::vector<int> photo_temp){
+void sequence(std::vector<std::string> photo_temp){
 	bool firstTime = false;
 
 	boost::thread workerThread(writeToScreen, &cur_cluster);
@@ -393,7 +393,7 @@ void sequence(std::vector<int> photo_temp){
 				//wait for response
 				//update visible object vector
 				cur_cluster.clear();
-				cur_cluster.push_back(9);
+				cur_cluster.push_back("tin_can");
 				sleep(20);
 			}
 		}
@@ -436,9 +436,12 @@ int main (int argc, char **argv){
 	sleep(2); //must wait for gui to initizalize
 
 	//simulated vector recieved from clustering alg.
-	std::vector<int> photo_temp;
-	for(int i = 1; i <= 9; i++)
-		photo_temp.push_back(i);
+	std::vector<std::string> photo_temp;
+	photo_temp.push_back("big_red_pop_can");
+	photo_temp.push_back("blue_salt_can");
+
+	
+
 	cur_cluster = photo_temp;
 	sequence(photo_temp);
 	return(0);
