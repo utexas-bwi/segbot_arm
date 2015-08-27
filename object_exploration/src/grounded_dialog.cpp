@@ -89,9 +89,11 @@ bool responseFileExists(){
  * Writes request file
  * ID: 0 = remove
  		1 = get next cluster
- 		2 = 
+ 		2 = recluster
 
  	Returns success
+
+ 	Input is ID and a vector, which can be null if the ID specifies an action not related to object IDS
  */
 bool writeRequestFile(int ID, std::vector<string> objects){
 	std::ofstream myfile((filePath + requestName).c_str());
@@ -123,15 +125,15 @@ bool readResponseFile(){
 	std::vector<std::string> objects;
 	std::ifstream myfile((filePath + responseName).c_str());
 	if(myfile.is_open()){
-	    while(getline(myfile,line)){
-	    	if(lineNum == 0)
-	    		ID = atoi(line.c_str());
-	    	else{
-	    		if(ID == 0){
-	    			objects.push_back(line.c_str());
-	    		}
-	    	}
-	    	lineNum++;
+		while(getline(myfile,line)){
+			if(lineNum == 0)
+				ID = atoi(line.c_str());
+			else{
+				if(ID == 0){
+					objects.push_back(line.c_str());
+				}
+			}
+			lineNum++;
 		}
 		myfile.close();
 	}
@@ -139,6 +141,7 @@ bool readResponseFile(){
 		ROS_INFO("Unable to open response file");
 		return false;
 	}
+	cur_cluster = objects;
 	return true;
 }
 
@@ -209,8 +212,6 @@ bool ask_mult_choice(std::string question, std::string choice1, std::string choi
  *
  * For concurrent windows (GUI and output of this function), must run this on a separate thread.
  *
- * TODO: able to update window/thread without closing the window completely.
- 		 resize images once, rather than on-the-fly (for speed)
  */
 
 int writeToScreen(std::vector<std::string> *object_names){
@@ -243,7 +244,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 				for(int j = 0; j < cluster.size() % images_row; j++){
 					int object_num = j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
-					std::string path ="/home/maxwell/Pictures/object_exploration/" + cluster.at(object_num) + ".JPG";
+					std::string path ="/home/maxwell/Pictures/object_exploration/cropped/" + cluster.at(object_num) + ".JPG";
 					ROS_INFO("Getting %s", path.c_str());
 					Mat src = imread(path);
 					Mat img;
@@ -318,111 +319,124 @@ std::vector<std::string> splitString(std::string input){
  */
 
 void sequence(std::vector<std::string> photo_temp){
-	bool firstTime = false;
+	bool firstTime;
 
 	boost::thread workerThread(writeToScreen, &cur_cluster);
-
-	bool common_att = ask_mult_choice("Do any shown objects share a common attribute?", "No", "Yes");
-	if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
-		//ask only once per tree : "Can you specify that attribute?"
-		if(!firstTime){
-			firstTime = true;
-			std::string resp = ask_free_resp("Please specify what attribute is shared");
-
-			//parse resp, checking if each attribute exists in table
-			std::vector<std::string> feature_vec = splitString(resp);
-			clusterAttribute = feature_vec.at(0);
-
-			for(int i = 0; i < feature_vec.size(); i++){ //check if attributes are consistent with existing labels
-				std::map<std::string, std::vector<std::string> >::iterator it;
-				it = label_table.find(feature_vec.at(i));
-
-				if(it != label_table.end()){
-					std::vector<std::string> values = it->second;
-					std::vector<std::string> values_buffer; //used to track new labels to be added to values
-					for(int j = 0; j < values.size(); j++){
-						int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + feature_vec.at(i),
-								"No", "Yes");
-						if(mult_choice_ans)
-							values_buffer.push_back(values.at(j));
-					}
-				}
-				else {
-					ROS_INFO("Attribute not found in table.");
-					std::string att_from_above = ask_free_resp("What " + feature_vec.at(i) + " are they?");
-					label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
-						splitString(att_from_above)));
-				}
-			}
-
-			/*
-			for reference, the algorithm coded above:
-
-			parse here
-
-			if(contained in table)
-				grab labels as values, using attribute as key
-				for each label
-					int answer = ask_mult_choice("Are they " + <label> + " in " + attribute)
-					if(answer)
-						put(label)
-			else
-				std::string answer = ask_free_resp("What <att-from-above> are they?")
-				put(answer)  as label
-			*/
-		}
-	}
-	else{
-		if(ask_mult_choice("Is there any attribute common to most of the objects?", "No", "Yes")){
+	while(true){
+		firstTime = false;
+		bool common_att = ask_mult_choice("Do any shown objects share a common attribute?", "No", "Yes");
+		if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
+			//ask only once per tree : "Can you specify that attribute?"
 			if(!firstTime){
 				firstTime = true;
 				std::string resp = ask_free_resp("Please specify what attribute is shared");
+
+				//parse resp, checking if each attribute exists in table
 				std::vector<std::string> feature_vec = splitString(resp);
 				clusterAttribute = feature_vec.at(0);
-			}
-			if(ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2")){
-				std::vector<std::string> outliers = splitString(
-						ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
-				for(int i = 0; i < outliers.size(); i++){
-					//display only outliers.at(i);
-					std::string answer = ask_free_resp("What is the attribute of this object?");
-					//store answer as label
-					//store in outlier map to be combined to any cluster with the same label
+
+				for(int i = 0; i < feature_vec.size(); i++){ //check if attributes are consistent with existing labels
+					std::map<std::string, std::vector<std::string> >::iterator it;
+					it = label_table.find(feature_vec.at(i));
+
+					if(it != label_table.end()){
+						std::vector<std::string> values = it->second;
+						std::vector<std::string> values_buffer; //used to track new labels to be added to values
+						for(int j = 0; j < values.size(); j++){
+							int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + feature_vec.at(i),
+									"No", "Yes");
+							if(mult_choice_ans)
+								values_buffer.push_back(values.at(j));
+						}
+					}
+					else {
+						ROS_INFO("Attribute not found in table.");
+						std::string att_from_above = ask_free_resp("What " + feature_vec.at(i) + " are they?");
+						label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
+							splitString(att_from_above)));
+					}
 				}
-				//write this to request with appropriate ID
-				//wait for response
-				//update visible object vector
-				cur_cluster.clear();
-				cur_cluster.push_back("tin_can");
-				sleep(20);
+
+				/*
+				for reference, the algorithm coded above:
+
+				parse here
+
+				if(contained in table)
+					grab labels as values, using attribute as key
+					for each label
+						int answer = ask_mult_choice("Are they " + <label> + " in " + attribute)
+						if(answer)
+							put(label)
+				else
+					std::string answer = ask_free_resp("What <att-from-above> are they?")
+					put(answer)  as label
+				*/
 			}
 		}
 		else{
-			//recluster
+			if(ask_mult_choice("Is there any attribute common to most of the objects?", "No", "Yes")){
+				if(!firstTime){
+					firstTime = true;
+					std::string resp = ask_free_resp("Please specify what attribute is shared");
+					std::vector<std::string> feature_vec = splitString(resp);
+					clusterAttribute = feature_vec.at(0);
+				}
+				if(ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2")){
+					std::vector<std::string> outliers = splitString(
+							ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
+					for(int i = 0; i < outliers.size(); i++){
+						//display only outliers.at(i);
+						std::string answer = ask_free_resp("What is the attribute of this object?");
+						//store answer as label
+						//store in outlier map to be combined to any cluster with the same label
+					}
+					/*writeRequestFile(0,outliers);	//send request to Java prog
+					while(!responseFileExists){		//wait for Java to respond with updated cluster
+						sleep(.01);
+					}
+					readResponseFile();
+					*/
+					cur_cluster.clear();
+					cur_cluster.push_back("tin_can");
+					sleep(3); //waits for the cv window to update
+				}
+			}
+			else{
+				//writeRequestFile(2,NULL); //recluster
+			}
 		}
-	}
-		/*
-		else
-			int answer = ask_mul_choice("Is there any attribute common to most of the objects?")
-			if(answer)
-				//weird arrow on tree, ask about this
-				int answer = ask_mult_choice("How many objects don't fit the attribute?", "1 or 2", ">2")
-				if(answer)
-					recluster()
-				else
-					std::string answer = ask_free_resp("Please specify the object numbers of the outliers")
-					for each OBJECT : answer
-						display only object number OBJECT
-						std::string answer = ask_free_resp("What is the attribute of this object?")
-						store answer as a label for object
-					display previous cluster sans all outliers
-					std::string answer = ask_free_resp("What <attr-from-above> are they?")
-					store answer as label for cluster
+			/*
 			else
-				recluster()
+				int answer = ask_mul_choice("Is there any attribute common to most of the objects?")
+				if(answer)
+					//weird arrow on tree, ask about this
+					int answer = ask_mult_choice("How many objects don't fit the attribute?", "1 or 2", ">2")
+					if(answer)
+						recluster()
+					else
+						std::string answer = ask_free_resp("Please specify the object numbers of the outliers")
+						for each OBJECT : answer
+							display only object number OBJECT
+							std::string answer = ask_free_resp("What is the attribute of this object?")
+							store answer as a label for object
+						display previous cluster sans all outliers
+						std::string answer = ask_free_resp("What <attr-from-above> are they?")
+						store answer as label for cluster
+				else
+					recluster()
+			*/
+		
+		print_to_gui("Thank you for clearing that up!");
+
+		//get next cluster
+		/*writeRequestFile(1,NULL);
+		while(!responseFileExists){		//wait for Java to respond with updated cluster
+				sleep(.01);
+		}
+		readResponseFile();				//grab next cluster if successful
 		*/
-	
-	print_to_gui("Thank you for clearing that up!");
+	}
 }
 
 int main (int argc, char **argv){
