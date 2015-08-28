@@ -26,17 +26,8 @@ joint5: 99.8863830566
 joint6: 337.704528809
 
 
-safe position:
-position: [-2.121345227360501, -2.8422558770681094, 0.9624977766765357, -3.030922863962878, -0.07378021483956007, 2.7596034742150044, 0.9559199999999999, 0.95256]
-
-
-
-position in footprint, out of way of camera
-position: [-2.1973822049077945, -2.712318649586481, 0.9615352436795538, -2.4823340499596753, -0.49860873719346416, 2.753653439707549, 0.9559199999999999, 0.95256]
-
-Transition pose to pose above
-position: [-2.1993071377437037, -1.3080344725778785, 0.9615352436795538, -2.4799542492095803, -0.49860873719346416, 2.753653439707549, 0.9559199999999999, 0.95256]
-
+name: ['mico_joint_1', 'mico_joint_2', 'mico_joint_3', 'mico_joint_4', 'mico_joint_5', 'mico_joint_6', 'mico_joint_finger_1', 'mico_joint_finger_2']
+position: [-1.4918714173616245, -1.8046833895251533, -0.12993722748162864, -2.1717450183580356, 0.5688181856434458, 2.6786835908090505, -0.0008399999999999999, 0.0]
 
 */
 
@@ -46,9 +37,8 @@ bool g_caught_sigint = false;
 std::vector<double> q_safe;
 ros::ServiceClient movement_client;
 ros::Publisher pub;
-tf::TransformListener listener;
 double inflationRad;
-bool safe = true;
+bool safe = false;
 std_msgs::Bool pub_data; 
 sensor_msgs::JointState js_cur;
 ros::ServiceClient fkine_client;
@@ -80,6 +70,11 @@ bool checkIfSafe(){
     fkine_request.fk_link_names.push_back("mico_link_2");
     fkine_request.fk_link_names.push_back("mico_link_3");
     fkine_request.fk_link_names.push_back("mico_link_4");
+    fkine_request.fk_link_names.push_back("mico_link_5");
+    fkine_request.fk_link_names.push_back("mico_link_hand");
+    fkine_request.fk_link_names.push_back("mico_link_finger_1");
+    fkine_request.fk_link_names.push_back("mico_link_finger_2");
+
 
     ROS_INFO("Making FK call");
     if(fkine_client.call(fkine_request, fkine_response)){
@@ -91,7 +86,22 @@ bool checkIfSafe(){
         ros::shutdown();
         return false;
     }
-    return true;
+    
+    /*
+     * Check if any joints are outside the radius
+     */
+    bool temp = true;
+	for(int i = 0; i < fkine_response.pose_stamped.size(); i++){
+		if(fkine_response.pose_stamped.at(i).pose.position.x > inflationRad ||
+				fkine_response.pose_stamped.at(i).pose.position.y > inflationRad ||
+				fkine_response.pose_stamped.at(i).pose.position.x < -inflationRad ||
+				fkine_response.pose_stamped.at(i).pose.position.y < -inflationRad)
+			temp = false;
+	}
+	safe = temp;
+	pub_data.data = temp;
+	pub.publish(pub_data);
+	return temp;
 }
 
 void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
@@ -133,10 +143,9 @@ int main(int argc, char **argv)
     ros::ServiceServer srv = nh.advertiseService("mico_nav_safety", service_cb);
     fkine_client = nh.serviceClient<moveit_msgs::GetPositionFK> ("compute_fk");
 
+    q_safe += -1.4918,-1.804,-0.1299,-2.1717,.5688,2.6787; //defines the 'go-to' safe position
 
-    q_safe += 2.86,-1.88,-0.198,-1.634,-0.1,2.49; //defines the 'go-to' safe position
-
-    nh.param("inflation_radius", inflationRad, .5);
+    nh.param("inflation_radius", inflationRad, .2);
 
     ros::spin();
     return 0;
