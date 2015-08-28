@@ -3,6 +3,7 @@
 #include "moveit_utils/MicoMoveitJointPose.h"
 #include "ros/ros.h"
 #include "moveit_utils/MicoNavSafety.h"
+#include <moveit_msgs/GetPositionFK.h>
 
 #include "jaco_msgs/JointAngles.h"
 #include <sensor_msgs/JointState.h>
@@ -44,10 +45,13 @@ position: [-2.1993071377437037, -1.3080344725778785, 0.9615352436795538, -2.4799
 bool g_caught_sigint = false;
 std::vector<double> q_safe;
 ros::ServiceClient movement_client;
-ros::Publisher pub_;
+ros::Publisher pub;
+tf::TransformListener listener;
 double inflationRad;
 bool safe = true;
 std_msgs::Bool pub_data; 
+sensor_msgs::JointState js_cur;
+ros::ServiceClient fkine_client;
 
 void sig_handler(int sig){
     g_caught_sigint = true;
@@ -56,33 +60,44 @@ void sig_handler(int sig){
     exit(1);
 };
 
-void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
-	tf::TransformListener listener;
-    if (js->position.size() > 4){ //Message from the base or the arm
-        tf::StampedTransform transform;
-        try{
-          listener.waitForTransform("/mico_link_base", "/base_link",  
-                                   ros::Time(0), ros::Duration(1.0));
-          listener.lookupTransform("/mico_link_base", "/base_link",  
-                                   ros::Time(0), transform);
-        }
-        catch (tf::TransformException ex){
-          ROS_ERROR("%s",ex.what());
-          ros::Duration(1.0).sleep();
-        }
-/*
-        listener.waitForTransform("mico_api_origin", "base_link" ros::Time(0), ros::Duration(3.0));
-        listener.transformPose("mico_api_origin", stampedPose, stampOut);
-*/
-        for(int i = 0; i < 6; i++){ //check if all joints are within robot radius
-			ROS_INFO("Transform x: %f", js->position.at(i)*transform.getOrigin().x());
-			ROS_INFO("Transform y: %f", js->position.at(i)*transform.getOrigin().y());
+bool checkIfSafe(){
+    while(!fkine_client.exists()){
+        ROS_INFO("Waiting for service");
+        sleep(1.0);
+    }
 
-            safe &= abs(js->position.at(i)*transform.getOrigin().x()) < inflationRad && 
-                    abs(js->position.at(i)*transform.getOrigin().y()) < inflationRad;
-        }
-        pub_data.data = safe;
-        pub_.publish(pub_data);
+    /*
+     * Forward Kinematic service call
+     */
+
+    moveit_msgs::GetPositionFK::Request fkine_request;
+    moveit_msgs::GetPositionFK::Response fkine_response;
+
+    sensor_msgs::JointState q_true = js_cur;
+
+    //Load request with the desired link
+    fkine_request.fk_link_names.push_back("mico_link_1");
+    fkine_request.fk_link_names.push_back("mico_link_2");
+    fkine_request.fk_link_names.push_back("mico_link_3");
+    fkine_request.fk_link_names.push_back("mico_link_4");
+
+    ROS_INFO("Making FK call");
+    if(fkine_client.call(fkine_request, fkine_response)){
+        ros::spinOnce();
+        ROS_INFO("Call successful.");
+        ROS_INFO_STREAM(fkine_response);
+    } else {
+        ROS_INFO("Call failed. Terminating.");
+        ros::shutdown();
+        return false;
+    }
+    return true;
+}
+
+void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
+    if (js->position.size() > 4){ //Message from the base or the arm
+        js_cur = *js;
+        checkIfSafe();
     }
 };
 
@@ -96,13 +111,14 @@ bool service_cb(moveit_utils::MicoNavSafety::Request &req, moveit_utils::MicoNav
     target.joint5 = q_safe.at(4);
     target.joint6 = q_safe.at(5);
     movement_srv.request.target = target;
+
     if(movement_client.call(movement_srv)){
-    	ROS_INFO("Safety service call sent. Preparing to move arm to save location.");
-	res.safe = movement_srv.response.completed;
+        ROS_INFO("Safety service call sent. Preparing to move arm to save location.");
+        res.safe = movement_srv.response.completed;
     }
     else{
-    	ROS_INFO("Safety service call failed. Is the service running?");
-    	res.safe = false;
+        ROS_INFO("Safety service call failed. Is the service running?");
+        res.safe = false;
     }
     return true;
 }
@@ -112,15 +128,15 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "mico_nav_safety_node");
     ros::NodeHandle nh;
     movement_client = nh.serviceClient<moveit_utils::MicoMoveitJointPose>("mico_jointpose_service");
-    ros::Subscriber sub_angles = nh.subscribe ("/joint_states", 1, joint_state_cb);
-    pub_ = nh.advertise<std_msgs::Bool>("mico_nav_safe", 10);
+    ros::Subscriber sub_angles = nh.subscribe ("/joint_states", 10, joint_state_cb);
+    pub = nh.advertise<std_msgs::Bool>("mico_nav_safe", 10);
     ros::ServiceServer srv = nh.advertiseService("mico_nav_safety", service_cb);
-
+    fkine_client = nh.serviceClient<moveit_msgs::GetPositionFK> ("compute_fk");
 
 
     q_safe += 2.86,-1.88,-0.198,-1.634,-0.1,2.49; //defines the 'go-to' safe position
 
-    nh.param("inflation_radius", inflationRad, .1);
+    nh.param("inflation_radius", inflationRad, .5);
 
     ros::spin();
     return 0;
