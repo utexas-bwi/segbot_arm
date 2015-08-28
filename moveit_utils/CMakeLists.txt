@@ -19,6 +19,9 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   moveit_ros_planning_interface
   jaco_msgs
+  sensor_msgs
+  std_msgs
+  tf
   )
 find_package(Boost REQUIRED thread)
 
