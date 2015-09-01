@@ -35,7 +35,7 @@ position: [-1.4918714173616245, -1.8046833895251533, -0.12993722748162864, -2.17
 */
 
 
-
+bool debug = false;
 bool g_caught_sigint = false;
 std::vector<double> q_safe;
 ros::ServiceClient movement_client;
@@ -87,10 +87,9 @@ bool checkIfSafe(){
     ROS_INFO("Making FK call");
     if(fkine_client.call(fkine_request, fkine_response)){
         ros::spinOnce();
-        ROS_INFO("Call successful.");
-        ROS_INFO_STREAM(fkine_response);
+        ROS_INFO("IK call successful.");
     } else {
-        ROS_INFO("Call failed. Terminating.");
+        ROS_INFO("IK call failed. Moveit! probably can't be contacted. Terminating.");
         ros::shutdown();
         return false;
     }
@@ -116,12 +115,21 @@ void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
 
     if (js->position.size() > 4){ //Message from the base or the arm
         js_cur = *js;
-        if(!checkIfSafe())
-            sbs.status = sbs.STOPPED;
-        else
-            sbs.status = sbs.RUNNING;
-        sb_req.status = sbs;
-        stopbase_client.call(sb_req,sb_resp);
+        if(debug){
+			bool temp = safe;
+			if(!checkIfSafe())
+				sbs.status = sbs.STOPPED;
+			else
+				sbs.status = sbs.PAUSED;
+			sb_req.status = sbs;
+			sb_req.requester = "mico_safety_node";
+			if(safe != temp)
+				if(stopbase_client.call(sb_req,sb_resp)){
+					ROS_INFO("Made stop_base call");
+				}
+		}
+		else
+			checkIfSafe();
     }
 };
 
