@@ -4,6 +4,9 @@
 #include "ros/ros.h"
 #include "moveit_utils/MicoNavSafety.h"
 #include <moveit_msgs/GetPositionFK.h>
+#include <bwi_msgs/StopBaseStatus.h>
+#include <bwi_msgs/StopBase.h>
+
 
 #include "jaco_msgs/JointAngles.h"
 #include <sensor_msgs/JointState.h>
@@ -42,6 +45,11 @@ bool safe = false;
 std_msgs::Bool pub_data; 
 sensor_msgs::JointState js_cur;
 ros::ServiceClient fkine_client;
+ros::ServiceClient stopbase_client;
+
+bwi_msgs::StopBaseStatus sbs;
+bwi_msgs::StopBase::Request sb_req;
+bwi_msgs::StopBase::Response sb_resp;
 
 void sig_handler(int sig){
     g_caught_sigint = true;
@@ -105,9 +113,15 @@ bool checkIfSafe(){
 }
 
 void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
+
     if (js->position.size() > 4){ //Message from the base or the arm
         js_cur = *js;
-        checkIfSafe();
+        if(!checkIfSafe())
+            sbs.status = sbs.STOPPED;
+        else
+            sbs.status = sbs.RUNNING;
+        sb_req.status = sbs;
+        stopbase_client.call(sb_req,sb_resp);
     }
 };
 
@@ -142,6 +156,7 @@ int main(int argc, char **argv)
     pub = nh.advertise<std_msgs::Bool>("mico_nav_safe", 10);
     ros::ServiceServer srv = nh.advertiseService("mico_nav_safety", service_cb);
     fkine_client = nh.serviceClient<moveit_msgs::GetPositionFK> ("compute_fk");
+    stopbase_client = nh.serviceClient<bwi_msgs::StopBase> ("stop_base");
 
     q_safe += -1.4918,-1.804,-0.1299,-2.1717,.5688,2.6787; //defines the 'go-to' safe position
 
