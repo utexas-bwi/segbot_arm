@@ -35,13 +35,14 @@ position: [-1.4918714173616245, -1.8046833895251533, -0.12993722748162864, -2.17
 */
 
 
-bool debug = false;
+bool debug = true;
 bool g_caught_sigint = false;
+bool safe = false;
+
 std::vector<double> q_safe;
 ros::ServiceClient movement_client;
 ros::Publisher pub;
 double inflationRad;
-bool safe = false;
 std_msgs::Bool pub_data; 
 sensor_msgs::JointState js_cur;
 ros::ServiceClient fkine_client;
@@ -59,6 +60,7 @@ void sig_handler(int sig){
 };
 
 bool checkIfSafe(){
+	
     while(!fkine_client.exists()){
         ROS_INFO("Waiting for service");
         sleep(1.0);
@@ -83,14 +85,11 @@ bool checkIfSafe(){
     fkine_request.fk_link_names.push_back("mico_link_finger_1");
     fkine_request.fk_link_names.push_back("mico_link_finger_2");
 
-
-    ROS_INFO("Making FK call");
     if(fkine_client.call(fkine_request, fkine_response)){
         ros::spinOnce();
-        ROS_INFO("IK call successful.");
+        ROS_DEBUG("IK call successful.");
     } else {
-        ROS_INFO("IK call failed. Moveit! probably can't be contacted. Terminating.");
-        ros::shutdown();
+        ROS_ERROR("IK call failed. Moveit! probably can't be contacted. Preempting movement.");
         return false;
     }
     
@@ -112,25 +111,29 @@ bool checkIfSafe(){
 }
 
 void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
+	ros::Rate r(10);
 
     if (js->position.size() > 4){ //Message from the base or the arm
         js_cur = *js;
-        if(debug){
-			bool temp = safe;
-			if(!checkIfSafe())
-				sbs.status = sbs.STOPPED;
-			else
-				sbs.status = sbs.PAUSED;
-			sb_req.status = sbs;
-			sb_req.requester = "mico_safety_node";
-			if(safe != temp)
-				if(stopbase_client.call(sb_req,sb_resp)){
-					ROS_INFO("Made stop_base call");
-				}
-		}
+        
+		if(!checkIfSafe())
+			sbs.status = sbs.PAUSED;
 		else
-			checkIfSafe();
+			sbs.status = sbs.RUNNING;
+			
+		sb_req.status = sbs;
+		sb_req.requester = "mico_safety_node";
+		
+		if(stopbase_client.call(sb_req,sb_resp)){
+			ROS_DEBUG("Made stop_base call");
+		}
+		else{
+			ROS_ERROR("Stop base service call failed!");
+			ros::shutdown();
+		}	
     }
+	r.sleep();
+
 };
 
 bool service_cb(moveit_utils::MicoNavSafety::Request &req, moveit_utils::MicoNavSafety::Response &res){
@@ -143,14 +146,15 @@ bool service_cb(moveit_utils::MicoNavSafety::Request &req, moveit_utils::MicoNav
     target.joint5 = q_safe.at(4);
     target.joint6 = q_safe.at(5);
     movement_srv.request.target = target;
-
+	
     if(movement_client.call(movement_srv)){
         ROS_INFO("Safety service call sent. Preparing to move arm to save location.");
         res.safe = movement_srv.response.completed;
     }
     else{
-        ROS_INFO("Safety service call failed. Is the service running?");
+        ROS_ERROR("Safety service call failed. Is the service running?");
         res.safe = false;
+        return false;
     }
     return true;
 }
@@ -163,12 +167,12 @@ int main(int argc, char **argv)
     ros::Subscriber sub_angles = nh.subscribe ("/joint_states", 10, joint_state_cb);
     pub = nh.advertise<std_msgs::Bool>("mico_nav_safe", 10);
     ros::ServiceServer srv = nh.advertiseService("mico_nav_safety", service_cb);
-    fkine_client = nh.serviceClient<moveit_msgs::GetPositionFK> ("compute_fk");
-    stopbase_client = nh.serviceClient<bwi_msgs::StopBase> ("stop_base");
+    fkine_client = nh.serviceClient<moveit_msgs::GetPositionFK>("compute_fk");
+    stopbase_client = nh.serviceClient<bwi_msgs::StopBase>("stop_base");
 
     q_safe += -1.4918,-1.804,-0.1299,-2.1717,.5688,2.6787; //defines the 'go-to' safe position
 
-    nh.param("inflation_radius", inflationRad, .2);
+    nh.param("inflation_radius", inflationRad, .195);
 
     ros::spin();
     return 0;
