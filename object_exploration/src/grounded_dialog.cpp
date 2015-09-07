@@ -87,23 +87,32 @@ bool responseFileExists(){
 
 /*
  * Writes request file
- * ID: 0 = remove
- 		1 = get next cluster
- 		2 = recluster
+ * ID: 0 = remove -> name of object, its label
+ 		1 = get next cluster -> current cluster number, its label
+ 		2 = recluster -> no other arguments
 
  	Returns success
 
  	Input is ID and a vector, which can be null if the ID specifies an action not related to object IDS
  */
-bool writeRequestFile(int ID, std::vector<string> objects){
+bool writeRequestFile(int ID, std::vector<std::string> objects){
 	std::ofstream myfile((filePath + requestName).c_str());
 	if(myfile.is_open()){
 		myfile << ID << "\n";
 		if(ID == 0){
+			ROS_INFO("Requesting object removal");
 			for(int i = 0; i < objects.size(); i++){
 				myfile << objects[i] << "\n";
 			}
+			//print labels
 		}
+		else if(ID == 1){
+			ROS_INFO("Requesting next cluster");
+			myfile << clusterNum << "\n";
+			//myfile << label << "\n";
+		}
+		else
+			ROS_INFO("Requesting a recluster");
 		myfile.close();
 	}
 	else {
@@ -115,7 +124,11 @@ bool writeRequestFile(int ID, std::vector<string> objects){
 
 /*
  * Reads the response file from external program
- * IDs : 1 = output of object names in subsequent lines
+ * IDs : N/A
+ * Expected format: 
+ 	behavior_modality
+ 	cluster_num
+ 	object names
  */
 
 bool readResponseFile(){
@@ -123,15 +136,17 @@ bool readResponseFile(){
 	int lineNum = 0;
 	int ID;
 	std::vector<std::string> objects;
-	std::ifstream myfile((filePath + responseName).c_str());
+	std::string fullPath = (filePath + responseName);
+	std::ifstream myfile(fullPath.c_str());
 	if(myfile.is_open()){
 		while(getline(myfile,line)){
-			if(lineNum == 0)
-				ID = atoi(line.c_str());
+			if(lineNum == 0){
+				//modality
+			}
+			else if(lineNum == 1)
+				clusterNum = atoi(line.c_str());
 			else{
-				if(ID == 0){
-					objects.push_back(line.c_str());
-				}
+				objects.push_back(line.c_str());
 			}
 			lineNum++;
 		}
@@ -142,6 +157,12 @@ bool readResponseFile(){
 		return false;
 	}
 	cur_cluster = objects;
+
+
+	if( remove( fullPath.c_str()) != 0 )
+    	ROS_ERROR( "Error deleting response file!" );
+	else
+		ROS_INFO("Response file parsed and deleted successfully.");
 	return true;
 }
 
