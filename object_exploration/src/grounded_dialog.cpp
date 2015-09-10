@@ -122,6 +122,35 @@ bool writeRequestFile(int ID, std::vector<std::string> objects){
 	}
 	return true;
 }
+/*
+ * ONLY used for ID 1
+ */
+bool writeRequestFile(int ID, std::string label){
+	std::ofstream myfile((reqFilePath + requestName).c_str());
+	if(myfile.is_open()){
+		myfile << ID << "\n";
+		if(ID == 0){
+			ROS_INFO("Requesting object removal");
+			for(int i = 0; i < objects.size(); i++){
+				myfile << objects[i] << "\n";
+			}
+			//print labels
+		}
+		else if(ID == 1){
+			ROS_INFO("Requesting next cluster");
+			myfile << clusterNum << "\n";
+			//myfile << label << "\n";
+		}
+		else
+			ROS_INFO("Requesting a recluster");
+		myfile.close();
+	}
+	else {
+		ROS_INFO("Unable to create file");
+		return false;
+	}
+	return true;
+}
 
 /*
  * Reads the response file from external program
@@ -145,7 +174,7 @@ bool readResponseFile(){
 				modality = line.c_str();
 			}
 			else if(lineNum == 1)
-				clusterNum = atoi(lineNume.c_str());
+				clusterNum = atoi(line.c_str());
 			else{
 				objects.push_back(line.c_str());
 			}
@@ -356,6 +385,7 @@ void sequence(){
 		if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
 			//ask only once per tree : "Can you specify that attribute?"
 			if(!firstTime){
+
 				firstTime = true;
 				std::string resp = ask_free_resp("Please specify what attribute is shared");
 
@@ -401,6 +431,11 @@ void sequence(){
 					put(answer)  as label
 				*/
 			}
+			writeRequestFile(1, att_from_above);
+			while(!responseFileExists()){		//wait for Java to respond with updated cluster
+				sleep(.01);
+			}
+			readResponseFile();
 		}
 		else{
 			if(ask_mult_choice("Is there any attribute common to most of the objects for context ["+modality+"]?", "No", "Yes")){
