@@ -129,14 +129,7 @@ bool writeRequestFile(int ID, std::string label){
 	std::ofstream myfile((reqFilePath + requestName).c_str());
 	if(myfile.is_open()){
 		myfile << ID << "\n";
-		if(ID == 0){
-			ROS_INFO("Requesting object removal");
-			for(int i = 0; i < objects.size(); i++){
-				myfile << objects[i] << "\n";
-			}
-			//print labels
-		}
-		else if(ID == 1){
+		if(ID == 1){
 			ROS_INFO("Requesting next cluster");
 			myfile << clusterNum << "\n";
 			//myfile << label << "\n";
@@ -378,6 +371,7 @@ void sequence(){
 		sleep(.01);
 	}
 	readResponseFile();
+	std::string att_from_above;
 	boost::thread workerThread(writeToScreen, &cur_cluster);
 	while(true){
 		firstTime = false;
@@ -409,7 +403,7 @@ void sequence(){
 					}
 					else {
 						ROS_INFO("Attribute not found in table.");
-						std::string att_from_above = ask_free_resp("What " + feature_vec.at(i) + " are they?");
+						att_from_above = ask_free_resp("What " + feature_vec.at(i) + " are they?");
 						label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
 							splitString(att_from_above)));
 					}
