@@ -159,6 +159,9 @@ bool readResponseFile(){
 	}
 	cur_cluster = objects;
 
+	for(int i = 0; i < cur_cluster.size(); i++){
+		ROS_INFO("Got: " + cur_cluster[i]);
+	}
 
 	if( remove( fullPath.c_str()) != 0 )
     	ROS_ERROR( "Error deleting response file!" );
