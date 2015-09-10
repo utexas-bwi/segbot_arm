@@ -154,7 +154,7 @@ bool readResponseFile(){
 		myfile.close();
 	}
 	else{
-		ROS_INFO("Unable to open response file");
+		ROS_ERROR("Unable to open response file. Looking for %s", fillPath.c_str());
 		return false;
 	}
 	cur_cluster = objects;
