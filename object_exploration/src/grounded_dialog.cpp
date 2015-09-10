@@ -339,9 +339,11 @@ std::vector<std::string> splitString(std::string input){
  * To be the script & main loop for the question-answer interface logic
  */
 
-void sequence(std::vector<std::string> photo_temp){
+void sequence(){
 	bool firstTime;
-
+	while(!responseFileExists){		//wait for Java to respond with updated cluster
+		sleep(.01);
+	}
 	boost::thread workerThread(writeToScreen, &cur_cluster);
 	while(true){
 		firstTime = false;
@@ -412,19 +414,20 @@ void sequence(std::vector<std::string> photo_temp){
 						//store answer as label
 						//store in outlier map to be combined to any cluster with the same label
 					}
-					/*writeRequestFile(0,outliers);	//send request to Java prog
+					writeRequestFile(0,outliers);	//send request to Java prog
 					while(!responseFileExists){		//wait for Java to respond with updated cluster
 						sleep(.01);
 					}
 					readResponseFile();
-					*/
+					
 					cur_cluster.clear();
 					cur_cluster.push_back("tin_can");
 					sleep(3); //waits for the cv window to update
 				}
 			}
 			else{
-				//writeRequestFile(2,NULL); //recluster
+				std::vector<std::string> temp;
+				writeRequestFile(2,temp); //recluster
 			}
 		}
 			/*
@@ -451,12 +454,13 @@ void sequence(std::vector<std::string> photo_temp){
 		print_to_gui("Thank you for clearing that up!");
 
 		//get next cluster
-		/*writeRequestFile(1,NULL);
+		std::vector<std::string> temp;
+		writeRequestFile(1,temp);
 		while(!responseFileExists){		//wait for Java to respond with updated cluster
 				sleep(.01);
 		}
 		readResponseFile();				//grab next cluster if successful
-		*/
+		
 	}
 }
 
@@ -474,10 +478,11 @@ int main (int argc, char **argv){
 	//std::vector<std::string> photo_temp;
 	//photo_temp.push_back("big_red_pop_can");
 	//photo_temp.push_back("blue_salt_can");
-
+	std::vector<std::string> temp;
+	writeRequestFile(1,temp);
 	
 
-	cur_cluster = photo_temp;
-	sequence(photo_temp);
+	//cur_cluster = photo_temp;
+	sequence();
 	return(0);
 }
