@@ -62,7 +62,7 @@ const int abs_width 			= 1500; 	//pixels
 const int abs_height 			= 450; 		//pixels
 const int title_height			= 12;		//pixels
 const int images_row			= round(abs_width / (img_width + border_size));
-const std::string filePath		= "/home/users/max/";
+const std::string filePath		= "/home/users/pkhante/Pictures/grounded_learning_images/";
 const std::string responseName	= "groundedResponse.txt";
 const std::string requestName	= "groundedRequest.txt";
 
@@ -265,7 +265,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 				for(int j = 0; j < cluster.size() % images_row; j++){
 					int object_num = j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
-					std::string path ="/home/maxwell/Pictures/object_exploration/cropped/" + cluster.at(object_num) + ".JPG";
+					std::string path =filePath + cluster.at(object_num) + ".JPG";
 					ROS_INFO("Getting %s", path.c_str());
 					Mat src = imread(path);
 					Mat img;
@@ -290,7 +290,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 				for(int j = 0; j <= images_row; j++){
 					int object_num = j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
-					std::string path ="/home/users/max/Pictures/object_exploration/" + cluster.at(object_num) + ".JPG";
+					std::string path =filePath + cluster.at(object_num) + ".JPG";
 					ROS_INFO("Getting %s", path.c_str());
 					Mat src = imread(path);
 					Mat img;
@@ -471,9 +471,9 @@ int main (int argc, char **argv){
 	sleep(2); //must wait for gui to initizalize
 
 	//simulated vector recieved from clustering alg.
-	std::vector<std::string> photo_temp;
-	photo_temp.push_back("big_red_pop_can");
-	photo_temp.push_back("blue_salt_can");
+	//std::vector<std::string> photo_temp;
+	//photo_temp.push_back("big_red_pop_can");
+	//photo_temp.push_back("blue_salt_can");
 
 	
 
