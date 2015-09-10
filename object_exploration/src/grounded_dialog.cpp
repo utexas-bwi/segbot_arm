@@ -154,13 +154,13 @@ bool readResponseFile(){
 		myfile.close();
 	}
 	else{
-		ROS_ERROR("Unable to open response file. Looking for %s", fillPath.c_str());
+		ROS_ERROR("Unable to open response file. Looking for %s", fullPath.c_str());
 		return false;
 	}
 	cur_cluster = objects;
 
 	for(int i = 0; i < cur_cluster.size(); i++){
-		ROS_INFO("Got: " + cur_cluster[i]);
+		ROS_INFO("Got: %s",  cur_cluster[i].c_str());
 	}
 
 	if( remove( fullPath.c_str()) != 0 )
