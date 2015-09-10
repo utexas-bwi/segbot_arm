@@ -297,7 +297,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 					Mat img;
 					if(!src.data)
 						ROS_INFO("Couldn't get image data");
-					resize(src,img,Size(img_width, img_height));
+					//resize(src,img,Size(img_width, img_height));
 					ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
 					ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
 					if(object_num > images_row){ //if a double digit number, center text
