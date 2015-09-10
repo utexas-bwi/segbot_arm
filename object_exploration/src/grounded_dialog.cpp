@@ -63,6 +63,7 @@ const int abs_height 			= 450; 		//pixels
 const int title_height			= 12;		//pixels
 const int images_row			= round(abs_width / (img_width + border_size));
 const std::string filePath		= "/home/users/pkhante/Pictures/grounded_learning_images/";
+const std::string reqFilePath	= "/home/users/pkhante/Desktop/";
 const std::string responseName	= "groundedResponse.txt";
 const std::string requestName	= "groundedRequest.txt";
 
@@ -96,7 +97,7 @@ bool responseFileExists(){
  	Input is ID and a vector, which can be null if the ID specifies an action not related to object IDS
  */
 bool writeRequestFile(int ID, std::vector<std::string> objects){
-	std::ofstream myfile((filePath + requestName).c_str());
+	std::ofstream myfile((reqFilePath + requestName).c_str());
 	if(myfile.is_open()){
 		myfile << ID << "\n";
 		if(ID == 0){
@@ -136,7 +137,7 @@ bool readResponseFile(){
 	int lineNum = 0;
 	int ID;
 	std::vector<std::string> objects;
-	std::string fullPath = (filePath + responseName);
+	std::string fullPath = (reqFilePath + responseName);
 	std::ifstream myfile(fullPath.c_str());
 	if(myfile.is_open()){
 		while(getline(myfile,line)){
@@ -344,6 +345,7 @@ void sequence(){
 	while(!responseFileExists){		//wait for Java to respond with updated cluster
 		sleep(.01);
 	}
+	readResponseFile();
 	boost::thread workerThread(writeToScreen, &cur_cluster);
 	while(true){
 		firstTime = false;
