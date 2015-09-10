@@ -70,6 +70,7 @@ const std::string requestName	= "groundedRequest.txt";
 std::map<std::string, std::vector<std::string> > label_table;
 int clusterNum;
 std::string clusterAttribute;
+std::string modality;
 static std::vector<std::string> cur_cluster;
 using namespace cv;
 
@@ -141,10 +142,10 @@ bool readResponseFile(){
 	if(myfile.is_open()){
 		while(getline(myfile,line)){
 			if(lineNum == 0){
-				//modality
+				modality = line.c_str();
 			}
 			else if(lineNum == 1)
-				clusterNum = atoi(line.c_str());
+				clusterNum = atoi(lineNume.c_str());
 			else{
 				objects.push_back(line.c_str());
 			}
@@ -351,7 +352,7 @@ void sequence(){
 	boost::thread workerThread(writeToScreen, &cur_cluster);
 	while(true){
 		firstTime = false;
-		bool common_att = ask_mult_choice("Do any shown objects share a common attribute?", "No", "Yes");
+		bool common_att = ask_mult_choice("Do any shown objects share a common attribute for context ["+modality+"]?", "No", "Yes");
 		if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
 			//ask only once per tree : "Can you specify that attribute?"
 			if(!firstTime){
@@ -402,7 +403,7 @@ void sequence(){
 			}
 		}
 		else{
-			if(ask_mult_choice("Is there any attribute common to most of the objects?", "No", "Yes")){
+			if(ask_mult_choice("Is there any attribute common to most of the objects for context ["+modality+"]?", "No", "Yes")){
 				if(!firstTime){
 					firstTime = true;
 					std::string resp = ask_free_resp("Please specify what attribute is shared");
