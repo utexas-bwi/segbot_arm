@@ -81,9 +81,8 @@ ros::ServiceClient gui_client;
  * Returns whether or not response file exists
  */
 bool responseFileExists(){
-	struct stat buffer;
-	std::string fullPath = filePath + responseName;
-	return (stat (fullPath.c_str(), &buffer) == 0);
+	std::string fullPath = reqFilePath + responseName;
+	return (std::ifstream(fullPath.c_str()));
 }
 
 /*
@@ -300,7 +299,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 					Mat img;
 					if(!src.data)
 						ROS_INFO("Couldn't get image data");
-					resize(src,img,Size(img_width, img_height));
+					//resize(src,img,Size(img_width, img_height));
 					ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
 					ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
 
@@ -345,7 +344,7 @@ std::vector<std::string> splitString(std::string input){
 
 void sequence(){
 	bool firstTime;
-	while(!responseFileExists){		//wait for Java to respond with updated cluster
+	while(!responseFileExists()){		//wait for Java to respond with updated cluster
 		sleep(.01);
 	}
 	readResponseFile();
