@@ -61,7 +61,7 @@ const int border_size 			= 5; 		//pixels
 const int abs_width 			= 1500; 	//pixels
 const int abs_height 			= 450; 		//pixels
 const int title_height			= 12;		//pixels
-const int images_row			= round(abs_width / (img_width + border_size));
+const int images_row			= round(abs_width / (img_width + border_size)) - 1;
 const std::string filePath		= "/home/users/pkhante/Pictures/grounded_learning_images/";
 const std::string reqFilePath	= "/home/users/pkhante/Desktop/";
 const std::string responseName	= "groundedResponse.txt";
@@ -132,6 +132,7 @@ bool writeRequestFile(int ID, std::string label){
 		if(ID == 1){
 			ROS_INFO("Requesting next cluster");
 			myfile << clusterNum << "\n";
+			myfile <<label <<"\n";
 			//myfile << label << "\n";
 		}
 		else
@@ -297,7 +298,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 					Mat img;
 					if(!src.data)
 						ROS_INFO("Couldn't get image data");
-					//resize(src,img,Size(img_width, img_height));
+					resize(src,img,Size(img_width, img_height));
 					ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
 					ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
 					if(object_num > images_row){ //if a double digit number, center text
@@ -403,7 +404,7 @@ void sequence(){
 					}
 					else {
 						ROS_INFO("Attribute not found in table.");
-						att_from_above = ask_free_resp("What " + feature_vec.at(i) + " are they?");
+						att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
 						label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
 							splitString(att_from_above)));
 					}
@@ -490,7 +491,7 @@ void sequence(){
 		//get next cluster
 		std::vector<std::string> temp;
 		writeRequestFile(1,temp);
-		while(!responseFileExists){		//wait for Java to respond with updated cluster
+		while(!responseFileExists()){		//wait for Java to respond with updated cluster
 				sleep(.01);
 		}
 		readResponseFile();				//grab next cluster if successful
