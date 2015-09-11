@@ -298,18 +298,18 @@ int writeToScreen(std::vector<std::string> *object_names){
 					Mat img;
 					if(!src.data)
 						ROS_INFO("Couldn't get image data");
-					resize(src,img,Size(img_width, img_height));
+					//resize(src,img,Size(img_width, img_height));
 					ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
 					ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
 					if(object_num > images_row){ //if a double digit number, center text
 						text_x -= 6;
 					}
 					cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
-					targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
-					img.copyTo(targetROI);
+					targetROI = dst(cv::Rect(roi_x,roi_y,src.cols, src.rows));
+					src.copyTo(targetROI);
 					roi_x += img_width;
 					text_x += img_width;
-					targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+					targetROI = dst(cv::Rect(roi_x,roi_y,src.cols, src.rows));
 					roi_x += border_size;
 					text_x += border_size + border_size;
 				}
@@ -328,14 +328,14 @@ int writeToScreen(std::vector<std::string> *object_names){
 					ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
 
 					cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
-					targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
-					img.copyTo(targetROI);
+					targetROI = dst(cv::Rect(roi_x,roi_y,src.cols, src.rows));
+					src.copyTo(targetROI);
 					if(j != images_row){
 						roi_x += img_width;
 						text_x += img_width;
-						targetROI = dst(cv::Rect(roi_x,roi_y,img.cols, img.rows));
+						targetROI = dst(cv::Rect(roi_x,roi_y,src.cols, src.rows));
 						roi_x += border_size;
-						text_x += border_size;
+						//text_x += border_size;
 					}
 				}
 				roi_y += img_height;
