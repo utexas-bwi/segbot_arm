@@ -96,15 +96,14 @@ bool responseFileExists(){
 
  	Input is ID and a vector, which can be null if the ID specifies an action not related to object IDS
  */
-bool writeRequestFile(int ID, std::vector<std::string> objects){
+bool writeRequestFile(int ID, std::string object_name, std::string label){
 	std::ofstream myfile((reqFilePath + requestName).c_str());
 	if(myfile.is_open()){
 		myfile << ID << "\n";
 		if(ID == 0){
 			ROS_INFO("Requesting object removal");
-			for(int i = 0; i < objects.size(); i++){
-				myfile << objects[i] << "\n";
-			}
+			myfile << object_name << "\n";
+			myfile << label << "\n";
 			//print labels
 		}
 		else if(ID == 1){
@@ -314,7 +313,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 					text_x += border_size + border_size;
 				}
 			} else{
-				for(int j = 0; j <= images_row; j++){
+				for(int j = 1; j <= images_row; j++){
 					int object_num = j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
 					std::string path =filePath + cluster.at(object_num) + ".JPG";
@@ -335,7 +334,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 						text_x += img_width;
 						targetROI = dst(cv::Rect(roi_x,roi_y,src.cols, src.rows));
 						roi_x += border_size;
-						//text_x += border_size;
+						text_x += border_size;
 					}
 				}
 				roi_y += img_height;
@@ -367,7 +366,7 @@ std::vector<std::string> splitString(std::string input){
  */
 
 void sequence(){
-	bool firstTime;
+	bool firstTime = true;
 	while(!responseFileExists()){		//wait for Java to respond with updated cluster
 		sleep(.01);
 	}
@@ -375,13 +374,12 @@ void sequence(){
 	std::string att_from_above;
 	boost::thread workerThread(writeToScreen, &cur_cluster);
 	while(true){
-		firstTime = false;
-		bool common_att = ask_mult_choice("Do any shown objects share a common attribute for context ["+modality+"]?", "No", "Yes");
+		bool common_att = ask_mult_choice("Do all shown objects share a common attribute for context ["+modality+"]?", "No", "Yes");
 		if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
 			//ask only once per tree : "Can you specify that attribute?"
-			if(!firstTime){
+			if(true){//firstTime){
 
-				firstTime = true;
+				//firstTime = false;
 				std::string resp = ask_free_resp("Please specify what attribute is shared");
 
 				//parse resp, checking if each attribute exists in table
@@ -407,35 +405,15 @@ void sequence(){
 						att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
 						label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
 							splitString(att_from_above)));
+						firstTime = true;
 					}
 				}
-
-				/*
-				for reference, the algorithm coded above:
-
-				parse here
-
-				if(contained in table)
-					grab labels as values, using attribute as key
-					for each label
-						int answer = ask_mult_choice("Are they " + <label> + " in " + attribute)
-						if(answer)
-							put(label)
-				else
-					std::string answer = ask_free_resp("What <att-from-above> are they?")
-					put(answer)  as label
-				*/
 			}
-			writeRequestFile(1, att_from_above);
-			while(!responseFileExists()){		//wait for Java to respond with updated cluster
-				sleep(.01);
-			}
-			readResponseFile();
 		}
 		else{
 			if(ask_mult_choice("Is there any attribute common to most of the objects for context ["+modality+"]?", "No", "Yes")){
-				if(!firstTime){
-					firstTime = true;
+				if(firstTime){
+					firstTime = false;
 					std::string resp = ask_free_resp("Please specify what attribute is shared");
 					std::vector<std::string> feature_vec = splitString(resp);
 					clusterAttribute = feature_vec.at(0);
@@ -443,54 +421,34 @@ void sequence(){
 				if(ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2")){
 					std::vector<std::string> outliers = splitString(
 							ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
+					std::vector<std::string> full_cluster = cur_cluster;
 					for(int i = 0; i < outliers.size(); i++){
+						std::string outlier_name = full_cluster.at(atoi(outliers.at(i).c_str()));
+						cur_cluster.clear();
+						cur_cluster.push_back(outlier_name);
+						sleep(1);
 						//display only outliers.at(i);
 						std::string answer = ask_free_resp("What is the attribute of this object?");
 						//store answer as label
 						//store in outlier map to be combined to any cluster with the same label
+						writeRequestFile(0,outliers[i],answer);	//send request to Java prog
+						while(!responseFileExists()){		//wait for Java to respond with updated cluster
+							sleep(.01);
+						}
+						readResponseFile();
+						sleep(1); //waits for the cv window to update
 					}
-					writeRequestFile(0,outliers);	//send request to Java prog
-					while(!responseFileExists){		//wait for Java to respond with updated cluster
-						sleep(.01);
-					}
-					readResponseFile();
-					
-					cur_cluster.clear();
-					cur_cluster.push_back("tin_can");
-					sleep(3); //waits for the cv window to update
 				}
 			}
 			else{
-				std::vector<std::string> temp;
-				writeRequestFile(2,temp); //recluster
+				writeRequestFile(2,att_from_above, att_from_above); //recluster
 			}
 		}
-			/*
-			else
-				int answer = ask_mul_choice("Is there any attribute common to most of the objects?")
-				if(answer)
-					//weird arrow on tree, ask about this
-					int answer = ask_mult_choice("How many objects don't fit the attribute?", "1 or 2", ">2")
-					if(answer)
-						recluster()
-					else
-						std::string answer = ask_free_resp("Please specify the object numbers of the outliers")
-						for each OBJECT : answer
-							display only object number OBJECT
-							std::string answer = ask_free_resp("What is the attribute of this object?")
-							store answer as a label for object
-						display previous cluster sans all outliers
-						std::string answer = ask_free_resp("What <attr-from-above> are they?")
-						store answer as label for cluster
-				else
-					recluster()
-			*/
 		
-		print_to_gui("Thank you for clearing that up!");
+		print_to_gui("Waiting...");
 
 		//get next cluster
-		std::vector<std::string> temp;
-		writeRequestFile(1,temp);
+		writeRequestFile(1,att_from_above);
 		while(!responseFileExists()){		//wait for Java to respond with updated cluster
 				sleep(.01);
 		}
@@ -513,8 +471,8 @@ int main (int argc, char **argv){
 	//std::vector<std::string> photo_temp;
 	//photo_temp.push_back("big_red_pop_can");
 	//photo_temp.push_back("blue_salt_can");
-	std::vector<std::string> temp;
-	writeRequestFile(1,temp);
+	std::string temp_string;
+	writeRequestFile(1,temp_string, temp_string);
 	
 
 	//cur_cluster = photo_temp;
