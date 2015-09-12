@@ -288,7 +288,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 			if((i+1) == num_rows){ //output non standard no. images
 				roi_x = border_size;
 				ROS_INFO("Placing a non-standard row of images");
-				for(int j = 0; j < cluster.size() % images_row; j++){
+				for(int j = 1; j < cluster.size() % images_row; j++){
 					int object_num = j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
 					std::string path =filePath + cluster.at(object_num) + ".JPG";
@@ -313,7 +313,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 					text_x += border_size + border_size;
 				}
 			} else{
-				for(int j = 1; j <= images_row; j++){
+				for(int j = 0; j <= images_row; j++){
 					int object_num = j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
 					std::string path =filePath + cluster.at(object_num) + ".JPG";
