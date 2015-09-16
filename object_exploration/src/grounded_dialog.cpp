@@ -456,12 +456,20 @@ void sequence(){
 					 * the existance of the attribute. If it exists, add the label to the vector of labels already seen
 					 * Otherwise, add an entry pair <feature, vec:labels>
 					 * 
+					 */ 
 					std::string resp = ask_free_resp("What " + clusterAttribute + " are these items?");
-					ROS_INFO("Attribute not found in table.");
-					att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
-					label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
-						splitString(resp)));
-						*/
+					std::map<std::string, std::vector<std::string> >::iterator it;
+					it = label_table.find(clusterAttribute);
+					if(it != label_table.end()){ //att exists
+						std::vector<std::string> values = it->second;
+						values.push_back(resp);
+						label_table[clusterAttribute] = values;
+					}
+					else{ //doesn't exist
+						label_table.insert(std::pair<std::string,std::vector<std::string> >(clusterAttribute,
+								splitString(resp)));
+					}
+					
 				}
 			}
 			else{
