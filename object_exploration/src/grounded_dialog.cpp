@@ -359,8 +359,9 @@ int writeToScreen(std::vector<std::string> *object_names){
 std::vector<std::string> splitString(std::string input){
 	std::vector<std::string> vec;
 	std::istringstream iss(input);
-	copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
-		back_inserter(vec));
+	//copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
+	//	back_inserter(vec));
+	vec.push_back(input);
 	return vec;
 }
 
@@ -451,6 +452,16 @@ void sequence(){
 						readResponseFile();
 						sleep(1); //waits for the cv window to update
 					}
+					/* Here I need to grab the label for the attribute. Need to check label table for:
+					 * the existance of the attribute. If it exists, add the label to the vector of labels already seen
+					 * Otherwise, add an entry pair <feature, vec:labels>
+					 * 
+					std::string resp = ask_free_resp("What " + clusterAttribute + " are these items?");
+					ROS_INFO("Attribute not found in table.");
+					att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
+					label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
+						splitString(resp)));
+						*/
 				}
 			}
 			else{
