@@ -395,17 +395,22 @@ void sequence(){
 					if(it != label_table.end()){
 						std::vector<std::string> values = it->second;
 						std::vector<std::string> values_buffer; //used to track new labels to be added to values
-						for(int j = 0; j < values.size(); j++){
+						bool done = false;
+						for(int j = 0; j < values.size() && !done; j++){
 							int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + feature_vec.at(i),
 									"No", "Yes");
-							if(mult_choice_ans)
+							if(mult_choice_ans){
 								values_buffer.push_back(values.at(j));
-							else{
-								att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
-								label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
-									splitString(att_from_above)));
+								done = true;
 							}
 							
+						}
+						if(!done){
+						att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
+						values.push_back(att_from_above);
+						label_table[clusterAttribute] = values;
+						//label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
+						//		values));	
 						}
 					}
 					else {
