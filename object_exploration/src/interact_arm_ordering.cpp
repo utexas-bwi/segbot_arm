@@ -52,6 +52,9 @@
 #define ALPHA .7				//constant for temporal smoothing in effort cb
 #define SHAKEANDROTATE false 	//defines whether the shake and rotate behaviors are performed
 								//note that this was implicitly true for the first experiments done
+
+#define DURATION_PADDING 0.5 //half a second
+
 using namespace std;
 using namespace boost::assign;
 bool g_caught_sigint = false;
@@ -609,6 +612,7 @@ void lift(double vel, double distance){
 
 	//start logging here
 	startSensoryDataCollection();
+	clearMsgs(DURATION_PADDING);
 
 	for(int i = 0; i < std::abs(distance/vel/.25); i++){
 		ros::spinOnce();
@@ -692,9 +696,9 @@ bool grabFromApch(int fingerPos){
 
 	
 	startSensoryDataCollection();
-	clearMsgs(.3);
+	clearMsgs(DURATION_PADDING);
 	closeComplt(fingerPos);
-	clearMsgs(.3);
+	clearMsgs(DURATION_PADDING);
 	stopSensoryDataCollection();
 }
 
@@ -820,7 +824,7 @@ bool drop(double height){
 	startSensoryDataCollection();
 	
 	//sleep for 1.0 sec
-	clearMsgs(1.0);
+	clearMsgs(DURATION_PADDING);
 	openFull();
 	
 	//sleep for 3.0 sec
@@ -854,28 +858,29 @@ bool poke(double velocity){
 bool push(double velocity){
 	sensor_msgs::JointState push = getStateFromBag("push_right");
 	goToLocation(push);
+	ROS_INFO("Place object for 'push' action");
 	pressEnter();
 	clearMsgs(0.5);
 	
 	storePointCloud();
 	ROS_INFO("Starting sensory collection");
 	startSensoryDataCollection();
-	//start recording
-	//clearMsgs(1.);
+	clearMsgs(DURATION_PADDING);
+
 	approach("y", 0.7, -velocity);
-	clearMsgs(0.5);
+	clearMsgs(1.0);
 	stopSensoryDataCollection();
 	sensor_msgs::JointState grab_sub = getStateFromBag("grab_right_sub");
 	goToLocation(grab_sub, true);
-	clearMsgs(1.0);
+	clearMsgs(0.25);
 }
 
 bool press(double velocity){
 	sensor_msgs::JointState leg = getStateFromBag("press_sub");
-	clearMsgs(.4);
+	clearMsgs(.25);
 	goToLocation(leg, true);
 	sensor_msgs::JointState press = getStateFromBag("press_right");
-	clearMsgs(.4);
+	clearMsgs(.25);
 	goToLocation(press);
 	
 	//move a bit back first
@@ -897,12 +902,11 @@ bool press(double velocity){
 		ros::spinOnce();
 	}
 	
-	pressEnter();
-	clearMsgs(.5);
+	//pressEnter();
+	//clearMsgs(.5);
 	
 	startSensoryDataCollection();
-	
-	clearMsgs(.2);
+	clearMsgs(DURATION_PADDING);
 	
 	//now press
 	duration = 6.0;
@@ -1089,8 +1093,12 @@ bool loop1(){
 			
 			//LOOK behavior
 			createBehaviorAndSubDirectories("look", trialFilePath);
+			startSensoryDataCollection();
+			clearMsgs(0.5);
+			stopSensoryDataCollection();
 			storePointCloud();
 			
+			pressEnter();
 			//approach and GRASP behavior
 			approachFromHome();
 			createBehaviorAndSubDirectories("grasp", trialFilePath);
@@ -1100,7 +1108,7 @@ bool loop1(){
 			//store a point cloud after the action is performed
 			storePointCloud();
 			
-			//pressEnter();
+			pressEnter();
 			
 			//turn off force control so we can lift the heavier objects
 			setForceControl(false);
@@ -1131,7 +1139,7 @@ bool loop1(){
 			lift(-0.1, .6);//negative velocity to go down
 			storePointCloud();
 			
-			//pressEnter();
+			pressEnter();
 			
 			//SHAKE AND ROTATE
 			if(SHAKEANDROTATE){
@@ -1154,7 +1162,7 @@ bool loop1(){
 			//turn force control back on
 			setForceControl(true);
 			
-			//pressEnter();
+			pressEnter();
 			
 			/*
 			createBehaviorAndSubDirectories("poke", trialFilePath);
@@ -1167,7 +1175,9 @@ bool loop1(){
 			push(-.2);//speed
 			storePointCloud();
 			
-			//pressEnter();
+			ROS_INFO("Place object for 'press' action");
+			
+			pressEnter();
 			
 			//PRESS behavior
 			createBehaviorAndSubDirectories("press", trialFilePath);
@@ -1182,11 +1192,11 @@ bool loop1(){
 			//storePointCloud();
 			
 			goHome();
-			pressEnter();
+			
 		}
 		
-		//if we're doing more trials, next time start with object 1
-		startingObjectNum = 1;
+		//if we're doing more trials, next time start with object 0, 'no object'
+		startingObjectNum = 0;
 	}
 }
 
@@ -1199,7 +1209,7 @@ int main(int argc, char **argv){
 	//If 3 then start from the given numbers provided by the user
 	if (argc == 1)
 	{
-		startingObjectNum = 1;
+		startingObjectNum = 0; // 0 is no object
 		startingTrialNum = 1;
 	}
 	
