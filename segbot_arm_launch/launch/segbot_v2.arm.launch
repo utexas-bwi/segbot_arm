@@ -1,41 +1,18 @@
 <launch>
 
-  <!-- set the tf prefix as necessary -->
-  <arg name="tf_prefix" default="" />
-  <arg name="device_id" default="#1" />
-  <param name="tf_prefix" value="$(arg tf_prefix)" />
+  <!-- launch the multi map server for the world -->
+  <arg name="multimap_file" default="$(find utexas_gdc)/maps/real/multimap/multimap.yaml" />
+  <node name="multi_level_map_server" pkg="multi_level_map_server" type="multi_level_map_server">
+    <param name="map_file" value="$(arg multimap_file)" />
+  </node>
 
-  <!-- launch the segway base -->
-  <include file="$(find segbot_bringup)/launch/segway_base.launch">
-    <arg name="robot_frame_id" value="$(arg tf_prefix)/base_footprint" />
-    <arg name="odom_frame_id" value="$(arg tf_prefix)/odom" />
+  <!-- Set the default level we'd like this robot to start on -->
+  <param name="level_mux/default_current_level" value="3rdFloor" />
+
+  <include file="$(find bwi_launch)/launch/includes/segbot.launch.xml">
+    <arg name="laser_max_range" value="20.0" />
   </include>
 
-  <!-- launch the kinect sensor in laserscan configuration -->
-
-  <include file="$(find segbot_sensors)/launch/kinect/kinect.launch">
-    <arg name="name" value="nav_kinect" />
-    <arg name="tf_prefix" value="$(arg tf_prefix)" />
-    <arg name="device_id" value="$(arg device_id)" />
-    <arg name="depth_only" value="false" />
-  </include>
-
-
-  <!-- launch the hokuyo sensor -->
-  <include file="$(find segbot_sensors)/launch/hokuyo/eth_hokuyo.launch">
-    <arg name="name" value="nav_hokuyo" />
-    <arg name="tf_prefix" value="$(arg tf_prefix)" />
-    <arg name="publish_tf" value="false" /> <!-- already published by urdf -->
-  </include>
-
-  <!-- COMMON aux information -->
-  <include file="$(find segbot_arm_launch)/launch/includes/auxiliary.segbot_v2.arm.launch.xml">
-    <arg name="tf_prefix" default="$(arg tf_prefix)" /> 
-    <arg name="use_registered_topic" default="true" />
-  </include>
-  
-  <!-- the ARM -->
-  <include file="$(find jaco_driver)/launch/segbot_mico_arm.launch">
-  </include>
+  <include file="$(find segbot_bringup)/launch/segbot_v2.arm.launch" />
 
 </launch>
