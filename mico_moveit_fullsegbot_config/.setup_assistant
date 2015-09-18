@@ -1,7 +1,7 @@
 moveit_setup_assistant_config:
   URDF:
-    package: segbot_description
-    relative_path: robots/segbot_v2.arm.urdf.xacro.urdf
+    package: segbot_arm_launch
+    relative_path: robots/segbot_v2.arm.xacroout.urdf
   SRDF:
     relative_path: config/segbot.srdf
   CONFIG:

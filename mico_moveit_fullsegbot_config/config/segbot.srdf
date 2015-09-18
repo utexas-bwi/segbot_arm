@@ -36,7 +36,6 @@
     <disable_collisions link1="arm_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="arm_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="arm_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="arm_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="arm_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="arm_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="arm_link" link2="mico_link_3" reason="Never" />
@@ -58,14 +57,6 @@
     <disable_collisions link1="arm_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="arm_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="arm_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="arm_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="arm_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="arm_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="arm_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="arm_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="arm_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="arm_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="arm_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="arm_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="arm_link" link2="xtion_camera_link" reason="Adjacent" />
     <disable_collisions link1="back_base_beam_link" link2="back_left_vertical_beam_link" reason="Adjacent" />
@@ -88,7 +79,6 @@
     <disable_collisions link1="back_base_beam_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="back_base_beam_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="back_base_beam_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="back_base_beam_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="back_base_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="back_base_beam_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="back_base_beam_link" link2="mico_link_3" reason="Never" />
@@ -110,14 +100,6 @@
     <disable_collisions link1="back_base_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="back_base_beam_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="back_base_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="back_base_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="back_base_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="back_base_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="back_base_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="back_base_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="back_base_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="back_base_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="back_base_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="back_base_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="back_base_beam_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="back_right_vertical_beam_link" reason="Never" />
@@ -140,7 +122,6 @@
     <disable_collisions link1="back_left_vertical_beam_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="left_laptop_support_beam_link" reason="Adjacent" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="mico_link_3" reason="Never" />
@@ -159,14 +140,6 @@
     <disable_collisions link1="back_left_vertical_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="back_left_vertical_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="back_left_vertical_beam_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="base_caster_support_link" reason="Never" />
@@ -188,7 +161,6 @@
     <disable_collisions link1="back_right_vertical_beam_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="back_right_vertical_beam_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="mico_link_3" reason="Never" />
@@ -207,14 +179,6 @@
     <disable_collisions link1="back_right_vertical_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="right_laptop_support_beam_link" reason="Adjacent" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="back_right_vertical_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="back_right_vertical_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="back_right_vertical_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="back_right_vertical_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="back_right_vertical_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="back_right_vertical_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="back_right_vertical_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="back_right_vertical_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="back_right_vertical_beam_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="base_footprint" reason="Never" />
@@ -236,7 +200,6 @@
     <disable_collisions link1="base_caster_support_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_caster_support_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="mico_link_3" reason="Never" />
@@ -258,14 +221,6 @@
     <disable_collisions link1="base_caster_support_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_caster_support_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="base_caster_support_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="base_caster_support_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="base_caster_support_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_caster_support_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="base_caster_support_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="base_caster_support_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_caster_support_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="base_caster_support_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="base_footprint" link2="base_link" reason="Adjacent" />
@@ -286,7 +241,6 @@
     <disable_collisions link1="base_footprint" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="base_footprint" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_footprint" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_footprint" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="base_footprint" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="base_footprint" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="base_footprint" link2="mico_link_3" reason="Never" />
@@ -308,14 +262,6 @@
     <disable_collisions link1="base_footprint" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="base_footprint" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_footprint" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_footprint" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="base_footprint" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="base_footprint" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="base_footprint" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_footprint" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="base_footprint" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="base_footprint" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_footprint" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="base_footprint" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="base_footprint" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="base_link" link2="base_link_left_wheel_link" reason="Adjacent" />
@@ -335,7 +281,6 @@
     <disable_collisions link1="base_link" link2="laser_obstacle" reason="Adjacent" />
     <disable_collisions link1="base_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="base_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="base_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="base_link" link2="mico_link_3" reason="Never" />
@@ -357,14 +302,6 @@
     <disable_collisions link1="base_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="base_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="base_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="base_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="base_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="base_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="base_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="base_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="base_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="base_link_right_wheel_link" reason="Never" />
@@ -378,7 +315,6 @@
     <disable_collisions link1="base_link_left_wheel_link" link2="laptop_screen_link" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_link_left_wheel_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="mico_link_3" reason="Never" />
@@ -400,14 +336,6 @@
     <disable_collisions link1="base_link_left_wheel_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_link_left_wheel_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="base_link_left_wheel_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="base_link_left_wheel_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="base_link_left_wheel_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_link_left_wheel_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="base_link_left_wheel_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="base_link_left_wheel_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_link_left_wheel_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="base_link_left_wheel_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="caster_wheel_link" reason="Never" />
@@ -420,7 +348,6 @@
     <disable_collisions link1="base_link_right_wheel_link" link2="laptop_screen_link" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_link_right_wheel_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="mico_link_3" reason="Never" />
@@ -442,14 +369,6 @@
     <disable_collisions link1="base_link_right_wheel_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="base_link_right_wheel_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="base_link_right_wheel_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="base_link_right_wheel_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="base_link_right_wheel_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_link_right_wheel_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="base_link_right_wheel_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="base_link_right_wheel_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="base_link_right_wheel_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="base_link_right_wheel_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="caster_wheel_link" reason="Never" />
@@ -466,7 +385,6 @@
     <disable_collisions link1="battery_box_link" link2="laser_obstacle" reason="Default" />
     <disable_collisions link1="battery_box_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="battery_box_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="mico_link_3" reason="Never" />
@@ -488,14 +406,6 @@
     <disable_collisions link1="battery_box_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="battery_box_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="battery_box_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="battery_box_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="battery_box_link" link2="sonar0_rotated_center_link" reason="Default" />
-    <disable_collisions link1="battery_box_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="battery_box_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="battery_box_link" link2="sonar2_rotated_center_link" reason="Default" />
-    <disable_collisions link1="battery_box_link" link2="sonar_center_link" reason="Default" />
     <disable_collisions link1="battery_box_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="battery_box_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="chassis_base_plate_link" reason="Never" />
@@ -511,7 +421,6 @@
     <disable_collisions link1="caster_wheel_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="caster_wheel_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="mico_link_3" reason="Never" />
@@ -533,14 +442,6 @@
     <disable_collisions link1="caster_wheel_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="caster_wheel_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="caster_wheel_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="caster_wheel_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="caster_wheel_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="caster_wheel_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="caster_wheel_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="caster_wheel_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="caster_wheel_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="caster_wheel_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="chassis_left_plate_link" reason="Adjacent" />
@@ -555,7 +456,6 @@
     <disable_collisions link1="chassis_base_plate_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="chassis_base_plate_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="mico_link_3" reason="Never" />
@@ -577,14 +477,6 @@
     <disable_collisions link1="chassis_base_plate_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="chassis_base_plate_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="chassis_base_plate_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="chassis_base_plate_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="chassis_base_plate_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="chassis_base_plate_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="chassis_base_plate_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="chassis_base_plate_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="chassis_base_plate_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="chassis_base_plate_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="chassis_right_plate_link" reason="Never" />
@@ -598,7 +490,6 @@
     <disable_collisions link1="chassis_left_plate_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="chassis_left_plate_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="mico_link_3" reason="Never" />
@@ -620,14 +511,6 @@
     <disable_collisions link1="chassis_left_plate_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="chassis_left_plate_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="chassis_left_plate_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="chassis_left_plate_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="chassis_left_plate_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="chassis_left_plate_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="chassis_left_plate_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="chassis_left_plate_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="chassis_left_plate_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="chassis_left_plate_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="front_base_beam_link" reason="Never" />
@@ -640,7 +523,6 @@
     <disable_collisions link1="chassis_right_plate_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="chassis_right_plate_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="mico_link_3" reason="Never" />
@@ -662,14 +544,6 @@
     <disable_collisions link1="chassis_right_plate_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="chassis_right_plate_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="chassis_right_plate_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="chassis_right_plate_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="chassis_right_plate_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="chassis_right_plate_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="chassis_right_plate_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="chassis_right_plate_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="chassis_right_plate_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="chassis_right_plate_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="front_base_beam_link" link2="front_left_vertical_beam_link" reason="Adjacent" />
@@ -681,7 +555,6 @@
     <disable_collisions link1="front_base_beam_link" link2="laser_obstacle" reason="Default" />
     <disable_collisions link1="front_base_beam_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="front_base_beam_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="front_base_beam_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="front_base_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="front_base_beam_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="front_base_beam_link" link2="mico_link_3" reason="Never" />
@@ -703,14 +576,6 @@
     <disable_collisions link1="front_base_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="front_base_beam_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="front_base_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="front_base_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="front_base_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="front_base_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="front_base_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="front_base_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="front_base_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="front_base_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="front_base_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="front_base_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="front_base_beam_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="front_right_vertical_beam_link" reason="Never" />
@@ -721,7 +586,6 @@
     <disable_collisions link1="front_left_vertical_beam_link" link2="laser_obstacle" reason="Default" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="mico_link_3" reason="Never" />
@@ -741,14 +605,6 @@
     <disable_collisions link1="front_left_vertical_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="front_left_vertical_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="front_left_vertical_beam_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="hokuyo_sonar_sensor_beam_link" reason="Default" />
@@ -758,7 +614,6 @@
     <disable_collisions link1="front_right_vertical_beam_link" link2="laser_obstacle" reason="Default" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="mico_link_3" reason="Never" />
@@ -778,14 +633,6 @@
     <disable_collisions link1="front_right_vertical_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="right_laptop_support_beam_link" reason="Default" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="front_right_vertical_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="front_right_vertical_beam_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="laptop_base_plate_link" reason="Never" />
@@ -794,7 +641,6 @@
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="left_sensor_plate_standoff_link" reason="Adjacent" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="mico_link_3" reason="Never" />
@@ -816,14 +662,6 @@
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="right_sensor_plate_standoff_link" reason="Adjacent" />
-    <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="hokuyo_sonar_sensor_beam_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="laptop_base_plate_link" link2="laptop_link" reason="Adjacent" />
@@ -831,7 +669,6 @@
     <disable_collisions link1="laptop_base_plate_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="laptop_base_plate_link" link2="left_laptop_support_beam_link" reason="Adjacent" />
     <disable_collisions link1="laptop_base_plate_link" link2="left_sensor_beam_link" reason="Adjacent" />
-    <disable_collisions link1="laptop_base_plate_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="laptop_base_plate_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="laptop_base_plate_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="laptop_base_plate_link" link2="mico_link_3" reason="Never" />
@@ -850,21 +687,12 @@
     <disable_collisions link1="laptop_base_plate_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="laptop_base_plate_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="laptop_base_plate_link" link2="right_sensor_beam_link" reason="Adjacent" />
-    <disable_collisions link1="laptop_base_plate_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="laptop_base_plate_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="laptop_base_plate_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="laptop_base_plate_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="laptop_base_plate_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="laptop_base_plate_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="laptop_base_plate_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="laptop_base_plate_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="laptop_base_plate_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="laptop_base_plate_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="laptop_link" link2="laptop_screen_link" reason="Adjacent" />
     <disable_collisions link1="laptop_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="laptop_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="laptop_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="laptop_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="laptop_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="laptop_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="laptop_link" link2="mico_link_3" reason="Never" />
@@ -883,20 +711,11 @@
     <disable_collisions link1="laptop_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="laptop_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="laptop_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="laptop_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="laptop_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="laptop_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="laptop_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="laptop_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="laptop_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="laptop_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="laptop_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="laptop_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="laptop_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="laser_obstacle" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="mico_link_1" reason="User" />
     <disable_collisions link1="laptop_screen_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="mico_link_base" reason="Never" />
@@ -912,19 +731,10 @@
     <disable_collisions link1="laptop_screen_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="laptop_screen_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="laptop_screen_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="left_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="laser_obstacle" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="mico_link_3" reason="Never" />
@@ -944,18 +754,9 @@
     <disable_collisions link1="laser_obstacle" link2="nav_kinect_top_plate_link" reason="Default" />
     <disable_collisions link1="laser_obstacle" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="laser_obstacle" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="laser_obstacle" link2="sensor_plate_link" reason="Default" />
-    <disable_collisions link1="laser_obstacle" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="laser_obstacle" link2="sonar0_rotated_center_link" reason="Default" />
-    <disable_collisions link1="laser_obstacle" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="laser_obstacle" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="laser_obstacle" link2="sonar2_rotated_center_link" reason="Default" />
-    <disable_collisions link1="laser_obstacle" link2="sonar_center_link" reason="Default" />
     <disable_collisions link1="laser_obstacle" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="laser_obstacle" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="left_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="mico_link_2" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="mico_link_3" reason="Never" />
@@ -974,17 +775,8 @@
     <disable_collisions link1="left_laptop_support_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="left_laptop_support_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="left_laptop_support_beam_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="left_sensor_plate_standoff_link" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="mico_link_1" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="mico_link_base" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="nav_hokuyo_link" reason="Never" />
@@ -999,47 +791,8 @@
     <disable_collisions link1="left_sensor_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="left_sensor_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="left_sensor_beam_link" link2="top_sensor_beam_link" reason="Default" />
     <disable_collisions link1="left_sensor_beam_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="mico_link_1" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="mico_link_2" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="mico_link_3" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="mico_link_4" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="mico_link_5" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="mico_link_base" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="mico_link_finger_1" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="mico_link_finger_2" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="mico_link_hand" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_hokuyo_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_hokuyo_plate_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_kinect_base_plate_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_kinect_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_kinect_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_kinect_standoff_1_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_kinect_standoff_2_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_kinect_standoff_3_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_kinect_standoff_4_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="nav_kinect_top_plate_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="right_laptop_support_beam_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="sensor_plate_link" reason="Adjacent" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="sonar_center_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="top_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="left_sensor_plate_standoff_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="mico_link_1" link2="mico_link_2" reason="Adjacent" />
     <disable_collisions link1="mico_link_1" link2="mico_link_3" reason="Never" />
     <disable_collisions link1="mico_link_1" link2="mico_link_4" reason="Never" />
@@ -1057,14 +810,6 @@
     <disable_collisions link1="mico_link_1" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_1" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_1" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="mico_link_1" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="mico_link_1" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_1" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="mico_link_1" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_1" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="mico_link_1" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="mico_link_1" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_1" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="mico_link_1" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_1" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="mico_link_2" link2="mico_link_3" reason="Adjacent" />
@@ -1080,14 +825,6 @@
     <disable_collisions link1="mico_link_2" link2="nav_kinect_standoff_4_link" reason="Never" />
     <disable_collisions link1="mico_link_2" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_2" link2="right_laptop_support_beam_link" reason="Never" />
-    <disable_collisions link1="mico_link_2" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="mico_link_2" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_2" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="mico_link_2" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_2" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="mico_link_2" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="mico_link_2" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_2" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="mico_link_2" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_2" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="mico_link_3" link2="mico_link_4" reason="Adjacent" />
@@ -1105,14 +842,6 @@
     <disable_collisions link1="mico_link_3" link2="nav_kinect_standoff_4_link" reason="Never" />
     <disable_collisions link1="mico_link_3" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_3" link2="right_laptop_support_beam_link" reason="Never" />
-    <disable_collisions link1="mico_link_3" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="mico_link_3" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_3" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="mico_link_3" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_3" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="mico_link_3" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="mico_link_3" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_3" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="mico_link_3" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_3" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="mico_link_4" link2="mico_link_5" reason="Adjacent" />
@@ -1131,14 +860,6 @@
     <disable_collisions link1="mico_link_4" link2="nav_kinect_standoff_4_link" reason="Never" />
     <disable_collisions link1="mico_link_4" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_4" link2="right_laptop_support_beam_link" reason="Never" />
-    <disable_collisions link1="mico_link_4" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="mico_link_4" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_4" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="mico_link_4" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_4" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="mico_link_4" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="mico_link_4" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_4" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="mico_link_4" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_4" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="mico_link_5" link2="mico_link_base" reason="Never" />
@@ -1156,14 +877,6 @@
     <disable_collisions link1="mico_link_5" link2="nav_kinect_standoff_4_link" reason="Never" />
     <disable_collisions link1="mico_link_5" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_5" link2="right_laptop_support_beam_link" reason="Never" />
-    <disable_collisions link1="mico_link_5" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="mico_link_5" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_5" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="mico_link_5" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_5" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="mico_link_5" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="mico_link_5" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_5" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="nav_hokuyo_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="nav_kinect_base_plate_link" reason="Never" />
@@ -1176,14 +889,6 @@
     <disable_collisions link1="mico_link_base" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="mico_link_base" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="mico_link_base" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_base" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="mico_link_base" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_base" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="mico_link_base" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="mico_link_base" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_base" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="mico_link_base" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="mico_link_finger_2" reason="Never" />
@@ -1194,27 +899,11 @@
     <disable_collisions link1="mico_link_finger_1" link2="nav_kinect_standoff_2_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="nav_kinect_standoff_3_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_1" link2="nav_kinect_standoff_4_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_1" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_1" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_1" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_1" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_1" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_1" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_1" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_1" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="mico_link_hand" reason="Adjacent" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_hokuyo_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_kinect_standoff_1_link" reason="Never" />
     <disable_collisions link1="mico_link_finger_2" link2="nav_kinect_standoff_4_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_2" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_2" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_2" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_2" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_2" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_2" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_2" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_finger_2" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="nav_hokuyo_plate_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="nav_kinect_base_plate_link" reason="Never" />
@@ -1225,14 +914,6 @@
     <disable_collisions link1="mico_link_hand" link2="nav_kinect_standoff_3_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="nav_kinect_standoff_4_link" reason="Never" />
     <disable_collisions link1="mico_link_hand" link2="nav_kinect_top_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_hand" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="mico_link_hand" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="mico_link_hand" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="mico_link_hand" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_hand" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="mico_link_hand" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="mico_link_hand" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="mico_link_hand" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_link" link2="nav_hokuyo_plate_link" reason="Adjacent" />
     <disable_collisions link1="nav_hokuyo_link" link2="nav_kinect_base_plate_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_link" link2="nav_kinect_link" reason="Never" />
@@ -1244,14 +925,6 @@
     <disable_collisions link1="nav_hokuyo_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_plate_link" link2="nav_kinect_base_plate_link" reason="Never" />
@@ -1264,14 +937,6 @@
     <disable_collisions link1="nav_hokuyo_plate_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_plate_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_plate_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_plate_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_plate_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_plate_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_plate_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_plate_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_plate_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_plate_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_hokuyo_plate_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_plate_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_hokuyo_plate_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="nav_kinect_base_plate_link" link2="nav_kinect_link" reason="Never" />
@@ -1283,14 +948,6 @@
     <disable_collisions link1="nav_kinect_base_plate_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="nav_kinect_base_plate_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_base_plate_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_base_plate_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_base_plate_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_base_plate_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_base_plate_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_base_plate_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_base_plate_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_base_plate_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_base_plate_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_kinect_base_plate_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_base_plate_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="nav_kinect_link" link2="nav_kinect_sensor_beam_link" reason="Never" />
@@ -1301,14 +958,6 @@
     <disable_collisions link1="nav_kinect_link" link2="nav_kinect_top_plate_link" reason="Adjacent" />
     <disable_collisions link1="nav_kinect_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_kinect_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="nav_kinect_sensor_beam_link" link2="nav_kinect_standoff_1_link" reason="Never" />
@@ -1318,14 +967,6 @@
     <disable_collisions link1="nav_kinect_sensor_beam_link" link2="nav_kinect_top_plate_link" reason="Never" />
     <disable_collisions link1="nav_kinect_sensor_beam_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_sensor_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_sensor_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_sensor_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_sensor_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_sensor_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_sensor_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_sensor_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_sensor_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_sensor_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_kinect_sensor_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_sensor_beam_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_1_link" link2="nav_kinect_standoff_2_link" reason="Never" />
@@ -1334,14 +975,6 @@
     <disable_collisions link1="nav_kinect_standoff_1_link" link2="nav_kinect_top_plate_link" reason="Adjacent" />
     <disable_collisions link1="nav_kinect_standoff_1_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_1_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_1_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_1_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_1_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_1_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_1_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_1_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_1_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_1_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_1_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_1_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_2_link" link2="nav_kinect_standoff_3_link" reason="Never" />
@@ -1349,119 +982,27 @@
     <disable_collisions link1="nav_kinect_standoff_2_link" link2="nav_kinect_top_plate_link" reason="Default" />
     <disable_collisions link1="nav_kinect_standoff_2_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_2_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_2_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_2_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_2_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_2_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_2_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_2_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_2_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_2_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_2_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_2_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_3_link" link2="nav_kinect_standoff_4_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_3_link" link2="nav_kinect_top_plate_link" reason="Default" />
     <disable_collisions link1="nav_kinect_standoff_3_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_3_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_3_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_3_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_3_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_3_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_3_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_3_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_3_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_3_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_3_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_3_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_4_link" link2="nav_kinect_top_plate_link" reason="Default" />
     <disable_collisions link1="nav_kinect_standoff_4_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_4_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_4_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_4_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_4_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_4_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_4_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_4_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_4_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_standoff_4_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_4_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_standoff_4_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="nav_kinect_top_plate_link" link2="right_laptop_support_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_top_plate_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_top_plate_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_top_plate_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_top_plate_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_top_plate_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_top_plate_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_top_plate_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_top_plate_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="nav_kinect_top_plate_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="nav_kinect_top_plate_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="nav_kinect_top_plate_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="right_laptop_support_beam_link" link2="right_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="right_laptop_support_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="right_laptop_support_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="right_laptop_support_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="right_laptop_support_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="right_laptop_support_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="right_laptop_support_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="right_laptop_support_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="right_laptop_support_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="right_laptop_support_beam_link" link2="top_sensor_beam_link" reason="Never" />
     <disable_collisions link1="right_laptop_support_beam_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="right_sensor_beam_link" link2="right_sensor_plate_standoff_link" reason="Never" />
-    <disable_collisions link1="right_sensor_beam_link" link2="sensor_plate_link" reason="Never" />
-    <disable_collisions link1="right_sensor_beam_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="right_sensor_beam_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="right_sensor_beam_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="right_sensor_beam_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="right_sensor_beam_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="right_sensor_beam_link" link2="sonar_center_link" reason="Never" />
     <disable_collisions link1="right_sensor_beam_link" link2="top_sensor_beam_link" reason="Adjacent" />
     <disable_collisions link1="right_sensor_beam_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="right_sensor_plate_standoff_link" link2="sensor_plate_link" reason="Default" />
-    <disable_collisions link1="right_sensor_plate_standoff_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="right_sensor_plate_standoff_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="right_sensor_plate_standoff_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="right_sensor_plate_standoff_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="right_sensor_plate_standoff_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="right_sensor_plate_standoff_link" link2="sonar_center_link" reason="Never" />
-    <disable_collisions link1="right_sensor_plate_standoff_link" link2="top_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="right_sensor_plate_standoff_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="sensor_plate_link" link2="sonar0_link" reason="Never" />
-    <disable_collisions link1="sensor_plate_link" link2="sonar0_rotated_center_link" reason="Never" />
-    <disable_collisions link1="sensor_plate_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="sensor_plate_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="sensor_plate_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="sensor_plate_link" link2="sonar_center_link" reason="Adjacent" />
-    <disable_collisions link1="sensor_plate_link" link2="top_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="sensor_plate_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="sonar0_link" link2="sonar0_rotated_center_link" reason="Adjacent" />
-    <disable_collisions link1="sonar0_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="sonar0_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="sonar0_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="sonar0_link" link2="sonar_center_link" reason="Never" />
-    <disable_collisions link1="sonar0_link" link2="top_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="sonar0_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="sonar0_rotated_center_link" link2="sonar1_link" reason="Never" />
-    <disable_collisions link1="sonar0_rotated_center_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="sonar0_rotated_center_link" link2="sonar2_rotated_center_link" reason="Default" />
-    <disable_collisions link1="sonar0_rotated_center_link" link2="sonar_center_link" reason="Adjacent" />
-    <disable_collisions link1="sonar0_rotated_center_link" link2="top_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="sonar0_rotated_center_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="sonar1_link" link2="sonar2_link" reason="Never" />
-    <disable_collisions link1="sonar1_link" link2="sonar2_rotated_center_link" reason="Never" />
-    <disable_collisions link1="sonar1_link" link2="sonar_center_link" reason="Adjacent" />
-    <disable_collisions link1="sonar1_link" link2="top_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="sonar1_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="sonar2_link" link2="sonar2_rotated_center_link" reason="Adjacent" />
-    <disable_collisions link1="sonar2_link" link2="sonar_center_link" reason="Never" />
-    <disable_collisions link1="sonar2_link" link2="top_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="sonar2_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="sonar2_rotated_center_link" link2="sonar_center_link" reason="Adjacent" />
-    <disable_collisions link1="sonar2_rotated_center_link" link2="top_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="sonar2_rotated_center_link" link2="xtion_camera_link" reason="Never" />
-    <disable_collisions link1="sonar_center_link" link2="top_sensor_beam_link" reason="Never" />
-    <disable_collisions link1="sonar_center_link" link2="xtion_camera_link" reason="Never" />
     <disable_collisions link1="top_sensor_beam_link" link2="xtion_camera_link" reason="Default" />
 </robot>
