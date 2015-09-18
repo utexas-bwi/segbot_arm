@@ -4,13 +4,14 @@
        xmlns:xacro="http://ros.org/wiki/xacro">
 
   <!-- Included URDF Files -->
+  
+  
   <xacro:include filename="$(find segbot_description)/urdf/v2/common.urdf.xacro" />
   <xacro:include filename="$(find segbot_description)/gazebo/segbot.gazebo.xacro" />
   <xacro:include filename="$(find segbot_description)/urdf/segbot_base.urdf.xacro" />
   <xacro:include filename="$(find segbot_description)/urdf/v2/segbot_chassis.urdf.arm.xacro" />
   <xacro:include filename="$(find segbot_description)/urdf/mounts/hokuyo_mount.urdf.xacro" />
   <xacro:include filename="$(find segbot_description)/urdf/mounts/kinect_mount.urdf.xacro" />
-  <xacro:include filename="$(find segbot_description)/urdf/mounts/sensor_plate_mount.urdf.xacro" />
   <xacro:include filename="$(find jaco_model)/urdf/mico_arm.xacro" />
 
   <!-- Add the segbot base -->
@@ -29,10 +30,15 @@
     <origin xyz="${1*INCH_TO_M} ${0.5*INCH_TO_M} ${4.5*INCH_TO_M}" rpy="${M_PI/2} ${M_PI/2} 0" />
   </xacro:beam_8020>
 
-  <!-- Add the hokuyo mount without the beam -->
+  <!-- Add the hokuyo mount without the beam 
   <xacro:hokuyo_mount_without_beam name="nav_hokuyo" parent="hokuyo_sonar_sensor_beam" ros_topic="scan" update_rate="10" min_angle="${-(5 * M_PI)/12}" max_angle="${(5 * M_PI)/12}" range="20.0">
     <origin xyz="${0.5*INCH_TO_M} 0 ${SENSOR_BEAM_LENGTH/2*INCH_TO_M}" rpy="${M_PI/2} 0 ${M_PI/2}" />
-  </xacro:hokuyo_mount_without_beam>
+  </xacro:hokuyo_mount_without_beam> -->
+  
+   <!-- Add the hokuyo -->
+  <xacro:hokuyo_mount name="nav_hokuyo" parent="front_left_vertical_beam" length="${SENSOR_BEAM_LENGTH*INCH_TO_M}" ros_topic="scan" update_rate="10" min_angle="${-(5 * M_PI)/12}" max_angle="${(5 * M_PI)/12}">
+    <origin xyz="${1*INCH_TO_M} ${0.5*INCH_TO_M} ${4.5*INCH_TO_M}" rpy="${M_PI/2} ${M_PI/2} 0" />
+  </xacro:hokuyo_mount>
 
   <!-- Add the sensor plate mount -->
   <xacro:sensor_plate_mount_without_beam parent="hokuyo_sonar_sensor_beam" length="${SENSOR_BEAM_LENGTH*INCH_TO_M}"/>

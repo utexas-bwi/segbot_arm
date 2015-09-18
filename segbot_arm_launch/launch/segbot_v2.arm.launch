@@ -13,6 +13,9 @@
     <arg name="laser_max_range" value="20.0" />
   </include>
 
-  <include file="$(find segbot_bringup)/launch/segbot_v2.arm.launch" />
+  <include file="$(find segbot_arm_launch)/launch/segbot_bringup_v2.arm.launch" />
+
+  <include file="$(find bwi_logging)/launch/record.launch" />
+
 
 </launch>
