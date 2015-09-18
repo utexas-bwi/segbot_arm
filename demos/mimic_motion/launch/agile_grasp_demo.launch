@@ -30,6 +30,5 @@
 	
 	<!-- launch moveit -->
 	
-	<include file="$(find moveit_utils)/launch/mico_moveit.launch" />
 
 </launch>
