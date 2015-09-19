@@ -3,7 +3,7 @@
 This holds the all projects for use by the BWI segbot's arm manipulators.
 Currently this includes: Kinova Mico
 
-To run these packages, you must first install the utexas-bwi fork of the jaco ros drivers. You can do that with
+To run these packages, you must first install the utexas-bwi fork of the jaco ros drivers. You can do that by going into catkin_ws/src and then cloning the repository with
 
 $ git clone https://github.com/utexas-bwi/jaco-ros.git
 
