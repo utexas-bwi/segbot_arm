@@ -183,7 +183,6 @@ bool readResponseFile(){
 				clusterNum = atoi(line.c_str());
 			else{
 				objects.push_back(line.c_str());
-				ROS_INFO("Got object %s", line.c_str());
 			}
 			lineNum++;
 		}
@@ -304,7 +303,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 		targetROI = cv::Scalar(0,0,0);
 		targetROI = dst(roi);
 
-		ROS_INFO("numrows: %d", images_row);
+		//ROS_INFO("numrows: %d", images_row);
 		roi_x = 0;
 		roi_y = 0;
 		text_x = 0;
@@ -317,19 +316,19 @@ int writeToScreen(std::vector<std::string> *object_names){
 			
 			if((i+1) == num_rows){ //output non standard no. images
 				roi_x = border_size;
-				ROS_INFO("Placing a non-standard row of images");
+				//ROS_INFO("Placing a non-standard row of images");
 				for(int j = 0; j < cluster.size() % images_row; j++){
 					int object_num = j + (i*images_row);
 					std::string str = boost::lexical_cast<std::string>(object_num);
 					std::string path =filePath + cluster.at(object_num) + ".JPG";
-					ROS_INFO("Getting %s", path.c_str());
+					//ROS_INFO("Getting %s", path.c_str());
 					Mat src = imread(path);
 					Mat img;
 					if(!src.data)
 						ROS_INFO("Couldn't get image data");
 					//resize(src,img,Size(img_width, img_height));
-					ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
-					ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
+					//ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
+					//ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
 					if(object_num > images_row){ //if a double digit number, center text
 						text_x -= 6;
 					}
@@ -353,8 +352,8 @@ int writeToScreen(std::vector<std::string> *object_names){
 					if(!src.data)
 						ROS_INFO("Couldn't get image data");
 					//resize(src,img,Size(img_width, img_height));
-					ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
-					ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
+					//ROS_INFO("Placing image %d at ROI (%d,%d)", object_num,roi_x,roi_y);
+					//ROS_INFO("Placing text %d at (%d,%d)", object_num,text_x,text_y);
 
 					cv::putText(dst, boost::lexical_cast<std::string>(object_num),cv::Point(text_x,text_y), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),1,8,false);
 					targetROI = dst(cv::Rect(roi_x,roi_y,src.cols, src.rows));
@@ -405,59 +404,52 @@ void sequence(){
 	boost::thread workerThread(writeToScreen, &cur_cluster);
 	bool req_sent = false;
 	while(true){
-		bool common_att = ask_mult_choice("Do all shown objects share a common attribute for context ["+modality+"]?", "No", "Yes");
+		if(firstTime){
+			firstTime = false;
+			std::string modality_copy = modality;
+			std::string delimiter = "_";
+			int index = modality_copy.find(delimiter);
+			std::string action = modality_copy.substr(0, index);
+			std::string modality = modality_copy.substr(index+1, modality_copy.length());
+			std::string resp = ask_free_resp("Please specify what general attribute is described by " + action +"ing the object while recording the " + modality);
+			std::vector<std::string> feature_vec = splitString(resp);
+			clusterAttribute = feature_vec.at(0);
+		}
+		bool common_att = ask_mult_choice("Do all shown objects share the same " + clusterAttribute + "?", "No", "Yes");
 		if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
 			//ask only once per tree : "Can you specify that attribute?"
-			if(firstTime){
+				std::map<std::string, std::vector<std::string> >::iterator it;
+				it = label_table.find(clusterAttribute);
 
-				firstTime = false;
-				std::string resp = ask_free_resp("Please specify what attribute is shared");
-
-				//parse resp, checking if each attribute exists in table
-				std::vector<std::string> feature_vec = splitString(resp);
-				clusterAttribute = feature_vec.at(0);
-
-				for(int i = 0; i < feature_vec.size(); i++){ //check if attributes are consistent with existing labels
-					std::map<std::string, std::vector<std::string> >::iterator it;
-					it = label_table.find(feature_vec.at(i));
-
-					if(it != label_table.end()){
-						std::vector<std::string> values = it->second;
-						std::vector<std::string> values_buffer; //used to track new labels to be added to values
-						bool done = false;
-						for(int j = 0; j < values.size() && !done; j++){
-							int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + feature_vec.at(i),
-									"No", "Yes");
-							if(mult_choice_ans){
-								values_buffer.push_back(values.at(j));
-								done = true;
-							}
+				if(it != label_table.end()){
+					std::vector<std::string> values = it->second;
+					std::vector<std::string> values_buffer; //used to track new labels to be added to values
+					bool done = false;
+					/*for(int j = 0; j < values.size() && !done; j++){
+						int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + clusterAttribute + "?",
+								"No", "Yes");
+						if(mult_choice_ans){
+							values_buffer.push_back(values.at(j));
+							done = true;
 						}
-						if(!done){
-						att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
-						values.push_back(att_from_above);
-						label_table[clusterAttribute] = values;
-						//label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
-						//		values));	
-						}
-					}
-					else {
-						ROS_INFO("Attribute not found in table.");
-						att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
-						label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
-							splitString(att_from_above)));
+					}*/
+					if(!done){
+					att_from_above = ask_free_resp("What/how " + clusterAttribute + " are they?");
+					values.push_back(att_from_above);
+					label_table[clusterAttribute] = values;
+					//label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
+					//		values));	
 					}
 				}
-			}
+				else {
+					ROS_INFO("Attribute not found in table.");
+					att_from_above = ask_free_resp("What/how " + clusterAttribute + " are they?");
+					label_table.insert(std::pair<std::string,std::vector<std::string> >(clusterAttribute,
+						splitString(att_from_above)));
+				}
 		}
 		else{
-			if(cur_cluster.size() <= 3 || ask_mult_choice("Is there any attribute common to most of the objects for context ["+modality+"]?", "No", "Yes")){
-				if(firstTime){
-					firstTime = false;
-					std::string resp = ask_free_resp("Please specify what attribute is shared");
-					std::vector<std::string> feature_vec = splitString(resp);
-					clusterAttribute = feature_vec.at(0);
-				}
+			if(cur_cluster.size() <= 3 || ask_mult_choice("Is there any " + clusterAttribute + " common to most of the objects?", "No", "Yes")){
 				bool mult_choice;
 				if(cur_cluster.size() <= 3){
 					mult_choice = !ask_mult_choice("How many objects don't fit the attribute?", "1 or 2");
@@ -468,9 +460,9 @@ void sequence(){
 					std::vector<std::string> outliers = splitString(
 							ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
 					std::vector<std::string> full_cluster = cur_cluster;
-					ROS_INFO("GOT OUTLIER SIZE: %lud", outliers.size());
 					for(int i = 0; i < outliers.size(); i++){
 						std::string outlier_name = full_cluster.at(atoi(outliers.at(i).c_str()));
+						ROS_INFO("Outlier name: %s", outlier_name.c_str());
 						cur_cluster.clear();
 						cur_cluster.push_back(outlier_name);
 						sleep(1);
@@ -503,9 +495,10 @@ void sequence(){
 					}
 					
 				}
-				
-				writeRequestFile(2, att_from_above, att_from_above); //recluster
-				req_sent = true;
+				else{
+					writeRequestFile(2, att_from_above, att_from_above); //recluster
+					req_sent = true;
+				}
 			}
 			else{
 				writeRequestFile(2, att_from_above, att_from_above); //recluster
@@ -524,6 +517,7 @@ void sequence(){
 				sleep(.01);
 		}
 		readResponseFile();				//grab next cluster if successful
+		req_sent = false;
 	}
 }
 
