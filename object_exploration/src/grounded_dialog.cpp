@@ -74,6 +74,7 @@ bool firstTime = true;
 std::string clusterAttribute;
 std::string modality;
 static std::vector<std::string> cur_cluster;
+static bool safe_access = true;
 using namespace cv;
 bool g_caught_sigint = false;
 
@@ -173,6 +174,9 @@ bool readResponseFile(){
 	std::string fullPath = (reqFilePath + responseName);
 	std::ifstream myfile(fullPath.c_str());
 	if(myfile.is_open()){
+		while(!safe_access){
+			sleep(0.1);	//wait while opencv isn't done
+		}
 		while(getline(myfile,line)){
 			if(lineNum == 0){
 				std::string old_mod = modality;
@@ -290,11 +294,13 @@ bool ask_mult_choice(std::string question, std::string choice1){
  *
  */
 
-int writeToScreen(std::vector<std::string> *object_names){
+int writeToScreen(std::vector<std::string> *object_names, bool *cluster_safe){
 	int roi_x, roi_y, text_x, text_y;
 	cv::namedWindow("OpenCV Window");
 
 	while(true){
+		bool &cluster_safe_access = *cluster_safe;
+		cluster_safe_access = false;
 		std::vector<std::string>& cluster = *object_names;
 		int num_rows = (cluster.size() / images_row) + 1;
 		cv::Rect roi(cv::Rect(0,0,img_width, img_height));
@@ -369,7 +375,7 @@ int writeToScreen(std::vector<std::string> *object_names){
 				roi_y += img_height;
 		}
 	}
-
+	cluster_safe_access = true;
 	// show the image on window
 
 		cv::imshow("OpenCV Window", dst);
@@ -401,7 +407,7 @@ void sequence(){
 	}
 	readResponseFile();
 	std::string att_from_above;
-	boost::thread workerThread(writeToScreen, &cur_cluster);
+	boost::thread workerThread(writeToScreen, &cur_cluster, &safe_access);
 	bool req_sent = false;
 	while(true){
 		if(firstTime){
@@ -452,10 +458,10 @@ void sequence(){
 			if(cur_cluster.size() <= 3 || ask_mult_choice("Is there any " + clusterAttribute + " common to most of the objects?", "No", "Yes")){
 				bool mult_choice;
 				if(cur_cluster.size() <= 3){
-					mult_choice = !ask_mult_choice("How many objects don't fit the attribute?", "1 or 2");
+					mult_choice = !ask_mult_choice("How many objects don't fit the " + clusterAttribute + "?", "1 or 2");
 				}
 				else
-					mult_choice = ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2");
+					mult_choice = ask_mult_choice("How many objects don't fit the " + clusterAttribute + "?", ">2", "1 or 2");
 				if(mult_choice){
 					std::vector<std::string> outliers = splitString(
 							ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
