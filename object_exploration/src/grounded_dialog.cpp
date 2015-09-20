@@ -36,6 +36,7 @@
 #include <map>
 #include <iterator>
 #include <sstream>
+#include <signal.h>
 
 #include <sys/stat.h>
 #include <iostream>
@@ -74,10 +75,19 @@ std::string clusterAttribute;
 std::string modality;
 static std::vector<std::string> cur_cluster;
 using namespace cv;
+bool g_caught_sigint = false;
 
 Mat dst,frame,img,ROI;
 ros::ServiceClient gui_client;
 
+
+void sig_handler(int sig)
+{
+  g_caught_sigint = true;
+  ROS_INFO("caught sigint, init shutdown sequence...");
+  ros::shutdown();
+  exit(1);
+};
 
 /*
  * Returns whether or not response file exists
@@ -167,12 +177,13 @@ bool readResponseFile(){
 			if(lineNum == 0){
 				std::string old_mod = modality;
 				modality = line.c_str();
-				firstTime = !modality.compare(old_mod);
+				firstTime = modality.compare(old_mod);
 			}
 			else if(lineNum == 1)
 				clusterNum = atoi(line.c_str());
 			else{
 				objects.push_back(line.c_str());
+				ROS_INFO("Got object %s", line.c_str());
 			}
 			lineNum++;
 		}
@@ -229,8 +240,24 @@ bool ask_mult_choice(std::string question, std::string choice1, std::string choi
 	temp.push_back(choice1);
 	temp.push_back(choice2);
 	srv.request.options = temp;
-	//boost::thread workerThread(writeToScreen, photo_temp);
-	//writeToScreen(photo_temp);
+	if(gui_client.call(srv)){
+		response = srv.response.index == 0 ? false : true;
+		ROS_INFO("Hey, I got a response: %d", response);
+	} else {
+		ROS_INFO("Something went wrong");
+	}
+	return response;
+}
+bool ask_mult_choice(std::string question, std::string choice1){
+	bool response = false;
+	bwi_msgs::QuestionDialog srv;
+
+	srv.request.type = 1;
+	srv.request.message = question;
+	srv.request.timeout = 0.0;
+	std::vector<std::string> temp;
+	temp.push_back(choice1);
+	srv.request.options = temp;
 	if(gui_client.call(srv)){
 		response = srv.response.index == 0 ? false : true;
 		ROS_INFO("Hey, I got a response: %d", response);
@@ -359,9 +386,9 @@ int writeToScreen(std::vector<std::string> *object_names){
 std::vector<std::string> splitString(std::string input){
 	std::vector<std::string> vec;
 	std::istringstream iss(input);
-	//copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
-	//	back_inserter(vec));
-	vec.push_back(input);
+	copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
+		back_inserter(vec));
+	//vec.push_back(input);
 	return vec;
 }
 
@@ -381,9 +408,9 @@ void sequence(){
 		bool common_att = ask_mult_choice("Do all shown objects share a common attribute for context ["+modality+"]?", "No", "Yes");
 		if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
 			//ask only once per tree : "Can you specify that attribute?"
-			if(true){//firstTime){
+			if(firstTime){
 
-				//firstTime = false;
+				firstTime = false;
 				std::string resp = ask_free_resp("Please specify what attribute is shared");
 
 				//parse resp, checking if each attribute exists in table
@@ -419,33 +446,39 @@ void sequence(){
 						att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
 						label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
 							splitString(att_from_above)));
-						firstTime = true;
 					}
 				}
 			}
 		}
 		else{
-			if(ask_mult_choice("Is there any attribute common to most of the objects for context ["+modality+"]?", "No", "Yes")){
+			if(cur_cluster.size() <= 3 || ask_mult_choice("Is there any attribute common to most of the objects for context ["+modality+"]?", "No", "Yes")){
 				if(firstTime){
 					firstTime = false;
 					std::string resp = ask_free_resp("Please specify what attribute is shared");
 					std::vector<std::string> feature_vec = splitString(resp);
 					clusterAttribute = feature_vec.at(0);
 				}
-				if(ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2")){
+				bool mult_choice;
+				if(cur_cluster.size() <= 3){
+					mult_choice = !ask_mult_choice("How many objects don't fit the attribute?", "1 or 2");
+				}
+				else
+					mult_choice = ask_mult_choice("How many objects don't fit the attribute?", ">2", "1 or 2");
+				if(mult_choice){
 					std::vector<std::string> outliers = splitString(
 							ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
 					std::vector<std::string> full_cluster = cur_cluster;
+					ROS_INFO("GOT OUTLIER SIZE: %lud", outliers.size());
 					for(int i = 0; i < outliers.size(); i++){
 						std::string outlier_name = full_cluster.at(atoi(outliers.at(i).c_str()));
 						cur_cluster.clear();
 						cur_cluster.push_back(outlier_name);
 						sleep(1);
 						//display only outliers.at(i);
-						std::string answer = ask_free_resp("What is the attribute of this object?");
+						std::string answer = ask_free_resp("What is the " + clusterAttribute + " of this object?");
 						//store answer as label
 						//store in outlier map to be combined to any cluster with the same label
-						writeRequestFile(0,outliers[i],answer);	//send request to Java prog
+						writeRequestFile(0,outlier_name,answer);	//send request to Java prog
 						while(!responseFileExists()){		//wait for Java to respond with updated cluster
 							sleep(.01);
 						}
@@ -455,7 +488,6 @@ void sequence(){
 					/* Here I need to grab the label for the attribute. Need to check label table for:
 					 * the existance of the attribute. If it exists, add the label to the vector of labels already seen
 					 * Otherwise, add an entry pair <feature, vec:labels>
-					 * 
 					 */ 
 					att_from_above = ask_free_resp("What " + clusterAttribute + " are these items?");
 					std::map<std::string, std::vector<std::string> >::iterator it;
@@ -471,6 +503,7 @@ void sequence(){
 					}
 					
 				}
+				
 				writeRequestFile(2, att_from_above, att_from_above); //recluster
 				req_sent = true;
 			}
@@ -497,6 +530,7 @@ void sequence(){
 int main (int argc, char **argv){
 	ros::init(argc, argv, "grounded_dialog_gui");
 	ros::NodeHandle n;
+	signal(SIGINT, sig_handler);	
 
 	gui_client = n.serviceClient<bwi_msgs::QuestionDialog>("question_dialog");
 	bwi_msgs::QuestionDialog srv;
