@@ -376,6 +376,7 @@ void sequence(){
 	readResponseFile();
 	std::string att_from_above;
 	boost::thread workerThread(writeToScreen, &cur_cluster);
+	bool req_sent = false;
 	while(true){
 		bool common_att = ask_mult_choice("Do all shown objects share a common attribute for context ["+modality+"]?", "No", "Yes");
 		if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
@@ -404,7 +405,6 @@ void sequence(){
 								values_buffer.push_back(values.at(j));
 								done = true;
 							}
-							
 						}
 						if(!done){
 						att_from_above = ask_free_resp("What/how " + feature_vec.at(i) + " are they?");
@@ -471,21 +471,26 @@ void sequence(){
 					}
 					
 				}
+				writeRequestFile(2, att_from_above, att_from_above); //recluster
+				req_sent = true;
 			}
 			else{
 				writeRequestFile(2, att_from_above, att_from_above); //recluster
+				req_sent = true;
 			}
 		}
 		
 		print_to_gui("Waiting...");
 
 		//get next cluster
-		writeRequestFile(1,att_from_above);
+		if(!req_sent){
+			writeRequestFile(1,att_from_above);
+			req_sent = true;
+		}
 		while(!responseFileExists()){		//wait for Java to respond with updated cluster
 				sleep(.01);
 		}
 		readResponseFile();				//grab next cluster if successful
-		
 	}
 }
 
