@@ -132,7 +132,7 @@ bool writeRequestFile(int ID, std::string label){
 		if(ID == 1){
 			ROS_INFO("Requesting next cluster");
 			myfile << clusterNum << "\n";
-			myfile <<label <<"\n";
+			myfile << label <<"\n";
 			//myfile << label << "\n";
 		}
 		else
@@ -457,17 +457,17 @@ void sequence(){
 					 * Otherwise, add an entry pair <feature, vec:labels>
 					 * 
 					 */ 
-					std::string resp = ask_free_resp("What " + clusterAttribute + " are these items?");
+					att_from_above = ask_free_resp("What " + clusterAttribute + " are these items?");
 					std::map<std::string, std::vector<std::string> >::iterator it;
 					it = label_table.find(clusterAttribute);
 					if(it != label_table.end()){ //att exists
 						std::vector<std::string> values = it->second;
-						values.push_back(resp);
+						values.push_back(att_from_above);
 						label_table[clusterAttribute] = values;
 					}
 					else{ //doesn't exist
 						label_table.insert(std::pair<std::string,std::vector<std::string> >(clusterAttribute,
-								splitString(resp)));
+								splitString(att_from_above)));
 					}
 					
 				}
@@ -485,7 +485,7 @@ void sequence(){
 		//get next cluster
 		if(!req_sent){
 			writeRequestFile(1,att_from_above);
-			req_sent = true;
+			req_sent = false;
 		}
 		while(!responseFileExists()){		//wait for Java to respond with updated cluster
 				sleep(.01);
