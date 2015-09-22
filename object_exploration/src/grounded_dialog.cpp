@@ -421,7 +421,7 @@ void sequence(){
 			std::vector<std::string> feature_vec = splitString(resp);
 			clusterAttribute = feature_vec.at(0);
 		}
-		bool common_att = ask_mult_choice("Do all shown objects share the same " + clusterAttribute + "?", "No", "Yes");
+		bool common_att = ask_mult_choice("Are all of these objects similar in " + clusterAttribute + "?", "No", "Yes");
 		if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
 			//ask only once per tree : "Can you specify that attribute?"
 				std::map<std::string, std::vector<std::string> >::iterator it;
@@ -455,7 +455,7 @@ void sequence(){
 				}
 		}
 		else{
-			if(cur_cluster.size() <= 3 || ask_mult_choice("Is there any " + clusterAttribute + " common to most of the objects?", "No", "Yes")){
+			if(cur_cluster.size() <= 3 || ask_mult_choice("Are most of these objects similar in " + clusterAttribute + "?", "No", "Yes")){
 				bool mult_choice;
 				if(cur_cluster.size() <= 3){
 					mult_choice = !ask_mult_choice("How many objects don't fit the " + clusterAttribute + "?", "1 or 2");
