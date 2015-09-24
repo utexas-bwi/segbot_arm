@@ -147,6 +147,8 @@ bool service_cb(moveit_utils::MicoNavSafety::Request &req, moveit_utils::MicoNav
     target.joint6 = q_safe.at(5);
     movement_srv.request.target = target;
 	
+	ROS_INFO("[mico_nav_safety_service.cpp] making a call to moveit client...");
+	
     if(movement_client.call(movement_srv)){
         ROS_INFO("Safety service call sent. Preparing to move arm to save location.");
         res.safe = movement_srv.response.completed;
