@@ -65,3 +65,7 @@ add_dependencies(draw jaco_msgs_gencpp)
 add_executable(approach_board src/approach_board.cpp)
 target_link_libraries(approach_board ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(approach_board segbot_arm_perception_gencpp)
+#movement_demos exe
+add_executable (movement_demo src/movement_demo.cpp)
+target_link_libraries(movement_demo ${catkin_LIBRARIES})
+add_dependencies(movement_demo jaco_msgs_gencpp)
