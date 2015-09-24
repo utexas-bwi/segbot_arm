@@ -1054,45 +1054,10 @@
     <kp value="1000000.0"/>
     <kd value="1.0"/>
   </gazebo>
-  <!-- Add the hokuyo mount without the beam 
-  <xacro:hokuyo_mount_without_beam name="nav_hokuyo" parent="hokuyo_sonar_sensor_beam" ros_topic="scan" update_rate="10" min_angle="${-(5 * M_PI)/12}" max_angle="${(5 * M_PI)/12}" range="20.0">
-    <origin xyz="${0.5*INCH_TO_M} 0 ${SENSOR_BEAM_LENGTH/2*INCH_TO_M}" rpy="${M_PI/2} 0 ${M_PI/2}" />
-  </xacro:hokuyo_mount_without_beam> -->
-  <!-- Add the hokuyo -->
-  <joint name="nav_hokuyo_sensor_beam_joint" type="fixed">
-    <origin rpy="1.5707963268 1.5707963268 0" xyz="0.0254 0.0127 0.1143"/>
-    <parent link="front_left_vertical_beam_link"/>
-    <child link="nav_hokuyo_sensor_beam_link"/>
-  </joint>
-  <link name="nav_hokuyo_sensor_beam_link">
-    <inertial>
-      <mass value="0.1"/>
-      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.1524"/>
-      <geometry>
-        <box size="0.0254 0.0254 0.3048"/>
-      </geometry>
-      <material name="light_grey"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.1524"/>
-      <geometry>
-        <box size="0.0254 0.0254 0.3048"/>
-      </geometry>
-    </collision>
-  </link>
-  <gazebo reference="nav_hokuyo_sensor_beam_link">
-    <material>Gazebo/Grey</material>
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-  </gazebo>
+  <!-- Add the hokuyo mount without the beam -->
   <joint name="nav_hokuyo_plate_joint" type="fixed">
     <origin rpy="1.5707963268 0 1.5707963268" xyz="0.0127 0 0.1524"/>
-    <parent link="nav_hokuyo_sensor_beam_link"/>
+    <parent link="hokuyo_sonar_sensor_beam_link"/>
     <child link="nav_hokuyo_plate_link"/>
   </joint>
   <link name="nav_hokuyo_plate_link">
@@ -1140,12 +1105,7 @@
         <mesh filename="package://segbot_description/meshes/hokuyo.dae" scale="0.0254 0.0254 0.0254"/>
       </geometry>
     </visual>
-    <!-- <collision> -->
-    <!--   <origin xyz="0 0 0" rpy="0 0 0" /> -->
-    <!--   <geometry> -->
-    <!--     <mesh filename="package://segbot_description/meshes/hokuyo.dae" scale="0.0254 0.0254 0.0254" /> -->
-    <!--   </geometry> -->
-    <!-- </collision> -->
+    <!-- ignore the collision element -->
   </link>
   <joint name="nav_hokuyo_laser_joint" type="fixed">
     <origin xyz="0 0 0.058"/>
@@ -1176,7 +1136,7 @@
         </scan>
         <range>
           <min>0.02</min>
-          <max>21.0</max>
+          <max>20.0</max>
           <resolution>0.03</resolution>
         </range>
       </ray>

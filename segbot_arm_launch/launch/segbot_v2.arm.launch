@@ -19,6 +19,5 @@
 
   <!-- launch MoveIt! -->
   <include file="$(find moveit_utils)/launch/mico_moveit.launch" />
-  <node name="mico_nav_safety" pkg="moveit_utils" type="mico_nav_safety"></node>
-
+ 
 </launch>
