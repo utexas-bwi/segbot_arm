@@ -34,8 +34,8 @@
   <link name="base_link">
     <inertial>
       <mass value="30"/>
-      <origin xyz="0 0 -0.2165"/>
-      <inertia ixx="3000.0" ixy="0.0" ixz="0.0" iyy="3000.0" iyz="0.0" izz="30.0"/>
+      <origin xyz="-0.1 0 -0.075"/>
+      <inertia ixx="3.0" ixy="0.0" ixz="0.0" iyy="3.0" iyz="0.0" izz="2.0"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -44,33 +44,9 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.05"/>
-      <geometry>
-        <cylinder length="0.3330" radius="0.305"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="laser_obstacle_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.0 0 0.3165"/>
-    <parent link="base_link"/>
-    <child link="laser_obstacle"/>
-  </joint>
-  <link name="laser_obstacle">
-    <inertial>
-      <mass value="0.1"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
-    </inertial>
-    <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.25 0.6 0.4"/>
+        <mesh filename="package://segbot_description/meshes/rmp50-base-link.dae" scale="0.0254 0.0254 0.0254"/>
       </geometry>
     </collision>
   </link>
@@ -106,6 +82,12 @@
         <mesh filename="package://segbot_description/meshes/rmp50-castor-link.dae" scale="0.0254 0.0254 0.0254"/>
       </geometry>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://segbot_description/meshes/rmp50-castor-link.dae" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="base_caster_support_link">
     <mu1 value="100.0"/>
@@ -139,6 +121,12 @@
         <mesh filename="package://segbot_description/meshes/rmp50-castor-wheel.dae" scale="0.0254 0.0254 0.0254"/>
       </geometry>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://segbot_description/meshes/rmp50-castor-wheel.dae" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="caster_wheel_link">
     <mu1 value="1.0"/>
@@ -167,6 +155,12 @@
         <mesh filename="package://segbot_description/meshes/rmp50-left-wheel.dae" scale="0.0254 0.0254 0.0254"/>
       </geometry>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://segbot_description/meshes/rmp50-left-wheel.dae" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="base_link_left_wheel_link">
     <mu1 value="1.0"/>
@@ -200,6 +194,12 @@
         <mesh filename="package://segbot_description/meshes/rmp50-right-wheel.dae" scale="0.0254 0.0254 0.0254"/>
       </geometry>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://segbot_description/meshes/rmp50-right-wheel.dae" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="base_link_right_wheel_link">
     <mu1 value="1.0"/>
@@ -230,6 +230,12 @@
       </geometry>
       <material name="dark_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.003175"/>
+      <geometry>
+        <box size="0.4064 0.3556 0.00635"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="chassis_base_plate_link">
     <material>Gazebo/Grey</material>
@@ -256,6 +262,12 @@
       </geometry>
       <material name="dark_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.003175"/>
+      <geometry>
+        <box size="0.4064 0.1016 0.00635"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="chassis_left_plate_link">
     <material>Gazebo/Grey</material>
@@ -282,6 +294,12 @@
       </geometry>
       <material name="dark_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.003175"/>
+      <geometry>
+        <box size="0.4064 0.1016 0.00635"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="chassis_right_plate_link">
     <material>Gazebo/Grey</material>
@@ -308,6 +326,12 @@
       </geometry>
       <material name="almost_black"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.1397"/>
+      <geometry>
+        <box size="0.1778 0.3556 0.2794"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="battery_box_link">
     <material>Gazebo/Black</material>
@@ -333,6 +357,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.1524"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.3048"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="front_base_beam_link">
     <material>Gazebo/Grey</material>
@@ -358,6 +388,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.1524"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.3048"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="back_base_beam_link">
     <material>Gazebo/Grey</material>
@@ -383,6 +419,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.2286"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.4572"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="back_left_vertical_beam_link">
     <material>Gazebo/Grey</material>
@@ -408,6 +450,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.2286"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.4572"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="front_left_vertical_beam_link">
     <material>Gazebo/Grey</material>
@@ -433,6 +481,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.2286"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.4572"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="back_right_vertical_beam_link">
     <material>Gazebo/Grey</material>
@@ -458,6 +512,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.2286"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.4572"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="front_right_vertical_beam_link">
     <material>Gazebo/Grey</material>
@@ -483,6 +543,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.1524"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.3048"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="left_laptop_support_beam_link">
     <material>Gazebo/Grey</material>
@@ -508,6 +574,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.1524"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.3048"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="right_laptop_support_beam_link">
     <material>Gazebo/Grey</material>
@@ -534,6 +606,12 @@
       </geometry>
       <material name="dark_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0015875"/>
+      <geometry>
+        <box size="0.4064 0.4572 0.003175"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="laptop_base_plate_link">
     <material>Gazebo/Grey</material>
@@ -560,6 +638,12 @@
       </geometry>
       <material name="almost_black"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.009525"/>
+      <geometry>
+        <box size="0.3048 0.3556 0.01905"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="laptop_link">
     <material>Gazebo/Grey</material>
@@ -586,6 +670,12 @@
       </geometry>
       <material name="almost_black"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.1524 0 -0.009525"/>
+      <geometry>
+        <box size="0.3048 0.3556 0.01905"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="laptop_screen_link">
     <visual>
@@ -619,6 +709,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.1524"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.3048"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="nav_kinect_sensor_beam_link">
     <material>Gazebo/Grey</material>
@@ -645,6 +741,12 @@
       </geometry>
       <material name="dark_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.00079375"/>
+      <geometry>
+        <box size="0.1016 0.2286 0.0015875"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="nav_kinect_base_plate_link">
     <material>Gazebo/Grey</material>
@@ -671,6 +773,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0254"/>
+      <geometry>
+        <cylinder length="0.0508" radius="0.003175"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="nav_kinect_standoff_1_link">
     <material>Gazebo/Grey</material>
@@ -697,6 +805,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0254"/>
+      <geometry>
+        <cylinder length="0.0508" radius="0.003175"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="nav_kinect_standoff_2_link">
     <material>Gazebo/Grey</material>
@@ -723,6 +837,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0254"/>
+      <geometry>
+        <cylinder length="0.0508" radius="0.003175"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="nav_kinect_standoff_3_link">
     <material>Gazebo/Grey</material>
@@ -749,6 +869,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0254"/>
+      <geometry>
+        <cylinder length="0.0508" radius="0.003175"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="nav_kinect_standoff_4_link">
     <material>Gazebo/Grey</material>
@@ -775,6 +901,12 @@
       </geometry>
       <material name="dark_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.00079375"/>
+      <geometry>
+        <box size="0.1016 0.2286 0.0015875"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="nav_kinect_top_plate_link">
     <material>Gazebo/Grey</material>
@@ -908,6 +1040,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.1524"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.3048"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="hokuyo_sonar_sensor_beam_link">
     <material>Gazebo/Grey</material>
@@ -916,39 +1054,10 @@
     <kp value="1000000.0"/>
     <kd value="1.0"/>
   </gazebo>
-  <!-- Add the hokuyo mount without the beam 
-  <xacro:hokuyo_mount_without_beam name="nav_hokuyo" parent="hokuyo_sonar_sensor_beam" ros_topic="scan" update_rate="10" min_angle="${-(5 * M_PI)/12}" max_angle="${(5 * M_PI)/12}" range="20.0">
-    <origin xyz="${0.5*INCH_TO_M} 0 ${SENSOR_BEAM_LENGTH/2*INCH_TO_M}" rpy="${M_PI/2} 0 ${M_PI/2}" />
-  </xacro:hokuyo_mount_without_beam> -->
-  <!-- Add the hokuyo -->
-  <joint name="nav_hokuyo_sensor_beam_joint" type="fixed">
-    <origin rpy="1.5707963268 1.5707963268 0" xyz="0.0254 0.0127 0.1143"/>
-    <parent link="front_left_vertical_beam_link"/>
-    <child link="nav_hokuyo_sensor_beam_link"/>
-  </joint>
-  <link name="nav_hokuyo_sensor_beam_link">
-    <inertial>
-      <mass value="0.1"/>
-      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.1524"/>
-      <geometry>
-        <box size="0.0254 0.0254 0.3048"/>
-      </geometry>
-      <material name="light_grey"/>
-    </visual>
-  </link>
-  <gazebo reference="nav_hokuyo_sensor_beam_link">
-    <material>Gazebo/Grey</material>
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-  </gazebo>
+  <!-- Add the hokuyo mount without the beam -->
   <joint name="nav_hokuyo_plate_joint" type="fixed">
     <origin rpy="1.5707963268 0 1.5707963268" xyz="0.0127 0 0.1524"/>
-    <parent link="nav_hokuyo_sensor_beam_link"/>
+    <parent link="hokuyo_sonar_sensor_beam_link"/>
     <child link="nav_hokuyo_plate_link"/>
   </joint>
   <link name="nav_hokuyo_plate_link">
@@ -964,6 +1073,12 @@
       </geometry>
       <material name="dark_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0015875"/>
+      <geometry>
+        <box size="0.06 0.12 0.003175"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="nav_hokuyo_plate_link">
     <material>Gazebo/Grey</material>
@@ -990,12 +1105,7 @@
         <mesh filename="package://segbot_description/meshes/hokuyo.dae" scale="0.0254 0.0254 0.0254"/>
       </geometry>
     </visual>
-    <!-- <collision> -->
-    <!--   <origin xyz="0 0 0" rpy="0 0 0" /> -->
-    <!--   <geometry> -->
-    <!--     <mesh filename="package://segbot_description/meshes/hokuyo.dae" scale="0.0254 0.0254 0.0254" /> -->
-    <!--   </geometry> -->
-    <!-- </collision> -->
+    <!-- ignore the collision element -->
   </link>
   <joint name="nav_hokuyo_laser_joint" type="fixed">
     <origin xyz="0 0 0.058"/>
@@ -1026,7 +1136,7 @@
         </scan>
         <range>
           <min>0.02</min>
-          <max>21.0</max>
+          <max>20.0</max>
           <resolution>0.03</resolution>
         </range>
       </ray>
@@ -1059,6 +1169,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.381"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.762"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="left_sensor_beam_link">
     <material>Gazebo/Grey</material>
@@ -1085,6 +1201,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.381"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.762"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="right_sensor_beam_link">
     <material>Gazebo/Grey</material>
@@ -1111,6 +1233,12 @@
       </geometry>
       <material name="light_grey"/>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.2286"/>
+      <geometry>
+        <box size="0.0254 0.0254 0.4572"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="top_sensor_beam_link">
     <material>Gazebo/Grey</material>
@@ -1368,7 +1496,7 @@
   </joint>
   <!-- add the xtion -->
   <joint name="xtion_camera_joint" type="fixed">
-    <origin rpy="0 0.74 0" xyz="-0.245 +0.05 0.75"/>
+    <origin rpy="0 0.74 0" xyz="-0.245 +0.165 0.75"/>
     <parent link="arm_link"/>
     <child link="xtion_camera_link"/>
   </joint>
@@ -1475,12 +1603,17 @@
     </inertial>
   </link>
   <gazebo>
-    <plugin filename="libgazebo_ros_planar_move.so" name="object_controller">
+    <plugin filename="libgazebo_ros_diff_drive.so" name="differential_drive_controller">
+      <updateRate>100</updateRate>
+      <leftJoint>base_link_right_wheel_joint</leftJoint>
+      <rightJoint>base_link_left_wheel_joint</rightJoint>
+      <wheelSeparation>0.5380</wheelSeparation>
+      <wheelDiameter>0.2410</wheelDiameter>
+      <torque>20</torque>
       <commandTopic>cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>
       <robotBaseFrame>base_footprint</robotBaseFrame>
-      <odometryRate>100</odometryRate>
     </plugin>
   </gazebo>
 </robot>
