@@ -167,7 +167,7 @@ void sendCartVelocity(double xin, double yin, double zin){
 void sendJointVelocity(double xin){
 	jaco_msgs::JointVelocity goal;
 	goal.joint1 = -xin;
-	goal.joint2 = -xin;
+	goal.joint2 = xin;
 	goal.joint3 = -xin;
 	goal.joint4 = -xin;
 	goal.joint5 = -xin;
