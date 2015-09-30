@@ -49,6 +49,7 @@ ros::ServiceClient fkine_client;
 ros::ServiceClient stopbase_client;
 
 bwi_msgs::StopBaseStatus sbs;
+bwi_msgs::StopBaseStatus last_status;
 bwi_msgs::StopBase::Request sb_req;
 bwi_msgs::StopBase::Response sb_resp;
 
@@ -111,11 +112,11 @@ bool checkIfSafe(){
 }
 
 void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
-	ros::Rate r(10);
 
     if (js->position.size() > 4){ //Message from the base or the arm
         js_cur = *js;
         
+        last_status = sbs;
 		if(!checkIfSafe())
 			sbs.status = sbs.PAUSED;
 		else
@@ -124,15 +125,16 @@ void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
 		sb_req.status = sbs;
 		sb_req.requester = "mico_safety_node";
 		
-		if(stopbase_client.call(sb_req,sb_resp)){
-			ROS_DEBUG("Made stop_base call");
+		if(sbs.status != last_status.status){
+			if(stopbase_client.call(sb_req,sb_resp)){
+				ROS_DEBUG("Made stop_base call");
+			}
+			else{
+				ROS_ERROR("Stop base service call failed!");
+				ros::shutdown();
+			}	
 		}
-		else{
-			ROS_ERROR("Stop base service call failed!");
-			ros::shutdown();
-		}	
     }
-	r.sleep();
 
 };
 
@@ -175,8 +177,11 @@ int main(int argc, char **argv)
     q_safe += -1.4918,-1.804,-0.1299,-2.1717,.5688,2.6787; //defines the 'go-to' safe position
 
     nh.param("inflation_radius", inflationRad, .195);
-
-    ros::spin();
+	ros::Rate r(5);
+	while(true){
+		ros::spinOnce();
+		r.sleep();
+	}
     return 0;
 }
 
