@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 
     nh.param("inflation_radius", inflationRad, .195);
 	ros::Rate r(5);
-	while(true){
+	while(ros::ok()){
 		ros::spinOnce();
 		r.sleep();
 	}
