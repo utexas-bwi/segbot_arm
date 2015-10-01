@@ -64,6 +64,7 @@ catkin_python_setup()
    TableDetectionObjectExtraction.srv
    FeatureExtraction.srv
    TabletopPerception.srv
+   ButtonDetection.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -131,6 +132,9 @@ add_dependencies(log_perception_action_client segbot_arm_perception_gencpp)
 
 add_executable(button_detection_node src/button_detection_node.cpp)
 target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(button_detection_srv_node src/button_detection_srv_node.cpp)
+target_link_libraries(button_detection_srv_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
 add_executable(table_object_detection_node src/table_object_detection_node.cpp)
