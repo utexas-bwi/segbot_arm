@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
   ros::NodeHandle n;
 
   //create subscriber to joint angles
-  ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+  ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
 
   //create subscriber to joint torques
   ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
   }*/
   
 	moveArmAngularVelocity(48);
-	moveFinger(100);
+	//moveFinger(100);
 	/*moveArmAngularVelocity(48);
 	moveFinger(100);
 	moveArmAngularVelocity(-48);

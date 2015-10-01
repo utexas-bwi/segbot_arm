@@ -120,7 +120,7 @@ int main(int argc, char **argv)
  		return 1;
  	}
 
- 	ROS_INFO("Please move the arm to a different position to test inverse kinematics");
+ 	ROS_INFO("Press enter to test inverse kinematics");
  	pressEnter();
 
  	/*
@@ -143,32 +143,7 @@ int main(int argc, char **argv)
 	} else {
 		ROS_INFO("IK service call FAILED. Exiting");
 	}
-	//ROS_INFO_STREAM("Result: " << ((service_response.error_code.val == service_response.error_code.SUCCESS) ? "True " : "False ") << service_response.error_code.val);
 	
-	/* Filling in a seed state */
-	/*robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
-	robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
-	robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
-	const robot_state::JointModelGroup* joint_model_group = kinematic_model->getJointModelGroup("left_arm");
-	*/
-	/* Get the names of the joints in the right_arm*/
-	//ikine_request.ik_request.robot_state.joint_state.name = joint_model_group->getJointModelNames();
-	
-	/* Get the joint values and put them into the message, this is where you could put in your own set of values as well.*/
-	//kinematic_state->setToRandomPositions(joint_model_group);
-	//kinematic_state->copyJointGroupPositions(joint_model_group, service_request.ik_request.robot_state.joint_state.position);
-	
-	/* Call the service again*/
-	//ikine_client.call(service_request, service_response);
-	//ROS_INFO_STREAM("Result: " << ((service_response.error_code.val == service_response.error_code.SUCCESS) ? "True " : "False ") << service_response.error_code.val);
-	
-	/* Check for collisions*/
-	//service_request.ik_request.avoid_collisions = true;
-	
-	/* Call the service again*/
-	//ikine_client.call(service_request, service_response);
-	//ROS_INFO_STREAM("Result: " << ((service_response.error_code.val == service_response.error_code.SUCCESS) ? "True " : "False ") << service_response.error_code.val);
-
 	ros::shutdown();
 	return 0;
 }

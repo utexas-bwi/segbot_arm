@@ -126,16 +126,16 @@ int openFingersAndWait(){
 			ROS_INFO("Forces above 0.29N detected. Closing fingers.");
 			ROS_INFO("Efforts: %f", total_delta);
 			closeComplt();
+			
 			break;
 		}
 		r.sleep();
 	}
+	
 	//This checks if the fingers missed their target
 	ros::spinOnce();
-	if(f1 > 7400 || f2 > 7000){
-		std::cout << "Finger 1: " << f1 << " Finger 2: " << f2 << std::endl;
-		openFingersAndWait();
-	}
+	std::cout << "Finger 1: " << f1 << " Finger 2: " << f2 << std::endl;
+	
 	return 0;
 }
 
@@ -144,9 +144,10 @@ int openFingersAndWait(){
  */
 void sendCartVelocity(double xin, double yin, double zin){
 	double duration = 1.0;
-	ros::Rate r(100);
+	int rate_hz = 100;
+	ros::Rate r(rate_hz);
 	
-	for (int i = 0; i < (int)duration*100; i++){
+	for (int i = 0; i < (int)(duration*rate_hz); i++){
 		ros::spinOnce();
 		
 		geometry_msgs::TwistStamped T; 
@@ -221,9 +222,9 @@ int main(int argc, char **argv)
 			double x,y,z;
 			std::cout << "Enter x: ";
 			std::cin >> x;
-			std::cout << std::endl << "Enter y: ";
+			std::cout << "Enter y: ";
 			std::cin >> y;
-			std::cout << std::endl << "Enter z: ";
+			std::cout << "Enter z: ";
 			std:: cin >> z;
 			sendCartVelocity(x,y,z);
 		}

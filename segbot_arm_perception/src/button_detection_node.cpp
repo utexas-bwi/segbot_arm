@@ -161,7 +161,7 @@ int main (int argc, char** argv)
 	ros::NodeHandle nh;
 
 	// Create a ROS subscriber for the input point cloud
-	std::string param_topic = "/camera/depth_registered/points";
+	std::string param_topic = "/xtion_camera/depth_registered/points";
 	ros::Subscriber sub = nh.subscribe (param_topic, 1, cloud_cb);
 
 	//debugging publisher
