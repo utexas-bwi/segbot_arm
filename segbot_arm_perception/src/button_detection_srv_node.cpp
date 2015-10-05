@@ -39,7 +39,7 @@
 
 #include <pcl/kdtree/kdtree.h>
 
-#include "segbot_arm_perception/TabletopPerception.h"
+#include "segbot_arm_perception/ButtonDetection.h"
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -214,12 +214,45 @@ void waitForCloudK(int k){
 	
 }
 
-bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_perception::TabletopPerception::Response &res)
+bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_perception::ButtonDetection::Response &res)
 {
 	//get the point cloud by aggregating k successive input clouds
 	waitForCloudK(15);
 	cloud = cloud_aggregated;
 
+	// Create the filtering object
+	pcl::PassThrough<PointT> pass;
+	pass.setInputCloud (cloud);
+	pass.setFilterFieldName ("z");
+	pass.setFilterLimits (0.0, 1.15);
+	pass.filter (*cloud);
+	
+	// Create the filtering object: downsample the dataset using a leaf size of 1cm
+	pcl::VoxelGrid<PointT> vg;
+	pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>);
+	vg.setInputCloud (cloud);
+	vg.setLeafSize (0.0025f, 0.0025f, 0.0025f);
+	vg.filter (*cloud_filtered);
+	
+    ROS_INFO("After voxel grid filter: %i points",(int)cloud_filtered->points.size());
+    
+    
+
+	
+	
+	
+	
+	
+	
+	bool button_found = true;
+	
+	
+	//fill in response
+	res.is_button_found = button_found;
+	
+	if (button_found){
+		//res.cloud_button = ...
+	}
 	
 	return true;
 }
