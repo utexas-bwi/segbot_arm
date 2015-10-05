@@ -233,8 +233,15 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 	vg.setInputCloud (cloud);
 	vg.setLeafSize (0.0025f, 0.0025f, 0.0025f);
 	vg.filter (*cloud_filtered);
-	
+
+	//publish point cloud for debugging
+	ROS_INFO("Publishing point cloud...");
+	pcl::toROSMsg(*cloud_filtered,cloud_ros);
+	cloud_ros.header.frame_id = cloud->header.frame_id;
+	cloud_pub.publish(cloud_ros);
+
     ROS_INFO("After voxel grid filter: %i points",(int)cloud_filtered->points.size());
+    
     
     
 
