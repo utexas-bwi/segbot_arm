@@ -17,7 +17,7 @@
 ros::Publisher j_vel_pub;
 bool g_caught_sigint=false;
 sensor_msgs::JointState js_cur;
-float tol = 0.05; //Should get from mico launch / param server
+float tol = 0.0125; //Should get from mico launch / param server
 std::vector<float> js_goal;
 
 void sig_handler(int sig){
@@ -136,9 +136,9 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 			jv_goal.joint6 = -180/PI*trajectory.points.at(i).velocities.at(5);*/
 			
 			ROS_INFO("Target joint state:");
-			ROS_INFO_STREAM(trajectory.points[i]);
+			//ROS_INFO_STREAM(trajectory.points[i]);
 			ROS_INFO("Current joint state:");
-			ROS_INFO_STREAM(js_cur);
+			//ROS_INFO_STREAM(js_cur);
 			
 			ROS_INFO("Joint velocity goal for point %i:",i);
 			ROS_INFO_STREAM(jv_goal);
@@ -270,16 +270,49 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 				}
 			}
 			else{
+				
+				double last_errors[6];
+				int pub_counter = 0;
 				while(!next_point){
 					//rather than check conditionally, re-up on the message
 					ros::spinOnce();
+					
 					j_vel_pub.publish(jv_goal);
+					pub_counter++;
+					
 					last_sent = ros::Time::now().toSec();
 					//ROS_INFO("first_sent: %f tfs: %f", (ros::Time::now() - first_sent).toSec(), (tfs - last).toSec());
 					//}
+					
+					double errors[6];
+					double sum_error=0;
+
+					for (int p = 0; p < 6; p++){
+						errors[p]= fabs(trajectory.points.at(i).positions.at(p)-js_cur.position.at(p));
+						sum_error+=errors[p];
+						
+						if (pub_counter > 1){
+							if (last_errors[p] < errors[p]){
+								ROS_INFO("Joint %i's error from target is going up: %f to %f!",p,last_errors[p],errors[p]);
+							}
+						}
+						
+						last_errors[p] = errors[p];
+					}
+					
+					/*if (sum_error < 0.01){
+						ROS_INFO("Expecting pos: %f, %f, %f, %f, %f, %f", trajectory.points.at(i).positions.at(0), trajectory.points.at(i).positions.at(1), trajectory.points.at(i).positions.at(2), trajectory.points.at(i).positions.at(3), trajectory.points.at(i).positions.at(4), trajectory.points.at(i).positions.at(5));
+						ROS_INFO("At pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
+						ROS_INFO("Errors: %f, %f, %f, %f, %f, %f",errors[0],errors[1],errors[2],errors[3],errors[4],errors[5]);
+						jaco_msgs::JointVelocity empty_goal;
+						j_vel_pub.publish(empty_goal);
+						next_point = true;
+					}*/
+					
 					if(((ros::Time::now() - first_sent).toSec() >= ((1-tol) * (tfs - last).toSec()))){ //movement should be preempted
 						ROS_INFO("Expecting pos: %f, %f, %f, %f, %f, %f", trajectory.points.at(i).positions.at(0), trajectory.points.at(i).positions.at(1), trajectory.points.at(i).positions.at(2), trajectory.points.at(i).positions.at(3), trajectory.points.at(i).positions.at(4), trajectory.points.at(i).positions.at(5));
-						ROS_INFO("At       pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
+						ROS_INFO("At pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
+						ROS_INFO("Errors: %f, %f, %f, %f, %f, %f",errors[0],errors[1],errors[2],errors[3],errors[4],errors[5]);
 						jaco_msgs::JointVelocity empty_goal;
 						j_vel_pub.publish(empty_goal);
 						next_point = true;
