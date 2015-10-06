@@ -1,5 +1,5 @@
 ---
-bool is_button_found
+bool button_found
 sensor_msgs/PointCloud2 cloud_button
 
 

@@ -45,6 +45,9 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
+// Select mode
+const bool save_pl_mode = false;
+
 // Mutex: //
 boost::mutex cloud_mutex;
 
@@ -54,7 +57,6 @@ PointCloudT::Ptr cloud_aggregated (new PointCloudT);
 PointCloudT::Ptr cloud_plane (new PointCloudT);
 PointCloudT::Ptr cloud_blobs (new PointCloudT);
 PointCloudT::Ptr empty_cloud (new PointCloudT);
-std::vector<PointCloudT::Ptr > clusters;
 std::vector<PointCloudT::Ptr > clusters_on_plane;
 
 sensor_msgs::PointCloud2 cloud_ros;
@@ -139,7 +141,21 @@ bool filter(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients, double to
 	
 }
 
-void computeClusters(PointCloudT::Ptr in, double tolerance){
+double computeAvgRedValue(PointCloudT::Ptr in){
+	double total_red = 0;
+
+	for (unsigned int i = 0; i < in->points.size(); i++){
+		total_red += in->points.at(i).r;
+
+	}
+
+	total_red /= (in->points.size());
+	return total_red;
+}
+
+std::vector<PointCloudT::Ptr > computeClusters(PointCloudT::Ptr in, double tolerance){
+	std::vector<PointCloudT::Ptr > clusters;
+	
 	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 	tree->setInputCloud (in);
 
@@ -152,8 +168,6 @@ void computeClusters(PointCloudT::Ptr in, double tolerance){
 	ec.setInputCloud (in);
 	ec.extract (cluster_indices);
 
-	clusters.clear();
-
 	int j = 0;
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
 	{
@@ -165,7 +179,8 @@ void computeClusters(PointCloudT::Ptr in, double tolerance){
 		cloud_cluster->is_dense = true;
 
 		clusters.push_back(cloud_cluster);
-  }
+	}
+	return clusters;
 }
 
 void waitForCloud(){
@@ -220,6 +235,8 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 	waitForCloudK(15);
 	cloud = cloud_aggregated;
 
+	//**Step 1: z-filter and voxel filter**//
+	
 	// Create the filtering object
 	pcl::PassThrough<PointT> pass;
 	pass.setInputCloud (cloud);
@@ -242,25 +259,153 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 
     ROS_INFO("After voxel grid filter: %i points",(int)cloud_filtered->points.size());
     
+    //**Step 2: plane fitting**//
     
-    
+    //find palne
+    //one cloud contains plane other cloud contains other objects
+    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+	pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+    // Create the segmentation object
+	pcl::SACSegmentation<PointT> seg;
+	// Optional
+    seg.setOptimizeCoefficients (true);
+	// Mandatory
+	seg.setModelType (pcl::SACMODEL_PLANE);
+	seg.setMethodType (pcl::SAC_RANSAC);
+	seg.setMaxIterations (1000);
+	seg.setDistanceThreshold (0.02);
 
+	// Create the filtering object
+	pcl::ExtractIndices<PointT> extract;
+
+	// Segment the largest planar component from the remaining cloud
+	seg.setInputCloud (cloud_filtered);
+	seg.segment (*inliers, *coefficients);
+
+	// Extract the plane
+	extract.setInputCloud (cloud_filtered);
+	extract.setIndices (inliers);
+	extract.setNegative (false);
+	extract.filter (*cloud_plane);
+     
+    //for everything else, cluster extraction; segment extraction
+    //extract everything else
+	extract.setNegative (true);
+	extract.filter (*cloud_blobs);
 	
+    //get the plane coefficients
+	Eigen::Vector4f plane_coefficients;
+	plane_coefficients(0)=coefficients->values[0];
+	plane_coefficients(1)=coefficients->values[1];
+	plane_coefficients(2)=coefficients->values[2];
+	plane_coefficients(3)=coefficients->values[3];
+    
+    //**Step 3: Eucledian Cluster Extraction**//
+	std::vector<PointCloudT::Ptr > clusters = computeClusters(cloud_blobs,0.04);
 	
+	clusters_on_plane.clear();
 	
-	
-	
-	
-	bool button_found = true;
-	
-	
-	//fill in response
-	res.is_button_found = button_found;
-	
-	if (button_found){
-		//res.cloud_button = ...
+	//if clusters are touching the table put them in a vector
+	for (unsigned int i = 0; i < clusters.size(); i++){
+		Eigen::Vector4f centroid_i;
+		pcl::compute3DCentroid(*clusters.at(i), centroid_i);
+		pcl::PointXYZ center;
+		center.x=centroid_i(0);center.y=centroid_i(1);center.z=centroid_i(2);
+
+		double distance = pcl::pointToPlaneDistance(center, plane_coefficients);
+		if (distance < 0.1 /*&& clusters.at(i).get()->points.size() >*/ ){
+			clusters_on_plane.push_back(clusters.at(i));
+		}
+	}
+
+	//**Step 4: detect the button among the remaining clusters**//
+	int max_index = -1;
+
+	double max_red = 0.0;
+	// Find the max red value
+	for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
+		double red_i = computeAvgRedValue(clusters_on_plane.at(i));
+		//ROS_INFO("Cluster %i: %i points, red_value = %f",i,(int)clusters_on_plane.at(i)->points.size(),red_i);
+
+		if (red_i > max_red){
+			max_red = red_i;
+			max_index = i;
+		}
 	}
 	
+	//publish  cloud if we think it's a button
+	/*max_red > 170 && max_red < 250 && */
+	
+	if ((max_index >= 0) &&
+		(clusters_on_plane.at(max_index)->points.size()) < 360 &&
+		(clusters_on_plane.at(max_index)->points.size()) > 80) {
+			
+	    //fill in response
+	    res.button_found = true;
+	    res.cloud_button.header.frame_id = cloud->header.frame_id;
+
+		pcl::toROSMsg(*clusters_on_plane.at(max_index),cloud_ros);
+		cloud_ros.header.frame_id = cloud->header.frame_id;
+		cloud_pub.publish(cloud_ros);
+
+		Eigen::Vector4f centroid;
+		pcl::compute3DCentroid(*clusters_on_plane.at(max_index), centroid);
+
+		//transforms the pose into /map frame
+		geometry_msgs::Pose pose_i;
+		pose_i.position.x=centroid(0);
+		pose_i.position.y=centroid(1);
+		pose_i.position.z=centroid(2);
+		pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
+
+		geometry_msgs::PoseStamped stampedPose;
+
+		stampedPose.header.frame_id = cloud->header.frame_id;
+		stampedPose.header.stamp = ros::Time(0);
+		stampedPose.pose = pose_i;
+
+		//geometry_msgs::PoseStamped stampOut;
+		//listener.waitForTransform(cloud->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
+		//listener.transformPose("mico_api_origin", stampedPose, stampOut);
+
+		//stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
+		//pose_pub.publish(stampOut);
+
+		// Save button pointcloud if mode is on
+		if (save_pl_mode) {
+			static int button_cloud_count = 0;
+			char input_char;
+			ROS_INFO("Save current button point cloud? [y/n]");
+			std::cin >> input_char;
+			if(input_char == 'y') {
+				pcl::PCDWriter writer;
+				std::stringstream ss;
+				ss << "red_button_" << button_cloud_count <<  ".pcd";
+				std::string pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
+				// Changing file name until it doesn't overlap with existing point clouds
+				while (file_exist(pathNameWrite)) {
+					button_cloud_count++;
+					ss.str("");
+					ss << "red_button_" << button_cloud_count <<  ".pcd";
+					pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
+				}
+
+				ROS_INFO("Saving %s...", ss.str().c_str());
+				writer.write<PointT>(pathNameWrite, *clusters_on_plane.at(max_index), false);
+				button_cloud_count++;
+			}
+		}
+	}
+	
+	else {
+	res.button_found = false;
+	pcl::toROSMsg(*empty_cloud,cloud_ros);
+	cloud_ros.header.frame_id = cloud->header.frame_id;
+	cloud_pub.publish(cloud_ros);
+	}
+	
+	cloud_mutex.unlock ();
+
 	return true;
 }
 
@@ -297,6 +442,5 @@ int main (int argc, char** argv)
 		ros::spinOnce();
 
 		r.sleep();
-
 	}
 };
