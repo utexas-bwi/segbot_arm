@@ -85,6 +85,8 @@ jaco_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<double> goal_vector)
 }
 
 
+
+
 // Blocking call for user input
 void pressEnter(){
 	std::cout << "Press the ENTER key to continue";
@@ -294,6 +296,16 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 						if (pub_counter > 1){
 							if (last_errors[p] < errors[p]){
 								ROS_INFO("Joint %i's error from target is going up: %f to %f!",p,last_errors[p],errors[p]);
+								
+								//if so, slow them down
+								/*switch(p) {
+									case 0	: jv_goal.joint1 /= 2.0; break; 
+									case 1	: jv_goal.joint2 /= 2; break; 
+									case 2	: jv_goal.joint3 /= 2; break; 
+									case 3	: jv_goal.joint4 /= 2; break; 
+									case 4	: jv_goal.joint5 /= 2; break; 
+									case 5	: jv_goal.joint6 /= 2; break; 
+								}*/
 							}
 						}
 						

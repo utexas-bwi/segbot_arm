@@ -844,7 +844,7 @@ int main(int argc, char **argv) {
 	pose_pub.publish(grasp_commands.at(min_diff_index).approach_pose);
 	pressEnter();
 	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
-	
+	//pressEnter();
 	
 	//open fingers
 	//pressEnter();
@@ -852,7 +852,7 @@ int main(int argc, char **argv) {
 
 
 	sleep(1.0);
-	pose_pub.publish(grasp_commands.at(min_diff_index).grasp_pose);
+	//pose_pub.publish(grasp_commands.at(min_diff_index).grasp_pose);
 	/*std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
 	std::cin >> in;*/
 	

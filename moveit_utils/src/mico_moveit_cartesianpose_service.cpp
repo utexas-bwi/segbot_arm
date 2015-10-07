@@ -31,6 +31,8 @@ std::vector<double> q_vals;
 
 ros::ServiceClient controller_client;
 
+ros::Publisher pose_pub;
+
 void sig_handler(int sig){
     g_caught_sigint = true;
     ROS_INFO("caugt sigint, init shutdown seq...");
@@ -48,6 +50,10 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
     geometry_msgs::PoseStamped goal;
     goal.pose.orientation = req.target.pose.orientation;
     goal.pose.position = req.target.pose.position;
+   
+	//publish target pose
+	pose_pub.publish(req.target);
+   
     group.setPoseTarget(req.target);
     group.setStartState(*group.getCurrentState());
 
@@ -79,6 +85,9 @@ int main(int argc, char **argv)
     //ros::ServiceClient client = nh.serviceClient<moveit_utils::MicoMoveitJointPose>("mico_moveit_joint_pose");
     controller_client = nh.serviceClient<moveit_utils::MicoController>("mico_controller");
     ros::ServiceServer srv = nh.advertiseService("mico_cartesianpose_service", service_cb);
+
+	pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/mico_cartesianpose_service/target_pose", 10);
+	
 
     //TODO: as a rosparam, option for planning time
     ros::spin();
