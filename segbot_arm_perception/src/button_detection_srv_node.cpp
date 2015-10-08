@@ -253,9 +253,9 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 
 	//publish point cloud for debugging
 	ROS_INFO("Publishing point cloud...");
-	pcl::toROSMsg(*cloud_filtered,cloud_ros);
+	/*pcl::toROSMsg(*cloud_filtered,cloud_ros);
 	cloud_ros.header.frame_id = cloud->header.frame_id;
-	cloud_pub.publish(cloud_ros);
+	cloud_pub.publish(cloud_ros);*/
 
     ROS_INFO("After voxel grid filter: %i points",(int)cloud_filtered->points.size());
     
@@ -299,9 +299,12 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 	plane_coefficients(1)=coefficients->values[1];
 	plane_coefficients(2)=coefficients->values[2];
 	plane_coefficients(3)=coefficients->values[3];
-    
+
+    	
     //**Step 3: Eucledian Cluster Extraction**//
 	std::vector<PointCloudT::Ptr > clusters = computeClusters(cloud_blobs,0.04);
+	
+	ROS_INFO("clustes found: %i", (int)clusters.size());
 	
 	clusters_on_plane.clear();
 	
@@ -317,7 +320,16 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 			clusters_on_plane.push_back(clusters.at(i));
 		}
 	}
+	ROS_INFO("clustes_on_plane found: %i", (int)clusters_on_plane.size());
+	
+	// if the clousters size == 0 return false
+	if(clusters_on_plane.size() == 0) {
+		
+		cloud_mutex.unlock ();
 
+		res.button_found = false; 
+		return true;
+	}
 	//**Step 4: detect the button among the remaining clusters**//
 	int max_index = -1;
 
@@ -335,20 +347,22 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 	
 	//publish  cloud if we think it's a button
 	/*max_red > 170 && max_red < 250 && */
+	ROS_INFO("max_red=%f", max_red);
+
 	
-	if ((max_index >= 0) &&
-		(clusters_on_plane.at(max_index)->points.size()) < 360 &&
-		(clusters_on_plane.at(max_index)->points.size()) > 80) {
+	if (max_index >= 0 && max_red > 150) {
 			
-	    //fill in response
-	    res.button_found = true;
-	    res.cloud_button.header.frame_id = cloud->header.frame_id;
+	    ROS_INFO("Button_found");
 
 		pcl::toROSMsg(*clusters_on_plane.at(max_index),cloud_ros);
 		cloud_ros.header.frame_id = cloud->header.frame_id;
 		cloud_pub.publish(cloud_ros);
 
-		Eigen::Vector4f centroid;
+		//fill in response
+	    res.button_found = true;
+	    res.cloud_button = cloud_ros;
+
+		/*Eigen::Vector4f centroid;
 		pcl::compute3DCentroid(*clusters_on_plane.at(max_index), centroid);
 
 		//transforms the pose into /map frame
@@ -362,7 +376,7 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 
 		stampedPose.header.frame_id = cloud->header.frame_id;
 		stampedPose.header.stamp = ros::Time(0);
-		stampedPose.pose = pose_i;
+		stampedPose.pose = pose_i;*/
 
 		//geometry_msgs::PoseStamped stampOut;
 		//listener.waitForTransform(cloud->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
@@ -371,37 +385,11 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 		//stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
 		//pose_pub.publish(stampOut);
 
-		// Save button pointcloud if mode is on
-		if (save_pl_mode) {
-			static int button_cloud_count = 0;
-			char input_char;
-			ROS_INFO("Save current button point cloud? [y/n]");
-			std::cin >> input_char;
-			if(input_char == 'y') {
-				pcl::PCDWriter writer;
-				std::stringstream ss;
-				ss << "red_button_" << button_cloud_count <<  ".pcd";
-				std::string pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
-				// Changing file name until it doesn't overlap with existing point clouds
-				while (file_exist(pathNameWrite)) {
-					button_cloud_count++;
-					ss.str("");
-					ss << "red_button_" << button_cloud_count <<  ".pcd";
-					pathNameWrite = ros::package::getPath("segbot_arm_perception") + "/pcd/" + ss.str();
-				}
-
-				ROS_INFO("Saving %s...", ss.str().c_str());
-				writer.write<PointT>(pathNameWrite, *clusters_on_plane.at(max_index), false);
-				button_cloud_count++;
-			}
-		}
 	}
 	
 	else {
-	res.button_found = false;
-	pcl::toROSMsg(*empty_cloud,cloud_ros);
-	cloud_ros.header.frame_id = cloud->header.frame_id;
-	cloud_pub.publish(cloud_ros);
+		res.button_found = false;
+		
 	}
 	
 	cloud_mutex.unlock ();

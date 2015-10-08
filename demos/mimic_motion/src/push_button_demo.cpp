@@ -199,18 +199,10 @@ void moveAboveButton(){
   ac.waitForResult();
 }
 
-//button state cb
-void button_pose_cb (const geometry_msgs::PoseStamped &msg) {
-  current_button_pose = msg;
-  button_pose_received = true;
-}
+
 
 void waitForButtonPose(){
-	ros::Rate r(10);
-	while (!button_pose_received){
-		r.sleep();
-		ros::spinOnce();
-	}
+	
 }
 
 int main(int argc, char **argv) {
@@ -231,9 +223,7 @@ int main(int argc, char **argv) {
   //subscriber for fingers
   ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
   
-  //create subscriber for button position
-  ros::Subscriber sub_button = n.subscribe("/button_detection_node/pose", 1, button_pose_cb);
-
+  
   //publish velocities
   pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 
@@ -241,7 +231,7 @@ int main(int argc, char **argv) {
 	//Step 1: listen to the button pose
 	waitForButtonPose();
 	
-	ROS_INFO("Button detected at: %f, %f, %f",current_button_pose.pose.position.x,current_button_pose.pose.position.y,current_button_pose.pose.position.z);
+	/*ROS_INFO("Button detected at: %f, %f, %f",current_button_pose.pose.position.x,current_button_pose.pose.position.y,current_button_pose.pose.position.z);
 
 	//Step 2: close fingers
 	moveFinger(7300);
@@ -249,7 +239,7 @@ int main(int argc, char **argv) {
 	//Step 3: move above the button
 	moveAboveButton();
 	
-	pushButton();
+	pushButton();*/
 
   /*unsigned int finger_open_close_toggle = 0;
   while (ros::ok()) {
