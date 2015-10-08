@@ -45,6 +45,9 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
+//threshold 
+static int red_min;
+
 // Select mode
 const bool save_pl_mode = false;
 
@@ -350,7 +353,7 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 	ROS_INFO("max_red=%f", max_red);
 
 	
-	if (max_index >= 0 && max_red > 150) {
+	if (max_index >= 0 && max_red > red_min) {
 			
 	    ROS_INFO("Button_found");
 
