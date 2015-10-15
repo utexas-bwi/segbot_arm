@@ -10,12 +10,36 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Float32.h>
 
+#include "segbot_arm_perception/ButtonDetection.h"
+
 //actions
 #include <actionlib/client/simple_action_client.h>
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 
 #include <tf/tf.h>
+
+// PCL specific includes
+#include <pcl/conversions.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/console/parse.h>
+#include <pcl/point_types.h>
+#include <pcl/io/openni_grabber.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/common/time.h>
+#include <pcl/common/common.h>
+
+#include <pcl/filters/crop_box.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/extract_indices.h>
+
+#include <pcl/ModelCoefficients.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
 
 #define PI 3.14159265
 
@@ -24,7 +48,9 @@ using namespace std;
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
 
-
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> PointCloudT;
+PointCloudT::Ptr pcl_cloud (new PointCloudT);
 sensor_msgs::JointState current_state;
 sensor_msgs::JointState current_effort;
 jaco_msgs::FingerPosition current_finger;
@@ -201,15 +227,35 @@ void moveAboveButton(){
 
 
 
-void waitForButtonPose(){
+void waitForButtonPose(ros::NodeHandle n){
+	//step 1: call the button detection service and get the response
+	ros::ServiceClient client = n.serviceClient<segbot_arm_perception::ButtonDetection>("segbot_arm_button_detector/detect");
+	segbot_arm_perception::ButtonDetection srv;
 	
+	if(client.call(srv)) {
+		if(srv.response.button_found == false)
+			ros::shutdown();
+			
+		//step 2. convert the cloud in the response to PCL format
+		//pcl::fromROSMsg(*(srv.response.cloud_button), pcl_cloud);
+			
+	}
+
+	
+	//step 3. create a pose with x y z set to the center of point cloud
+	
+	//step 4. transform the pose into Mico API origin frame of reference
+	
+	//step 4.5. adjust post xyz and/or orientation so that the pose is above the button and oriented correctly
+	
+	//step 5. publish the pose
 }
 
 int main(int argc, char **argv) {
-  // Intialize ROS with this node name
-  ros::init(argc, argv, "mimic_motion");
+	// Intialize ROS with this node name
+	ros::init(argc, argv, "push_button_demo");
 
-  ros::NodeHandle n;
+	ros::NodeHandle n;
 
   //create subscriber to joint angles
   ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
@@ -217,19 +263,25 @@ int main(int argc, char **argv) {
   //create subscriber to joint torques
   ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
 
-  //create subscriber to tool position topic
-  ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	//create subscriber to tool position topic
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
 
-  //subscriber for fingers
-  ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	//subscriber for fingers
+	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
   
   
-  //publish velocities
-  pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
-
+	//publish velocities
+	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 
 	//Step 1: listen to the button pose
-	waitForButtonPose();
+	waitForButtonPose(n);
+	
+	//step 2. if button was found, we will call the MoveIt! planner to move the arm to the pose
+	// also, we will have to call inverse kinematics 
+	
+	
+	
+	
 	
 	/*ROS_INFO("Button detected at: %f, %f, %f",current_button_pose.pose.position.x,current_button_pose.pose.position.y,current_button_pose.pose.position.z);
 
