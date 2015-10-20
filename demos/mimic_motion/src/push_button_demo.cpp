@@ -65,7 +65,6 @@ ros::Publisher pub_velocity;
 bool button_pose_received = false;
 geometry_msgs::PoseStamped current_button_pose;
  
-tf::TransformListener listener; 
 
 ros::Publisher pose_pub;
 
@@ -266,19 +265,36 @@ void waitForButtonPose(ros::NodeHandle n){
 		stampedPose.header.stamp = ros::Time(0);
 		stampedPose.pose = pose_i;
 
+		tf::TransformListener listener; 
+
 		//step 4. transform the pose into Mico API origin frame of reference
 		geometry_msgs::PoseStamped stampOut;
 		listener.waitForTransform(pcl_cloud.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
 		listener.transformPose("mico_api_origin", stampedPose, stampOut);
 
+		ROS_INFO("[push_button_demo] publishing pose...");
+
 		stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
+		stampOut.pose.position.z+=0.05;
+		
+		
+		ROS_INFO_STREAM(stampOut);
+		
 		pose_pub.publish(stampOut);
 
+		ros::spinOnce();
 	
 		//step 4.5. adjust post xyz and/or orientation so that the pose is above the button and oriented correctly
 	
 		//step 5. publish the pose			
 	}
+}
+
+// Blocking call for user input
+void pressEnter(){
+	std::cout << "Press the ENTER key to continue";
+	while (std::cin.get() != '\n')
+		std::cout << "Please press ENTER\n";
 }
 
 int main(int argc, char **argv) {
@@ -305,7 +321,10 @@ int main(int argc, char **argv) {
 
 
 	//button position publisher
-	pose_pub = n.advertise<geometry_msgs::PoseStamped>("push_button_demo/pose", 10);
+	pose_pub = n.advertise<geometry_msgs::PoseStamped>("/push_button_demo/pose", 10);
+
+	ROS_INFO("Demo starting...");
+	pressEnter();
 
 	//Step 1: listen to the button pose
 	waitForButtonPose(n);
@@ -314,8 +333,7 @@ int main(int argc, char **argv) {
 	// also, we will have to call inverse kinematics 
 	
 	
-	
-	
+	ros::spin();
 	
 	/*ROS_INFO("Button detected at: %f, %f, %f",current_button_pose.pose.position.x,current_button_pose.pose.position.y,current_button_pose.pose.position.z);
 
