@@ -18,6 +18,7 @@
 #include "jaco_msgs/ArmPoseAction.h"
 
 #include <tf/tf.h>
+#include <tf/transform_listener.h>
 
 // PCL specific includes
 #include <pcl/conversions.h>
@@ -50,7 +51,10 @@ using namespace std;
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
-PointCloudT::Ptr pcl_cloud (new PointCloudT);
+//PointCloudT::Ptr pcl_cloud (new PointCloudT);
+
+pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+
 sensor_msgs::JointState current_state;
 sensor_msgs::JointState current_effort;
 jaco_msgs::FingerPosition current_finger;
@@ -61,6 +65,10 @@ ros::Publisher pub_velocity;
 bool button_pose_received = false;
 geometry_msgs::PoseStamped current_button_pose;
  
+tf::TransformListener listener; 
+
+ros::Publisher pose_pub;
+
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
   current_state = *input;
@@ -237,18 +245,40 @@ void waitForButtonPose(ros::NodeHandle n){
 			ros::shutdown();
 			
 		//step 2. convert the cloud in the response to PCL format
-		//pcl::fromROSMsg(*(srv.response.cloud_button), pcl_cloud);
-			
-	}
+		sensor_msgs::PointCloud2 input = srv.response.cloud_button;
+		pcl::fromROSMsg(input, pcl_cloud);
+		
+		//step 3. create a pose with x y z set to the center of point cloud
+
+		Eigen::Vector4f centroid;
+		pcl::compute3DCentroid(pcl_cloud, centroid);
+
+		//transforms the pose into /map frame
+		geometry_msgs::Pose pose_i;
+		pose_i.position.x=centroid(0);
+		pose_i.position.y=centroid(1);
+		pose_i.position.z=centroid(2);
+		pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
+
+		geometry_msgs::PoseStamped stampedPose;
+
+		stampedPose.header.frame_id = pcl_cloud.header.frame_id;
+		stampedPose.header.stamp = ros::Time(0);
+		stampedPose.pose = pose_i;
+
+		//step 4. transform the pose into Mico API origin frame of reference
+		geometry_msgs::PoseStamped stampOut;
+		listener.waitForTransform(pcl_cloud.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
+		listener.transformPose("mico_api_origin", stampedPose, stampOut);
+
+		stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
+		pose_pub.publish(stampOut);
 
 	
-	//step 3. create a pose with x y z set to the center of point cloud
+		//step 4.5. adjust post xyz and/or orientation so that the pose is above the button and oriented correctly
 	
-	//step 4. transform the pose into Mico API origin frame of reference
-	
-	//step 4.5. adjust post xyz and/or orientation so that the pose is above the button and oriented correctly
-	
-	//step 5. publish the pose
+		//step 5. publish the pose			
+	}
 }
 
 int main(int argc, char **argv) {
@@ -272,6 +302,10 @@ int main(int argc, char **argv) {
   
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+
+
+	//button position publisher
+	pose_pub = n.advertise<geometry_msgs::PoseStamped>("push_button_demo/pose", 10);
 
 	//Step 1: listen to the button pose
 	waitForButtonPose(n);
