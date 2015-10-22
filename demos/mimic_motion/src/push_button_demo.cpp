@@ -143,15 +143,9 @@ void moveFinger(int finger_value) {
 }
 
 void pushButton() {
-	double timeoutSeconds = 1.75;
+	double timeoutSeconds = 1.85;
 	int rateHertz = 100;
 	geometry_msgs::TwistStamped velocityMsg;
-	
-	double linearAngleX = 0;
-	double linearVelX;
-	double linearAngleZ = 0;
-	double linearVelZ;
-	double magnitude = 0.2;
 	
 	ros::Rate r(rateHertz);
 	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
@@ -175,9 +169,9 @@ void pushButton() {
 	for(int i = 0; i < (int)3.0 * rateHertz; i++) {
 		
 		
-		velocityMsg.twist.linear.x = -0.13;
-		velocityMsg.twist.linear.y = 0.0;
-		velocityMsg.twist.linear.z = 0.1;
+		velocityMsg.twist.linear.x = 0.0;
+		velocityMsg.twist.linear.y = -0.125;
+		velocityMsg.twist.linear.z = 0.2;
 		
 		velocityMsg.twist.angular.x = 0.0;
 		velocityMsg.twist.angular.y = 0.0;
@@ -208,19 +202,15 @@ void moveAboveButton(){
   
  
 
-	goalPose.pose.pose.position.x = current_button_pose.pose.position.x+0.09;
-	goalPose.pose.pose.position.y = current_button_pose.pose.position.y-0.03;
-	goalPose.pose.pose.position.z = current_button_pose.pose.position.z + 0.125;
+	goalPose.pose.pose.position.x = current_button_pose.pose.position.x;//+0.09;
+	goalPose.pose.pose.position.y = current_button_pose.pose.position.y;//-0.03;
+	goalPose.pose.pose.position.z = current_button_pose.pose.position.z;// + 0.125;
 	
+	goalPose.pose.pose.orientation = current_button_pose.pose.orientation;
 	
 	//goalPose.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0);//vertcal pose (fingers down, palm aligned with the x direction
-	goalPose.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);//points fingers to the left with the knuckles facing (up/down);
+	//goalPose.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);//points fingers to the left with the knuckles facing (up/down);
 	
-	
-	/*goalPose.pose.pose.orientation.x = 0.600193565311;
-	goalPose.pose.pose.orientation.y =-0.35348613384;
-	goalPose.pose.pose.orientation.z = 0.630947815735;
-	goalPose.pose.pose.orientation.w = 0.341643222034;*/
 
 	ROS_INFO_STREAM(goalPose);
 
@@ -274,15 +264,24 @@ void waitForButtonPose(ros::NodeHandle n){
 
 		ROS_INFO("[push_button_demo] publishing pose...");
 
-		stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
-		stampOut.pose.position.z+=0.05;
+		//stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
 		
+		//roll rotates around x axis
+		
+		stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0,3.14/2.0,0.0);
+		stampOut.pose.position.z+=0.125;
+		stampOut.pose.position.x+=0.09;
 		
 		ROS_INFO_STREAM(stampOut);
 		
 		pose_pub.publish(stampOut);
 
 		ros::spinOnce();
+		
+		//store pose
+		current_button_pose = stampOut;
+	
+	
 	
 		//step 4.5. adjust post xyz and/or orientation so that the pose is above the button and oriented correctly
 	
@@ -325,13 +324,19 @@ int main(int argc, char **argv) {
 
 	ROS_INFO("Demo starting...");
 	pressEnter();
+	
+	moveFinger(7300);
 
 	//Step 1: listen to the button pose
 	waitForButtonPose(n);
 	
+	//Step 3: move above the button
+	moveAboveButton();
+	
 	//step 2. if button was found, we will call the MoveIt! planner to move the arm to the pose
 	// also, we will have to call inverse kinematics 
-	
+	pressEnter();
+	pushButton();
 	
 	ros::spin();
 	
@@ -340,8 +345,7 @@ int main(int argc, char **argv) {
 	//Step 2: close fingers
 	moveFinger(7300);
 	
-	//Step 3: move above the button
-	moveAboveButton();
+	
 	
 	pushButton();*/
 
