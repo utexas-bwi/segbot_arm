@@ -13,6 +13,7 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseArray.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/String.h>
 
 //tf stuff
 #include <tf/transform_datatypes.h>
@@ -25,10 +26,6 @@
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
-
-
-
-#include "agile_grasp/Grasps.h"
 
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_perception/TabletopPerception.h"
@@ -95,8 +92,6 @@ bool g_caught_sigint=false;
 #define NUM_JOINTS_ARMONLY 6
 #define NUM_JOINTS 8 //6+2 for the arm
 
-//some defines related to filtering candidate grasps
-#define MAX_DISTANCE_TO_PLANE 0.075
 
 sensor_msgs::JointState current_state;
 sensor_msgs::JointState current_effort;
@@ -111,26 +106,12 @@ geometry_msgs::PoseStamped current_moveit_pose;
 //publishers
 ros::Publisher pub_velocity;
 ros::Publisher cloud_pub;
-ros::Publisher cloud_grasp_pub;
-ros::Publisher pose_array_pub;
 ros::Publisher pose_pub;
 ros::Publisher pose_fk_pub;
  
 sensor_msgs::PointCloud2 cloud_ros;
 
 bool heardGrasps = false;
-agile_grasp::Grasps current_grasps;
-
-
-struct GraspCartesianCommand {
-	sensor_msgs::JointState approach_q;
-	geometry_msgs::PoseStamped approach_pose;
-	
-	sensor_msgs::JointState grasp_q;
-	geometry_msgs::PoseStamped grasp_pose;
-	
-	
-};
 
 
 /* what happens when ctr-c is pressed */
@@ -170,12 +151,6 @@ void fingers_cb (const jaco_msgs::FingerPosition msg) {
   current_finger = msg;
 }
 
-void grasps_cb(const agile_grasp::Grasps &msg){
-	current_grasps = msg;
-	
-	heardGrasps = true;
-}
-
 
 void listenForArmData(float rate){
 	heardPose = false;
@@ -191,21 +166,6 @@ void listenForArmData(float rate){
 		r.sleep();
 	}
 }
-
-void listenForGrasps(float rate){
-	ros::Rate r(rate);
-	
-	while (ros::ok()){
-		ros::spinOnce();
-		
-		if (heardGrasps)
-			return;
-		
-		r.sleep();
-	}
-}
-
-
 
 void movePose(float d_z) {
   actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
@@ -288,149 +248,6 @@ double angular_difference(geometry_msgs::Quaternion c,geometry_msgs::Quaternion 
 	return m.norm();
 }
 
-int selectObjectToGrasp(std::vector<PointCloudT::Ptr > candidates){
-	//currently, we just pick the one with the most points
-	int max_num_points = -1;
-	int index = -1;
-	
-	for (unsigned int i = 0; i < candidates.size(); i ++){
-		if ((int)candidates.at(i)->points.size() > max_num_points){
-			max_num_points = (int)candidates.at(i)->points.size();
-			index = (int)i;
-			
-		}
-	}
-	
-	return index;
-}
-
-Eigen::Matrix3d reorderHandAxes(const Eigen::Matrix3d& Q)
-{
-	std::vector<int> axis_order_;
-	axis_order_.push_back(2);
-	axis_order_.push_back(0);
-	axis_order_.push_back(1);
-	
-	Eigen::Matrix3d R = Eigen::MatrixXd::Zero(3, 3);
-	R.col(axis_order_[0]) = Q.col(0); // grasp approach vector
-	R.col(axis_order_[1]) = Q.col(1); // hand axis
-	R.col(axis_order_[2]) = Q.col(2); // hand binormal
-	return R;
-}
-
-geometry_msgs::PoseStamped graspToPose(agile_grasp::Grasp grasp, double hand_offset, std::string frame_id){
-	
-	Eigen::Vector3d center_; // grasp position
-	Eigen::Vector3d surface_center_; //  grasp position projected back onto the surface of the object
-	Eigen::Vector3d axis_; //  hand axis
-	Eigen::Vector3d approach_; //  grasp approach vector
-	Eigen::Vector3d binormal_; //  vector orthogonal to the hand axis and the grasp approach direction
-	
-	tf::vectorMsgToEigen(grasp.axis, axis_);
-	tf::vectorMsgToEigen(grasp.approach, approach_);
-	tf::vectorMsgToEigen(grasp.center, center_);
-	tf::vectorMsgToEigen(grasp.surface_center, surface_center_);
-	
-	approach_ = -1.0 * approach_; // make approach vector point away from handle centroid
-	binormal_ = axis_.cross(approach_); // binormal (used as rotation axis to generate additional approach vectors)
-	
-	//step 1: calculate hand orientation
-	
-	// rotate by 180deg around the grasp approach vector to get the "opposite" hand orientation
-	Eigen::Transform<double, 3, Eigen::Affine> T_R(Eigen::AngleAxis<double>(M_PI/2, approach_));
-	
-	//to do: compute the second possible grasp by rotating -M_PI/2 instead
-	
-	// calculate first hand orientation
-	Eigen::Matrix3d R = Eigen::MatrixXd::Zero(3, 3);
-	R.col(0) = -1.0 * approach_;
-	R.col(1) = T_R * axis_;
-	R.col(2) << R.col(0).cross(R.col(1));
-			
-	Eigen::Matrix3d R1 = reorderHandAxes(R);
-	tf::Matrix3x3 TF1;		
-	tf::matrixEigenToTF(R1, TF1);
-	tf::Quaternion quat1;
-	TF1.getRotation(quat1);		
-	quat1.normalize();
-	
-	// rotate by 180deg around the grasp approach vector to get the "opposite" hand orientation
-	/*Eigen::Transform<double, 3, Eigen::Affine> T(Eigen::AngleAxis<double>(M_PI, approach_));
-	
-	// calculate second hand orientation
-	Eigen::Matrix3d Q = Eigen::MatrixXd::Zero(3, 3);
-	Q.col(0) = T * approach_;
-	Q.col(1) = T * axis_;
-	Q.col(2) << Q.col(0).cross(Q.col(1));
-	
-	// reorder rotation matrix columns according to axes ordering of the robot hand
-	//Eigen::Matrix3d R1 = reorderHandAxes(R);
-	Eigen::Matrix3d R2 = reorderHandAxes(Q);
-
-	// convert Eigen rotation matrices to TF quaternions and normalize them
-	tf::Matrix3x3 TF2;
-	tf::matrixEigenToTF(R2, TF2);
-	tf::Quaternion quat2;
-	TF2.getRotation(quat2);
-	quat2.normalize();
-	
-	std::vector<tf::Quaternion> quats;
-	quats.push_back(quat1);
-	quats.push_back(quat2);*/
-	
-	//use the first quaterneon for now
-	tf::Quaternion quat = quat1;
-	
-	//angles to try
-	double theta = 0.0;
-	
-	// calculate grasp position
-	Eigen::Vector3d position;
-	Eigen::Vector3d approach = -1.0 * approach_;
-	if (theta != 0)
-	{
-		// project grasp bottom position onto the line defined by grasp surface position and approach vector
-		Eigen::Vector3d s, b, a;
-		position = (center_ - surface_center_).dot(approach) * approach;
-		position += surface_center_;
-	}
-	else
-		position = center_;
-		
-	// translate grasp position by <hand_offset_> along the grasp approach vector
-	position = position + hand_offset * approach;
-			
-	geometry_msgs::PoseStamped pose_st;
-	pose_st.header.stamp = ros::Time(0);
-	pose_st.header.frame_id = frame_id;
-	tf::pointEigenToMsg(position, pose_st.pose.position);
-    tf::quaternionTFToMsg(quat, pose_st.pose.orientation);
-	
-	return pose_st;
-}
-
-bool acceptGrasp(GraspCartesianCommand gcc, PointCloudT::Ptr object, Eigen::Vector4f plane_c){
-	//filter 1: if too close to the plane
-	pcl::PointXYZ p_a;
-	p_a.x=gcc.approach_pose.pose.position.x;
-	p_a.y=gcc.approach_pose.pose.position.y;
-	p_a.z=gcc.approach_pose.pose.position.z;
-	
-	pcl::PointXYZ p_g;
-	p_g.x=gcc.grasp_pose.pose.position.x;
-	p_g.y=gcc.grasp_pose.pose.position.y;
-	p_g.z=gcc.grasp_pose.pose.position.z;
-	
-	if (pcl::pointToPlaneDistance(p_a, plane_c) < MAX_DISTANCE_TO_PLANE 
-		|| pcl::pointToPlaneDistance(p_g, plane_c) < MAX_DISTANCE_TO_PLANE){
-		
-		return false;
-	}
-	
-	
-	
-	return true;
-}
 
 bool moveToPose(geometry_msgs::PoseStamped g){
 	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
@@ -531,6 +348,23 @@ void pressEnter(){
 		std::cout << "Please press ENTER\n";
 }
 
+
+int selectObject(std::vector<PointCloudT::Ptr > candidates){
+	//currently, we just pick the one with the most points
+	int max_num_points = -1;
+	int index = -1;
+	
+	for (unsigned int i = 0; i < candidates.size(); i ++){
+		if ((int)candidates.at(i)->points.size() > max_num_points){
+			max_num_points = (int)candidates.at(i)->points.size();
+			index = (int)i;
+			
+		}
+	}
+	
+	return index;
+}
+
 void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 	//check if this is specified just for the arm
 	sensor_msgs::JointState q_target;
@@ -582,34 +416,7 @@ void moveToJointStateMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_targ
  		//ros::shutdown();
  	}
 	
-	/*moveit::planning_interface::MoveGroup group("arm");
-    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;   
-    group.setPlanningTime(5.0); //10 second maximum for collision computation*/
-
 	
-	
-	/*moveit_utils::MicoMoveitJointPose::Request req;
-	moveit_utils::MicoMoveitJointPose::Response res;
-	*/
-	/*for(int i = 0; i < NUM_JOINTS_ARMONLY; i++){
-        switch(i) {
-            case 0  :    req.target.joint1 = q_target.position[0]; break;
-            case 1  :    req.target.joint2 = q_target.position[1]; break;
-            case 2  :    req.target.joint3 = q_target.position[2]; break;
-            case 3  :    req.target.joint4 = q_target.position[3]; break;
-            case 4  :    req.target.joint5 = q_target.position[4]; break;
-            case 5  :    req.target.joint6 = q_target.position[5]; break;
-        }
-	//ROS_INFO("Requested angle: %f", q_vals.at(i));
-    }
-	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitJointPose> ("/mico_jointpose_service");
-	if(client.call(req, res)){
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(res);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}*/
 }
 
 void cartesianVelocityMove(double dx, double dy, double dz, double duration){
@@ -633,7 +440,56 @@ void cartesianVelocityMove(double dx, double dy, double dz, double duration){
 		ROS_INFO("Published cartesian vel. command");
 		r.sleep();
 	}
+}
+
+geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients,std::string frame_id){
+	//basically, find the point furthers away from the plane -- that's the top of the object
+	double max_distance = -1000.0;
+	int max_index = -1;
 	
+	//first, we find the point in the blob closest to the plane
+	for (unsigned int i = 0; i < blob->points.size(); i++){
+		pcl::PointXYZ p_i;
+		p_i.x=blob->points.at(i).x;
+		p_i.y=blob->points.at(i).y;
+		p_i.z=blob->points.at(i).z;
+
+		double distance = pcl::pointToPlaneDistance(p_i, plane_coefficients);
+		
+
+		if (distance > max_distance){
+			max_distance = distance;
+			max_index = i;
+		}			
+	}
+	
+	//now create the pose
+	geometry_msgs::PoseStamped pose_st;
+	pose_st.header.stamp = ros::Time(0);
+	pose_st.header.frame_id =frame_id.c_str();
+	
+	pose_st.pose.position.x = blob->points.at(max_index).x;
+	pose_st.pose.position.y = blob->points.at(max_index).y;
+	pose_st.pose.position.z = blob->points.at(max_index).z;
+	//this orientation here doesn't matter, it just has to be valid in order for the transform to work
+	pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
+	
+	
+	//tranform pose into arm frame of reference
+	tf::TransformListener listener;
+	listener.waitForTransform(pose_st.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
+	listener.transformPose("mico_api_origin", pose_st, pose_st);
+			
+	//decide on orientation
+	pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,3.14/2);
+	
+	//add a bit of z 
+	pose_st.pose.position.z+=0.025;
+	
+	ROS_INFO("Touch pose:");
+	ROS_INFO_STREAM(pose_st);
+	
+	return pose_st;
 }
 
 void lift(ros::NodeHandle n, double x){
@@ -645,9 +501,48 @@ void lift(ros::NodeHandle n, double x){
 	moveToJointStateMoveIt(n,p_target);
 }
 
+
+void moveToTouchPose(ros::NodeHandle n, geometry_msgs::PoseStamped pose_st){
+	listenForArmData(30.0);
+	
+	int rateHertz = 40;
+	geometry_msgs::TwistStamped velocityMsg;
+	
+	float duration = 3.0;
+	
+	ros::Rate r(rateHertz);
+	
+	float theta = 0.1;
+	
+	while (true){
+		
+		float dx =  - current_pose.pose.position.x + pose_st.pose.position.x;
+		float dy = - current_pose.pose.position.y + pose_st.pose.position.y;
+		float dz = - current_pose.pose.position.z + pose_st.pose.position.z;
+		
+		
+		
+		velocityMsg.twist.linear.x = dx;
+		velocityMsg.twist.linear.y = dy;
+		velocityMsg.twist.linear.z = dz;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		
+		pub_velocity.publish(velocityMsg);
+		ros::spinOnce();
+		ROS_INFO("Published cartesian vel. command");
+		r.sleep();
+		
+		
+	}
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
-	ros::init(argc, argv, "agile_grasp_demo");
+	ros::init(argc, argv, "touch_demo");
 	
 	ros::NodeHandle n;
 
@@ -662,26 +557,16 @@ int main(int argc, char **argv) {
 
 	//subscriber for fingers
 	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
-	  
-	//subscriber for grasps
-	ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps_handles",1, grasps_cb);  
-	  
+	 
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
-	//publish pose array
-	pose_array_pub = n.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo/pose_array", 10);
-	
 	//publish pose 
 	pose_pub = n.advertise<geometry_msgs::PoseStamped>("/agile_grasp_demo/pose_out", 10);
-	pose_fk_pub = n.advertise<geometry_msgs::PoseStamped>("/agile_grasp_demo/pose_fk_out", 10);
 	
-	//debugging publisher
-	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud_debug", 10);
-	cloud_grasp_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud", 10);
+	//cloud publisher
+	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud", 10);
 	
-	//used to compute transfers
-	tf::TransformListener listener;
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
@@ -689,25 +574,6 @@ int main(int argc, char **argv) {
 	
 	//user input
     char in;
-	
-	
-
-	//cartesianVelocityMove(0,0,0.2,1.0);
-	//lift(n,0.1);
-	//cartesianVelocityMove(0,0,-0.2,1.0);
-	
-	//open and open again fingers
-	//pressEnter();
-	//moveFinger(7200);
-	
-	/*lift(n,-0.1);
-	spinSleep(3.0);
-	moveToCurrentAngles();
-	moveFinger(7200);
-	lift(n,0.1);	
-	spinSleep(3.0);
-	moveToCurrentAngles();
-	moveFinger(100);*/
 	
 	ROS_INFO("Demo starting...");
 	pressEnter();
@@ -717,7 +583,7 @@ int main(int argc, char **argv) {
 	segbot_arm_perception::TabletopPerception srv; //the srv request is just empty
 	if (client_tabletop_perception.call(srv))
 	{
-		ROS_INFO("[agile_grasp_demo.cpp] Received Response from tabletop_object_detection_service");
+		ROS_INFO("[touch_tabletop_object_demo.cpp] Received Response from tabletop_object_detection_service");
 	}
 	else
 	{
@@ -745,134 +611,21 @@ int main(int argc, char **argv) {
 		plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
 	
 	//step 3: select which object to grasp
-	int selected_object = selectObjectToGrasp(detected_objects);
+	int selected_object = selectObject(detected_objects); 
 	
 	//publish object to find grasp topic
 	pcl::PCLPointCloud2 pc_target;
 	pcl::toPCLPointCloud2(*detected_objects.at(selected_object),pc_target);
 	pcl_conversions::fromPCL(pc_target,cloud_ros);
-	
-	//publish to agile_grasp
-	ROS_INFO("Publishing point cloud...");
-	cloud_grasp_pub.publish(cloud_ros);
-	
-	//wait for response at 30 Hz
-	listenForGrasps(30.0);
-	
-	geometry_msgs::PoseArray poses_msg;
-	poses_msg.header.seq = 1;
-	poses_msg.header.stamp = cloud_ros.header.stamp;
-	poses_msg.header.frame_id = "mico_api_origin";
-	
-	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
-	
-	//next, compute approach and grasp poses for each detected grasp
-	double hand_offset_grasp = -0.02;
-	double hand_offset_approach = -0.13;
-	
-	//wait for transform from visual space to arm space
-	listener.waitForTransform(cloud_ros.header.frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
-	
-	std::vector<GraspCartesianCommand> grasp_commands;
-	std::vector<geometry_msgs::PoseStamped> poses;
-	for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
-		geometry_msgs::PoseStamped p_grasp_i = graspToPose(current_grasps.grasps.at(i),hand_offset_grasp,cloud_ros.header.frame_id);
-		geometry_msgs::PoseStamped p_approach_i = graspToPose(current_grasps.grasps.at(i),hand_offset_approach,cloud_ros.header.frame_id);
-		
-		//
-		
-		GraspCartesianCommand gc_i;
-		gc_i.approach_pose = p_approach_i;
-		gc_i.grasp_pose = p_grasp_i;
-		
-		
-		
-		if (acceptGrasp(gc_i,detected_objects.at(selected_object),plane_coef_vector)){
-			
-			listener.transformPose("mico_api_origin", gc_i.approach_pose, gc_i.approach_pose);
-			listener.transformPose("mico_api_origin", gc_i.grasp_pose, gc_i.grasp_pose);
-			
-			//filter two -- if IK fails
-			moveit_msgs::GetPositionIK::Response  ik_response_approach = computeIK(n,gc_i.approach_pose);
-			moveit_msgs::GetPositionIK::Response  ik_response_grasp = computeIK(n,gc_i.grasp_pose);
-	
-			if (ik_response_approach.error_code.val == 1 && ik_response_grasp.error_code.val == 1){
-				//store the IK results
-				gc_i.approach_q = ik_response_approach.solution.joint_state;
-				gc_i.grasp_q = ik_response_grasp.solution.joint_state;
-				
-				
-				grasp_commands.push_back(gc_i);
-				poses.push_back(p_grasp_i);
-				poses_msg.poses.push_back(gc_i.approach_pose.pose);
-			}
-		}
-		
-		
-	}
-	
-	//make sure we're working with the correct tool pose
-	listenForArmData(30.0);
-	ROS_INFO("[agile_grasp_demo.cpp] Heard arm pose.");
-	
-	//now, select the target grasp
-	updateFK(n);
-	
-	//find the grasp with closest orientatino to current pose
-	double min_diff = 1000000.0;
-	int min_diff_index = -1;
-	
-	for (unsigned int i = 0; i < grasp_commands.size(); i++){
-		double d_i = angular_difference(grasp_commands.at(i).approach_pose.pose.orientation, current_pose.pose.orientation);
-		
-		ROS_INFO("Distance for pose %i:\t%f",(int)i,d_i);
-		if (d_i < min_diff){
-			min_diff_index = (int)i;
-			min_diff = d_i;
-		}
-	}
+	cloud_pub.publish(cloud_ros);
 
-	if (min_diff_index == -1){
-		ROS_WARN("No feasible grasps found, aborting.");
-		return 0;
-	}
-
-	pose_array_pub.publish(poses_msg);
-
-
-	//publish individual pose
-	pose_pub.publish(grasp_commands.at(min_diff_index).approach_pose);
-	pressEnter();
-	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
-	//pressEnter();
+	//generate touch pose for the object
+	geometry_msgs::PoseStamped touch_pose = createTouchPose(detected_objects.at(selected_object),plane_coef_vector,
+												srv.response.cloud_clusters.at(0).header.frame_id);
 	
-	//open fingers
-	//pressEnter();
-	//moveFinger(100);
-
-
-	sleep(1.0);
-	//pose_pub.publish(grasp_commands.at(min_diff_index).grasp_pose);
-	/*std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
-	std::cin >> in;*/
+	pose_pub.publish(touch_pose);
 	
-	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
-	spinSleep(3.0);
-	
-	//listenForArmData(30.0);
-	//close fingers
-	//pressEnter();
-	moveFinger(7200);
-	
-	
-	//lift for a while
-	//pressEnter();
-	//cartesianVelocityMove(0,0,0.2,1.0);
-	lift(n,0.1);
-	lift(n,-0.09);
-	spinSleep(3.0);
-	moveFinger(100);
-	lift(n,0.1);
-	
+	moveToTouchPose(n,touch_pose);
+ 
 	return 0;
 }
