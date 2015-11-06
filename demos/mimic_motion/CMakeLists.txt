@@ -144,9 +144,9 @@ target_link_libraries(agile_grasp_demo ${catkin_LIBRARIES} )
 add_dependencies(agile_grasp_demo jaco_msgs_gencpp agile_grasp_gencpp)
 
 ## Declare a cpp executable
-add_executable(agile_grasp_demo_nari src/agile_grasp_demo_nari.cpp)
-target_link_libraries(agile_grasp_demo_nari ${catkin_LIBRARIES} )
-add_dependencies(agile_grasp_demo jaco_msgs_gencpp agile_grasp_gencpp)
+#add_executable(agile_grasp_demo_nari src/agile_grasp_demo_nari.cpp)
+#target_link_libraries(agile_grasp_demo_nari ${catkin_LIBRARIES} )
+#add_dependencies(agile_grasp_demo jaco_msgs_gencpp agile_grasp_gencpp)
 
 ## Declare a cpp executable
 add_executable(touch_tabletop_object_demo src/touch_tabletop_object_demo.cpp)

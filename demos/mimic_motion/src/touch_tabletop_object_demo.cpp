@@ -502,7 +502,7 @@ void lift(ros::NodeHandle n, double x){
 }
 
 
-void moveToTouchPose(ros::NodeHandle n, geometry_msgs::PoseStamped pose_st){
+void moveToPoseCarteseanVelocity(ros::NodeHandle n, geometry_msgs::PoseStamped pose_st){
 	listenForArmData(30.0);
 	
 	int rateHertz = 40;
@@ -512,7 +512,7 @@ void moveToTouchPose(ros::NodeHandle n, geometry_msgs::PoseStamped pose_st){
 	
 	ros::Rate r(rateHertz);
 	
-	float theta = 0.1;
+	float theta = 0.05;
 	
 	while (true){
 		
@@ -520,7 +520,10 @@ void moveToTouchPose(ros::NodeHandle n, geometry_msgs::PoseStamped pose_st){
 		float dy = - current_pose.pose.position.y + pose_st.pose.position.y;
 		float dz = - current_pose.pose.position.z + pose_st.pose.position.z;
 		
-		
+		if (fabs(dx) < theta && fabs(dy) < theta && fabs(dz) < theta){
+			//we reached the position, exit
+			break;
+		}
 		
 		velocityMsg.twist.linear.x = dx;
 		velocityMsg.twist.linear.y = dy;
@@ -610,8 +613,46 @@ int main(int argc, char **argv) {
 	for (int i = 0; i < 4; i ++)
 		plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
 	
+	//for each object, compute the touch pose; also, extract the highest point from the table
+	std::vector<geometry_msgs::PoseStamped> touch_poses;
+	double highest_z = 0.0;
+	for (int i = 0; i < detected_objects.size(); i++){
+		//generate touch pose for the object
+		geometry_msgs::PoseStamped touch_pose_i = createTouchPose(detected_objects.at(i),plane_coef_vector,
+												srv.response.cloud_clusters.at(0).header.frame_id);
+		
+		if (touch_pose_i.pose.position.z > 0.05)
+			touch_poses.push_back(touch_pose_i);
+		
+		if (touch_pose_i.pose.position.z > highest_z){
+			highest_z = touch_pose_i.pose.position.z ;
+		}
+	}
+	
+	
+	// now, touch each object
+	for (int i = 0; i < touch_poses.size(); i ++){
+		geometry_msgs::PoseStamped touch_pose_i = touch_poses.at(i);
+		
+		//before we get there, first go a bit above
+		double z_above = highest_z+0.2;
+		
+		geometry_msgs::PoseStamped touch_approach = touch_pose_i;
+		touch_approach.pose.position.z = z_above;
+		
+		pose_pub.publish(touch_approach);
+		moveToPoseCarteseanVelocity(n,touch_approach);
+		
+		pose_pub.publish(touch_pose_i);
+		moveToPoseCarteseanVelocity(n,touch_pose_i);
+		
+		pose_pub.publish(touch_approach);
+		moveToPoseCarteseanVelocity(n,touch_approach);
+	}
+	
+	
 	//step 3: select which object to grasp
-	int selected_object = selectObject(detected_objects); 
+	/*int selected_object = selectObject(detected_objects); 
 	
 	//publish object to find grasp topic
 	pcl::PCLPointCloud2 pc_target;
@@ -625,7 +666,7 @@ int main(int argc, char **argv) {
 	
 	pose_pub.publish(touch_pose);
 	
-	moveToTouchPose(n,touch_pose);
+	moveToPoseCarteseanVelocity(n,touch_pose);*/
  
 	return 0;
 }
