@@ -41,9 +41,9 @@
 
 #include <pcl/kdtree/kdtree.h>
 
-#include <std_srvs/Trigger.h>
+#include <std_srvs/Empty.h>
 
-#define OCTREE_RESOLUTION 0.02
+#define OCTREE_RESOLUTION 0.01
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -135,7 +135,7 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 
 
 
-bool start_service_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool start_service_cb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
 	octree = new pcl::octree::OctreePointCloudChangeDetector<PointT>(OCTREE_RESOLUTION);
 	
@@ -147,7 +147,7 @@ bool start_service_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Respon
 
 
 
-bool stop_service_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool stop_service_cb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
 	computeChange = false;
 	
