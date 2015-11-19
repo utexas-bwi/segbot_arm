@@ -745,6 +745,8 @@ int main(int argc, char **argv) {
 	for (int i = 0; i < 4; i ++)
 		plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
 	
+	
+	
 	//step 3: select which object to grasp
 	//selected_object is the index of detected_objects
 	int selected_object = selectObjectToGrasp(detected_objects);
@@ -770,6 +772,7 @@ int main(int argc, char **argv) {
 	poses_msg.header.frame_id = "mico_api_origin";
 	
 	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
+	
 	
 	//next, compute approach and grasp poses for each detected grasp
 	double hand_offset_grasp = -0.02;
@@ -824,6 +827,7 @@ int main(int argc, char **argv) {
 	//now, select the target grasp
 	updateFK(n);
 
+	/*
 	//find the grasp with closest orientatino to current pose
 	double min_diff = 1000000.0;
 	int min_diff_index = -1;
@@ -845,20 +849,20 @@ int main(int argc, char **argv) {
 	if (min_diff_index == -1){
 		ROS_WARN("No feasible grasps found, aborting.");
 		return 0;
-	}
+	}*/
 
 	pose_array_pub.publish(poses_msg);
 
 
 	//publish individual pose
-	pose_pub.publish(grasp_commands.at(min_diff_index).approach_pose);
+	pose_pub.publish(grasp_commands.at(0).approach_pose);
 	pressEnter();
 	
 	//open fingers before starting to move
     moveFinger(6);
     
     //move the arm to the ready position to grab an object
-	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
+	moveToJointStateMoveIt(n,grasp_commands.at(0).approach_pose);
 	
 	
 	//open fingers
@@ -867,13 +871,13 @@ int main(int argc, char **argv) {
 
 
 	sleep(1.0);
-	pose_pub.publish(grasp_commands.at(min_diff_index).grasp_pose);
+	pose_pub.publish(grasp_commands.at(0).grasp_pose);
 	/*std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
 	std::cin >> in;*/
 		
 	pressEnter();
 	
-	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
+	moveToJointStateMoveIt(n,grasp_commands.at(0).grasp_pose);
 	spinSleep(3.0);
 	
 	//listenForArmData(30.0);

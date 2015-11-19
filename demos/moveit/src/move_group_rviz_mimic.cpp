@@ -57,6 +57,10 @@ int main(int argc, char **argv)
 	//subscribers
 	ros::Subscriber sub_tool = node_handle.subscribe("/move_group/result", 1, result_cb);
 	
+	moveit::planning_interface::MoveGroup group("arm"); //this is the specific group name you'd like to move
+
+	moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+	
 	char in;
 	while(in != 'q'){
 		ros::spinOnce();
