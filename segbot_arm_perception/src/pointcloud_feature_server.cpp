@@ -317,19 +317,16 @@ bool colorhist_cb(
     ColorHistogram ch(kColorHistBins);
     ch.computeHistogram(*cloud);
     std::vector<double> color_vector = ch.toDoubleVectorNormalized();
-    std::vector<double> color_counter (color_vector.size());
-    for (int i = 0; i < color_counter.size(); i++) {
-        color_counter[i] = i;
-        // TODO Uncomment this
+    for (int i = 0; i < color_vector.size(); i++) {
+
+		//fill in response
         res.feature_vector.push_back(color_vector[i]);
     }
-
-    
 
     return true;
 }
 
-bool shapehist_cb(
+bool shapehist_cvfh_cb(
     segbot_arm_perception::FeatureExtraction::Request &req,
     segbot_arm_perception::FeatureExtraction::Response &res) {
     
@@ -337,6 +334,15 @@ bool shapehist_cb(
     PointCloudT::Ptr cloud(new PointCloudT);
     pcl::fromROSMsg(req.cloud, *cloud);
     
+
+	std::vector<double> feature_vector = computeCVFH(cloud);
+	for (int i = 0; i < feature_vector.size(); i++) {
+
+		//fill in response
+        res.feature_vector.push_back(feature_vector[i]);
+    }
+
+	
 
     return true;
 }
@@ -350,7 +356,7 @@ int main (int argc, char** argv) {
     signal(SIGINT, sigint_handler);
 
     ros::ServiceServer service_colorhist = nh.advertiseService("/segbot_arm_perception/color_histogram_service", colorhist_cb);
-	ros::ServiceServer service_shapehist = nh.advertiseService("/segbot_arm_perception/shape_histogram_service", shapehist_cb);
+	ros::ServiceServer service_shapehist = nh.advertiseService("/segbot_arm_perception/shape_cvfh_histogram_service", shapehist_cvfh_cb);
 
     // Defining a plotter
     plotter = new pcl::visualization::PCLPlotter ();
