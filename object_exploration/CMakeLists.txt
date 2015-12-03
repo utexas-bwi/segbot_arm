@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   moveit_ros_planning_interface
   jaco_msgs
+  bwi_msgs
 )
 
 ## System dependencies are found with CMake's conventions
