@@ -34,6 +34,9 @@ pcl::visualization::PCLPlotter * plotter;
 ros::Publisher cloud_pub;
 sensor_msgs::PointCloud2 cloud_ros;
 
+#define NORMALS_SEARCH_RADIUS 0.02
+#define FPFH_NEIGHBOR_RADIUS 0.05
+
 /* what happens when ctr-c is pressed */
 void sigint_handler(int sig)
 {
@@ -129,7 +132,7 @@ pcl::PointCloud<pcl::Normal>::Ptr computeNormals(PointCloudT::Ptr &cloud) {
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
 
     // Use all neighbors in a sphere of radius 3cm
-    ne.setRadiusSearch (0.02);
+    ne.setRadiusSearch (NORMALS_SEARCH_RADIUS);
 
     // Compute the features
     ne.compute (*cloud_normals);
@@ -228,7 +231,7 @@ std::vector<double> computeFPFH(PointCloudT::Ptr &cloud) {
 
     // Use all neighbors in a sphere of radius 5cm
     // IMPORTANT: the radius used here has to be larger than the radius used to estimate the surface normals!!!
-    fpfh.setRadiusSearch (0.05);
+    fpfh.setRadiusSearch (FPFH_NEIGHBOR_RADIUS);
 
     // Compute the features
     fpfh.compute (*fpfhs);
@@ -348,6 +351,28 @@ bool shapehist_cvfh_cb(
 }
 
 
+bool shapehist_fpfh_cb(
+    segbot_arm_perception::FeatureExtraction::Request &req,
+    segbot_arm_perception::FeatureExtraction::Response &res) {
+    
+    
+    PointCloudT::Ptr cloud(new PointCloudT);
+    pcl::fromROSMsg(req.cloud, *cloud);
+    
+
+	std::vector<double> feature_vector = computeFPFH(cloud);
+	for (int i = 0; i < feature_vector.size(); i++) {
+
+		//fill in response
+        res.feature_vector.push_back(feature_vector[i]);
+    }
+
+	
+
+    return true;
+}
+
+
 
 int main (int argc, char** argv) {
     ros::init(argc, argv, "pointcloud_feature_server");
@@ -356,10 +381,8 @@ int main (int argc, char** argv) {
     signal(SIGINT, sigint_handler);
 
     ros::ServiceServer service_colorhist = nh.advertiseService("/segbot_arm_perception/color_histogram_service", colorhist_cb);
-	ros::ServiceServer service_shapehist = nh.advertiseService("/segbot_arm_perception/shape_cvfh_histogram_service", shapehist_cvfh_cb);
-
-    // Defining a plotter
-    plotter = new pcl::visualization::PCLPlotter ();
+	ros::ServiceServer service_shapehist_cvfh = nh.advertiseService("/segbot_arm_perception/shape_cvfh_histogram_service", shapehist_cvfh_cb);
+	ros::ServiceServer service_shapehist_fpfh = nh.advertiseService("/segbot_arm_perception/shape_fpfh_histogram_service", shapehist_fpfh_cb);
 
     // Debug cloud
     cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("feature_extraction_server/cloud", 10);
