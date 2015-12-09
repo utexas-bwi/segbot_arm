@@ -115,13 +115,13 @@ include_directories(${catkin_INCLUDE_DIRS})
 # )
 
 ## Declare a cpp executable
-add_executable(planar_segmentation src/planar_segmentation.cpp)
-add_dependencies(planar_segmentation segbot_arm_perception_gencpp)
-target_link_libraries(planar_segmentation ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+#add_executable(planar_segmentation src/planar_segmentation.cpp)
+#add_dependencies(planar_segmentation segbot_arm_perception_gencpp)
+#target_link_libraries(planar_segmentation ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(planar_segmentation_client src/planar_segmentation_client.cpp)
-add_dependencies(planar_segmentation_client segbot_arm_perception_gencpp)
-target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+#add_executable(planar_segmentation_client src/planar_segmentation_client.cpp)
+#add_dependencies(planar_segmentation_client segbot_arm_perception_gencpp)
+#target_link_libraries(planar_segmentation_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(log_perception_action src/log_perception_action.cpp)
 add_dependencies(log_perception_action segbot_arm_perception_gencpp)
@@ -131,8 +131,8 @@ add_executable(log_perception_action_client src/log_perception_action_client.cpp
 target_link_libraries(log_perception_action_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(log_perception_action_client segbot_arm_perception_gencpp)
 
-add_executable(button_detection_node src/button_detection_node.cpp)
-target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+#add_executable(button_detection_node src/button_detection_node.cpp)
+#target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
 add_executable(table_object_detection_node src/table_object_detection_node.cpp)
@@ -149,17 +149,17 @@ add_dependencies(pointcloud_feature_server segbot_arm_perception_gencpp)
 target_link_libraries(pointcloud_feature_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
-add_executable(feature_extraction_server src/feature_extraction_server.cpp)
-add_dependencies(feature_extraction_server segbot_arm_perception_gencpp)
-target_link_libraries(feature_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+#add_executable(feature_extraction_server src/feature_extraction_server.cpp)
+#add_dependencies(feature_extraction_server segbot_arm_perception_gencpp)
+#target_link_libraries(feature_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(table_detection_object_extraction_server src/table_detection_object_extraction_server.cpp)
-add_dependencies(table_detection_object_extraction_server segbot_arm_perception_gencpp)
-target_link_libraries(table_detection_object_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+#add_executable(table_detection_object_extraction_server src/table_detection_object_extraction_server.cpp)
+#add_dependencies(table_detection_object_extraction_server segbot_arm_perception_gencpp)
+#target_link_libraries(table_detection_object_extraction_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(object_feature_extraction src/object_feature_extraction.cpp)
-add_dependencies(object_feature_extraction segbot_arm_perception_gencpp)
-target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+#add_executable(object_feature_extraction src/object_feature_extraction.cpp)
+#add_dependencies(object_feature_extraction segbot_arm_perception_gencpp)
+#target_link_libraries(object_feature_extraction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 #add_executable(side_grasp_node src/side_grasp_node.cpp)
 #target_link_libraries(side_grasp_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
