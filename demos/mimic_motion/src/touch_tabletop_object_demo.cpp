@@ -484,7 +484,7 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob, Eigen::Vector4
 	pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,3.14/2);
 	
 	//add a bit of z 
-	pose_st.pose.position.z+=0.025;
+	pose_st.pose.position.z+=0.045;
 	
 	ROS_INFO("Touch pose:");
 	ROS_INFO_STREAM(pose_st);
@@ -514,11 +514,13 @@ void moveToPoseCarteseanVelocity(ros::NodeHandle n, geometry_msgs::PoseStamped p
 	
 	float theta = 0.05;
 	
+	float constant_m = 2.0;
+	
 	while (true){
 		
-		float dx =  - current_pose.pose.position.x + pose_st.pose.position.x;
-		float dy = - current_pose.pose.position.y + pose_st.pose.position.y;
-		float dz = - current_pose.pose.position.z + pose_st.pose.position.z;
+		float dx = constant_m*( - current_pose.pose.position.x + pose_st.pose.position.x );
+		float dy = constant_m*(- current_pose.pose.position.y + pose_st.pose.position.y);
+		float dz = constant_m*(- current_pose.pose.position.z + pose_st.pose.position.z);
 		
 		if (fabs(dx) < theta && fabs(dy) < theta && fabs(dz) < theta){
 			//we reached the position, exit
@@ -629,6 +631,9 @@ int main(int argc, char **argv) {
 		}
 	}
 	
+	//store current pose
+	listenForArmData(10.0);
+	geometry_msgs::PoseStamped start_pose = current_pose;
 	
 	// now, touch each object
 	for (int i = 0; i < touch_poses.size(); i ++){
@@ -649,6 +654,9 @@ int main(int argc, char **argv) {
 		pose_pub.publish(touch_approach);
 		moveToPoseCarteseanVelocity(n,touch_approach);
 	}
+	
+	moveToPoseCarteseanVelocity(n,start_pose);
+
 	
 	
 	//step 3: select which object to grasp
