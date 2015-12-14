@@ -153,6 +153,11 @@ add_executable(touch_tabletop_object_demo src/touch_tabletop_object_demo.cpp)
 target_link_libraries(touch_tabletop_object_demo ${catkin_LIBRARIES} )
 add_dependencies(touch_tabletop_object_demo jaco_msgs_gencpp)
 
+## Declare a cpp executable
+add_executable(touch_detect_tabletop_demo src/touch_detect_tabletop_demo.cpp)
+target_link_libraries(touch_detect_tabletop_demo ${catkin_LIBRARIES} )
+add_dependencies(touch_detect_tabletop_demo jaco_msgs_gencpp)
+
 
 ## Declare a cpp executable
 #add_executable(press_object_demo src/press_object_demo.cpp)
