@@ -1,7 +1,0 @@
-<launch>
-  <!-- -->
-  <node pkg="segbot_arm_perception" name="table_detection_object_extraction_server" type="table_detection_object_extraction_server" output="screen"/>
-  <node pkg="segbot_arm_perception" name="feature_extraction_server" type="feature_extraction_server" output="screen"/>
-<!--  <node pkg="segbot_arm_perception" name="object_feature_extraction" type="object_feature_extraction" output="screen"/> -->
-
-</launch>
