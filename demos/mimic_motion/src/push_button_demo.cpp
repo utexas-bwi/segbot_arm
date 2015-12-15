@@ -10,12 +10,37 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Float32.h>
 
+#include "segbot_arm_perception/ButtonDetection.h"
+
 //actions
 #include <actionlib/client/simple_action_client.h>
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 
 #include <tf/tf.h>
+#include <tf/transform_listener.h>
+
+// PCL specific includes
+#include <pcl/conversions.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/console/parse.h>
+#include <pcl/point_types.h>
+#include <pcl/io/openni_grabber.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/common/time.h>
+#include <pcl/common/common.h>
+
+#include <pcl/filters/crop_box.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/extract_indices.h>
+
+#include <pcl/ModelCoefficients.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
 
 #define PI 3.14159265
 
@@ -24,6 +49,11 @@ using namespace std;
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
 
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> PointCloudT;
+//PointCloudT::Ptr pcl_cloud (new PointCloudT);
+
+pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
 
 sensor_msgs::JointState current_state;
 sensor_msgs::JointState current_effort;
@@ -35,6 +65,9 @@ ros::Publisher pub_velocity;
 bool button_pose_received = false;
 geometry_msgs::PoseStamped current_button_pose;
  
+
+ros::Publisher pose_pub;
+
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
   current_state = *input;
@@ -110,15 +143,9 @@ void moveFinger(int finger_value) {
 }
 
 void pushButton() {
-	double timeoutSeconds = 1.75;
+	double timeoutSeconds = 1.85;
 	int rateHertz = 100;
 	geometry_msgs::TwistStamped velocityMsg;
-	
-	double linearAngleX = 0;
-	double linearVelX;
-	double linearAngleZ = 0;
-	double linearVelZ;
-	double magnitude = 0.2;
 	
 	ros::Rate r(rateHertz);
 	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
@@ -142,9 +169,9 @@ void pushButton() {
 	for(int i = 0; i < (int)3.0 * rateHertz; i++) {
 		
 		
-		velocityMsg.twist.linear.x = -0.13;
-		velocityMsg.twist.linear.y = 0.0;
-		velocityMsg.twist.linear.z = 0.1;
+		velocityMsg.twist.linear.x = 0.0;
+		velocityMsg.twist.linear.y = -0.125;
+		velocityMsg.twist.linear.z = 0.2;
 		
 		velocityMsg.twist.angular.x = 0.0;
 		velocityMsg.twist.angular.y = 0.0;
@@ -175,19 +202,15 @@ void moveAboveButton(){
   
  
 
-	goalPose.pose.pose.position.x = current_button_pose.pose.position.x+0.09;
-	goalPose.pose.pose.position.y = current_button_pose.pose.position.y-0.03;
-	goalPose.pose.pose.position.z = current_button_pose.pose.position.z + 0.125;
+	goalPose.pose.pose.position.x = current_button_pose.pose.position.x;//+0.09;
+	goalPose.pose.pose.position.y = current_button_pose.pose.position.y;//-0.03;
+	goalPose.pose.pose.position.z = current_button_pose.pose.position.z;// + 0.125;
 	
+	goalPose.pose.pose.orientation = current_button_pose.pose.orientation;
 	
 	//goalPose.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0);//vertcal pose (fingers down, palm aligned with the x direction
-	goalPose.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);//points fingers to the left with the knuckles facing (up/down);
+	//goalPose.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);//points fingers to the left with the knuckles facing (up/down);
 	
-	
-	/*goalPose.pose.pose.orientation.x = 0.600193565311;
-	goalPose.pose.pose.orientation.y =-0.35348613384;
-	goalPose.pose.pose.orientation.z = 0.630947815735;
-	goalPose.pose.pose.orientation.w = 0.341643222034;*/
 
 	ROS_INFO_STREAM(goalPose);
 
@@ -199,57 +222,133 @@ void moveAboveButton(){
   ac.waitForResult();
 }
 
-//button state cb
-void button_pose_cb (const geometry_msgs::PoseStamped &msg) {
-  current_button_pose = msg;
-  button_pose_received = true;
-}
 
-void waitForButtonPose(){
-	ros::Rate r(10);
-	while (!button_pose_received){
-		r.sleep();
+
+void waitForButtonPose(ros::NodeHandle n){
+	//step 1: call the button detection service and get the response
+	ros::ServiceClient client = n.serviceClient<segbot_arm_perception::ButtonDetection>("segbot_arm_button_detector/detect");
+	segbot_arm_perception::ButtonDetection srv;
+	
+	if(client.call(srv)) {
+		if(srv.response.button_found == false)
+			ros::shutdown();
+			
+		//step 2. convert the cloud in the response to PCL format
+		sensor_msgs::PointCloud2 input = srv.response.cloud_button;
+		pcl::fromROSMsg(input, pcl_cloud);
+		
+		//step 3. create a pose with x y z set to the center of point cloud
+
+		Eigen::Vector4f centroid;
+		pcl::compute3DCentroid(pcl_cloud, centroid);
+
+		//transforms the pose into /map frame
+		geometry_msgs::Pose pose_i;
+		pose_i.position.x=centroid(0);
+		pose_i.position.y=centroid(1);
+		pose_i.position.z=centroid(2);
+		pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
+
+		geometry_msgs::PoseStamped stampedPose;
+
+		stampedPose.header.frame_id = pcl_cloud.header.frame_id;
+		stampedPose.header.stamp = ros::Time(0);
+		stampedPose.pose = pose_i;
+
+		tf::TransformListener listener; 
+
+		//step 4. transform the pose into Mico API origin frame of reference
+		geometry_msgs::PoseStamped stampOut;
+		listener.waitForTransform(pcl_cloud.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
+		listener.transformPose("mico_api_origin", stampedPose, stampOut);
+
+		ROS_INFO("[push_button_demo] publishing pose...");
+
+		//stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
+		
+		//roll rotates around x axis
+		
+		stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0,3.14/2.0,0.0);
+		stampOut.pose.position.z+=0.125;
+		stampOut.pose.position.x+=0.09;
+		
+		ROS_INFO_STREAM(stampOut);
+		
+		pose_pub.publish(stampOut);
+
 		ros::spinOnce();
+		
+		//store pose
+		current_button_pose = stampOut;
+	
+	
+	
+		//step 4.5. adjust post xyz and/or orientation so that the pose is above the button and oriented correctly
+	
+		//step 5. publish the pose			
 	}
 }
 
+// Blocking call for user input
+void pressEnter(){
+	std::cout << "Press the ENTER key to continue";
+	while (std::cin.get() != '\n')
+		std::cout << "Please press ENTER\n";
+}
+
 int main(int argc, char **argv) {
-  // Intialize ROS with this node name
-  ros::init(argc, argv, "mimic_motion");
+	// Intialize ROS with this node name
+	ros::init(argc, argv, "push_button_demo");
 
-  ros::NodeHandle n;
+	ros::NodeHandle n;
 
-  //create subscriber to joint angles
-  ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+    //create subscriber to joint angles
+    ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 
-  //create subscriber to joint torques
-  ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
+    //create subscriber to joint torques
+    ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
 
-  //create subscriber to tool position topic
-  ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	//create subscriber to tool position topic
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
 
-  //subscriber for fingers
-  ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	//subscriber for fingers
+	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
   
-  //create subscriber for button position
-  ros::Subscriber sub_button = n.subscribe("/button_detection_node/pose", 1, button_pose_cb);
+  
+	//publish velocities
+	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 
-  //publish velocities
-  pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 
+	//button position publisher
+	pose_pub = n.advertise<geometry_msgs::PoseStamped>("/push_button_demo/pose", 10);
+
+	ROS_INFO("Demo starting...");
+	pressEnter();
+	
+	//close fingers
+	moveFinger(7300);
 
 	//Step 1: listen to the button pose
-	waitForButtonPose();
-	
-	ROS_INFO("Button detected at: %f, %f, %f",current_button_pose.pose.position.x,current_button_pose.pose.position.y,current_button_pose.pose.position.z);
-
-	//Step 2: close fingers
-	moveFinger(7300);
+	waitForButtonPose(n);
 	
 	//Step 3: move above the button
 	moveAboveButton();
 	
+	//step 2. if button was found, we will call the MoveIt! planner to move the arm to the pose
+	// also, we will have to call inverse kinematics 
+	pressEnter();
 	pushButton();
+	
+	ros::spin();
+	
+	/*ROS_INFO("Button detected at: %f, %f, %f",current_button_pose.pose.position.x,current_button_pose.pose.position.y,current_button_pose.pose.position.z);
+
+	//Step 2: close fingers
+	moveFinger(7300);
+	
+	
+	
+	pushButton();*/
 
   /*unsigned int finger_open_close_toggle = 0;
   while (ros::ok()) {
