@@ -65,6 +65,7 @@ catkin_python_setup()
    TableDetectionObjectExtraction.srv
    FeatureExtraction.srv
    TabletopPerception.srv
+   ButtonDetection.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -147,6 +148,9 @@ target_link_libraries(table_change_detection_node ${catkin_LIBRARIES} ${PCL_LIBR
 add_executable(pointcloud_feature_server src/pointcloud_feature_server.cpp)
 add_dependencies(pointcloud_feature_server segbot_arm_perception_gencpp)
 target_link_libraries(pointcloud_feature_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(button_detection_srv_node src/button_detection_srv_node.cpp)
+target_link_libraries(button_detection_srv_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
 #add_executable(feature_extraction_server src/feature_extraction_server.cpp)
