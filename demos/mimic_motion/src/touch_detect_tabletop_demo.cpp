@@ -5,6 +5,8 @@
 #include <math.h>
 #include <cstdlib>
 #include <std_msgs/String.h>
+#include <std_srvs/Empty.h>
+
 
 #include <Eigen/Dense>
 #include <eigen_conversions/eigen_msg.h>
@@ -80,6 +82,11 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 //where we store results from calling the perception service
 std::vector<PointCloudT::Ptr > detected_objects;
 PointCloudT::Ptr cloud_plane (new PointCloudT);
+PointCloudT::Ptr cloud_change (new PointCloudT);
+bool new_change_cloud_detected = false;
+
+boost::mutex cloud_mutex;
+
 
 using namespace std;
 
@@ -167,56 +174,7 @@ void listenForArmData(float rate){
 	}
 }
 
-void movePose(float d_z) {
-  actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 
-  jaco_msgs::ArmPoseGoal goalPose;
-
-  // Set goal pose coordinates
-
-  goalPose.pose.header.frame_id = "mico_api_origin";
-  
-  ROS_INFO_STREAM(current_pose);
-
-  goalPose.pose.pose.position.x = current_pose.pose.position.x;
-  goalPose.pose.pose.position.y = current_pose.pose.position.y;
-  goalPose.pose.pose.position.z = current_pose.pose.position.z + d_z;
-  goalPose.pose.pose.orientation.x = current_pose.pose.orientation.x;
-  goalPose.pose.pose.orientation.y = current_pose.pose.orientation.y;
-  goalPose.pose.pose.orientation.z = current_pose.pose.orientation.z;
-  goalPose.pose.pose.orientation.w = current_pose.pose.orientation.w;
-
-  ROS_INFO_STREAM(goalPose);
-
-  ac.waitForServer();
-  ROS_INFO("Waiting for server.");
-  //finally, send goal and wait
-  ROS_INFO("Sending goal.");
-  ac.sendGoal(goalPose);
-  ac.waitForResult();
-
-}
-
-void moveToCurrentAngles(){
-	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
-	
-	jaco_msgs::ArmJointAnglesGoal goalJoints;
-	
-	listenForArmData(30.0);
-	
-	goalJoints.angles.joint1 = current_state.position[0];
-	goalJoints.angles.joint2 = current_state.position[1];
-	goalJoints.angles.joint3 = current_state.position[2];
-	goalJoints.angles.joint4 = current_state.position[3];
-	goalJoints.angles.joint5 = current_state.position[4];
-	goalJoints.angles.joint6 = current_state.position[5];
-	
-	ac.waitForServer();
-
-    ac.sendGoal(goalJoints);
-
-    ac.waitForResult();
-}
 
 // Range = [6, 7300] ([open, close])
 void moveFinger(int finger_value) {
@@ -249,48 +207,6 @@ double angular_difference(geometry_msgs::Quaternion c,geometry_msgs::Quaternion 
 }
 
 
-bool moveToPose(geometry_msgs::PoseStamped g){
-	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
-
-	jaco_msgs::ArmPoseGoal goalPose;
-  
- 
-
-	goalPose.pose = g;
-
-
-	ROS_INFO_STREAM(goalPose);
-
-	  ac.waitForServer();
-	  ROS_DEBUG("Waiting for server.");
-	  //finally, send goal and wait
-	  ROS_INFO("Sending goal.");
-	  ac.sendGoal(goalPose);
-	  ac.waitForResult();
-		
-	return true;
-}
-
-moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs::PoseStamped p){
-	ros::ServiceClient ikine_client = n.serviceClient<moveit_msgs::GetPositionIK> ("/compute_ik");
-	
-	
-	moveit_msgs::GetPositionIK::Request ikine_request;
-	moveit_msgs::GetPositionIK::Response ikine_response;
-	ikine_request.ik_request.group_name = "arm";
-	ikine_request.ik_request.pose_stamped = p;
-	
-	/* Call the service */
-	if(ikine_client.call(ikine_request, ikine_response)){
-		ROS_INFO("IK service call success:");
-		ROS_INFO_STREAM(ikine_response);
-	} else {
-		ROS_INFO("IK service call FAILED. Exiting");
-	}
-	
-	return ikine_response;
-}
-
 void spinSleep(double duration){
 	int rateHertz = 40;
 	
@@ -303,42 +219,6 @@ void spinSleep(double duration){
 	}
 }
 
-void updateFK(ros::NodeHandle n){
-	ros::ServiceClient fkine_client = n.serviceClient<moveit_msgs::GetPositionFK> ("/compute_fk");
-	
-	moveit_msgs::GetPositionFK::Request fkine_request;
-	moveit_msgs::GetPositionFK::Response fkine_response;
-
-	
-	//wait to get lates joint state values
-	listenForArmData(30.0);
-	sensor_msgs::JointState q_true = current_state;
-	
-	//Load request with the desired link
-	fkine_request.fk_link_names.push_back("mico_end_effector");
-
-	//and the current frame
-	fkine_request.header.frame_id = "mico_link_base";
-
-	//finally we let moveit know what joint positions we want to compute
-	//in this case, the current state
-	fkine_request.robot_state.joint_state = q_true;
-
-	ROS_INFO("Making FK call");
- 	if(fkine_client.call(fkine_request, fkine_response)){
- 		pose_fk_pub.publish(fkine_response.pose_stamped.at(0));
- 		ros::spinOnce();
- 		current_moveit_pose = fkine_response.pose_stamped.at(0);
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(fkine_response);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}
- 	
- 	
- 	//
-}
 
 
 // Blocking call for user input
@@ -348,99 +228,6 @@ void pressEnter(){
 		std::cout << "Please press ENTER\n";
 }
 
-
-int selectObject(std::vector<PointCloudT::Ptr > candidates){
-	//currently, we just pick the one with the most points
-	int max_num_points = -1;
-	int index = -1;
-	
-	for (unsigned int i = 0; i < candidates.size(); i ++){
-		if ((int)candidates.at(i)->points.size() > max_num_points){
-			max_num_points = (int)candidates.at(i)->points.size();
-			index = (int)i;
-			
-		}
-	}
-	
-	return index;
-}
-
-void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
-	//check if this is specified just for the arm
-	sensor_msgs::JointState q_target;
-	if (target.position.size() != NUM_JOINTS_ARMONLY){
-		//in this case, the first four values are for the base joints
-		for (int i = 4; i < target.position.size(); i ++){
-			q_target.position.push_back(target.position.at(i));
-			q_target.name.push_back(target.name.at(i));
-		}
-		q_target.header = target.header;
-	}
-	else 
-		q_target = target;
-	
-	ROS_INFO("Target joint state:");
-	ROS_INFO_STREAM(q_target);
-	
-	moveit_utils::AngularVelCtrl::Request	req;
-	moveit_utils::AngularVelCtrl::Response	resp;
-	
-	ros::ServiceClient ikine_client = n.serviceClient<moveit_utils::AngularVelCtrl> ("/angular_vel_control");
-	
-	req.state = q_target;
-	
-	pressEnter();
-	
-	if(ikine_client.call(req, resp)){
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(resp);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}
-	
-}
-
-void moveToJointStateMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_target/*sensor_msgs::JointState q_target*/){
-	moveit_utils::MicoMoveitCartesianPose::Request 	req;
-	moveit_utils::MicoMoveitCartesianPose::Response res;
-	
-	req.target = p_target;
-	
-	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose> ("/mico_cartesianpose_service");
-	if(client.call(req, res)){
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(res);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}
-	
-	
-}
-
-void cartesianVelocityMove(double dx, double dy, double dz, double duration){
-	int rateHertz = 40;
-	geometry_msgs::TwistStamped velocityMsg;
-	
-	ros::Rate r(rateHertz);
-	for(int i = 0; i < (int)duration * rateHertz; i++) {
-		
-		
-		velocityMsg.twist.linear.x = dx;
-		velocityMsg.twist.linear.y = dy;
-		velocityMsg.twist.linear.z = dz;
-		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
-		
-		
-		pub_velocity.publish(velocityMsg);
-		ROS_INFO("Published cartesian vel. command");
-		r.sleep();
-	}
-}
 
 geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients,std::string frame_id){
 	//basically, find the point furthers away from the plane -- that's the top of the object
@@ -492,15 +279,23 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob, Eigen::Vector4
 	return pose_st;
 }
 
-void lift(ros::NodeHandle n, double x){
-	listenForArmData(30.0);
-	
-	geometry_msgs::PoseStamped p_target = current_pose;
-	
-	p_target.pose.position.z += x;
-	moveToJointStateMoveIt(n,p_target);
-}
 
+
+
+
+void change_cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
+{
+	cloud_mutex.lock ();
+	
+	//convert to PCL format
+	pcl::fromROSMsg (*input, *cloud_change);
+
+
+
+	new_change_cloud_detected = true;
+	
+	cloud_mutex.unlock ();
+}
 
 void moveToPoseCarteseanVelocity(ros::NodeHandle n, geometry_msgs::PoseStamped pose_st){
 	listenForArmData(30.0);
@@ -545,6 +340,40 @@ void moveToPoseCarteseanVelocity(ros::NodeHandle n, geometry_msgs::PoseStamped p
 	}
 }
 
+
+void startChangeDetection(ros::NodeHandle n){
+	
+	std_srvs::Empty::Request req;
+	std_srvs::Empty::Response res;
+
+	ros::ServiceClient client = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/start");
+	if(client.call(req, res)){
+ 		ROS_INFO("Call to change detect node successful. Response:");
+ 		ROS_INFO_STREAM(res);
+ 	} else {
+ 		ROS_ERROR("Call to change detect node failed. Terminating.");
+ 		//ros::shutdown();
+ 	}
+	
+}
+
+
+void stopChangeDetection(ros::NodeHandle n){
+	
+	std_srvs::Empty::Request req;
+	std_srvs::Empty::Response res;
+
+	ros::ServiceClient client = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/stop");
+	if(client.call(req, res)){
+ 		ROS_INFO("Call to change detect node successful. Response:");
+ 		ROS_INFO_STREAM(res);
+ 	} else {
+ 		ROS_ERROR("Call to change detect node failed. Terminating.");
+ 		//ros::shutdown();
+ 	}
+	
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "touch_demo");
@@ -563,6 +392,9 @@ int main(int argc, char **argv) {
 	//subscriber for fingers
 	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 	 
+	//subscriber for change cloud
+	ros::Subscriber sub_change_cloud = n.subscribe("/segbot_arm_table_change_detector/cloud",1,change_cloud_cb); 
+	
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
@@ -615,7 +447,7 @@ int main(int argc, char **argv) {
 	for (int i = 0; i < 4; i ++)
 		plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
 	
-	//for each object, compute the touch pose; also, extract the highest point from the table
+	//for each object, compute the touch pose (i.e., the top point of the object); also, extract the highest point from the table
 	std::vector<geometry_msgs::PoseStamped> touch_poses;
 	double highest_z = 0.0;
 	for (int i = 0; i < detected_objects.size(); i++){
@@ -635,29 +467,31 @@ int main(int argc, char **argv) {
 	listenForArmData(10.0);
 	geometry_msgs::PoseStamped start_pose = current_pose;
 	
-	// now, touch each object
-	for (int i = 0; i < touch_poses.size(); i ++){
-		geometry_msgs::PoseStamped touch_pose_i = touch_poses.at(i);
+	//start change detection service
+	startChangeDetection(n);
+	
+	//now detect change close to objects
+	ros::Rate r(10.0);
+	
+	while (ros::ok()){
+		ros::spinOnce();
 		
-		//before we get there, first go a bit above
-		double z_above = highest_z+0.2;
+		if (new_change_cloud_detected){
+			
+			//first, Z filter on the cloud
+			pcl::PassThrough<PointT> pass;
+			pass.setInputCloud (cloud_change);
+			pass.setFilterFieldName ("z");
+			pass.setFilterLimits (0.0, 1.15);
+			pass.filter (*cloud_change);
+			
+			
+			
+			new_change_cloud_detected = false;
+		}
 		
-		geometry_msgs::PoseStamped touch_approach = touch_pose_i;
-		touch_approach.pose.position.z = z_above;
-		
-		pose_pub.publish(touch_approach);
-		moveToPoseCarteseanVelocity(n,touch_approach);
-		
-		pose_pub.publish(touch_pose_i);
-		moveToPoseCarteseanVelocity(n,touch_pose_i);
-		
-		pose_pub.publish(touch_approach);
-		moveToPoseCarteseanVelocity(n,touch_approach);
+		r.sleep();
 	}
-	
-	moveToPoseCarteseanVelocity(n,start_pose);
-
-	
 	
 	//step 3: select which object to grasp
 	/*int selected_object = selectObject(detected_objects); 

@@ -311,6 +311,7 @@ bool colorhist_cb(
     segbot_arm_perception::FeatureExtraction::Response &res) {
     
     //how many bins per color channel
+    //TO DO, check if params_int is actuall set, if not, set default
     int kColorHistBins = req.params_int[0];
     
     PointCloudT::Ptr cloud(new PointCloudT);
