@@ -69,6 +69,13 @@ add_action_files(
    TabletopGrasp.action
 )
 
+## Generate services in the 'srv' folder
+add_service_files(
+   FILES
+   iSpyTouch.srv
+)
+
+
 generate_messages(
   DEPENDENCIES
   sensor_msgs
@@ -85,12 +92,6 @@ generate_messages(
 #   Message2.msg
 # )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -141,10 +142,13 @@ include_directories(
 
 
 add_executable(segbot_tabletop_grasp_as src/segbot_tabletop_grasp_as.cpp)
-
-
 add_dependencies(segbot_tabletop_grasp_as jaco_msgs_gencpp agile_grasp_gencpp segbot_arm_manipulation_gencpp)
 target_link_libraries(segbot_tabletop_grasp_as ${catkin_LIBRARIES})
+
+## Declare a cpp executable
+add_executable(ispy_arm_server src/ispy_arm_server.cpp)
+target_link_libraries(ispy_arm_server ${catkin_LIBRARIES} )
+add_dependencies(ispy_arm_server jaco_msgs_gencpp)
 
 
 
