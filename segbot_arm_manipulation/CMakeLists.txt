@@ -73,6 +73,7 @@ add_action_files(
 add_service_files(
    FILES
    iSpyTouch.srv
+   iSpyDetectTouch.srv
 )
 
 
