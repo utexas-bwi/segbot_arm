@@ -522,10 +522,10 @@ int main (int argc, char** argv)
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
 	//declare service for touching objects
-	ros::ServiceServer service_touch = n.advertiseService("touch_object_service", touch_object_cb);
+	ros::ServiceServer service_touch = n.advertiseService("ispy/touch_object_service", touch_object_cb);
 	
 	//service for detecting when a human touches an object
-	ros::ServiceServer service_detect = n.advertiseService("human_detect_touch_object_service", detect_touch_cb);
+	ros::ServiceServer service_detect = n.advertiseService("ispy/human_detect_touch_object_service", detect_touch_cb);
 	
 	//clients
 	client_start_change = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/start");
