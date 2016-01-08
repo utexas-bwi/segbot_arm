@@ -105,7 +105,7 @@ class ColorHistogram {
                 }
             }
         }
-
+ 
         return hist3_double_vector;
     }
     std::vector<double> toDoubleVectorNormalized() {
