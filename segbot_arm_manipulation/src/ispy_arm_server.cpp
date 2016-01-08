@@ -410,8 +410,23 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 			int min_object_index = -1;
 			for (unsigned int i = 0; i < change_clusters.size(); i++){
 				
-				//for (unsigned int j = 0; k <
 				
+				for (unsigned int j = 0; j < touch_poses.size();j++){
+					Eigen::Vector3f touch_pos_j;
+					touch_pos_j(0)=touch_poses.at(j).pose.position.x;
+					touch_pos_j(1)=touch_poses.at(j).pose.position.y;
+					touch_pos_j(2)=touch_poses.at(j).pose.position.z;
+					
+					float min_distance_i = 1000.0;
+					int min_object_index_i = -1;
+					for (unsigned int k = 0; k < change_clusters.at(i)->points.size(); k++){
+						Eigen::Vector3f t;
+						t(0) = change_clusters.at(i)->points.at(k).x;
+						t(1) = change_clusters.at(i)->points.at(k).y;
+						t(2) = change_clusters.at(i)->points.at(k).z;
+						
+					}
+				}
 			}
 			
 			
