@@ -40,6 +40,7 @@
 #include <pcl/kdtree/kdtree.h>
 
 #include "segbot_arm_perception/TabletopPerception.h"
+#include "segbot_arm_perception/TabletopReorder.h"
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -214,6 +215,47 @@ void waitForCloudK(int k){
 	
 }
 
+// re-orders detected, non-overlapping clusters according to given coordinate and direction
+bool cluster_reorder_cb_helper(float i, float j) { return (i>j); }
+bool cluster_reorder_cb(segbot_arm_perception::TabletopReorder::Request &req, segbot_arm_perception::TabletopReorder::Response &res)
+{
+	// get representative coordinates for each cluster
+	std::vector<float> representative_coords;
+	for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
+		PointCloudT::Ptr c = clusters_on_plane.at(i);
+		PointT p = c->points.at(0);
+		if (req.coord.compare("x") == 0)
+			representative_coords.push_back(p.x);
+		else if (req.coord.compare("y") == 0)
+			representative_coords.push_back(p.y);
+		else if (req.coord.compare("z") == 0)
+			representative_coords.push_back(p.z);
+		else{
+			ROS_INFO("Unrecognized coord arg: %s", req.coord.c_str());
+			return false;
+		}
+	}
+
+	// determine new order based on specified direction
+	std::vector<int> idx_order;
+	std::vector<float> coords_ordered(representative_coords);
+	if (req.forward)
+		std::sort(coords_ordered.begin(), coords_ordered.end());
+	else
+		std::sort(coords_ordered.begin(), coords_ordered.end(), cluster_reorder_cb_helper);
+	for (unsigned int i = 0; i < coords_ordered.size(); i++){
+		idx_order.push_back(std::distance(representative_coords.begin(), std::find(representative_coords.begin(), representative_coords.end(), coords_ordered.at(i))));
+	}
+
+	// iterate through clusters on plane in determined order
+	for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
+		pcl::toROSMsg(*clusters_on_plane.at(idx_order.at(i)), cloud_ros);
+		res.ordered_cloud_clusters.push_back(cloud_ros);
+	}
+
+	return true;
+}
+
 bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_perception::TabletopPerception::Response &res)
 {
 	//get the point cloud by aggregating k successive input clouds
@@ -341,7 +383,7 @@ int main (int argc, char** argv)
 
 	//service
 	ros::ServiceServer service = nh.advertiseService("tabletop_object_detection_service", seg_cb);
-	
+	ros::ServiceServer reorder_service = nh.advertiseService("tabletop_object_reorder_service", cluster_reorder_cb);
 	
 	tf::TransformListener listener;
 
