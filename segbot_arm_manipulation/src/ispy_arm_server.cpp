@@ -49,7 +49,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/statistical_outlier_removal.h>
-
+#include <pcl/registration/distances.h>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
@@ -80,9 +80,13 @@
 
 //some defines for behaviors
 #define TOUCH_POSE_HEIGHT 0.045
+#define TIMEOUT_THRESHOLD 30.0 //30 seconds
 
 #define PI 3.14159265
 
+//threshold used to determine if detect change indicates 
+//a contact with the object
+#define TOUCH_DISTANCE_THRESHOLD 0.05 //5 cm
 
 using namespace std;
 
@@ -114,6 +118,11 @@ ros::ServiceClient client_stop_change;
 
 //publishers
 ros::Publisher pub_velocity;
+ros::Publisher change_cloud_debug_pub; //publishes the filtered change cloud 
+ros::Publisher detected_change_cloud_pub; //publishes the cluster detected to be close to the object
+sensor_msgs::PointCloud2 cloud_ros;
+pcl::PCLPointCloud2 pc_target;
+
 
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
@@ -381,10 +390,15 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 	
 	//Step 3: process each cloud
 	//now detect change close to objects
-	ros::Rate r(10.0);
+	double rate = 10.0;
+	ros::Rate r(rate);
+	
+	double elapsed_time = 0.0;
 	
 	while (ros::ok()){
 		ros::spinOnce();
+		
+		elapsed_time += 1.0/rate;
 		
 		if (new_change_cloud_detected){
 			
@@ -402,35 +416,84 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 			sor.setStddevMulThresh (1.0);
 			sor.filter (*cloud_change);
 			
+			//publish filtered cloud for debugging purposes
+			pcl::toPCLPointCloud2(*cloud_change,pc_target);
+			pcl_conversions::fromPCL(pc_target,cloud_ros);
+			change_cloud_debug_pub.publish(cloud_ros);
+			
+			
 			//next, compute change clusters
 			std::vector<PointCloudT::Ptr > change_clusters = computeClusters(cloud_change);
 			
 			//find the smallest distance between any cluster and any object top
 			float min_distance = 1000.0;
 			int min_object_index = -1;
+			int min_change_cluster_index = -1;
 			for (unsigned int i = 0; i < change_clusters.size(); i++){
 				
 				
 				for (unsigned int j = 0; j < touch_poses.size();j++){
-					Eigen::Vector3f touch_pos_j;
+					Eigen::Vector4f touch_pos_j;
 					touch_pos_j(0)=touch_poses.at(j).pose.position.x;
 					touch_pos_j(1)=touch_poses.at(j).pose.position.y;
 					touch_pos_j(2)=touch_poses.at(j).pose.position.z;
+					touch_pos_j(3)=0.0;//unused
+
+					//this variable will be set to the closest distance between
+					//the touch pose (the top of the object) and any point in the 
+					//j^th change cluster
+					float distance_ij = 1000.0;
 					
-					float min_distance_i = 1000.0;
-					int min_object_index_i = -1;
 					for (unsigned int k = 0; k < change_clusters.at(i)->points.size(); k++){
-						Eigen::Vector3f t;
+						Eigen::Vector4f t;
 						t(0) = change_clusters.at(i)->points.at(k).x;
 						t(1) = change_clusters.at(i)->points.at(k).y;
 						t(2) = change_clusters.at(i)->points.at(k).z;
+						t(3) = 0.0;//unused
 						
+						float dist_jk = pcl::distances::l2(touch_pos_j,t);
+						
+						if (dist_jk < distance_ij){
+							distance_ij = dist_jk;
+						}
+					}
+					
+					//now check if this is the min distance between a change cluster and a touch pose
+					if (distance_ij < min_distance){
+						min_distance = distance_ij;
+						min_object_index = j;
+						min_change_cluster_index = i;
 					}
 				}
 			}
 			
+			ROS_INFO("[ispy_arm_server.cpp] min. distance = %f between object %i and change cluster %i",min_distance,min_object_index,min_change_cluster_index);
+			
+			//now check if the min_distance is below a threshold and if so, report the detection
+			
+			if (min_distance < TOUCH_DISTANCE_THRESHOLD){
+				res.detected_touch_index = min_object_index;
+				res.success = true;
+				
+				//publish the change cluster
+				pcl::toPCLPointCloud2(*change_clusters.at(min_change_cluster_index),pc_target);
+				pcl_conversions::fromPCL(pc_target,cloud_ros);
+				detected_change_cloud_pub.publish(cloud_ros);
+				
+				
+				return true;
+			}
+			
+			
 			
 			new_change_cloud_detected = false;
+		}
+		
+		//timeout condition
+		if (elapsed_time > TIMEOUT_THRESHOLD){
+				res.detected_touch_index = -1;
+				res.success = false;
+				return true;
 		}
 		
 		r.sleep();
@@ -535,6 +598,11 @@ int main (int argc, char** argv)
 	 
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	
+	//cloud publisher
+	change_cloud_debug_pub = n.advertise<sensor_msgs::PointCloud2>("ispy_arm_server/change_cloud_filtered", 10);
+	detected_change_cloud_pub = n.advertise<sensor_msgs::PointCloud2>("ispy_arm_server/detected_touch_cloud", 10);
+	
 	
 	//declare service for touching objects
 	ros::ServiceServer service_touch = n.advertiseService("ispy/touch_object_service", touch_object_cb);
