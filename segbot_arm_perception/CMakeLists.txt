@@ -66,7 +66,8 @@ catkin_python_setup()
    FeatureExtraction.srv
    TabletopPerception.srv
    ButtonDetection.srv
- )
+   TabletopReorder.srv
+)
 
 ## Generate actions in the 'action' folder
  add_action_files(
