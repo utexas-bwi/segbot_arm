@@ -138,6 +138,7 @@ void sig_handler(int sig)
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 	
 	if (input->position.size() == NUM_JOINTS){
+		//ROS_INFO("Heard arm joint states!");
 		current_state = *input;
 		heardJoinstState = true;
 	}
@@ -152,6 +153,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
 
 //Joint state cb
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
+ // ROS_INFO("Heard arm tool pose!");
   current_pose = msg;
   heardPose = true;
   //  ROS_INFO_STREAM(current_pose);
@@ -169,6 +171,8 @@ void listenForArmData(float rate){
 	ros::Rate r(rate);
 	
 	while (ros::ok()){
+		ROS_INFO("Listening for arm data...");
+		
 		ros::spinOnce();
 		
 		if (heardPose && heardJoinstState)
@@ -188,7 +192,7 @@ std::vector<PointCloudT::Ptr > computeClusters(PointCloudT::Ptr in){
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<PointT> ec;
 	ec.setClusterTolerance (0.02); // 2cm
-	ec.setMinClusterSize (50);
+	ec.setMinClusterSize (100);
 	ec.setMaxClusterSize (25000);
 	ec.setSearchMethod (tree);
 	ec.setInputCloud (in);
@@ -253,8 +257,8 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob, Eigen::Vector4
 	//add a bit of z 
 	pose_st.pose.position.z+=TOUCH_POSE_HEIGHT;
 	
-	ROS_INFO("Touch pose:");
-	ROS_INFO_STREAM(pose_st);
+	//ROS_INFO("Touch pose:");
+	//ROS_INFO_STREAM(pose_st);
 	
 	return pose_st;
 }
@@ -272,6 +276,8 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st){
 	float theta = 0.05;
 	
 	float constant_m = 2.0;
+	
+	ROS_INFO("Starting movement...");
 	
 	while (ros::ok()){
 		
@@ -295,11 +301,12 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st){
 		
 		pub_velocity.publish(velocityMsg);
 		ros::spinOnce();
-		ROS_INFO("Published cartesian vel. command");
+		//ROS_INFO("Published cartesian vel. command");
 		r.sleep();
-		
-		
 	}
+	
+	ROS_INFO("Ending movement...");
+
 }
 
 
@@ -417,71 +424,96 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 			sor.filter (*cloud_change);
 			
 			//publish filtered cloud for debugging purposes
-			pcl::toPCLPointCloud2(*cloud_change,pc_target);
-			pcl_conversions::fromPCL(pc_target,cloud_ros);
-			change_cloud_debug_pub.publish(cloud_ros);
+			//pcl::toPCLPointCloud2(*cloud_change,pc_target);
+			//pcl_conversions::fromPCL(pc_target,cloud_ros);
+			//change_cloud_debug_pub.publish(cloud_ros);
 			
 			
 			//next, compute change clusters
 			std::vector<PointCloudT::Ptr > change_clusters = computeClusters(cloud_change);
 			
-			//find the smallest distance between any cluster and any object top
-			float min_distance = 1000.0;
-			int min_object_index = -1;
-			int min_change_cluster_index = -1;
-			for (unsigned int i = 0; i < change_clusters.size(); i++){
+			//find largest cluster
+			ROS_INFO("Found %i change clusters...",(int)change_clusters.size());
 				
-				
-				for (unsigned int j = 0; j < touch_poses.size();j++){
-					Eigen::Vector4f touch_pos_j;
-					touch_pos_j(0)=touch_poses.at(j).pose.position.x;
-					touch_pos_j(1)=touch_poses.at(j).pose.position.y;
-					touch_pos_j(2)=touch_poses.at(j).pose.position.z;
-					touch_pos_j(3)=0.0;//unused
-
-					//this variable will be set to the closest distance between
-					//the touch pose (the top of the object) and any point in the 
-					//j^th change cluster
-					float distance_ij = 1000.0;
-					
-					for (unsigned int k = 0; k < change_clusters.at(i)->points.size(); k++){
-						Eigen::Vector4f t;
-						t(0) = change_clusters.at(i)->points.at(k).x;
-						t(1) = change_clusters.at(i)->points.at(k).y;
-						t(2) = change_clusters.at(i)->points.at(k).z;
-						t(3) = 0.0;//unused
-						
-						float dist_jk = pcl::distances::l2(touch_pos_j,t);
-						
-						if (dist_jk < distance_ij){
-							distance_ij = dist_jk;
-						}
-					}
-					
-					//now check if this is the min distance between a change cluster and a touch pose
-					if (distance_ij < min_distance){
-						min_distance = distance_ij;
-						min_object_index = j;
-						min_change_cluster_index = i;
+			if (change_clusters.size() > 0){
+			
+				int max_num_points = -1;
+				int largest_index = -1;
+				for (unsigned int i = 0; i < change_clusters.size(); i++){
+					if ((int)change_clusters.at(i)->points.size() > max_num_points){
+						max_num_points = (int)change_clusters.at(i)->points.size();
+						largest_index = i;
 					}
 				}
-			}
-			
-			ROS_INFO("[ispy_arm_server.cpp] min. distance = %f between object %i and change cluster %i",min_distance,min_object_index,min_change_cluster_index);
-			
-			//now check if the min_distance is below a threshold and if so, report the detection
-			
-			if (min_distance < TOUCH_DISTANCE_THRESHOLD){
-				res.detected_touch_index = min_object_index;
-				res.success = true;
 				
-				//publish the change cluster
-				pcl::toPCLPointCloud2(*change_clusters.at(min_change_cluster_index),pc_target);
+				//publish filtered cloud for debugging purposes
+				pcl::toPCLPointCloud2(*change_clusters.at(largest_index),pc_target);
 				pcl_conversions::fromPCL(pc_target,cloud_ros);
-				detected_change_cloud_pub.publish(cloud_ros);
+				cloud_ros.header.frame_id = cloud_change->header.frame_id;
+				change_cloud_debug_pub.publish(cloud_ros);
 				
 				
-				return true;
+				
+				
+				
+				//find the smallest distance between any cluster and any object top
+				float min_distance = 1000.0;
+				int min_object_index = -1;
+				int min_change_cluster_index = -1;
+				for (unsigned int i = 0; i < change_clusters.size(); i++){
+					
+					
+					for (unsigned int j = 0; j < touch_poses.size();j++){
+						Eigen::Vector4f touch_pos_j;
+						touch_pos_j(0)=touch_poses.at(j).pose.position.x;
+						touch_pos_j(1)=touch_poses.at(j).pose.position.y;
+						touch_pos_j(2)=touch_poses.at(j).pose.position.z;
+						touch_pos_j(3)=0.0;//unused
+
+						//this variable will be set to the closest distance between
+						//the touch pose (the top of the object) and any point in the 
+						//j^th change cluster
+						float distance_ij = 1000.0;
+						
+						for (unsigned int k = 0; k < change_clusters.at(i)->points.size(); k++){
+							Eigen::Vector4f t;
+							t(0) = change_clusters.at(i)->points.at(k).x;
+							t(1) = change_clusters.at(i)->points.at(k).y;
+							t(2) = change_clusters.at(i)->points.at(k).z;
+							t(3) = 0.0;//unused
+							
+							float dist_jk = pcl::distances::l2(touch_pos_j,t);
+							
+							if (dist_jk < distance_ij){
+								distance_ij = dist_jk;
+							}
+						}
+						
+						//now check if this is the min distance between a change cluster and a touch pose
+						if (distance_ij < min_distance){
+							min_distance = distance_ij;
+							min_object_index = j;
+							min_change_cluster_index = i;
+						}
+					}
+				}
+				
+				ROS_INFO("[ispy_arm_server.cpp] min. distance = %f between object %i and change cluster %i",min_distance,min_object_index,min_change_cluster_index);
+				
+				//now check if the min_distance is below a threshold and if so, report the detection
+				
+				if (min_distance < TOUCH_DISTANCE_THRESHOLD){
+					res.detected_touch_index = min_object_index;
+					res.success = true;
+					
+					//publish the change cluster
+					pcl::toPCLPointCloud2(*change_clusters.at(min_change_cluster_index),pc_target);
+					pcl_conversions::fromPCL(pc_target,cloud_ros);
+					detected_change_cloud_pub.publish(cloud_ros);
+					
+					
+					return true;
+				}
 			}
 			
 			
@@ -522,7 +554,11 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 	for (int i = 0; i < 4; i ++)
 		plane_coef_vector(i)=req.cloud_plane_coef[i];
 	
+	ROS_INFO("Received touch object request for object %i",req.touch_index);
+	
 	if (req.touch_index != -1){
+		
+		ROS_INFO("Computing touch poses for all objects...");
 		
 		//for each object, compute the touch pose; also, extract the highest point from the table
 		std::vector<geometry_msgs::PoseStamped> touch_poses;
@@ -542,9 +578,16 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 			touch_poses.push_back(touch_pose_i);
 		}
 		
+		ROS_INFO("...done!");
+		
+		ROS_INFO("Waiting for arm data...");
+		
 		//store current pose
-		listenForArmData(10.0);
+		/*listenForArmData(10.0);
 		geometry_msgs::PoseStamped start_pose = current_pose;
+		ROS_INFO("...done");*/
+		
+		
 		
 		geometry_msgs::PoseStamped touch_pose_i = touch_poses.at(req.touch_index);
 			
@@ -553,11 +596,13 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 			
 		geometry_msgs::PoseStamped touch_approach = touch_pose_i;
 		touch_approach.pose.position.z = z_above;
-			
+		
+		ROS_INFO("Moving to approach pose...");	
 		//first approach the object from the top
 		moveToPoseCarteseanVelocity(touch_approach);
 			
 		//now touch it
+		ROS_INFO("Moving to touch pose...");	
 		moveToPoseCarteseanVelocity(touch_pose_i);
 	}
 	else { //retract
@@ -571,6 +616,9 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 		moveToPoseCarteseanVelocity(home_pose);
 		
 	}
+	
+	ROS_INFO("Finished touch object request for object %i",req.touch_index);
+	
 	
 	return true;
 }
@@ -628,13 +676,15 @@ int main (int argc, char** argv)
 	double ros_rate = 10.0;
 	ros::Rate r(ros_rate);
 
+	ros::spin();
+
 	// Main loop:
-	while (!g_caught_sigint && ros::ok())
+	/*while (!g_caught_sigint && ros::ok())
 	{
 		//collect messages
 		ros::spinOnce();
 
 		r.sleep();
 
-	}
+	}*/
 };

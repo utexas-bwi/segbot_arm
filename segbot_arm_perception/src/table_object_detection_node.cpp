@@ -250,6 +250,7 @@ bool cluster_reorder_cb(segbot_arm_perception::TabletopReorder::Request &req, se
 	// iterate through clusters on plane in determined order
 	for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
 		pcl::toROSMsg(*clusters_on_plane.at(idx_order.at(i)), cloud_ros);
+		cloud_ros.header.frame_id = cloud->header.frame_id;
 		res.ordered_cloud_clusters.push_back(cloud_ros);
 	}
 
@@ -258,9 +259,11 @@ bool cluster_reorder_cb(segbot_arm_perception::TabletopReorder::Request &req, se
 
 bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_perception::TabletopPerception::Response &res)
 {
+	
 	//get the point cloud by aggregating k successive input clouds
 	waitForCloudK(15);
 	cloud = cloud_aggregated;
+
 
 	// Apply z filter -- we don't care for anything X m away in the z direction
 	pcl::PassThrough<PointT> pass;
