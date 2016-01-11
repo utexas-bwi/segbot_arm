@@ -279,11 +279,27 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st){
 	
 	ROS_INFO("Starting movement...");
 	
+	float last_dx = -1;
+	float last_dy = -1;
+	float last_dz = -1;
+	
 	while (ros::ok()){
 		
 		float dx = constant_m*( - current_pose.pose.position.x + pose_st.pose.position.x );
 		float dy = constant_m*(- current_pose.pose.position.y + pose_st.pose.position.y);
 		float dz = constant_m*(- current_pose.pose.position.z + pose_st.pose.position.z);
+		
+		if (last_dx != -1){
+			//check if we're getting further from the target -- this means there is contact
+			if (last_dx < dx || last_dy < dy || last_dz < dz){
+				ROS_WARN("[ispy_arm_server.cpp] tool has moved further from the target. stopping movement.");
+				break;
+			}
+		}
+				
+		last_dx = dx; 
+		last_dy = dy;
+		last_dz = dz;
 		
 		if (fabs(dx) < theta && fabs(dy) < theta && fabs(dz) < theta){
 			//we reached the position, exit
@@ -392,6 +408,15 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 		touch_poses.push_back(touch_pose_i);
 	}
 	
+	//transform each pose so that it is with the same frame_id as the objects (the camera frame of reference)
+	tf::TransformListener listener;
+	listener.waitForTransform(touch_poses.at(0).header.frame_id, req.objects.at(0).header.frame_id, ros::Time(0), ros::Duration(3.0));
+	for (int i = 0; i < detected_objects.size(); i++){
+		listener.transformPose(req.objects.at(i).header.frame_id, touch_poses.at(i), touch_poses.at(i));
+	}
+	
+	
+	
 	//Step 2: start change detection server
 	startChangeDetection();
 	
@@ -446,14 +471,6 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 					}
 				}
 				
-				//publish filtered cloud for debugging purposes
-				pcl::toPCLPointCloud2(*change_clusters.at(largest_index),pc_target);
-				pcl_conversions::fromPCL(pc_target,cloud_ros);
-				cloud_ros.header.frame_id = cloud_change->header.frame_id;
-				change_cloud_debug_pub.publish(cloud_ros);
-				
-				
-				
 				
 				
 				//find the smallest distance between any cluster and any object top
@@ -502,14 +519,24 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 				
 				//now check if the min_distance is below a threshold and if so, report the detection
 				
+				//publish some debugging info
+				
+				//publish the change cluster that's closest to an object
+				pcl::toPCLPointCloud2(*change_clusters.at(min_change_cluster_index),pc_target);
+				pcl_conversions::fromPCL(pc_target,cloud_ros);
+				cloud_ros.header.frame_id = cloud_change->header.frame_id;
+				change_cloud_debug_pub.publish(cloud_ros);	
+				
+			
+				
 				if (min_distance < TOUCH_DISTANCE_THRESHOLD){
 					res.detected_touch_index = min_object_index;
 					res.success = true;
 					
 					//publish the change cluster
-					pcl::toPCLPointCloud2(*change_clusters.at(min_change_cluster_index),pc_target);
+					/*pcl::toPCLPointCloud2(*change_clusters.at(min_change_cluster_index),pc_target);
 					pcl_conversions::fromPCL(pc_target,cloud_ros);
-					detected_change_cloud_pub.publish(cloud_ros);
+					detected_change_cloud_pub.publish(cloud_ros);*/
 					
 					
 					return true;
