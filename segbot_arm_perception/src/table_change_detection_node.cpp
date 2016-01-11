@@ -181,13 +181,15 @@ int main (int argc, char** argv)
 	double ros_rate = 10.0;
 	ros::Rate r(ros_rate);
 
+	ros::spin();
+
 	// Main loop:
-	while (!g_caught_sigint && ros::ok())
+	/*while (!g_caught_sigint && ros::ok())
 	{
 		//collect messages
 		ros::spinOnce();
 
 		r.sleep();
 
-	}
+	}*/
 };

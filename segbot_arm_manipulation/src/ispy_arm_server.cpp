@@ -192,7 +192,7 @@ std::vector<PointCloudT::Ptr > computeClusters(PointCloudT::Ptr in){
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<PointT> ec;
 	ec.setClusterTolerance (0.02); // 2cm
-	ec.setMinClusterSize (100);
+	ec.setMinClusterSize (200);
 	ec.setMaxClusterSize (25000);
 	ec.setSearchMethod (tree);
 	ec.setInputCloud (in);
@@ -214,7 +214,10 @@ std::vector<PointCloudT::Ptr > computeClusters(PointCloudT::Ptr in){
   return clusters;
 }
 
-geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients,std::string frame_id){
+geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob, 
+					Eigen::Vector4f plane_coefficients,
+					std::string frame_id,
+					bool transform_into_mico){
 	//basically, find the point furthers away from the plane -- that's the top of the object
 	double max_distance = -1000.0;
 	int max_index = -1;
@@ -257,6 +260,12 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob, Eigen::Vector4
 	//add a bit of z 
 	pose_st.pose.position.z+=TOUCH_POSE_HEIGHT;
 	
+	if (!transform_into_mico){
+		listener.waitForTransform(pose_st.header.frame_id,frame_id, ros::Time(0), ros::Duration(3.0));
+		listener.transformPose(frame_id, pose_st, pose_st);
+		
+	}
+	
 	//ROS_INFO("Touch pose:");
 	//ROS_INFO_STREAM(pose_st);
 	
@@ -283,19 +292,26 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st){
 	float last_dy = -1;
 	float last_dz = -1;
 	
+	int timeout_counter = 0;
+	
 	while (ros::ok()){
 		
 		float dx = constant_m*( - current_pose.pose.position.x + pose_st.pose.position.x );
 		float dy = constant_m*(- current_pose.pose.position.y + pose_st.pose.position.y);
 		float dz = constant_m*(- current_pose.pose.position.z + pose_st.pose.position.z);
 		
-		if (last_dx != -1){
+		/*if (last_dx != -1){
 			//check if we're getting further from the target -- this means there is contact
-			if (last_dx < dx || last_dy < dy || last_dz < dz){
+			if (last_dx < dx && last_dy < dy && last_dz < dz){
 				ROS_WARN("[ispy_arm_server.cpp] tool has moved further from the target. stopping movement.");
-				break;
+				timeout_counter++;
+				
+				if (timeout_counter > 5){
+					break;
+				}
 			}
-		}
+			else timeout_counter = 0;
+		}*/
 				
 		last_dx = dx; 
 		last_dy = dy;
@@ -399,7 +415,7 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 	for (int i = 0; i < detected_objects.size(); i++){
 		//generate touch pose for the object
 		geometry_msgs::PoseStamped touch_pose_i = createTouchPose(detected_objects.at(i),plane_coef_vector,
-												req.objects.at(i).header.frame_id);
+												req.objects.at(i).header.frame_id,false);
 			
 		if (touch_pose_i.pose.position.z > highest_z){
 			highest_z = touch_pose_i.pose.position.z ;
@@ -409,11 +425,12 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 	}
 	
 	//transform each pose so that it is with the same frame_id as the objects (the camera frame of reference)
-	tf::TransformListener listener;
-	listener.waitForTransform(touch_poses.at(0).header.frame_id, req.objects.at(0).header.frame_id, ros::Time(0), ros::Duration(3.0));
+	/*tf::TransformListener listener;
 	for (int i = 0; i < detected_objects.size(); i++){
+		listener.waitForTransform(touch_poses.at(0).header.frame_id, req.objects.at(0).header.frame_id, ros::Time(0), ros::Duration(3.0));
 		listener.transformPose(req.objects.at(i).header.frame_id, touch_poses.at(i), touch_poses.at(i));
-	}
+	}*/
+	
 	
 	
 	
@@ -593,7 +610,7 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 		for (int i = 0; i < detected_objects.size(); i++){
 			//generate touch pose for the object
 			geometry_msgs::PoseStamped touch_pose_i = createTouchPose(detected_objects.at(i),plane_coef_vector,
-													req.objects.at(i).header.frame_id);
+													req.objects.at(i).header.frame_id,true);
 			
 			//if (touch_pose_i.pose.position.z > 0.05)
 			//	touch_poses.push_back(touch_pose_i);
