@@ -79,7 +79,7 @@
 #define FINGER_FULLY_CLOSED 7300
 
 //some defines for behaviors
-#define TOUCH_POSE_HEIGHT 0.045
+#define TOUCH_POSE_HEIGHT 0.095
 #define TIMEOUT_THRESHOLD 30.0 //30 seconds
 
 #define PI 3.14159265
@@ -115,6 +115,7 @@ bool new_change_cloud_detected = false;
 //clients
 ros::ServiceClient client_start_change;
 ros::ServiceClient client_stop_change;
+ros::ServiceClient client_joint_command;
 
 //publishers
 ros::Publisher pub_velocity;
@@ -124,6 +125,9 @@ sensor_msgs::PointCloud2 cloud_ros;
 pcl::PCLPointCloud2 pc_target;
 
 
+//const float home_position [] = { -1.84799570991366, -0.9422852495301872, -0.23388692957209883, -1.690986384686938, 1.37682658669572, 3.2439323416434624};
+const float home_position [] = {-1.9461704803383473, -0.39558648095261406, -0.6342860089305954, -1.7290658598495474, 1.4053863262257316, 3.039252699220428};
+
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
 {
@@ -132,6 +136,7 @@ void sig_handler(int sig)
   ros::shutdown();
   exit(1);
 };
+
 
 
 //Joint state cb
@@ -257,13 +262,15 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob,
 	//decide on orientation (horizontal palm)
 	pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(PI/2,0,PI/2);
 	
-	//add a bit of z 
-	pose_st.pose.position.z+=TOUCH_POSE_HEIGHT;
 	
 	if (!transform_into_mico){
 		listener.waitForTransform(pose_st.header.frame_id,frame_id, ros::Time(0), ros::Duration(3.0));
 		listener.transformPose(frame_id, pose_st, pose_st);
 		
+	}
+	else {
+		//add a bit of z 
+		pose_st.pose.position.z+=TOUCH_POSE_HEIGHT;
 	}
 	
 	//ROS_INFO("Touch pose:");
@@ -272,6 +279,37 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob,
 	return pose_st;
 }
 
+void moveToHome(){
+	
+	/*moveit::planning_interface::MoveGroup group("arm");
+    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;   
+    group.setPlanningTime(5.0); //10 second maximum for collision computation*/
+	
+	
+	
+	moveit_utils::MicoMoveitJointPose::Request req;
+	moveit_utils::MicoMoveitJointPose::Response res;
+	
+	for(int i = 0; i < 6; i++){
+        switch(i) {
+            case 0  :    req.target.joint1 = home_position[i]; break;
+            case 1  :    req.target.joint2 =  home_position[i]; break;
+            case 2  :    req.target.joint3 =  home_position[i]; break;
+            case 3  :    req.target.joint4 =  home_position[i]; break;
+            case 4  :    req.target.joint5 =  home_position[i]; break;
+            case 5  :    req.target.joint6 =  home_position[i]; break;
+        }
+	//ROS_INFO("Requested angle: %f", q_vals.at(i));
+    }
+	
+	if(client_joint_command.call(req, res)){
+ 		ROS_INFO("Call successful. Response:");
+ 		ROS_INFO_STREAM(res);
+ 	} else {
+ 		ROS_ERROR("Call failed. Terminating.");
+ 		//ros::shutdown();
+ 	}
+}
 
 void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st){
 	listenForArmData(30.0);
@@ -658,7 +696,8 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 		
 		moveToPoseCarteseanVelocity(touch_approach);
 		moveToPoseCarteseanVelocity(home_pose);
-		
+		//finally call move it to get into the precise joint configuration as the start
+		moveToHome();
 	}
 	
 	ROS_INFO("Finished touch object request for object %i",req.touch_index);
@@ -705,6 +744,8 @@ int main (int argc, char** argv)
 	//clients
 	client_start_change = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/start");
 	client_stop_change = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/stop");
+	client_joint_command = n.serviceClient<moveit_utils::MicoMoveitJointPose> ("/mico_jointpose_service");
+	
 	
 	
 	
@@ -712,6 +753,9 @@ int main (int argc, char** argv)
 	listenForArmData(10.0);
 	home_pose = current_pose;
 	
+	
+	//test moving to home
+	moveToHome();
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);

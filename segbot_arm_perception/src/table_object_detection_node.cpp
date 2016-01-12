@@ -65,8 +65,9 @@ ros::Publisher cloud_pub;
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
 
-double plane_distance_tolerance = 0.04;
-
+double plane_distance_tolerance = 0.08;
+double plane_max_distance_tolerance = 0.03;
+double cluster_extraction_tolerance = 0.06;
 // Check if a file exist or not
 bool file_exist(std::string& name) {
     struct stat buffer;
@@ -100,7 +101,7 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 }
 
 
-bool filter(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients, double tolerance){
+bool filter(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients, double tolerance_min, double tolerance_max){
 	
 	double min_distance = 1000.0;
 	double max_distance = -1000.0;
@@ -126,9 +127,9 @@ bool filter(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients, double to
 	}
 	
 	
-	if (min_distance > tolerance)
+	if (min_distance > tolerance_min)
 		return false;
-	else if (max_distance < 0.8*tolerance)
+	else if (max_distance < 0.8*tolerance_max)
 		return false;	
 	
 	
@@ -321,7 +322,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	
 	
 	//Step 3: Eucledian Cluster Extraction
-	computeClusters(cloud_blobs,0.02);
+	computeClusters(cloud_blobs,cluster_extraction_tolerance);
 	
 	ROS_INFO("Found %i clusters.",(int)clusters.size());
 
@@ -330,7 +331,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 
 	for (unsigned int i = 0; i < clusters.size(); i++){
 		
-		if (filter(clusters.at(i),plane_coefficients,plane_distance_tolerance)){
+		if (filter(clusters.at(i),plane_coefficients,plane_distance_tolerance,plane_max_distance_tolerance)){
 			clusters_on_plane.push_back(clusters.at(i));
 		}
 	}
