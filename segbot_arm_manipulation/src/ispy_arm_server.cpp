@@ -95,12 +95,19 @@ bool g_caught_sigint=false;
 
 // robot state information
 sensor_msgs::JointState current_state;
-sensor_msgs::JointState current_effort;
 jaco_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 bool heardPose = false;
 bool heardJoinstState = false;
 geometry_msgs::PoseStamped home_pose;
+
+//global variables about the joint efforts
+sensor_msgs::JointState current_efforts;
+sensor_msgs::JointState last_efforts;
+double total_grav_free_effort = 0;
+double total_delta;
+double delta_effort[6];
+bool heardEfforts = false;
 
 
 /* define what kind of point clouds we're using */
@@ -152,8 +159,30 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 
 //Joint state cb
 void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
-  current_effort = *input;
-  //ROS_INFO_STREAM(current_effort);
+
+	//compute the change in efforts if we had already heard the last one
+	if (heardEfforts){
+		for (int i = 0; i < 6; i ++){
+			delta_effort[i] = input->effort[i]-current_efforts.effort[i];
+		}
+	}
+	
+	//store the current effort
+	current_efforts = *input;
+	
+	total_grav_free_effort = 0.0;
+	for (int i = 0; i < 6; i ++){
+		if (current_efforts.effort[i] < 0.0)
+			total_grav_free_effort -= (current_efforts.effort[i]);
+		else 
+			total_grav_free_effort += (current_efforts.effort[i]);
+	}
+	
+	//calc total change in efforts
+	total_delta = delta_effort[0]+delta_effort[1]+delta_effort[2]+delta_effort[3]+delta_effort[4]+delta_effort[5];
+	
+	heardEfforts=true;
+
 }
 
 //Joint state cb
@@ -311,7 +340,7 @@ void moveToHome(){
  	}
 }
 
-void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st){
+void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts){
 	listenForArmData(30.0);
 	
 	int rateHertz = 40;
@@ -320,9 +349,9 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st){
 	
 	ros::Rate r(rateHertz);
 	
-	float theta = 0.05;
+	float theta = 0.075;
 	
-	float constant_m = 2.0;
+	float constant_m = 3.0;
 	
 	ROS_INFO("Starting movement...");
 	
@@ -373,6 +402,16 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st){
 		ros::spinOnce();
 		//ROS_INFO("Published cartesian vel. command");
 		r.sleep();
+		
+		if (check_efforts){
+			if (heardEfforts){
+				if (total_delta > 0.8){
+					//we hit something, break;
+					ROS_WARN("[ispy_arm_server.cpp] contact detecting during cartesean velocity movement.");
+					break;
+				}
+			}
+		}
 	}
 	
 	ROS_INFO("Ending movement...");
@@ -681,11 +720,11 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 		
 		ROS_INFO("Moving to approach pose...");	
 		//first approach the object from the top
-		moveToPoseCarteseanVelocity(touch_approach);
+		moveToPoseCarteseanVelocity(touch_approach,false);
 			
 		//now touch it
 		ROS_INFO("Moving to touch pose...");	
-		moveToPoseCarteseanVelocity(touch_pose_i);
+		moveToPoseCarteseanVelocity(touch_pose_i,true);
 	}
 	else { //retract
 		//store current pose
@@ -694,8 +733,8 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 		geometry_msgs::PoseStamped touch_approach = current_pose;
 		touch_approach.pose.position.z = current_pose.pose.position.z+0.07;
 		
-		moveToPoseCarteseanVelocity(touch_approach);
-		moveToPoseCarteseanVelocity(home_pose);
+		moveToPoseCarteseanVelocity(touch_approach,false);
+		moveToPoseCarteseanVelocity(home_pose,false);
 		//finally call move it to get into the precise joint configuration as the start
 		moveToHome();
 	}
