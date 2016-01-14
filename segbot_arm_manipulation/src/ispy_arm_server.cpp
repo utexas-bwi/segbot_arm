@@ -134,6 +134,7 @@ pcl::PCLPointCloud2 pc_target;
 
 //const float home_position [] = { -1.84799570991366, -0.9422852495301872, -0.23388692957209883, -1.690986384686938, 1.37682658669572, 3.2439323416434624};
 const float home_position [] = {-1.9461704803383473, -0.39558648095261406, -0.6342860089305954, -1.7290658598495474, 1.4053863262257316, 3.039252699220428};
+const float home_position_approach [] = {-1.9480954131742567, -0.9028227948134995, -0.6467984718381701, -1.4125267937404524, 0.8651278801122975, 3.73659131064558};
 
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
@@ -308,7 +309,7 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob,
 	return pose_st;
 }
 
-void moveToHome(){
+void moveToJointState(const float* js){
 	
 	/*moveit::planning_interface::MoveGroup group("arm");
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;   
@@ -321,12 +322,12 @@ void moveToHome(){
 	
 	for(int i = 0; i < 6; i++){
         switch(i) {
-            case 0  :    req.target.joint1 = home_position[i]; break;
-            case 1  :    req.target.joint2 =  home_position[i]; break;
-            case 2  :    req.target.joint3 =  home_position[i]; break;
-            case 3  :    req.target.joint4 =  home_position[i]; break;
-            case 4  :    req.target.joint5 =  home_position[i]; break;
-            case 5  :    req.target.joint6 =  home_position[i]; break;
+            case 0  :    req.target.joint1 = js[i]; break;
+            case 1  :    req.target.joint2 =  js[i]; break;
+            case 2  :    req.target.joint3 =  js[i]; break;
+            case 3  :    req.target.joint4 =  js[i]; break;
+            case 4  :    req.target.joint5 =  js[i]; break;
+            case 5  :    req.target.joint6 =  js[i]; break;
         }
 	//ROS_INFO("Requested angle: %f", q_vals.at(i));
     }
@@ -677,11 +678,7 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 	
 	ROS_INFO("Received touch object request for object %i",req.touch_index);
 	
-	if (req.touch_index != -1){
-		
-		ROS_INFO("Computing touch poses for all objects...");
-		
-		//for each object, compute the touch pose; also, extract the highest point from the table
+	//for each object, compute the touch pose; also, extract the highest point from the table
 		std::vector<geometry_msgs::PoseStamped> touch_poses;
 		double highest_z = 0.0;
 		for (int i = 0; i < detected_objects.size(); i++){
@@ -698,6 +695,12 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 			
 			touch_poses.push_back(touch_pose_i);
 		}
+	
+	if (req.touch_index != -1){
+		
+		ROS_INFO("Computing touch poses for all objects...");
+		
+		
 		
 		ROS_INFO("...done!");
 		
@@ -731,12 +734,14 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 		listenForArmData(10.0);
 		
 		geometry_msgs::PoseStamped touch_approach = current_pose;
-		touch_approach.pose.position.z = current_pose.pose.position.z+0.07;
+		touch_approach.pose.position.z = highest_z+0.2;
+		//touch_approach.pose.position.x -= 0.2;
 		
 		moveToPoseCarteseanVelocity(touch_approach,false);
-		moveToPoseCarteseanVelocity(home_pose,false);
+		//moveToPoseCarteseanVelocity(home_pose,false);
 		//finally call move it to get into the precise joint configuration as the start
-		moveToHome();
+		moveToJointState(home_position_approach);
+		moveToJointState(home_position);
 	}
 	
 	ROS_INFO("Finished touch object request for object %i",req.touch_index);
@@ -794,7 +799,7 @@ int main (int argc, char** argv)
 	
 	
 	//test moving to home
-	moveToHome();
+	moveToJointState(home_position);
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);

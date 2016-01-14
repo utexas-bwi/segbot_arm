@@ -67,7 +67,7 @@ bool g_caught_sigint=false;
 
 double plane_distance_tolerance = 0.08;
 double plane_max_distance_tolerance = 0.03;
-double cluster_extraction_tolerance = 0.06;
+double cluster_extraction_tolerance = 0.05;
 // Check if a file exist or not
 bool file_exist(std::string& name) {
     struct stat buffer;
@@ -148,7 +148,7 @@ void computeClusters(PointCloudT::Ptr in, double tolerance){
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<PointT> ec;
 	ec.setClusterTolerance (tolerance); // 2cm
-	ec.setMinClusterSize (50);
+	ec.setMinClusterSize (200);
 	ec.setMaxClusterSize (25000);
 	ec.setSearchMethod (tree);
 	ec.setInputCloud (in);
