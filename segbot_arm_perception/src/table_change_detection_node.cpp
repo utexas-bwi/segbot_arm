@@ -126,6 +126,8 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 		}
 		else firstRun = false;
 		
+		delete &filtered_cloud;
+		
 		// switch buffers - reset tree
 		octree->switchBuffers ();
 
@@ -150,6 +152,7 @@ bool start_service_cb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &
 bool stop_service_cb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
 	computeChange = false;
+	delete octree;
 	
 	return true;
 }
