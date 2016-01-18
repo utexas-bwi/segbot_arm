@@ -68,6 +68,9 @@ bool g_caught_sigint=false;
 double plane_distance_tolerance = 0.08;
 double plane_max_distance_tolerance = 0.03;
 double cluster_extraction_tolerance = 0.05;
+
+bool collecting_cloud = false;
+
 // Check if a file exist or not
 bool file_exist(std::string& name) {
     struct stat buffer;
@@ -88,16 +91,17 @@ void
 cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 {
 
+	
+		cloud_mutex.lock ();
 
-	cloud_mutex.lock ();
+		//convert to PCL format
+		pcl::fromROSMsg (*input, *cloud);
 
-	//convert to PCL format
-	pcl::fromROSMsg (*input, *cloud);
+		//state that a new cloud is available
+		new_cloud_available_flag = true;
 
-	//state that a new cloud is available
-	new_cloud_available_flag = true;
-
-	cloud_mutex.unlock ();
+		cloud_mutex.unlock ();
+	
 }
 
 
@@ -173,6 +177,8 @@ void computeClusters(PointCloudT::Ptr in, double tolerance){
 void waitForCloud(){
 	ros::Rate r(30);
 	
+	collecting_cloud = true;
+	
 	while (ros::ok()){
 		ros::spinOnce();
 		
@@ -184,6 +190,7 @@ void waitForCloud(){
 		}
 	}
 	
+	collecting_cloud = false;
 }
 
 /* collects a cloud by aggregating k successive frames */
@@ -193,7 +200,7 @@ void waitForCloudK(int k){
 	cloud_aggregated->clear();
 	
 	int counter = 0;
-	
+	collecting_cloud = true;
 	while (ros::ok()){
 		ros::spinOnce();
 		
@@ -213,7 +220,7 @@ void waitForCloudK(int k){
 			}
 		}
 	}
-	
+	collecting_cloud = false;
 }
 
 // re-orders detected, non-overlapping clusters according to given coordinate and direction
