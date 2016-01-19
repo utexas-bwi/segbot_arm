@@ -227,7 +227,7 @@ std::vector<PointCloudT::Ptr > computeClusters(PointCloudT::Ptr in){
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<PointT> ec;
 	ec.setClusterTolerance (0.02); // 2cm
-	ec.setMinClusterSize (200);
+	ec.setMinClusterSize (300);
 	ec.setMaxClusterSize (25000);
 	ec.setSearchMethod (tree);
 	ec.setInputCloud (in);
