@@ -104,6 +104,7 @@ jaco_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 bool heardPose = false;
 bool heardJoinstState = false;
+bool heardFingers = false;
 
 sensor_msgs::JointState current_efforts;
 sensor_msgs::JointState last_efforts;
@@ -125,19 +126,8 @@ ros::Publisher pose_fk_pub;
  
 sensor_msgs::PointCloud2 cloud_ros;
 
-bool heardGrasps = false;
-agile_grasp::Grasps current_grasps;
 
 
-struct GraspCartesianCommand {
-	sensor_msgs::JointState approach_q;
-	geometry_msgs::PoseStamped approach_pose;
-	
-	sensor_msgs::JointState grasp_q;
-	geometry_msgs::PoseStamped grasp_pose;
-	
-	
-};
 
 
 /* what happens when ctr-c is pressed */
@@ -164,7 +154,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
 	//compute the change in efforts if we had already heard the last one
 	if (heardEfforts){
 		for (int i = 0; i < 6; i ++){
-			delta_effort[i] = input->effort[i]-current_efforts.effort[i];
+			delta_effort[i] = fabs(input->effort[i]-current_efforts.effort[i]);
 		}
 	}
 	
@@ -197,35 +187,18 @@ void fingers_cb (const jaco_msgs::FingerPosition msg) {
   current_finger = msg;
 }
 
-void grasps_cb(const agile_grasp::Grasps &msg){
-	current_grasps = msg;
-	
-	heardGrasps = true;
-}
 
 
 void listenForArmData(float rate){
 	heardPose = false;
 	heardJoinstState = false;
+	heardFingers = false;
 	ros::Rate r(rate);
 	
 	while (ros::ok()){
 		ros::spinOnce();
 		
-		if (heardPose && heardJoinstState)
-			return;
-		
-		r.sleep();
-	}
-}
-
-void listenForGrasps(float rate){
-	ros::Rate r(rate);
-	
-	while (ros::ok()){
-		ros::spinOnce();
-		
-		if (heardGrasps)
+		if (heardPose && heardJoinstState && heardFingers)
 			return;
 		
 		r.sleep();
@@ -234,35 +207,6 @@ void listenForGrasps(float rate){
 
 
 
-void movePose(float d_z) {
-  actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
-
-  jaco_msgs::ArmPoseGoal goalPose;
-
-  // Set goal pose coordinates
-
-  goalPose.pose.header.frame_id = "mico_api_origin";
-  
-  ROS_INFO_STREAM(current_pose);
-
-  goalPose.pose.pose.position.x = current_pose.pose.position.x;
-  goalPose.pose.pose.position.y = current_pose.pose.position.y;
-  goalPose.pose.pose.position.z = current_pose.pose.position.z + d_z;
-  goalPose.pose.pose.orientation.x = current_pose.pose.orientation.x;
-  goalPose.pose.pose.orientation.y = current_pose.pose.orientation.y;
-  goalPose.pose.pose.orientation.z = current_pose.pose.orientation.z;
-  goalPose.pose.pose.orientation.w = current_pose.pose.orientation.w;
-
-  ROS_INFO_STREAM(goalPose);
-
-  ac.waitForServer();
-  ROS_INFO("Waiting for server.");
-  //finally, send goal and wait
-  ROS_INFO("Sending goal.");
-  ac.sendGoal(goalPose);
-  ac.waitForResult();
-
-}
 
 void moveToCurrentAngles(){
 	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
@@ -303,17 +247,6 @@ void moveFinger(int finger_value) {
     ac.waitForResult();
 }
 
-double angular_difference(geometry_msgs::Quaternion c,geometry_msgs::Quaternion d){
-	Eigen::Vector4f dv;
-	dv[0] = d.w; dv[1] = d.x; dv[2] = d.y; dv[3] = d.z;
-	Eigen::Matrix<float, 3,4> inv;
-	inv(0,0) = -c.x; inv(0,1) = c.w; inv(0,2) = -c.z; inv(0,3) = c.y;
-	inv(1,0) = -c.y; inv(1,1) = c.z; inv(1,2) = c.w;	inv(1,3) = -c.x;
-	inv(2,0) = -c.z; inv(2,1) = -c.y;inv(2,2) = c.x;  inv(2,3) = c.w;
-	
-	Eigen::Vector3f m = inv * dv * -2.0;
-	return m.norm();
-}
 
 int selectObjectToGrasp(std::vector<PointCloudT::Ptr > candidates){
 	//currently, we just pick the one with the most points
@@ -331,155 +264,6 @@ int selectObjectToGrasp(std::vector<PointCloudT::Ptr > candidates){
 	return index;
 }
 
-Eigen::Matrix3d reorderHandAxes(const Eigen::Matrix3d& Q)
-{
-	std::vector<int> axis_order_;
-	axis_order_.push_back(2);
-	axis_order_.push_back(0);
-	axis_order_.push_back(1);
-	
-	Eigen::Matrix3d R = Eigen::MatrixXd::Zero(3, 3);
-	R.col(axis_order_[0]) = Q.col(0); // grasp approach vector
-	R.col(axis_order_[1]) = Q.col(1); // hand axis
-	R.col(axis_order_[2]) = Q.col(2); // hand binormal
-	return R;
-}
-
-geometry_msgs::PoseStamped graspToPose(agile_grasp::Grasp grasp, double hand_offset, std::string frame_id){
-	
-	Eigen::Vector3d center_; // grasp position
-	Eigen::Vector3d surface_center_; //  grasp position projected back onto the surface of the object
-	Eigen::Vector3d axis_; //  hand axis
-	Eigen::Vector3d approach_; //  grasp approach vector
-	Eigen::Vector3d binormal_; //  vector orthogonal to the hand axis and the grasp approach direction
-	
-	tf::vectorMsgToEigen(grasp.axis, axis_);
-	tf::vectorMsgToEigen(grasp.approach, approach_);
-	tf::vectorMsgToEigen(grasp.center, center_);
-	tf::vectorMsgToEigen(grasp.surface_center, surface_center_);
-	
-	approach_ = -1.0 * approach_; // make approach vector point away from handle centroid
-	binormal_ = axis_.cross(approach_); // binormal (used as rotation axis to generate additional approach vectors)
-	
-	//step 1: calculate hand orientation
-	
-	// rotate by 180deg around the grasp approach vector to get the "opposite" hand orientation
-	Eigen::Transform<double, 3, Eigen::Affine> T_R(Eigen::AngleAxis<double>(M_PI/2, approach_));
-	
-	//to do: compute the second possible grasp by rotating -M_PI/2 instead
-	
-	// calculate first hand orientation
-	Eigen::Matrix3d R = Eigen::MatrixXd::Zero(3, 3);
-	R.col(0) = -1.0 * approach_;
-	R.col(1) = T_R * axis_;
-	R.col(2) << R.col(0).cross(R.col(1));
-			
-	Eigen::Matrix3d R1 = reorderHandAxes(R);
-	tf::Matrix3x3 TF1;		
-	tf::matrixEigenToTF(R1, TF1);
-	tf::Quaternion quat1;
-	TF1.getRotation(quat1);		
-	quat1.normalize();
-	
-	// rotate by 180deg around the grasp approach vector to get the "opposite" hand orientation
-	/*Eigen::Transform<double, 3, Eigen::Affine> T(Eigen::AngleAxis<double>(M_PI, approach_));
-	
-	// calculate second hand orientation
-	Eigen::Matrix3d Q = Eigen::MatrixXd::Zero(3, 3);
-	Q.col(0) = T * approach_;
-	Q.col(1) = T * axis_;
-	Q.col(2) << Q.col(0).cross(Q.col(1));
-	
-	// reorder rotation matrix columns according to axes ordering of the robot hand
-	//Eigen::Matrix3d R1 = reorderHandAxes(R);
-	Eigen::Matrix3d R2 = reorderHandAxes(Q);
-
-	// convert Eigen rotation matrices to TF quaternions and normalize them
-	tf::Matrix3x3 TF2;
-	tf::matrixEigenToTF(R2, TF2);
-	tf::Quaternion quat2;
-	TF2.getRotation(quat2);
-	quat2.normalize();
-	
-	std::vector<tf::Quaternion> quats;
-	quats.push_back(quat1);
-	quats.push_back(quat2);*/
-	
-	//use the first quaterneon for now
-	tf::Quaternion quat = quat1;
-	
-	//angles to try
-	double theta = 0.0;
-	
-	// calculate grasp position
-	Eigen::Vector3d position;
-	Eigen::Vector3d approach = -1.0 * approach_;
-	if (theta != 0)
-	{
-		// project grasp bottom position onto the line defined by grasp surface position and approach vector
-		Eigen::Vector3d s, b, a;
-		position = (center_ - surface_center_).dot(approach) * approach;
-		position += surface_center_;
-	}
-	else
-		position = center_;
-		
-	// translate grasp position by <hand_offset_> along the grasp approach vector
-	position = position + hand_offset * approach;
-			
-	geometry_msgs::PoseStamped pose_st;
-	pose_st.header.stamp = ros::Time(0);
-	pose_st.header.frame_id = frame_id;
-	tf::pointEigenToMsg(position, pose_st.pose.position);
-    tf::quaternionTFToMsg(quat, pose_st.pose.orientation);
-	
-	return pose_st;
-}
-
-bool acceptGrasp(GraspCartesianCommand gcc, PointCloudT::Ptr object, Eigen::Vector4f plane_c){
-	//filter 1: if too close to the plane
-	pcl::PointXYZ p_a;
-	p_a.x=gcc.approach_pose.pose.position.x;
-	p_a.y=gcc.approach_pose.pose.position.y;
-	p_a.z=gcc.approach_pose.pose.position.z;
-	
-	pcl::PointXYZ p_g;
-	p_g.x=gcc.grasp_pose.pose.position.x;
-	p_g.y=gcc.grasp_pose.pose.position.y;
-	p_g.z=gcc.grasp_pose.pose.position.z;
-	
-	if (pcl::pointToPlaneDistance(p_a, plane_c) < MAX_DISTANCE_TO_PLANE 
-		|| pcl::pointToPlaneDistance(p_g, plane_c) < MAX_DISTANCE_TO_PLANE){
-		
-		return false;
-	}
-	
-	
-	
-	return true;
-}
-
-bool moveToPose(geometry_msgs::PoseStamped g){
-	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
-
-	jaco_msgs::ArmPoseGoal goalPose;
-  
- 
-
-	goalPose.pose = g;
-
-
-	ROS_INFO_STREAM(goalPose);
-
-	  ac.waitForServer();
-	  ROS_DEBUG("Waiting for server.");
-	  //finally, send goal and wait
-	  ROS_INFO("Sending goal.");
-	  ac.sendGoal(goalPose);
-	  ac.waitForResult();
-		
-	return true;
-}
 
 
 void spinSleep(double duration){
@@ -539,41 +323,6 @@ void pressEnter(){
 		std::cout << "Please press ENTER\n";
 }
 
-void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
-	//check if this is specified just for the arm
-	sensor_msgs::JointState q_target;
-	if (target.position.size() != NUM_JOINTS_ARMONLY){
-		//in this case, the first four values are for the base joints
-		for (int i = 4; i < target.position.size(); i ++){
-			q_target.position.push_back(target.position.at(i));
-			q_target.name.push_back(target.name.at(i));
-		}
-		q_target.header = target.header;
-	}
-	else 
-		q_target = target;
-	
-	ROS_INFO("Target joint state:");
-	ROS_INFO_STREAM(q_target);
-	
-	moveit_utils::AngularVelCtrl::Request	req;
-	moveit_utils::AngularVelCtrl::Response	resp;
-	
-	ros::ServiceClient ikine_client = n.serviceClient<moveit_utils::AngularVelCtrl> ("/angular_vel_control");
-	
-	req.state = q_target;
-	
-	pressEnter();
-	
-	if(ikine_client.call(req, resp)){
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(resp);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}
-	
-}
 
 void moveToJointStateMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_target/*sensor_msgs::JointState q_target*/){
 	moveit_utils::MicoMoveitCartesianPose::Request 	req;
@@ -644,17 +393,8 @@ void cartesianVelocityMove(double dx, double dy, double dz, double duration){
 	
 }
 
-void lift(ros::NodeHandle n, double x){
-	listenForArmData(30.0);
-	
-	geometry_msgs::PoseStamped p_target = current_pose;
-	
-	p_target.pose.position.z += x;
-	moveToJointStateMoveIt(n,p_target);
-}
 
-
-void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts){
+void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts, float timeOutSeconds){
 	listenForArmData(30.0);
 	
 	int rateHertz = 40;
@@ -662,6 +402,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 	
 	
 	ros::Rate r(rateHertz);
+	float elapsedTime = 0;
 	
 	float theta = 0.075;
 	
@@ -716,6 +457,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 		ros::spinOnce();
 		//ROS_INFO("Published cartesian vel. command");
 		r.sleep();
+		elapsedTime+=1.0/(float)rateHertz;
 		
 		if (check_efforts){
 			ROS_INFO("total_delta = %f",total_delta);
@@ -727,10 +469,28 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 				}
 			}
 		}
+		
+		if (timeOutSeconds > 0 && elapsedTime > timeOutSeconds){
+			ROS_WARN("Timeout!");
+			break;
+		}
 	}
 	
 	ROS_INFO("Ending movement...");
 
+}
+
+void waitForForce(float force_threshold){
+	int rateHertz = 40;
+	ros::Rate r(rateHertz);
+	
+	while (ros::ok()){
+		if (total_delta > fabs(force_threshold)){
+			//we hit something, break;
+			ROS_WARN("Force detected");
+			break;
+		}
+	}
 }
 
 int main(int argc, char **argv) {
@@ -850,23 +610,53 @@ int main(int argc, char **argv) {
 	pose_pub.publish(abovePose);
 	pressEnter();
 	
-	//move above the object
-	moveToPoseCarteseanVelocity(abovePose,false);
+	bool hasCandy = false;
 	
-	//now lower into the box
-	abovePose.pose.position.z -= 0.3;	
-	moveToPoseCarteseanVelocity(abovePose,true);
+	geometry_msgs::PoseStamped abovePoseR;
+	while (hasCandy == false){
+		
+		//move above the object
+		//add a tiny bit of random xy noise
+		abovePoseR = abovePose;
+		float rx = -0.02+0.04*static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		float ry = -0.02+0.04*static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		abovePoseR.pose.position.x += rx;
+		abovePoseR.pose.position.y += ry;
+		
+		moveToPoseCarteseanVelocity(abovePoseR,false,-1.0);
 	
-	//now close fingers
-	moveFinger(7000);
+		//now lower into the box
+		abovePoseR.pose.position.z -= 0.3;	
+		moveToPoseCarteseanVelocity(abovePoseR,true,4.0);
+	
+		//now close fingers
+		moveFinger(7000);
+	
+	
+		//check finger status
+		listenForArmData(40);
+	
+		ROS_INFO("Fingers: %f, %f",current_finger.finger1,current_finger.finger2);
+		if (current_finger.finger1 < 6900 && current_finger.finger2 < 6900){
+			hasCandy = true;
+		}
+	}
 	
 	//lift
 	abovePose.pose.position.z += 0.4;	
-	moveToPoseCarteseanVelocity(abovePose,true);
+	moveToPoseCarteseanVelocity(abovePose,false,-1.0);
+	
 	
 	//go side way
 	abovePose.pose.position.x += 0.2;	
-	moveToPoseCarteseanVelocity(abovePose,true);
+	moveToPoseCarteseanVelocity(abovePose,false,-1.0);
+
+	//wait for somoene to grab the candy
+	waitForForce(0.8);
+
+	//release
+	moveFinger(1300);
+	
 
 	/*while (ros::ok()){
 		float roll, pitch, yaw;
