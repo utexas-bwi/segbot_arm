@@ -76,6 +76,12 @@
 
 #define PI 3.14159265
 
+
+//const float home_position [] = { -1.84799570991366, -0.9422852495301872, -0.23388692957209883, -1.690986384686938, 1.37682658669572, 3.2439323416434624};
+const float home_position [] = {-1.9461704803383473, -0.39558648095261406, -0.6342860089305954, -1.7290658598495474, 1.4053863262257316, 3.039252699220428};
+const float home_position_approach [] = {-1.9480954131742567, -0.9028227948134995, -0.6467984718381701, -1.4125267937404524, 0.8651278801122975, 3.73659131064558};
+
+
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
@@ -531,6 +537,34 @@ void pressEnter(){
 		std::cout << "Please press ENTER\n";
 }
 
+/*
+void moveToJointState(const float* js){
+	
+	
+	moveit_utils::MicoMoveitJointPose::Request req;
+	moveit_utils::MicoMoveitJointPose::Response res;
+	
+	for(int i = 0; i < 6; i++){
+        switch(i) {
+            case 0  :    req.target.joint1 = js[i]; break;
+            case 1  :    req.target.joint2 =  js[i]; break;
+            case 2  :    req.target.joint3 =  js[i]; break;
+            case 3  :    req.target.joint4 =  js[i]; break;
+            case 4  :    req.target.joint5 =  js[i]; break;
+            case 5  :    req.target.joint6 =  js[i]; break;
+        }
+	//ROS_INFO("Requested angle: %f", q_vals.at(i));
+    }
+	
+	if(client_joint_command.call(req, res)){
+ 		ROS_INFO("Call successful. Response:");
+ 		ROS_INFO_STREAM(res);
+ 	} else {
+ 		ROS_ERROR("Call failed. Terminating.");
+ 		//ros::shutdown();
+ 	}
+}*/
+
 void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 	//check if this is specified just for the arm
 	sensor_msgs::JointState q_target;
@@ -633,6 +667,33 @@ void cartesianVelocityMove(double dx, double dy, double dz, double duration){
 		ROS_INFO("Published cartesian vel. command");
 		r.sleep();
 	}
+	
+}
+
+//lifts ef specified distance
+void lift_velocity(double vel, double distance){
+	ros::Rate r(4);
+	ros::spinOnce();
+	double distance_init = .2;
+	geometry_msgs::TwistStamped T;
+	T.twist.linear.x= 0.0;
+	T.twist.linear.y= 0.0;
+	T.twist.angular.x= 0.0;
+	T.twist.angular.y= 0.0;
+	T.twist.angular.z= 0.0;
+
+	for(int i = 0; i < std::abs(distance/vel/.25); i++){
+		ros::spinOnce();
+		if(distance > 0)
+			T.twist.linear.z = vel;
+		else
+			T.twist.linear.z= -vel;
+		pub_velocity.publish(T);
+		r.sleep();
+	}
+	T.twist.linear.z= 0.0;
+	pub_velocity.publish(T);
+	
 	
 }
 
@@ -870,9 +931,16 @@ int main(int argc, char **argv) {
 	//cartesianVelocityMove(0,0,0.2,1.0);
 	lift(n,0.1);
 	lift(n,-0.09);
+	
+	//lift_velocity(0.5,0.3);
+	//lift_velocity(-0.5,0.25);
+	
 	spinSleep(3.0);
 	moveFinger(100);
 	lift(n,0.1);
+	
+	//moveToJointState(home_position_approach);
+	//moveToJointState(home_position);
 	
 	return 0;
 }
