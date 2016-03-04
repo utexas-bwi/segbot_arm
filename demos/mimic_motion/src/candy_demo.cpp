@@ -99,11 +99,18 @@ bool g_caught_sigint=false;
 #define MAX_DISTANCE_TO_PLANE 0.075
 
 sensor_msgs::JointState current_state;
-sensor_msgs::JointState current_effort;
+
 jaco_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 bool heardPose = false;
 bool heardJoinstState = false;
+
+sensor_msgs::JointState current_efforts;
+sensor_msgs::JointState last_efforts;
+double total_grav_free_effort = 0;
+double total_delta;
+double delta_effort[6];
+bool heardEfforts = false;
 
 geometry_msgs::PoseStamped current_moveit_pose;
 
@@ -154,8 +161,28 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 
 //Joint state cb
 void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
-  current_effort = *input;
-  //ROS_INFO_STREAM(current_effort);
+	//compute the change in efforts if we had already heard the last one
+	if (heardEfforts){
+		for (int i = 0; i < 6; i ++){
+			delta_effort[i] = input->effort[i]-current_efforts.effort[i];
+		}
+	}
+	
+	//store the current effort
+	current_efforts = *input;
+	
+	total_grav_free_effort = 0.0;
+	for (int i = 0; i < 6; i ++){
+		if (current_efforts.effort[i] < 0.0)
+			total_grav_free_effort -= (current_efforts.effort[i]);
+		else 
+			total_grav_free_effort += (current_efforts.effort[i]);
+	}
+	
+	//calc total change in efforts
+	total_delta = delta_effort[0]+delta_effort[1]+delta_effort[2]+delta_effort[3]+delta_effort[4]+delta_effort[5];
+	
+	heardEfforts=true;
 }
 
 //Joint state cb
@@ -454,25 +481,6 @@ bool moveToPose(geometry_msgs::PoseStamped g){
 	return true;
 }
 
-moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs::PoseStamped p){
-	ros::ServiceClient ikine_client = n.serviceClient<moveit_msgs::GetPositionIK> ("/compute_ik");
-	
-	
-	moveit_msgs::GetPositionIK::Request ikine_request;
-	moveit_msgs::GetPositionIK::Response ikine_response;
-	ikine_request.ik_request.group_name = "arm";
-	ikine_request.ik_request.pose_stamped = p;
-	
-	/* Call the service */
-	if(ikine_client.call(ikine_request, ikine_response)){
-		ROS_INFO("IK service call success:");
-		ROS_INFO_STREAM(ikine_response);
-	} else {
-		ROS_INFO("IK service call FAILED. Exiting");
-	}
-	
-	return ikine_response;
-}
 
 void spinSleep(double duration){
 	int rateHertz = 40;
@@ -645,9 +653,89 @@ void lift(ros::NodeHandle n, double x){
 	moveToJointStateMoveIt(n,p_target);
 }
 
+
+void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts){
+	listenForArmData(30.0);
+	
+	int rateHertz = 40;
+	geometry_msgs::TwistStamped velocityMsg;
+	
+	
+	ros::Rate r(rateHertz);
+	
+	float theta = 0.075;
+	
+	float constant_m = 3.0;
+	
+	ROS_INFO("Starting movement...");
+	
+	float last_dx = -1;
+	float last_dy = -1;
+	float last_dz = -1;
+	
+	int timeout_counter = 0;
+	
+	while (ros::ok()){
+		
+		float dx = constant_m*( - current_pose.pose.position.x + pose_st.pose.position.x );
+		float dy = constant_m*(- current_pose.pose.position.y + pose_st.pose.position.y);
+		float dz = constant_m*(- current_pose.pose.position.z + pose_st.pose.position.z);
+		
+		/*if (last_dx != -1){
+			//check if we're getting further from the target -- this means there is contact
+			if (last_dx < dx && last_dy < dy && last_dz < dz){
+				ROS_WARN("[ispy_arm_server.cpp] tool has moved further from the target. stopping movement.");
+				timeout_counter++;
+				
+				if (timeout_counter > 5){
+					break;
+				}
+			}
+			else timeout_counter = 0;
+		}*/
+				
+		last_dx = dx; 
+		last_dy = dy;
+		last_dz = dz;
+		
+		if (fabs(dx) < theta && fabs(dy) < theta && fabs(dz) < theta){
+			//we reached the position, exit
+			break;
+		}
+		
+		velocityMsg.twist.linear.x = dx;
+		velocityMsg.twist.linear.y = dy;
+		velocityMsg.twist.linear.z = dz;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		
+		pub_velocity.publish(velocityMsg);
+		ros::spinOnce();
+		//ROS_INFO("Published cartesian vel. command");
+		r.sleep();
+		
+		if (check_efforts){
+			ROS_INFO("total_delta = %f",total_delta);
+			if (heardEfforts){
+				if (total_delta > fabs(0.25)){
+					//we hit something, break;
+					ROS_WARN("[ispy_arm_server.cpp] contact detecting during cartesean velocity movement.");
+					break;
+				}
+			}
+		}
+	}
+	
+	ROS_INFO("Ending movement...");
+
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
-	ros::init(argc, argv, "agile_grasp_demo");
+	ros::init(argc, argv, "candy_handover_demo");
 	
 	ros::NodeHandle n;
 
@@ -727,6 +815,8 @@ int main(int argc, char **argv) {
 	pcl::PCLPointCloud2 pc_target;
 	pcl::toPCLPointCloud2(*detected_objects.at(selected_object),pc_target);
 	pcl_conversions::fromPCL(pc_target,cloud_ros);
+	cloud_pub.publish(cloud_ros);
+	
 	
 	//make sure we're working with the correct tool pose
 	listenForArmData(30.0);
@@ -735,15 +825,16 @@ int main(int argc, char **argv) {
 	updateFK(n);
 	
 	//open fingers
-	moveFinger(100);
+	moveFinger(1300);
 	
 	//move above object
 	
-	
+	//Compute target pose above the object and transform it
 	Eigen::Vector4f centroid;
 	pcl::compute3DCentroid(*detected_objects.at(selected_object), centroid);
-
 	geometry_msgs::PoseStamped abovePose;
+	abovePose.header.stamp = ros::Time(0);
+	abovePose.header.frame_id =cloud_ros.header.frame_id;
 	abovePose.pose.position.x=centroid(0);
 	abovePose.pose.position.y=centroid(1);
 	abovePose.pose.position.z=centroid(2);
@@ -751,15 +842,60 @@ int main(int argc, char **argv) {
 
 
 	//wait for transform from visual space to arm space
-	listener.waitForTransform(cloud_ros.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
-	
-	listener.transformPose("mico_api_origin", abovePose, abovePose);
-			
-			
-	//publish individual pose
+	listener.waitForTransform(cloud_ros.header.frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));	
+	listener.transformPose("mico_link_base", abovePose, abovePose);
+	abovePose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw((165 / 360.0) * (2*PI),0,(90 / 360.0) * (2*PI));
+	abovePose.pose.position.z += 0.2;
+
 	pose_pub.publish(abovePose);
-	
 	pressEnter();
+	
+	//move above the object
+	moveToPoseCarteseanVelocity(abovePose,false);
+	
+	//now lower into the box
+	abovePose.pose.position.z -= 0.3;	
+	moveToPoseCarteseanVelocity(abovePose,true);
+	
+	//now close fingers
+	moveFinger(7000);
+	
+	//lift
+	abovePose.pose.position.z += 0.4;	
+	moveToPoseCarteseanVelocity(abovePose,true);
+	
+	//go side way
+	abovePose.pose.position.x += 0.2;	
+	moveToPoseCarteseanVelocity(abovePose,true);
+
+	/*while (ros::ok()){
+		float roll, pitch, yaw;
+		
+		ROS_INFO("Enter roll (degrees):");
+		std::cin >> roll;
+		ROS_INFO("Enter pitch (degrees):");
+		std::cin >> pitch;
+		ROS_INFO("Enter yaw (degrees):");
+		std::cin >> yaw;
+		
+		ROS_INFO("You entered: %f, %f, %f",roll,pitch,yaw);
+		
+		//convert degrees to radians
+		roll = (roll / 360.0) * (2*PI);
+		pitch = (pitch / 360.0) * (2*PI);
+		yaw = (yaw / 360.0) * (2*PI);
+		
+		abovePose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(roll,pitch,yaw);
+		
+		//publish individual pose
+		pose_pub.publish(abovePose);
+		
+		pressEnter();
+		
+	}*/
+			
+			
+	
 	//moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
 	//pressEnter();
 	
