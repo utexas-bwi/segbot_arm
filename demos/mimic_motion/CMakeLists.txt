@@ -143,6 +143,12 @@ add_executable(agile_grasp_demo src/agile_grasp_demo.cpp)
 target_link_libraries(agile_grasp_demo ${catkin_LIBRARIES} )
 add_dependencies(agile_grasp_demo jaco_msgs_gencpp agile_grasp_gencpp)
 
+add_executable(candy_demo src/candy_demo.cpp)
+target_link_libraries(candy_demo ${catkin_LIBRARIES} )
+add_dependencies(candy_demo jaco_msgs_gencpp)
+
+
+
 ## Declare a cpp executable
 #add_executable(agile_grasp_demo_nari src/agile_grasp_demo_nari.cpp)
 #target_link_libraries(agile_grasp_demo_nari ${catkin_LIBRARIES} )

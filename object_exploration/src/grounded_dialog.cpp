@@ -70,13 +70,14 @@ const std::string requestName	= "groundedRequest.txt";
 
 std::map<std::string, std::vector<std::string> > label_table;
 int clusterNum;
-bool firstTime = true;
+bool firstTime 					= true;
 std::string clusterAttribute;
 std::string modality;
 static std::vector<std::string> cur_cluster;
-static bool safe_access = true;
+static bool safe_access 		= true;
 using namespace cv;
-bool g_caught_sigint = false;
+bool g_caught_sigint 			= false;
+bool outlier_cluser 			= false;
 
 Mat dst,frame,img,ROI;
 ros::ServiceClient gui_client;
@@ -164,6 +165,7 @@ bool writeRequestFile(int ID, std::string label){
  	behavior_modality
  	cluster_num
  	object names
+ 	* outlier group <- not implemented yet
  */
 
 bool readResponseFile(){
@@ -232,7 +234,7 @@ std::string ask_free_resp(std::string question){
  * General method for sending multiple choice questions to the GUI
  * Returns whether or not the answer was yes to choice2
  */
-bool ask_mult_choice(std::string question, std::string choice1, std::string choice2){
+int ask_mult_choice(std::string question, std::string choice1, std::string choice2, std::string choice3){
 	bool response = false;
 	bwi_msgs::QuestionDialog srv;
 
@@ -242,12 +244,13 @@ bool ask_mult_choice(std::string question, std::string choice1, std::string choi
 	std::vector<std::string> temp;
 	temp.push_back(choice1);
 	temp.push_back(choice2);
+	temp.push_back(choice3);
 	srv.request.options = temp;
 	if(gui_client.call(srv)){
-		response = srv.response.index == 0 ? false : true;
-		ROS_INFO("Hey, I got a response: %d", response);
+		response = srv.response.index;// == 0 ? false : true;
+		ROS_DEBUG("3-Mult Choice got a response: %d", response);
 	} else {
-		ROS_INFO("Something went wrong");
+		ROS_ERROR("Something went wrong");
 	}
 	return response;
 }
@@ -409,121 +412,123 @@ void sequence(){
 	std::string att_from_above;
 	boost::thread workerThread(writeToScreen, &cur_cluster, &safe_access);
 	bool req_sent = false;
-	while(true){
-		if(firstTime){
-			firstTime = false;
-			std::string modality_copy = modality;
-			std::string delimiter = "_";
-			int index = modality_copy.find(delimiter);
-			std::string action = modality_copy.substr(0, index);
-			std::string modality = modality_copy.substr(index+1, modality_copy.length());
-			std::string resp = ask_free_resp("Please specify what general attribute is described by " + action +"ing the object while recording the " + modality);
-			std::vector<std::string> feature_vec = splitString(resp);
-			clusterAttribute = feature_vec.at(0);
-		}
-		bool common_att = ask_mult_choice("Are all of these objects similar in " + clusterAttribute + "?", "No", "Yes");
-		if(common_att){ //user input 'Yes' to "Any attributes common to all objects?"
-			//ask only once per tree : "Can you specify that attribute?"
-				std::map<std::string, std::vector<std::string> >::iterator it;
-				it = label_table.find(clusterAttribute);
-
-				if(it != label_table.end()){
-					std::vector<std::string> values = it->second;
-					std::vector<std::string> values_buffer; //used to track new labels to be added to values
-					bool done = false;
-					/*for(int j = 0; j < values.size() && !done; j++){
-						int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + clusterAttribute + "?",
-								"No", "Yes");
-						if(mult_choice_ans){
-							values_buffer.push_back(values.at(j));
-							done = true;
-						}
-					}*/
-					if(!done){
-					att_from_above = ask_free_resp("What/how " + clusterAttribute + " are they?");
-					values.push_back(att_from_above);
-					label_table[clusterAttribute] = values;
-					//label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
-					//		values));	
-					}
-				}
-				else {
-					ROS_INFO("Attribute not found in table.");
-					att_from_above = ask_free_resp("What/how " + clusterAttribute + " are they?");
-					label_table.insert(std::pair<std::string,std::vector<std::string> >(clusterAttribute,
-						splitString(att_from_above)));
-				}
-		}
-		else{
-			if(cur_cluster.size() <= 3 || ask_mult_choice("Are most of these objects similar in " + clusterAttribute + "?", "No", "Yes")){
-				bool mult_choice;
-				if(cur_cluster.size() <= 3){
-					mult_choice = !ask_mult_choice("How many objects don't fit the " + clusterAttribute + "?", "1 or 2");
-				}
-				else
-					mult_choice = ask_mult_choice("How many objects don't fit the " + clusterAttribute + "?", ">2", "1 or 2");
-				if(mult_choice){
-					std::vector<std::string> outliers = splitString(
-							ask_free_resp("Please specify the names of the outlier(s), separated by spaces"));
-					std::vector<std::string> full_cluster = cur_cluster;
-					for(int i = 0; i < outliers.size(); i++){
-						std::string outlier_name = full_cluster.at(atoi(outliers.at(i).c_str()));
-						ROS_INFO("Outlier name: %s", outlier_name.c_str());
-						cur_cluster.clear();
-						cur_cluster.push_back(outlier_name);
-						sleep(1);
-						//display only outliers.at(i);
-						std::string answer = ask_free_resp("What is the " + clusterAttribute + " of this object?");
-						//store answer as label
-						//store in outlier map to be combined to any cluster with the same label
-						writeRequestFile(0,outlier_name,answer);	//send request to Java prog
-						while(!responseFileExists()){		//wait for Java to respond with updated cluster
-							sleep(.01);
-						}
-						readResponseFile();
-						sleep(1); //waits for the cv window to update
-					}
-					/* Here I need to grab the label for the attribute. Need to check label table for:
-					 * the existance of the attribute. If it exists, add the label to the vector of labels already seen
-					 * Otherwise, add an entry pair <feature, vec:labels>
-					 */ 
-					att_from_above = ask_free_resp("What " + clusterAttribute + " are these items?");
+	
+	if(!outlier_cluser) //run this loop while the input cluser is not outliers
+		while(true){
+			if(firstTime){
+				firstTime = false;
+				std::string modality_copy = modality;
+				std::string delimiter = "_";
+				int index = modality_copy.find(delimiter);
+				std::string action = modality_copy.substr(0, index);
+				std::string modality = modality_copy.substr(index+1, modality_copy.length());
+				std::string resp = ask_free_resp("Please specify what a robot learn about an object just from " + action +"ing the object");
+				std::vector<std::string> feature_vec = splitString(resp);
+				clusterAttribute = feature_vec.at(0);
+			}
+			int common_att = ask_mult_choice("How consistent is this grouping for " + clusterAttribute + "?", "Not correlated", "Completely correlated", "1 or 2 are out of place");
+			if(common_att == 1){ //user input 'Yes' to "Any attributes common to all objects?"
+				//ask only once per tree : "Can you specify that attribute?"
 					std::map<std::string, std::vector<std::string> >::iterator it;
 					it = label_table.find(clusterAttribute);
-					if(it != label_table.end()){ //att exists
+
+					if(it != label_table.end()){
 						std::vector<std::string> values = it->second;
+						std::vector<std::string> values_buffer; //used to track new labels to be added to values
+						bool done = false;
+						/*for(int j = 0; j < values.size() && !done; j++){
+							int mult_choice_ans = ask_mult_choice("Are they " + values.at(j) + " in " + clusterAttribute + "?",
+									"No", "Yes");
+							if(mult_choice_ans){
+								values_buffer.push_back(values.at(j));
+								done = true;
+							}
+						}*/
+						if(!done){
+						att_from_above = ask_free_resp("What/how " + clusterAttribute + " are they?");
 						values.push_back(att_from_above);
 						label_table[clusterAttribute] = values;
+						//label_table.insert(std::pair<std::string,std::vector<std::string> >(feature_vec.at(i),
+						//		values));	
+						}
 					}
-					else{ //doesn't exist
+					else {
+						ROS_INFO("Attribute not found in table.");
+						att_from_above = ask_free_resp("What/how " + clusterAttribute + " are they?");
 						label_table.insert(std::pair<std::string,std::vector<std::string> >(clusterAttribute,
-								splitString(att_from_above)));
+							splitString(att_from_above)));
 					}
+			}
+			else if(common_att == 2){ // answer was "one or two out of place"
+				std::vector<std::string> outliers = splitString(
+						ask_free_resp("Please specify the names of the outlier(s), separated by spaces")
+						);
+				//Now holding the outliers: either collect them or send them back to Java immediately
+				//the old code below has been modified for this; currently sends the outliers over
+				//individually with a null description
+				
+				std::vector<std::string> full_cluster = cur_cluster;
+				for(int i = 0; i < outliers.size(); i++){
+					std::string outlier_name = full_cluster.at(atoi(outliers.at(i).c_str()));
+					ROS_DEBUG("Outlier name: %s", outlier_name.c_str());
 					
+					//display only outliers.at(i);
+					//cur_cluster.clear();
+					//cur_cluster.push_back(outlier_name);
+					//sleep(1);
+					
+					writeRequestFile(0,outlier_name,"");	//send request to Java prog
+					while(!responseFileExists()){		//wait for Java to respond with updated cluster
+						sleep(.01);
+					}
+					readResponseFile();
+					sleep(1); //waits for the cv window to update
 				}
-				else{
-					writeRequestFile(2, att_from_above, att_from_above); //recluster
-					req_sent = true;
+				/* Here I need to grab the label for the attribute. Need to check label table for:
+				 * the existance of the attribute. If it exists, add the label to the vector of labels already seen
+				 * Otherwise, add an entry pair <feature, vec:labels>
+				 */ 
+				att_from_above = ask_free_resp("What " + clusterAttribute + " are these items?");
+				std::map<std::string, std::vector<std::string> >::iterator it;
+				it = label_table.find(clusterAttribute);
+				if(it != label_table.end()){ //att exists
+					std::vector<std::string> values = it->second;
+					values.push_back(att_from_above);
+					label_table[clusterAttribute] = values;
 				}
+				else{ //doesn't exist
+							label_table.insert(std::pair<std::string,std::vector<std::string> >(clusterAttribute,
+									splitString(att_from_above)));
+				}
+						
 			}
 			else{
+				//'skip' button
 				writeRequestFile(2, att_from_above, att_from_above); //recluster
 				req_sent = true;
 			}
-		}
-		
-		print_to_gui("Waiting...");
+			
+			print_to_gui("Waiting...");
 
-		//get next cluster
-		if(!req_sent){
-			writeRequestFile(1,att_from_above);
+			//get next cluster
+			if(!req_sent){
+				writeRequestFile(1,att_from_above);
+				req_sent = false;
+			}
+			while(!responseFileExists()){		//wait for Java to respond with updated cluster
+					sleep(.01);
+			}
+			readResponseFile();				//grab next cluster if successful
 			req_sent = false;
 		}
-		while(!responseFileExists()){		//wait for Java to respond with updated cluster
-				sleep(.01);
-		}
-		readResponseFile();				//grab next cluster if successful
-		req_sent = false;
+	else{ //otherwise, the cluser IS composed of outliers
+		//display outlier cluster
+		//num <- ask how many categories of the attribute are present
+		//report back num to java to start kmeans clustering
+		//
+		//get a cluster back: will it work to mark it as a 'non outlier cluster'
+		// which will trigger the above loop (step 3 in the alg) naturally.
+		//if it should be done separately, handle it here.
 	}
 }
 

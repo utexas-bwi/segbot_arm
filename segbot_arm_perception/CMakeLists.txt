@@ -152,7 +152,7 @@ target_link_libraries(pointcloud_feature_server ${catkin_LIBRARIES} ${PCL_LIBRAR
 
 add_executable(button_detection_srv_node src/button_detection_srv_node.cpp)
 target_link_libraries(button_detection_srv_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-
+add_dependencies(button_detection_srv_node segbot_arm_perception_gencpp)
 
 #add_executable(feature_extraction_server src/feature_extraction_server.cpp)
 #add_dependencies(feature_extraction_server segbot_arm_perception_gencpp)
