@@ -58,6 +58,8 @@ PointCloudT::Ptr cloud_aggregated (new PointCloudT);
 PointCloudT::Ptr cloud_plane (new PointCloudT);
 PointCloudT::Ptr cloud_blobs (new PointCloudT);
 PointCloudT::Ptr empty_cloud (new PointCloudT);
+//the change cloud
+		PointCloudT::Ptr filtered_cloud;
 std::vector<PointCloudT::Ptr > clusters;
 std::vector<PointCloudT::Ptr > clusters_on_plane;
 
@@ -90,7 +92,7 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 {
 	if (computeChange){
 
-		cloud_mutex.lock ();
+		//cloud_mutex.lock ();
 
 		//convert to PCL format
 		pcl::fromROSMsg (*input, *cloud);
@@ -109,8 +111,7 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 		// get a vector of new points, which did not exist in previous buffer 
 		octree->getPointIndicesFromNewVoxels (*newPointIdxVector, 7); //the last argument is "noise_filter"
 
-		//the change cloud
-		PointCloudT::Ptr filtered_cloud;
+		
 
 		filtered_cloud.reset (new PointCloudT);
 
@@ -125,13 +126,11 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 			cloud_pub.publish(cloud_ros);
 		}
 		else firstRun = false;
-		
-		delete &filtered_cloud;
-		
+				
 		// switch buffers - reset tree
 		octree->switchBuffers ();
 
-		cloud_mutex.unlock ();
+		//cloud_mutex.unlock ();
 	}
 }
 
