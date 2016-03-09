@@ -151,6 +151,7 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 
 //Joint state cb
 void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
+	
 	//compute the change in efforts if we had already heard the last one
 	if (heardEfforts){
 		for (int i = 0; i < 6; i ++){
@@ -185,6 +186,7 @@ void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 //Joint state cb
 void fingers_cb (const jaco_msgs::FingerPosition msg) {
   current_finger = msg;
+  heardFingers = true;
 }
 
 
@@ -394,7 +396,7 @@ void cartesianVelocityMove(double dx, double dy, double dz, double duration){
 }
 
 
-void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts, float timeOutSeconds){
+void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, float effort_theta, float timeOutSeconds, float m_factor){
 	listenForArmData(30.0);
 	
 	int rateHertz = 40;
@@ -404,9 +406,9 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 	ros::Rate r(rateHertz);
 	float elapsedTime = 0;
 	
-	float theta = 0.075;
+	float theta = 0.05;
 	
-	float constant_m = 3.0;
+	float constant_m = m_factor;
 	
 	ROS_INFO("Starting movement...");
 	
@@ -441,6 +443,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 		
 		if (fabs(dx) < theta && fabs(dy) < theta && fabs(dz) < theta){
 			//we reached the position, exit
+			ROS_INFO("Reached target");
 			break;
 		}
 		
@@ -459,10 +462,10 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 		r.sleep();
 		elapsedTime+=1.0/(float)rateHertz;
 		
-		if (check_efforts){
+		if (effort_theta > 0){
 			ROS_INFO("total_delta = %f",total_delta);
 			if (heardEfforts){
-				if (total_delta > fabs(0.25)){
+				if (total_delta > effort_theta){
 					//we hit something, break;
 					ROS_WARN("[ispy_arm_server.cpp] contact detecting during cartesean velocity movement.");
 					break;
@@ -480,18 +483,93 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 
 }
 
+
+bool moveToPoseMico(geometry_msgs::PoseStamped g){
+	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+
+	jaco_msgs::ArmPoseGoal goalPose;
+  
+ 
+
+	goalPose.pose = g;
+
+
+	ROS_INFO_STREAM(goalPose);
+
+	  ac.waitForServer();
+	  ROS_DEBUG("Waiting for server.");
+	  //finally, send goal and wait
+	  ROS_INFO("Sending goal.");
+	  ac.sendGoal(goalPose);
+	  ac.waitForResult();
+		
+	return true;
+}
+
 void waitForForce(float force_threshold){
 	int rateHertz = 40;
 	ros::Rate r(rateHertz);
 	
 	while (ros::ok()){
+		ROS_INFO("delta = %f",total_delta);
+		
 		if (total_delta > fabs(force_threshold)){
 			//we hit something, break;
 			ROS_WARN("Force detected");
 			break;
 		}
+		
+		ros::spinOnce();
+		r.sleep();
 	}
 }
+
+
+void moveToPoseMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_target/*sensor_msgs::JointState q_target*/){
+	moveit_utils::MicoMoveitCartesianPose::Request 	req;
+	moveit_utils::MicoMoveitCartesianPose::Response res;
+	
+	req.target = p_target;
+	
+	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose> ("/mico_cartesianpose_service");
+	if(client.call(req, res)){
+ 		ROS_INFO("Call successful. Response:");
+ 		ROS_INFO_STREAM(res);
+ 	} else {
+ 		ROS_ERROR("Call failed. Terminating.");
+ 		//ros::shutdown();
+ 	}
+	
+	/*moveit::planning_interface::MoveGroup group("arm");
+    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;   
+    group.setPlanningTime(5.0); //10 second maximum for collision computation*/
+
+	
+	
+	/*moveit_utils::MicoMoveitJointPose::Request req;
+	moveit_utils::MicoMoveitJointPose::Response res;
+	*/
+	/*for(int i = 0; i < NUM_JOINTS_ARMONLY; i++){
+        switch(i) {
+            case 0  :    req.target.joint1 = q_target.position[0]; break;
+            case 1  :    req.target.joint2 = q_target.position[1]; break;
+            case 2  :    req.target.joint3 = q_target.position[2]; break;
+            case 3  :    req.target.joint4 = q_target.position[3]; break;
+            case 4  :    req.target.joint5 = q_target.position[4]; break;
+            case 5  :    req.target.joint6 = q_target.position[5]; break;
+        }
+	//ROS_INFO("Requested angle: %f", q_vals.at(i));
+    }
+	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitJointPose> ("/mico_jointpose_service");
+	if(client.call(req, res)){
+ 		ROS_INFO("Call successful. Response:");
+ 		ROS_INFO_STREAM(res);
+ 	} else {
+ 		ROS_ERROR("Call failed. Terminating.");
+ 		//ros::shutdown();
+ 	}*/
+}
+
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
@@ -584,8 +662,6 @@ int main(int argc, char **argv) {
 	
 	updateFK(n);
 	
-	//open fingers
-	moveFinger(1300);
 	
 	//move above object
 	
@@ -623,40 +699,61 @@ int main(int argc, char **argv) {
 		abovePoseR.pose.position.x += rx;
 		abovePoseR.pose.position.y += ry;
 		
-		moveToPoseCarteseanVelocity(abovePoseR,false,-1.0);
-	
+		moveToPoseCarteseanVelocity(abovePoseR,-1.0,-1.0,3.0);
+		
+		//open fingers
+		moveFinger(2500);
+		//pressEnter();
+		
 		//now lower into the box
-		abovePoseR.pose.position.z -= 0.3;	
-		moveToPoseCarteseanVelocity(abovePoseR,true,4.0);
-	
+		abovePoseR.pose.position.z -= 0.27;	
+		moveToPoseCarteseanVelocity(abovePoseR,0.7,4.0,0.5);
+		ROS_INFO("Moving up a bit");
+		//pressEnter();
+		
 		//now close fingers
+		/*abovePoseR.pose.position.z += 0.125;	
+		moveToPoseCarteseanVelocity(abovePoseR,false,4.0);
+		pressEnter();*/
+
 		moveFinger(7000);
-	
+		spinSleep(1.0);
+		//pressEnter();
 	
 		//check finger status
 		listenForArmData(40);
-	
+		//pressEnter();
+
 		ROS_INFO("Fingers: %f, %f",current_finger.finger1,current_finger.finger2);
-		if (current_finger.finger1 < 6900 && current_finger.finger2 < 6900){
+		if (current_finger.finger1 < 7000 && current_finger.finger2 < 7000){
 			hasCandy = true;
 		}
 	}
 	
 	//lift
-	abovePose.pose.position.z += 0.4;	
-	moveToPoseCarteseanVelocity(abovePose,false,-1.0);
+	listenForArmData(40);
+	abovePoseR = current_pose;
+	abovePoseR.pose.position.z += 0.05;	
+	//moveToPoseMico(abovePose);
+	//moveToPoseCarteseanVelocity(abovePose,false,6.0);
+	moveToPoseMoveIt(n,abovePoseR);
 	
+	//pressEnter();
+
 	
 	//go side way
-	abovePose.pose.position.x += 0.2;	
-	moveToPoseCarteseanVelocity(abovePose,false,-1.0);
+	abovePose.pose.position.y -= 0.4;	
+	moveToPoseCarteseanVelocity(abovePose,-1.0,6.0,3.0);
+	//pressEnter();
 
 	//wait for somoene to grab the candy
-	waitForForce(0.8);
+	spinSleep(1.0);
+	waitForForce(0.4);
 
 	//release
 	moveFinger(1300);
-	
+	//pressEnter();
+
 
 	/*while (ros::ok()){
 		float roll, pitch, yaw;
