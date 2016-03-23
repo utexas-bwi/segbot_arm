@@ -341,34 +341,6 @@ void moveToJointStateMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_targ
  		//ros::shutdown();
  	}
 	
-	/*moveit::planning_interface::MoveGroup group("arm");
-    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;   
-    group.setPlanningTime(5.0); //10 second maximum for collision computation*/
-
-	
-	
-	/*moveit_utils::MicoMoveitJointPose::Request req;
-	moveit_utils::MicoMoveitJointPose::Response res;
-	*/
-	/*for(int i = 0; i < NUM_JOINTS_ARMONLY; i++){
-        switch(i) {
-            case 0  :    req.target.joint1 = q_target.position[0]; break;
-            case 1  :    req.target.joint2 = q_target.position[1]; break;
-            case 2  :    req.target.joint3 = q_target.position[2]; break;
-            case 3  :    req.target.joint4 = q_target.position[3]; break;
-            case 4  :    req.target.joint5 = q_target.position[4]; break;
-            case 5  :    req.target.joint6 = q_target.position[5]; break;
-        }
-	//ROS_INFO("Requested angle: %f", q_vals.at(i));
-    }
-	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitJointPose> ("/mico_jointpose_service");
-	if(client.call(req, res)){
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(res);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}*/
 }
 
 void cartesianVelocityMove(double dx, double dy, double dz, double duration){

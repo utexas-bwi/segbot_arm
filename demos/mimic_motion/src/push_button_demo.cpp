@@ -42,6 +42,15 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
 
+#include <moveit_msgs/DisplayRobotState.h>
+// Kinematics
+#include <moveit_msgs/GetPositionFK.h>
+#include <moveit_msgs/GetPositionIK.h>
+
+#include <moveit_utils/AngularVelCtrl.h>
+#include <moveit_utils/MicoMoveitJointPose.h>
+#include <moveit_utils/MicoMoveitCartesianPose.h>
+
 #define PI 3.14159265
 
 using namespace std;
@@ -289,6 +298,24 @@ void waitForButtonPose(ros::NodeHandle n){
 	}
 }
 
+
+void moveToPoseMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_target){
+	moveit_utils::MicoMoveitCartesianPose::Request 	req;
+	moveit_utils::MicoMoveitCartesianPose::Response res;
+	
+	req.target = p_target;
+	
+	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose> ("/mico_cartesianpose_service");
+	if(client.call(req, res)){
+ 		ROS_INFO("Call successful. Response:");
+ 		ROS_INFO_STREAM(res);
+ 	} else {
+ 		ROS_ERROR("Call failed. Terminating.");
+ 		//ros::shutdown();
+ 	}
+	
+}
+
 // Blocking call for user input
 void pressEnter(){
 	std::cout << "Press the ENTER key to continue";
@@ -322,8 +349,11 @@ int main(int argc, char **argv) {
 	//button position publisher
 	pose_pub = n.advertise<geometry_msgs::PoseStamped>("/push_button_demo/pose", 10);
 
-	ROS_INFO("Demo starting...");
+	ROS_INFO("Demo starting...Move the arm to a 'ready' position that does not occlude the table.");
 	pressEnter();
+	
+	//listen for arm messages 
+	//TO DO: store current joint values and current end effector pose
 	
 	//close fingers
 	moveFinger(7300);
@@ -339,7 +369,10 @@ int main(int argc, char **argv) {
 	pressEnter();
 	pushButton();
 	
-	ros::spin();
+	//TO DO: move back to the 'ready' joint position or tool position
+	
+	
+	//ros::spin();
 	
 	/*ROS_INFO("Button detected at: %f, %f, %f",current_button_pose.pose.position.x,current_button_pose.pose.position.y,current_button_pose.pose.position.z);
 
