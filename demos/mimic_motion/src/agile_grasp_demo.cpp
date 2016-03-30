@@ -113,6 +113,9 @@ bool heardJoinstState = false;
 
 geometry_msgs::PoseStamped current_moveit_pose;
 
+//store out-of-view position here
+sensor_msgs::JointState joint_state_outofview;
+geometry_msgs::PoseStamped pose_outofview;
 
 //publishers
 ros::Publisher pub_velocity;
@@ -181,7 +184,6 @@ void grasps_cb(const agile_grasp::Grasps &msg){
 	
 	heardGrasps = true;
 }
-
 
 void listenForArmData(float rate){
 	heardPose = false;
@@ -568,7 +570,7 @@ void moveToJointState(const float* js){
 void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 	//check if this is specified just for the arm
 	sensor_msgs::JointState q_target;
-	if (target.position.size() != NUM_JOINTS_ARMONLY){
+	if (target.position.size() > NUM_JOINTS){
 		//in this case, the first four values are for the base joints
 		for (int i = 4; i < target.position.size(); i ++){
 			q_target.position.push_back(target.position.at(i));
@@ -579,8 +581,9 @@ void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 	else 
 		q_target = target;
 	
-	ROS_INFO("Target joint state:");
+	/*ROS_INFO("Target joint state:");
 	ROS_INFO_STREAM(q_target);
+	pressEnter();*/
 	
 	moveit_utils::AngularVelCtrl::Request	req;
 	moveit_utils::AngularVelCtrl::Response	resp;
@@ -589,7 +592,7 @@ void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 	
 	req.state = q_target;
 	
-	pressEnter();
+	
 	
 	if(ikine_client.call(req, resp)){
  		ROS_INFO("Call successful. Response:");
@@ -601,7 +604,7 @@ void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 	
 }
 
-void moveToJointStateMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_target/*sensor_msgs::JointState q_target*/){
+void moveToPoseMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_target/*sensor_msgs::JointState q_target*/){
 	moveit_utils::MicoMoveitCartesianPose::Request 	req;
 	moveit_utils::MicoMoveitCartesianPose::Response res;
 	
@@ -703,7 +706,7 @@ void lift(ros::NodeHandle n, double x){
 	geometry_msgs::PoseStamped p_target = current_pose;
 	
 	p_target.pose.position.z += x;
-	moveToJointStateMoveIt(n,p_target);
+	moveToPoseMoveIt(n,p_target);
 }
 
 int main(int argc, char **argv) {
@@ -752,26 +755,17 @@ int main(int argc, char **argv) {
     char in;
 	
 	
-
-	//cartesianVelocityMove(0,0,0.2,1.0);
-	//lift(n,0.1);
-	//cartesianVelocityMove(0,0,-0.2,1.0);
-	
-	//open and open again fingers
-	//pressEnter();
-	//moveFinger(7200);
-	
-	/*lift(n,-0.1);
-	spinSleep(3.0);
-	moveToCurrentAngles();
-	moveFinger(7200);
-	lift(n,0.1);	
-	spinSleep(3.0);
-	moveToCurrentAngles();
-	moveFinger(100);*/
-	
-	ROS_INFO("Demo starting...");
+	ROS_INFO("Demo starting...move the arm to a position where it is not occluding the table.");
 	pressEnter();
+	
+	//store out of table joint position
+	listenForArmData(30.0);
+	joint_state_outofview = current_state;
+	pose_outofview = current_pose;
+	
+	//open fingers
+	moveFinger(100);
+
 	
 	//step 1: query table_object_detection_node to segment the blobs on the table
 	ros::ServiceClient client_tabletop_perception = n.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
@@ -840,13 +834,10 @@ int main(int argc, char **argv) {
 		geometry_msgs::PoseStamped p_grasp_i = graspToPose(current_grasps.grasps.at(i),hand_offset_grasp,cloud_ros.header.frame_id);
 		geometry_msgs::PoseStamped p_approach_i = graspToPose(current_grasps.grasps.at(i),hand_offset_approach,cloud_ros.header.frame_id);
 		
-		//
-		
+	
 		GraspCartesianCommand gc_i;
 		gc_i.approach_pose = p_approach_i;
 		gc_i.grasp_pose = p_grasp_i;
-		
-		
 		
 		if (acceptGrasp(gc_i,detected_objects.at(selected_object),plane_coef_vector)){
 			
@@ -855,17 +846,18 @@ int main(int argc, char **argv) {
 			
 			//filter two -- if IK fails
 			moveit_msgs::GetPositionIK::Response  ik_response_approach = computeIK(n,gc_i.approach_pose);
-			moveit_msgs::GetPositionIK::Response  ik_response_grasp = computeIK(n,gc_i.grasp_pose);
-	
-			if (ik_response_approach.error_code.val == 1 && ik_response_grasp.error_code.val == 1){
-				//store the IK results
-				gc_i.approach_q = ik_response_approach.solution.joint_state;
-				gc_i.grasp_q = ik_response_grasp.solution.joint_state;
-				
-				
-				grasp_commands.push_back(gc_i);
-				poses.push_back(p_grasp_i);
-				poses_msg.poses.push_back(gc_i.approach_pose.pose);
+			if (ik_response_approach.error_code.val == 1){
+				moveit_msgs::GetPositionIK::Response  ik_response_grasp = computeIK(n,gc_i.grasp_pose);
+		
+				if (ik_response_grasp.error_code.val == 1){
+					//store the IK results
+					gc_i.approach_q = ik_response_approach.solution.joint_state;
+					gc_i.grasp_q = ik_response_grasp.solution.joint_state;
+					
+					grasp_commands.push_back(gc_i);
+					poses.push_back(p_grasp_i);
+					poses_msg.poses.push_back(gc_i.approach_pose.pose);
+				}
 			}
 		}
 		
@@ -903,8 +895,12 @@ int main(int argc, char **argv) {
 
 	//publish individual pose
 	pose_pub.publish(grasp_commands.at(min_diff_index).approach_pose);
+	ROS_INFO_STREAM(grasp_commands.at(min_diff_index).approach_q);
 	pressEnter();
-	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
+	moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
+	moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
+	
+	
 	//pressEnter();
 	
 	//open fingers
@@ -912,12 +908,12 @@ int main(int argc, char **argv) {
 	//moveFinger(100);
 
 
-	sleep(1.0);
+	//sleep(1.0);
 	//pose_pub.publish(grasp_commands.at(min_diff_index).grasp_pose);
 	/*std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
 	std::cin >> in;*/
 	
-	moveToJointStateMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
+	moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
 	spinSleep(3.0);
 	
 	//listenForArmData(30.0);
@@ -928,16 +924,22 @@ int main(int argc, char **argv) {
 	
 	//lift for a while
 	//pressEnter();
-	//cartesianVelocityMove(0,0,0.2,1.0);
-	lift(n,0.1);
-	lift(n,-0.09);
+
+	//LIFT action
 	
-	//lift_velocity(0.5,0.3);
-	//lift_velocity(-0.5,0.25);
-	
-	spinSleep(3.0);
+	//we need to call angular velocity control before we can do cartesian control right after using the fingers
+	lift(n,0.065); 
+	spinSleep(0.5);
+	lift(n,-0.05); 
 	moveFinger(100);
-	lift(n,0.1);
+	
+	//MOVE BACK
+	lift(n,0.05); 
+	
+	moveToPoseMoveIt(n,pose_outofview);
+	moveToPoseMoveIt(n,pose_outofview);
+
+	//moveToJointState(n,joint_state_outofview);
 	
 	//moveToJointState(home_position_approach);
 	//moveToJointState(home_position);
