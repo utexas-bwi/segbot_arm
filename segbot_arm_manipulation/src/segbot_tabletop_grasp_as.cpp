@@ -77,7 +77,7 @@
 #include "segbot_arm_manipulation/TabletopGraspAction.h"
 
 #include <actionlib/server/simple_action_server.h>
-
+#include <segbot_arm_manipulation/arm_utils.h>
 
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300

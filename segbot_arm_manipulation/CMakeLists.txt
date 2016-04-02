@@ -117,7 +117,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES mimic_motion
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
@@ -132,6 +132,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -143,7 +144,8 @@ include_directories(
 
 
 add_executable(segbot_tabletop_grasp_as src/segbot_tabletop_grasp_as.cpp)
-add_dependencies(segbot_tabletop_grasp_as jaco_msgs_gencpp agile_grasp_gencpp segbot_arm_manipulation_gencpp)
+	
+add_dependencies(segbot_tabletop_grasp_as jaco_msgs_gencpp agile_grasp_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(segbot_tabletop_grasp_as ${catkin_LIBRARIES})
 
 ## Declare a cpp executable
