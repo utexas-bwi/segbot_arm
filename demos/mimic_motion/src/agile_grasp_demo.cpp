@@ -74,6 +74,9 @@
 #include <geometry_msgs/TwistStamped.h>
 
 
+#include <segbot_arm_manipulation/arm_utils.h>
+
+
 #define PI 3.14159265
 
 
@@ -444,9 +447,6 @@ bool moveToPose(geometry_msgs::PoseStamped g){
 	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 
 	jaco_msgs::ArmPoseGoal goalPose;
-  
- 
-
 	goalPose.pose = g;
 
 
@@ -758,13 +758,16 @@ int main(int argc, char **argv) {
 	ROS_INFO("Demo starting...move the arm to a position where it is not occluding the table.");
 	pressEnter();
 	
+	
 	//store out of table joint position
 	listenForArmData(30.0);
 	joint_state_outofview = current_state;
 	pose_outofview = current_pose;
 	
 	//open fingers
-	moveFinger(100);
+	//moveFinger(100);
+	segbot_arm_manipulation::openHand();
+
 
 	
 	//step 1: query table_object_detection_node to segment the blobs on the table
@@ -919,8 +922,9 @@ int main(int argc, char **argv) {
 	//listenForArmData(30.0);
 	//close fingers
 	//pressEnter();
-	moveFinger(7200);
 	
+	//moveFinger(7200);
+	segbot_arm_manipulation::openHand();
 	
 	//lift for a while
 	//pressEnter();
@@ -931,7 +935,7 @@ int main(int argc, char **argv) {
 	lift(n,0.065); 
 	spinSleep(0.5);
 	lift(n,-0.05); 
-	moveFinger(100);
+	segbot_arm_manipulation::openHand();
 	
 	//MOVE BACK
 	lift(n,0.05); 
