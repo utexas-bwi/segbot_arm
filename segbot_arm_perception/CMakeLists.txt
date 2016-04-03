@@ -67,6 +67,7 @@ catkin_python_setup()
    TabletopPerception.srv
    ButtonDetection.srv
    TabletopReorder.srv
+   SetObstacles.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -135,6 +136,11 @@ add_dependencies(log_perception_action_client segbot_arm_perception_gencpp)
 
 #add_executable(button_detection_node src/button_detection_node.cpp)
 #target_link_libraries(button_detection_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+
+add_executable(obstacle_cloud_manager src/obstacle_cloud_manager.cpp)
+add_dependencies(obstacle_cloud_manager segbot_arm_perception_gencpp)
+target_link_libraries(obstacle_cloud_manager ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
 add_executable(table_object_detection_node src/table_object_detection_node.cpp)
