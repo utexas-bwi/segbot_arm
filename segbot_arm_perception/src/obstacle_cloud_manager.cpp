@@ -14,7 +14,9 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 
+#include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud_conversion.h>
 
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
@@ -45,8 +47,8 @@
 #include "segbot_arm_perception/SetObstacles.h"
 
 
-#define OBSTACLE_CLOUD_TOPIC "/cloud_arm_obstacles"
-#define DEFAULT_FRAME_ID "/map"
+#define OBSTACLE_CLOUD_TOPIC "/obstacle_cloud_manager/cloud_arm_obstacles"
+#define DEFAULT_FRAME_ID "/mico_api_origin"
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -77,31 +79,48 @@ bool set_obstacles_cb(segbot_arm_perception::SetObstacles::Request &req, segbot_
 	
 	std::string output_frame_id;
 	
+	tf::TransformListener tf_listener;
+	tf::StampedTransform transform;
+	
 	for (unsigned int i = 0; i < req.clouds.size(); i ++){
+		
+		
+		
+		std::string frame_id_i = req.clouds[i].header.frame_id; 
+		
+		
+		sensor_msgs::PointCloud2 cloud_i_pc2;
+		
+		if (frame_id_i == DEFAULT_FRAME_ID){
+			//input cloud is already in desired frame id
+			cloud_i_pc2 = req.clouds[i];
+		}
+		else {
+			//convert input cloud to sensor_msgs::PointCloud format
+			sensor_msgs::PointCloud cloud_i_pc1;
+			sensor_msgs::convertPointCloud2ToPointCloud(req.clouds[i],cloud_i_pc1);
+			
+			//listen for transform to output frame id
+			tf_listener.waitForTransform(frame_id_i, DEFAULT_FRAME_ID, ros::Time::now(), ros::Duration(3.0)); 
+		
+			//transform the converted sensor_msgs::PointCloud to the target frame id
+			sensor_msgs::PointCloud transformed_cloiud_i;
+			tf_listener.transformPointCloud(DEFAULT_FRAME_ID,cloud_i_pc1,transformed_cloiud_i);	
+			
+			//convert back to sensor_msgs::PointCloud2
+			sensor_msgs::convertPointCloudToPointCloud2(transformed_cloiud_i,cloud_i_pc2);
+		}
+		
 		
 		//convert to PCL format
 		PointCloudT::Ptr cloud_i (new PointCloudT);
-		pcl::fromROSMsg (req.clouds[i], *cloud_i);
+		pcl::fromROSMsg (cloud_i_pc2, *cloud_i);
 		
-		std::string frame_id_i = req.clouds[i].header.frame_id; 
-		if (i == 0){
-			output_frame_id = frame_id_i;
-		}
-		else if (frame_id_i != output_frame_id){
-			ROS_ERROR("[obstacle_cloud_manager.cpp] Array of input clouds are not all in the same frame of reference!");
-			return false;
-		}
-		
+		//concatenate the cloud
 		*combined_cloud+=*cloud_i;
 	}
 	
-	//check if the input vector is empty, in which case we publish an empty point cloud
-	if (req.clouds.size() == 0){
-		output_frame_id = DEFAULT_FRAME_ID;
-	}
-	
 	//publish output 
-	int num_msgs = 20;
 	double frame_rate = 10.0;
 	double duration = 1.0;
 	ros::Rate r(frame_rate);
@@ -110,7 +129,7 @@ bool set_obstacles_cb(segbot_arm_perception::SetObstacles::Request &req, segbot_
 	sensor_msgs::PointCloud2 output_cloud_ros;
 	pcl::toROSMsg(*combined_cloud, output_cloud_ros);
 	output_cloud_ros.header.stamp = ros::Time::now();
-	output_cloud_ros.header.frame_id = output_frame_id;
+	output_cloud_ros.header.frame_id = DEFAULT_FRAME_ID;
 	
 	double elapsed_time = 0;
 	while (elapsed_time < duration){

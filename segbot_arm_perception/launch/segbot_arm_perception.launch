@@ -13,5 +13,8 @@
 	<node name="pointcloud_feature_server" pkg="segbot_arm_perception" type="pointcloud_feature_server" output="screen">
 	</node>
 	
+	<!-- launch node used to set obstacles for arm motion planning -->
+	<node name="obstacle_cloud_manager" pkg="segbot_arm_perception" type="obstacle_cloud_manager" output="screen">
+	</node>
 
 </launch>
