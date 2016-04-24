@@ -12,6 +12,10 @@
 #include "jaco_msgs/ArmPoseAction.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
 
+#include <moveit_utils/AngularVelCtrl.h>
+#include <moveit_utils/MicoMoveitJointPose.h>
+#include <moveit_utils/MicoMoveitCartesianPose.h>
+
 const std::string finger_topic = "/mico_arm_driver/fingers/finger_positions";
 const std::string jaco_pose_topic = "/mico_arm_driver/arm_pose/arm_pose";
 

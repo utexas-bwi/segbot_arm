@@ -144,7 +144,6 @@ include_directories(
 
 
 add_executable(segbot_tabletop_grasp_as src/segbot_tabletop_grasp_as.cpp)
-	
 add_dependencies(segbot_tabletop_grasp_as jaco_msgs_gencpp agile_grasp_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(segbot_tabletop_grasp_as ${catkin_LIBRARIES})
 
@@ -152,6 +151,12 @@ target_link_libraries(segbot_tabletop_grasp_as ${catkin_LIBRARIES})
 add_executable(ispy_arm_server src/ispy_arm_server.cpp)
 target_link_libraries(ispy_arm_server ${catkin_LIBRARIES} )
 add_dependencies(ispy_arm_server jaco_msgs_gencpp)
+
+
+## Declare a cpp executable
+add_executable(demo_obstacle_avoidance src/demos/demo_obstacle_avoidance.cpp)
+target_link_libraries(demo_obstacle_avoidance ${catkin_LIBRARIES} )
+add_dependencies(demo_obstacle_avoidance jaco_msgs_gencpp)
 
 
 
