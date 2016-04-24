@@ -6,7 +6,6 @@
 
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_perception/TabletopPerception.h"
-#include "segbot_arm_perception/SetObstacles.h"
 
 
 #include <segbot_arm_manipulation/arm_utils.h>
@@ -85,12 +84,6 @@ int main(int argc, char **argv) {
 	//create subscriber to tool position topic
 	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
 
-	
-	//create service clients
-	ros::ServiceClient client_tabletop_perception = n.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
-
-	ros::ServiceClient client_set_obstalces = n.serviceClient<segbot_arm_perception::SetObstacles>("segbot_arm_perception/set_obstacles");
-
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 	
@@ -110,41 +103,24 @@ int main(int argc, char **argv) {
 	pressEnter("Place an obstacles and press 'Enter'");
 	
 	//Step 4: call tabletop perception service to detect the object and table
-	segbot_arm_perception::TabletopPerception srv; 
-	if (client_tabletop_perception.call(srv))
-	{
-		ROS_INFO("[demo_obstacle_avoidance.cpp] Received Response from tabletop_object_detection_service");
-	}
-	else
-	{
-		ROS_ERROR("Failed to call service add_two_ints");
-		return 1;
-	}
+	segbot_arm_perception::TabletopPerception::Response tabletop_response = segbot_arm_manipulation::getTabletopScene(n);
 	
 	//check if plane was not found
-	if (srv.response.is_plane_found == false){
+	if (tabletop_response.is_plane_found == false){
 		ROS_ERROR("[demo_obstalce_avoidance.cpp] Table not found...aborting.");
 		ros::shutdown();
 		exit(1);
 	}
 	
 	//Step 5: compute the vector of clouds to be used as obstacles and send them to the obstacle manager node
-	segbot_arm_perception::SetObstacles srv_obstacles; 
-	srv_obstacles.request.clouds.push_back(srv.response.cloud_plane);
-	for (unsigned int i = 0; i < srv.response.cloud_clusters.size(); i++){
-		srv_obstacles.request.clouds.push_back(srv.response.cloud_clusters.at(i));
+	std::vector<sensor_msgs::PointCloud2> obstacle_clouds;
+	obstacle_clouds.push_back(tabletop_response.cloud_plane);
+	for (unsigned int i = 0; i < tabletop_response.cloud_clusters.size(); i++){
+		obstacle_clouds.push_back(tabletop_response.cloud_clusters.at(i));
 	}
 	
-	if (client_set_obstalces.call(srv_obstacles))
-	{
-		ROS_INFO("[demo_obstacle_avoidance.cpp] Obstacles set");
-	}
-	else
-	{
-		ROS_ERROR("Failed to call service segbot_arm_perception/set_obstacles");
-		return 1;
-	}
+	segbot_arm_manipulation::setArmObstacles(n,obstacle_clouds);
 	
-	//now, move the arm
+	//now, move the arm to the goal -- it should avoid the obstacles
 	moveit_utils::MicoMoveitCartesianPose::Response resp = segbot_arm_manipulation::moveToPoseMoveIt(n,goal_pose);
 }
