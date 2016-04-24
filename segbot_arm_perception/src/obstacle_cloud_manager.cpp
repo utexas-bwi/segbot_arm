@@ -155,7 +155,7 @@ int main (int argc, char** argv)
 	cloud_pub = nh.advertise<sensor_msgs::PointCloud2>(OBSTACLE_CLOUD_TOPIC, 1);
 
 	//service
-	ros::ServiceServer service = nh.advertiseService("set_obstacles", set_obstacles_cb);
+	ros::ServiceServer service = nh.advertiseService("segbot_arm_perception/set_obstacles", set_obstacles_cb);
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
