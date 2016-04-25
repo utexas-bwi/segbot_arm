@@ -216,7 +216,7 @@ void listenForGrasps(float rate){
 	}
 }
 
-
+/*
 
 void movePose(float d_z) {
   actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
@@ -286,6 +286,7 @@ void moveFinger(int finger_value) {
 
     ac.waitForResult();
 }
+*/
 
 double angular_difference(geometry_msgs::Quaternion c,geometry_msgs::Quaternion d){
 	Eigen::Vector4f dv;
@@ -443,6 +444,8 @@ bool acceptGrasp(GraspCartesianCommand gcc, PointCloudT::Ptr object, Eigen::Vect
 	return true;
 }
 
+
+/*
 bool moveToPose(geometry_msgs::PoseStamped g){
 	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 
@@ -460,7 +463,7 @@ bool moveToPose(geometry_msgs::PoseStamped g){
 	  ac.waitForResult();
 		
 	return true;
-}
+}*/
 
 moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs::PoseStamped p){
 	ros::ServiceClient ikine_client = n.serviceClient<moveit_msgs::GetPositionIK> ("/compute_ik");
@@ -567,6 +570,8 @@ void moveToJointState(const float* js){
  	}
 }*/
 
+
+/*
 void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 	//check if this is specified just for the arm
 	sensor_msgs::JointState q_target;
@@ -581,9 +586,7 @@ void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 	else 
 		q_target = target;
 	
-	/*ROS_INFO("Target joint state:");
-	ROS_INFO_STREAM(q_target);
-	pressEnter();*/
+	
 	
 	moveit_utils::AngularVelCtrl::Request	req;
 	moveit_utils::AngularVelCtrl::Response	resp;
@@ -603,51 +606,8 @@ void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
  	}
 	
 }
+* */
 
-void moveToPoseMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_target/*sensor_msgs::JointState q_target*/){
-	moveit_utils::MicoMoveitCartesianPose::Request 	req;
-	moveit_utils::MicoMoveitCartesianPose::Response res;
-	
-	req.target = p_target;
-	
-	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose> ("/mico_cartesianpose_service");
-	if(client.call(req, res)){
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(res);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}
-	
-	/*moveit::planning_interface::MoveGroup group("arm");
-    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;   
-    group.setPlanningTime(5.0); //10 second maximum for collision computation*/
-
-	
-	
-	/*moveit_utils::MicoMoveitJointPose::Request req;
-	moveit_utils::MicoMoveitJointPose::Response res;
-	*/
-	/*for(int i = 0; i < NUM_JOINTS_ARMONLY; i++){
-        switch(i) {
-            case 0  :    req.target.joint1 = q_target.position[0]; break;
-            case 1  :    req.target.joint2 = q_target.position[1]; break;
-            case 2  :    req.target.joint3 = q_target.position[2]; break;
-            case 3  :    req.target.joint4 = q_target.position[3]; break;
-            case 4  :    req.target.joint5 = q_target.position[4]; break;
-            case 5  :    req.target.joint6 = q_target.position[5]; break;
-        }
-	//ROS_INFO("Requested angle: %f", q_vals.at(i));
-    }
-	ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitJointPose> ("/mico_jointpose_service");
-	if(client.call(req, res)){
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(res);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}*/
-}
 
 void cartesianVelocityMove(double dx, double dy, double dz, double duration){
 	int rateHertz = 40;
@@ -706,7 +666,7 @@ void lift(ros::NodeHandle n, double x){
 	geometry_msgs::PoseStamped p_target = current_pose;
 	
 	p_target.pose.position.z += x;
-	moveToPoseMoveIt(n,p_target);
+	segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 }
 
 int main(int argc, char **argv) {
@@ -755,6 +715,7 @@ int main(int argc, char **argv) {
     char in;
 	
 	
+	
 	ROS_INFO("Demo starting...move the arm to a position where it is not occluding the table.");
 	pressEnter();
 	
@@ -764,31 +725,18 @@ int main(int argc, char **argv) {
 	joint_state_outofview = current_state;
 	pose_outofview = current_pose;
 	
-	//open fingers
-	//moveFinger(100);
+
 	segbot_arm_manipulation::openHand();
-
-
 	
-	//step 1: query table_object_detection_node to segment the blobs on the table
-	ros::ServiceClient client_tabletop_perception = n.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
-	segbot_arm_perception::TabletopPerception srv; //the srv request is just empty
-	if (client_tabletop_perception.call(srv))
-	{
-		ROS_INFO("[agile_grasp_demo.cpp] Received Response from tabletop_object_detection_service");
-	}
-	else
-	{
-		ROS_ERROR("Failed to call service add_two_ints");
-		return 1;
-	}
+	segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
+	
 	
 	//step 2: extract the data from the response
 	detected_objects.clear();
-	for (unsigned int i = 0; i < srv.response.cloud_clusters.size(); i++){
+	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
 		PointCloudT::Ptr object_i (new PointCloudT);
 		pcl::PCLPointCloud2 pc_i;
-		pcl_conversions::toPCL(srv.response.cloud_clusters.at(i),pc_i);
+		pcl_conversions::toPCL(table_scene.cloud_clusters.at(i),pc_i);
 		pcl::fromPCLPointCloud2(pc_i,*object_i);
 		detected_objects.push_back(object_i);
 	}
@@ -800,7 +748,7 @@ int main(int argc, char **argv) {
 	
 	Eigen::Vector4f plane_coef_vector;
 	for (int i = 0; i < 4; i ++)
-		plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
+		plane_coef_vector(i)=table_scene.cloud_plane_coef[i];
 	
 	//step 3: select which object to grasp
 	int selected_object = selectObjectToGrasp(detected_objects);
@@ -829,7 +777,8 @@ int main(int argc, char **argv) {
 	double hand_offset_approach = -0.13;
 	
 	//wait for transform from visual space to arm space
-	listener.waitForTransform(cloud_ros.header.frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
+	ROS_INFO("Waiting for transform...");
+	listener.waitForTransform(cloud_ros.header.frame_id, "mico_link_base", ros::Time(0), ros::Duration(5.0));
 	
 	std::vector<GraspCartesianCommand> grasp_commands;
 	std::vector<geometry_msgs::PoseStamped> poses;
@@ -900,8 +849,10 @@ int main(int argc, char **argv) {
 	pose_pub.publish(grasp_commands.at(min_diff_index).approach_pose);
 	ROS_INFO_STREAM(grasp_commands.at(min_diff_index).approach_q);
 	pressEnter();
-	moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
-	moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
+	
+	
+	segbot_arm_manipulation::moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
+	segbot_arm_manipulation::moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
 	
 	
 	//pressEnter();
@@ -916,7 +867,7 @@ int main(int argc, char **argv) {
 	/*std::cout << "Press '1' to move to approach pose or Ctrl-z to quit..." << std::endl;		
 	std::cin >> in;*/
 	
-	moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
+	segbot_arm_manipulation::moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).grasp_pose);
 	spinSleep(3.0);
 	
 	//listenForArmData(30.0);
@@ -924,7 +875,7 @@ int main(int argc, char **argv) {
 	//pressEnter();
 	
 	//moveFinger(7200);
-	segbot_arm_manipulation::openHand();
+	segbot_arm_manipulation::closeHand();
 	
 	//lift for a while
 	//pressEnter();
@@ -940,10 +891,13 @@ int main(int argc, char **argv) {
 	//MOVE BACK
 	lift(n,0.05); 
 	
-	moveToPoseMoveIt(n,pose_outofview);
-	moveToPoseMoveIt(n,pose_outofview);
+	//moveToPoseMoveIt(n,pose_outofview);
+	//moveToPoseMoveIt(n,pose_outofview);
 
-	//moveToJointState(n,joint_state_outofview);
+	segbot_arm_manipulation::homeArm(n);
+
+	segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
+	segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
 	
 	//moveToJointState(home_position_approach);
 	//moveToJointState(home_position);

@@ -678,7 +678,7 @@ int main(int argc, char **argv) {
 		//pressEnter();
 		
 		//now lower into the box
-		abovePoseR.pose.position.z -= 0.27;	
+		abovePoseR.pose.position.z -= 0.24;	
 		moveToPoseCarteseanVelocity(abovePoseR,0.7,4.0,0.5);
 		ROS_INFO("Moving up a bit");
 		//pressEnter();
