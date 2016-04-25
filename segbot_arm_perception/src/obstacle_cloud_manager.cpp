@@ -58,6 +58,8 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 //the publisher for the obstacle cloud
 ros::Publisher cloud_pub;
 
+tf::TransformListener *tf_listener;
+
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -79,7 +81,6 @@ bool set_obstacles_cb(segbot_arm_perception::SetObstacles::Request &req, segbot_
 	
 	std::string output_frame_id;
 	
-	tf::TransformListener tf_listener;
 	tf::StampedTransform transform;
 	
 	for (unsigned int i = 0; i < req.clouds.size(); i ++){
@@ -101,11 +102,11 @@ bool set_obstacles_cb(segbot_arm_perception::SetObstacles::Request &req, segbot_
 			sensor_msgs::convertPointCloud2ToPointCloud(req.clouds[i],cloud_i_pc1);
 			
 			//listen for transform to output frame id
-			tf_listener.waitForTransform(frame_id_i, DEFAULT_FRAME_ID, ros::Time::now(), ros::Duration(3.0)); 
+			tf_listener->waitForTransform(frame_id_i, DEFAULT_FRAME_ID, ros::Time(0.0), ros::Duration(3.0)); 
 		
 			//transform the converted sensor_msgs::PointCloud to the target frame id
 			sensor_msgs::PointCloud transformed_cloiud_i;
-			tf_listener.transformPointCloud(DEFAULT_FRAME_ID,cloud_i_pc1,transformed_cloiud_i);	
+			tf_listener->transformPointCloud(DEFAULT_FRAME_ID,cloud_i_pc1,transformed_cloiud_i);	
 			
 			//convert back to sensor_msgs::PointCloud2
 			sensor_msgs::convertPointCloudToPointCloud2(transformed_cloiud_i,cloud_i_pc2);
@@ -159,6 +160,8 @@ int main (int argc, char** argv)
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
+
+	tf_listener =  new tf::TransformListener();
 
 	ros::spin();
 	
