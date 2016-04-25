@@ -14,6 +14,6 @@
   -->
   
   <!-- Instead of the above, just comment out this line instead-->
-  <rosparam command="load" file="$(find mico_moveit_fullsegbot_config)/config/sensors_obstacles.yaml" />
+  <!--<rosparam command="load" file="$(find mico_moveit_fullsegbot_config)/config/sensors_obstacles.yaml" />-->
   
 </launch>
