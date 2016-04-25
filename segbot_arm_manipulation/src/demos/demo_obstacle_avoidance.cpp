@@ -98,29 +98,66 @@ int main(int argc, char **argv) {
 	
 	//Step 2: move the arm to the start position
 	pressEnter("Move the arm to the start position and press 'Enter'");
+	//update the arm's position
+	listenForArmData();
+	geometry_msgs::PoseStamped start_pose = current_pose;
 	
-	//Step 3: ask user to place an obstacle on the table between the two positions
-	pressEnter("Place an obstacles and press 'Enter'");
 	
-	//Step 4: call tabletop perception service to detect the object and table
-	segbot_arm_perception::TabletopPerception::Response tabletop_response = segbot_arm_manipulation::getTabletopScene(n);
+	while (ros::ok()){
 	
-	//check if plane was not found
-	if (tabletop_response.is_plane_found == false){
-		ROS_ERROR("[demo_obstalce_avoidance.cpp] Table not found...aborting.");
-		ros::shutdown();
-		exit(1);
+		//Step 3: ask user to place an obstacle on the table between the two positions
+		pressEnter("Place an obstacle and press 'Enter'");
+		
+		//Step 4: call tabletop perception service to detect the object and table
+		segbot_arm_perception::TabletopPerception::Response tabletop_response = segbot_arm_manipulation::getTabletopScene(n);
+		
+		//check if plane was not found
+		/*if (tabletop_response.is_plane_found == false){
+			ROS_ERROR("[demo_obstalce_avoidance.cpp] Table not found...aborting.");
+			ros::shutdown();
+			exit(1);
+		}*/
+		
+		ROS_INFO("Found %i objects on the table.",(int)tabletop_response.cloud_clusters.size());
+		
+		//Step 5: compute the vector of clouds to be used as obstacles and send them to the obstacle manager node
+		std::vector<sensor_msgs::PointCloud2> obstacle_clouds;
+		obstacle_clouds.push_back(tabletop_response.cloud_plane);
+		for (unsigned int i = 0; i < tabletop_response.cloud_clusters.size(); i++){
+			obstacle_clouds.push_back(tabletop_response.cloud_clusters.at(i));
+		}
+		
+		segbot_arm_manipulation::setArmObstacles(n,obstacle_clouds);
+		
+		//now, move the arm to the goal -- it should avoid the obstacles
+		moveit_utils::MicoMoveitCartesianPose::Response resp = segbot_arm_manipulation::moveToPoseMoveIt(n,goal_pose);
+		
+		//Step 3: ask user to place an obstacle on the table between the two positions
+		pressEnter("Place or remove an obstacle and press 'Enter'");
+		
+		//Step 4: call tabletop perception service to detect the object and table
+		tabletop_response = segbot_arm_manipulation::getTabletopScene(n);
+		
+		//check if plane was not found
+		/*if (tabletop_response.is_plane_found == false){
+			ROS_ERROR("[demo_obstalce_avoidance.cpp] Table not found...aborting.");
+			ros::shutdown();
+			exit(1);
+		}*/
+		
+		ROS_INFO("Found %i objects on the table.",(int)tabletop_response.cloud_clusters.size());
+		
+		//Step 5: compute the vector of clouds to be used as obstacles and send them to the obstacle manager node
+		obstacle_clouds.clear();
+		obstacle_clouds.push_back(tabletop_response.cloud_plane);
+		for (unsigned int i = 0; i < tabletop_response.cloud_clusters.size(); i++){
+			obstacle_clouds.push_back(tabletop_response.cloud_clusters.at(i));
+		}
+		
+		//now, move the arm to the goal -- it should avoid the obstacles
+		moveit_utils::MicoMoveitCartesianPose::Response resp2 = segbot_arm_manipulation::moveToPoseMoveIt(n,start_pose);
+		
+	
+	
 	}
-	
-	//Step 5: compute the vector of clouds to be used as obstacles and send them to the obstacle manager node
-	std::vector<sensor_msgs::PointCloud2> obstacle_clouds;
-	obstacle_clouds.push_back(tabletop_response.cloud_plane);
-	for (unsigned int i = 0; i < tabletop_response.cloud_clusters.size(); i++){
-		obstacle_clouds.push_back(tabletop_response.cloud_clusters.at(i));
-	}
-	
-	segbot_arm_manipulation::setArmObstacles(n,obstacle_clouds);
-	
-	//now, move the arm to the goal -- it should avoid the obstacles
-	moveit_utils::MicoMoveitCartesianPose::Response resp = segbot_arm_manipulation::moveToPoseMoveIt(n,goal_pose);
 }
