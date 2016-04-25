@@ -11,6 +11,7 @@
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
+#include "jaco_msgs/HomeArm.h"
 
 #include <moveit_utils/AngularVelCtrl.h>
 #include <moveit_utils/MicoMoveitJointPose.h>
@@ -28,8 +29,19 @@ const std::string jaco_pose_topic = "/mico_arm_driver/arm_pose/arm_pose";
 
 #define OPEN_FINGER_VALUE 100
 #define CLOSED_FINGER_VALUE 7200
+#define NUM_JOINTS 8
 
 namespace segbot_arm_manipulation {
+	
+	void homeArm(ros::NodeHandle n){
+		ros::ServiceClient home_client = n.serviceClient<jaco_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
+	
+		jaco_msgs::HomeArm srv;
+		if(home_client.call(srv))
+			ROS_INFO("Homing arm");
+		else
+			ROS_INFO("Cannot contact homing service. Is it running?");
+	}
 	
 	segbot_arm_perception::TabletopPerception::Response getTabletopScene(ros::NodeHandle n){
 		
@@ -84,6 +96,43 @@ namespace segbot_arm_manipulation {
 		}
 		
 		return res;
+	}
+	
+	void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
+		//check if this is specified just for the arm
+		sensor_msgs::JointState q_target;
+		if (target.position.size() > NUM_JOINTS){
+			//in this case, the first four values are for the base joints
+			for (int i = 4; i < target.position.size(); i ++){
+				q_target.position.push_back(target.position.at(i));
+				q_target.name.push_back(target.name.at(i));
+			}
+			q_target.header = target.header;
+		}
+		else 
+			q_target = target;
+		
+		/*ROS_INFO("Target joint state:");
+		ROS_INFO_STREAM(q_target);
+		pressEnter();*/
+		
+		moveit_utils::AngularVelCtrl::Request	req;
+		moveit_utils::AngularVelCtrl::Response	resp;
+		
+		ros::ServiceClient ikine_client = n.serviceClient<moveit_utils::AngularVelCtrl> ("/angular_vel_control");
+		
+		req.state = q_target;
+		
+		
+		
+		if(ikine_client.call(req, resp)){
+			ROS_INFO("Call successful. Response:");
+			ROS_INFO_STREAM(resp);
+		} else {
+			ROS_ERROR("Call failed. Terminating.");
+			//ros::shutdown();
+		}
+		
 	}
 	
 	void moveToPoseJaco(geometry_msgs::PoseStamped g){
