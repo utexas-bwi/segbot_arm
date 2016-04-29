@@ -31,7 +31,54 @@ const std::string jaco_pose_topic = "/mico_arm_driver/arm_pose/arm_pose";
 #define CLOSED_FINGER_VALUE 7200
 #define NUM_JOINTS 8
 
+#define PI 3.14159265
+
+
+std::string arm_joint_names [] = {"mico_joint_1","mico_joint_2", "mico_joint_3", "mico_joint_4", 
+	"mico_joint_5", "mico_joint_6", "mico_joint_finger_1", "mico_joint_finger_2"};
+
+
 namespace segbot_arm_manipulation {
+	
+	std::vector<double> getJointAngleDifferences(sensor_msgs::JointState A, sensor_msgs::JointState B){
+		std::vector<double> result;
+		
+		for (unsigned int i = 0; i < A.position.size(); i++){
+			//check if this is a mico arm joint or not
+			bool is_arm_joint = false;
+			for (int k = 0; k < NUM_JOINTS;k++){
+				if (A.name[i] == arm_joint_names[k]){
+					is_arm_joint = true;
+					break;
+				}
+			}
+			
+			if (is_arm_joint){
+				
+				if (A.name[i] == "mico_joint_2" || A.name[i] == "mico_joint_3")
+					result.push_back(fabs(A.position[i]-B.position[i]));
+				else {
+					if (B.position[i] > A.position[i]){
+						if ( B.position[i] - A.position[i] < A.position[i] + 2*PI - B.position[i])
+							result.push_back(fabs(B.position[i]-A.position[i]));					
+						else
+							result.push_back(fabs(2*PI - B.position[i] + A.position[i]));
+					}
+					else {
+						if ( A.position[i] - B.position[i] > B.position[i] + 2*PI - A.position[i])
+							result.push_back(fabs(B.position[i] + 2*PI - A.position[i]));
+						else 
+							result.push_back(fabs(A.position[i] - B.position[i]));
+					}
+					
+				}
+				
+				
+			}
+		}
+		
+		return result;
+	}
 	
 	void homeArm(ros::NodeHandle n){
 		ros::ServiceClient home_client = n.serviceClient<jaco_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
