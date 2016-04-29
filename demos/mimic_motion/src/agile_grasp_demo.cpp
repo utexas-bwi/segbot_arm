@@ -107,6 +107,11 @@ bool g_caught_sigint=false;
 //some defines related to filtering candidate grasps
 #define MAX_DISTANCE_TO_PLANE 0.075
 
+//used when deciding whether a pair of an approach pose and a grasp pose are good;
+//if the angular difference in joint space is too big, this means that the robot 
+//cannot directly go from approach to grasp pose (so we filter those pairs out)
+#define ANGULAR_DIFF_THRESHOLD 3.0
+
 sensor_msgs::JointState current_state;
 sensor_msgs::JointState current_effort;
 jaco_msgs::FingerPosition current_finger;
@@ -477,7 +482,7 @@ moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs:
 	/* Call the service */
 	if(ikine_client.call(ikine_request, ikine_response)){
 		ROS_INFO("IK service call success:");
-		ROS_INFO_STREAM(ikine_response);
+		//ROS_INFO_STREAM(ikine_response);
 	} else {
 		ROS_INFO("IK service call FAILED. Exiting");
 	}
@@ -802,13 +807,31 @@ int main(int argc, char **argv) {
 				moveit_msgs::GetPositionIK::Response  ik_response_grasp = computeIK(n,gc_i.grasp_pose);
 		
 				if (ik_response_grasp.error_code.val == 1){
-					//store the IK results
-					gc_i.approach_q = ik_response_approach.solution.joint_state;
-					gc_i.grasp_q = ik_response_grasp.solution.joint_state;
 					
-					grasp_commands.push_back(gc_i);
-					poses.push_back(p_grasp_i);
-					poses_msg.poses.push_back(gc_i.approach_pose.pose);
+					
+					//now check to see how close the two sets of joint angles are
+					std::vector<double> D = segbot_arm_manipulation::getJointAngleDifferences(ik_response_approach.solution.joint_state, ik_response_grasp.solution.joint_state );
+					
+					double sum_d = 0;
+					for (int p = 0; p < D.size(); p++){
+						sum_d += D[p];
+					}
+				
+					
+					if (sum_d < ANGULAR_DIFF_THRESHOLD){
+						ROS_INFO("Angle diffs for grasp %i: %f, %f, %f, %f, %f, %f",(int)grasp_commands.size(),D[0],D[1],D[2],D[3],D[4],D[5]);
+						
+						ROS_INFO("Sum diff: %f",sum_d);
+					
+					
+						//store the IK results
+						gc_i.approach_q = ik_response_approach.solution.joint_state;
+						gc_i.grasp_q = ik_response_grasp.solution.joint_state;
+						
+						grasp_commands.push_back(gc_i);
+						poses.push_back(p_grasp_i);
+						poses_msg.poses.push_back(gc_i.approach_pose.pose);
+					}
 				}
 			}
 		}
@@ -841,6 +864,9 @@ int main(int argc, char **argv) {
 		ROS_WARN("No feasible grasps found, aborting.");
 		return 0;
 	}
+	else {
+		ROS_INFO("Picking grasp %i...",min_diff_index);
+	}
 
 	pose_array_pub.publish(poses_msg);
 
@@ -850,8 +876,20 @@ int main(int argc, char **argv) {
 	ROS_INFO_STREAM(grasp_commands.at(min_diff_index).approach_q);
 	pressEnter();
 	
+	//set obstacle avoidance
+	/*std::vector<sensor_msgs::PointCloud2> obstacle_clouds;
+	obstacle_clouds.push_back(cloud_ros);
+	segbot_arm_manipulation::setArmObstacles(n,obstacle_clouds);*/
+	
 	
 	segbot_arm_manipulation::moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
+	
+	
+	//clear obstacles for final approach
+	/*obstacle_clouds.clear();
+	obstacle_clouds.push_back(table_scene.cloud_plane);
+	segbot_arm_manipulation::setArmObstacles(n,obstacle_clouds);*/
+	
 	segbot_arm_manipulation::moveToPoseMoveIt(n,grasp_commands.at(min_diff_index).approach_pose);
 	
 	
