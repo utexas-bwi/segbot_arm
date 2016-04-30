@@ -158,6 +158,8 @@ add_executable(demo_obstacle_avoidance src/demos/demo_obstacle_avoidance.cpp)
 target_link_libraries(demo_obstacle_avoidance ${catkin_LIBRARIES} )
 add_dependencies(demo_obstacle_avoidance jaco_msgs_gencpp)
 
+add_executable(demo_grasp_action_client src/demos/demo_grasp_action_client.cpp)
+target_link_libraries(demo_grasp_action_client ${catkin_LIBRARIES} )
 
 
 ## Declare a cpp executable

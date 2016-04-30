@@ -13,6 +13,8 @@
 #include "jaco_msgs/ArmJointAnglesAction.h"
 #include "jaco_msgs/HomeArm.h"
 
+#include <moveit_msgs/GetPositionIK.h>
+
 #include <moveit_utils/AngularVelCtrl.h>
 #include <moveit_utils/MicoMoveitJointPose.h>
 #include <moveit_utils/MicoMoveitCartesianPose.h>
@@ -106,6 +108,24 @@ namespace segbot_arm_manipulation {
 		}
 	}
 	
+	moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs::PoseStamped p){
+		
+		ros::ServiceClient ikine_client = n.serviceClient<moveit_msgs::GetPositionIK> ("/compute_ik");
+		
+		
+		moveit_msgs::GetPositionIK::Request ikine_request;
+		moveit_msgs::GetPositionIK::Response ikine_response;
+		ikine_request.ik_request.group_name = "arm";
+		ikine_request.ik_request.pose_stamped = p;
+		
+		/* Call the service */
+		if(ikine_client.call(ikine_request, ikine_response)){
+			return ikine_response;
+		} else {
+			ROS_ERROR("IK service call FAILED. Exiting");
+			return ikine_response;
+		}
+	};
 	
 	bool setArmObstacles(ros::NodeHandle n, std::vector<sensor_msgs::PointCloud2> clouds){
 		ros::ServiceClient client_set_obstalces = n.serviceClient<segbot_arm_perception::SetObstacles>("segbot_arm_perception/set_obstacles");

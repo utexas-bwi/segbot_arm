@@ -6,6 +6,7 @@ int32 target_object_cluster_index
 ---
 # Result
 bool success
+string error_msg
 ---
 # Feedback
 bool status
