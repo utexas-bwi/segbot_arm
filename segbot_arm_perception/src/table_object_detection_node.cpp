@@ -62,6 +62,9 @@ sensor_msgs::PointCloud2 cloud_ros;
 
 ros::Publisher cloud_pub;
 
+ros::Publisher cloud_costmap_pub;
+PointCloudT::Ptr cloud_costmap (new PointCloudT);
+
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
 
@@ -390,7 +393,11 @@ int main (int argc, char** argv)
 	ros::Subscriber sub = nh.subscribe (param_topic, 1, cloud_cb);
 
 	//debugging publisher
-	cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("table_object_detection_node/cloud", 10);
+	cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("table_object_detection_node/cloud", 1);
+
+	//publisher for cost map cloud
+	cloud_costmap_pub = nh.advertise<sensor_msgs::PointCloud2>("/xtion_obstacle_cloud", 1);
+
 
 	//service
 	ros::ServiceServer service = nh.advertiseService("tabletop_object_detection_service", seg_cb);
@@ -410,7 +417,19 @@ int main (int argc, char** argv)
 	{
 		//collect messages
 		ros::spinOnce();
+		
+		//publish cloud for obstacle avoidance for the base
+		pcl::PassThrough<PointT> pass;
+		pass.setInputCloud (cloud);
+		pass.setFilterFieldName ("z");
+		pass.setFilterLimits (0.4, 1.15);
+		pass.filter (*cloud_costmap);
+		
+		pcl::toROSMsg(*cloud_costmap,cloud_ros);
+		cloud_ros.header.frame_id = cloud->header.frame_id;
+		cloud_costmap_pub.publish(cloud_ros);
 
+		//sleep to maintain framerate
 		r.sleep();
 
 	}
