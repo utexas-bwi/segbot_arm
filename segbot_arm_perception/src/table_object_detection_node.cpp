@@ -422,7 +422,7 @@ int main (int argc, char** argv)
 		pcl::PassThrough<PointT> pass;
 		pass.setInputCloud (cloud);
 		pass.setFilterFieldName ("z");
-		pass.setFilterLimits (0.4, 1.15);
+		pass.setFilterLimits (0.6, 1.45);
 		pass.filter (*cloud_costmap);
 		
 		pcl::toROSMsg(*cloud_costmap,cloud_ros);
