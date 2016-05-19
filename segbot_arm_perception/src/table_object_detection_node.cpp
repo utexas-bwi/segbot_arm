@@ -61,6 +61,7 @@ std::vector<PointCloudT::Ptr > clusters_on_plane;
 sensor_msgs::PointCloud2 cloud_ros;
 
 ros::Publisher cloud_pub;
+ros::Publisher table_cloud_pub;
 
 ros::Publisher cloud_costmap_pub;
 PointCloudT::Ptr cloud_costmap (new PointCloudT);
@@ -275,12 +276,16 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	waitForCloudK(15);
 	cloud = cloud_aggregated;
 
+	double filter_z = 1.15;
+	if (req.override_filter_z){
+		filter_z = req.filter_z_value;
+	}
 
 	// Apply z filter -- we don't care for anything X m away in the z direction
 	pcl::PassThrough<PointT> pass;
 	pass.setInputCloud (cloud);
 	pass.setFilterFieldName ("z");
-	pass.setFilterLimits (0.0, 1.15);
+	pass.setFilterLimits (0.0, filter_z);
 	pass.filter (*cloud);
 	
 	// Create the filtering object: downsample the dataset using a leaf size of 1cm
@@ -364,6 +369,9 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 		res.cloud_clusters.push_back(cloud_ros);
 	}
 	
+	//TO DO: this may not always be the case
+	res.is_plane_found = true;
+	
 	//for debugging purposes
 	//now, put the clouds in cluster_on_plane in one cloud and publish it
 	cloud_blobs->clear();
@@ -376,6 +384,10 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	pcl::toROSMsg(*cloud_blobs,cloud_ros);
 	cloud_ros.header.frame_id = cloud->header.frame_id;
 	cloud_pub.publish(cloud_ros);
+	
+	pcl::toROSMsg(*cloud_plane,cloud_ros);
+	cloud_ros.header.frame_id = cloud->header.frame_id;
+	table_cloud_pub.publish(cloud_ros);
 	
 
 	
@@ -394,6 +406,7 @@ int main (int argc, char** argv)
 
 	//debugging publisher
 	cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("table_object_detection_node/cloud", 1);
+	table_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("table_object_detection_node/plane_cloud", 1);
 
 	//publisher for cost map cloud
 	cloud_costmap_pub = nh.advertise<sensor_msgs::PointCloud2>("/xtion_obstacle_cloud", 1);
@@ -419,15 +432,25 @@ int main (int argc, char** argv)
 		ros::spinOnce();
 		
 		//publish cloud for obstacle avoidance for the base
-		pcl::PassThrough<PointT> pass;
+		
+		//pass through filter
+		/*pcl::PassThrough<PointT> pass;
 		pass.setInputCloud (cloud);
 		pass.setFilterFieldName ("z");
 		pass.setFilterLimits (0.6, 1.45);
 		pass.filter (*cloud_costmap);
 		
+		//voxel grid filter
+		pcl::VoxelGrid<PointT> vg;
+		vg.setInputCloud (cloud_costmap);
+		vg.setLeafSize (0.05f, 0.05f, 0.05f);
+		vg.filter (*cloud_costmap);
+		
+		
+		
 		pcl::toROSMsg(*cloud_costmap,cloud_ros);
 		cloud_ros.header.frame_id = cloud->header.frame_id;
-		cloud_costmap_pub.publish(cloud_ros);
+		cloud_costmap_pub.publish(cloud_ros);*/
 
 		//sleep to maintain framerate
 		r.sleep();

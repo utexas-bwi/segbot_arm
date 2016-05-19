@@ -1,3 +1,5 @@
+bool override_filter_z
+float32 filter_z_value
 ---
 bool is_plane_found
 sensor_msgs/PointCloud2 cloud_plane
