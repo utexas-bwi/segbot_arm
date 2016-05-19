@@ -149,6 +149,9 @@ target_link_libraries(candy_demo ${catkin_LIBRARIES} )
 add_dependencies(candy_demo jaco_msgs_gencpp)
 
 
+add_executable(approach_table_demo src/approach_table_demo.cpp)
+target_link_libraries(approach_table_demo ${catkin_LIBRARIES} )
+
 
 ## Declare a cpp executable
 #add_executable(agile_grasp_demo_nari src/agile_grasp_demo_nari.cpp)
