@@ -170,7 +170,6 @@ public:
 	//subscriber for grasps
 	ros::Subscriber sub_grasps = nh_.subscribe("/find_grasps/grasps_handles",1, &TabletopGraspActionServer::grasps_cb,this);  
 	  
-
 	//publish velocities
 	pub_velocity = nh_.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
@@ -407,35 +406,10 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "segbot_arm_grasp_action_server");
 
-  TabletopGraspActionServer fibonacci(ros::this_node::getName());
+  TabletopGraspActionServer as(ros::this_node::getName());
   ros::spin();
 
   return 0;
 }
 
 
-/*int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "segbot_arm_manipulation_node");
-    ros::NodeHandle nh("~");
-    boost::recursive_mutex api_mutex;
-
-    bool is_first_init = true;
-    while (ros::ok())
-    {
-        try
-        {
-			TabletopGraspServer grasp_server(nh);
-			
-            ros::spin();
-        }
-        catch(const std::exception& e)
-        {
-            ROS_ERROR_STREAM(e.what());
-            ros::Duration(1.0).sleep();
-        }
-
-        is_first_init = false;
-    }
-    return 0;
-}*/
