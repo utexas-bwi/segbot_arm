@@ -15,6 +15,34 @@
 
 #define NUM_JOINTS 8 //6+2 for the arm
 
+//mico joint state safe
+//-2.3321322971114142, -1.6372086401627464, -0.28393691436045176, -2.164605083475533, 0.7496982226688764, 4.682638807847723
+
+/* tool pose side
+	position: 
+		x: 0.117240786552
+		y: -0.301719456911
+		z: 0.239926770329
+	  orientation: 
+		x: 0.51289595084
+		y: 0.484664185494
+		z: 0.517808228151
+		w: 0.483645541456
+
+	tool pose safe
+		
+	x: -0.157769784331
+    y: -0.136029005051
+    z: 0.376786500216
+  orientation: 
+    x: 0.994340247286
+    y: 0.0977247708014
+    z: 0.005313327657
+    w: 0.0413413878465
+
+
+*/
+
 //global variables for storing data
 sensor_msgs::JointState current_state;
 bool heardJoinstState;
@@ -95,6 +123,14 @@ void lift(ros::NodeHandle n, double x){
 	segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 }
 
+void goToSafePose(ros::NodeHandle n){
+	geometry_msgs::PoseStamped pose_st;
+	pose_st.header.stamp = ros::Time(0);
+	pose_st.header.frame_id = "mico_link_base";
+	
+	
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "demo_grasp_action_client");
@@ -123,6 +159,9 @@ int main(int argc, char **argv) {
 	
 	
 	while (ros::ok()){
+	
+		//move the arm to side view
+	
 	
 		//get the table scene
 		segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
@@ -157,10 +196,15 @@ int main(int argc, char **argv) {
 		}
 		grasp_goal.target_object_cluster_index = largest_pc_index;
 		
+		sleep(3.0);
+		
 		//send the goal
+		ROS_INFO("Sending goal to action server...");
 		ac.sendGoal(grasp_goal);
 		
 		//block until the action is completed
+		ROS_INFO("Waiting for result...");
+		
 		ac.waitForResult();
 		
 		//lift and lower the object a bit, let it go and move back

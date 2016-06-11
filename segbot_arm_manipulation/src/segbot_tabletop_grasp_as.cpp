@@ -184,6 +184,7 @@ public:
 	cloud_pub = nh_.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud_debug", 10);
 	cloud_grasp_pub = nh_.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud", 10);
 	
+    ROS_INFO("Starting grasp action server...");
     
     as_.start();
   }
@@ -219,6 +220,7 @@ public:
 	}
 
 	void grasps_cb(const agile_grasp::Grasps &msg){
+		ROS_INFO("Heard grasps!");
 		current_grasps = msg;
 		heardGrasps = true;
 	}
@@ -240,11 +242,13 @@ public:
 		
 	void listenForGrasps(float rate){
 		ros::Rate r(rate);
+		heardGrasps = false;
 		while (ros::ok()){
 			ros::spinOnce();
 			if (heardGrasps)
 				return;
 			r.sleep();
+			ROS_INFO("Listening for grasps...");
 		}
 	}
 	
@@ -274,6 +278,9 @@ public:
 	
 	void executeCB(const segbot_arm_manipulation::TabletopGraspGoalConstPtr &goal)
 	{
+		
+		ROS_INFO("Received action request...proceeding.");
+		listenForArmData(40.0);
 		//declare some variables
 		sensor_msgs::PointCloud2 cloud_ros;
 
@@ -295,7 +302,7 @@ public:
 		cloud_grasp_pub.publish(goal->cloud_clusters.at(goal->target_object_cluster_index));
 		
 		//wait for response at 5 Hz
-		listenForGrasps(5.0);
+		listenForGrasps(40.0);
 		
 		ROS_INFO("[segbot_tabletop_grasp_as.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
