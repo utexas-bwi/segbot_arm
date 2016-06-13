@@ -169,6 +169,9 @@ target_link_libraries(touch_detect_tabletop_demo ${catkin_LIBRARIES} )
 add_dependencies(touch_detect_tabletop_demo jaco_msgs_gencpp)
 
 
+add_executable(grasp_and_verify src/grasp_and_verify.cpp)
+target_link_libraries(grasp_and_verify ${catkin_LIBRARIES} )
+
 ## Declare a cpp executable
 #add_executable(press_object_demo src/press_object_demo.cpp)
 #target_link_libraries(press_object_demo ${catkin_LIBRARIES} )

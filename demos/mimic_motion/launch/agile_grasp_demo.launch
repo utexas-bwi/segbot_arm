@@ -6,6 +6,11 @@
 	</node>
 	
 	
+	<!-- launch node for computing features from point clouds -->
+	<node name="pointcloud_feature_server" pkg="segbot_arm_perception" type="pointcloud_feature_server" output="screen">
+	</node>
+	
+	
 	<!-- launch agile grasp -->
 	
 	<node name="find_grasps" pkg="agile_grasp" type="find_grasps" output="screen">
