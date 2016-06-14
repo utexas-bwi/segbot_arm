@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<robot name="dynamixel_arm">
+  <link name="base_link">
+    <visual>
+        <geometry>
+          <box size=".032 .038 .050"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 .8 1"/>
+      </material>
+    <origin xyz=".019 .016 .025"/>
+    </visual>
+  </link>
+  
+  <link name="link1_spindle">
+    <visual>
+      <geometry>
+        <cylinder length=".04" radius=".004"/>
+      </geometry>
+      <material name="white">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+  </link>
+ 
+  <joint name="base_to_spindle" type="fixed">
+    <parent link="base_link"/>
+    <child link="link1_spindle"/>
+    <origin rpy="1.57075 0 0" xyz="0.019 .016 .0385"/>
+  </joint>
+ 
+  <link name="link_1">
+    <visual>
+      <geometry>
+        <cylinder length=".003" radius=".008"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+  </link>
+    
+  <joint name="spindle_to_joint1" type="revolute">
+    <parent link="link1_spindle"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000.0" lower="-1.57" upper="1.57" velocity="1.00"/>
+    <child link="link_1"/>
+    <origin xyz="0 0 0.020"/>
+  </joint> 
+
+</robot>
