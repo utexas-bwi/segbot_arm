@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<robot name="dynamixel_arm">
+  <link name="base_link">
+    <visual>
+        <geometry>
+            <mesh filename="package://dynamixel_arm/urdf/mesh/ax12_box.dae"/>    
+      </geometry>
+    <origin rpy="1.57075 0 0" xyz="0 0 0"/>
+    </visual>
+  </link>
+
+  <link name="wheel">
+    <visual>
+        <geometry>
+            <mesh filename="package://dynamixel_arm/urdf/mesh/ax12_wheel.dae"/>
+        </geometry>
+        <origin xyz="0 -.01675 .01575"/>
+    </visual>
+  </link>
+
+  <joint name="joint_1" type="fixed">
+      <parent link="base_link"/>
+      <!--<axis xyz="1 0 0"/>
+      <limit effort="1000.0" lower="-1.57" upper="1.57" velocity="1.00"/>
+      --><child link="wheel"/>
+  </joint>
+</robot>
