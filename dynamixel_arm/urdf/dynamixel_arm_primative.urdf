@@ -3,7 +3,7 @@
   <link name="base_link">
     <visual>
         <geometry>
-          <box size=".032 .038 .050"/>
+          <box size=".032 .032 .050"/>
       </geometry>
       <material name="blue">
         <color rgba="0 0 .8 1"/>
@@ -12,7 +12,7 @@
     </visual>
   </link>
   
-  <link name="link1_spindle">
+  <link name="link_1_spindle">
     <visual>
       <geometry>
         <cylinder length=".04" radius=".004"/>
@@ -25,25 +25,129 @@
  
   <joint name="base_to_spindle" type="fixed">
     <parent link="base_link"/>
-    <child link="link1_spindle"/>
+    <child link="link_1_spindle"/>
     <origin rpy="1.57075 0 0" xyz="0.019 .016 .0385"/>
   </joint>
  
   <link name="link_1">
     <visual>
       <geometry>
-        <cylinder length=".003" radius=".008"/>
+        <cylinder length=".005" radius=".0115"/>
       </geometry>
       <material name="white"/>
     </visual>
   </link>
     
-  <joint name="spindle_to_joint1" type="revolute">
-    <parent link="link1_spindle"/>
+  <joint name="spindle_to_joint_1" type="revolute">
+    <parent link="link_1_spindle"/>
     <axis xyz="0 0 1"/>
     <limit effort="1000.0" lower="-1.57" upper="1.57" velocity="1.00"/>
     <child link="link_1"/>
-    <origin xyz="0 0 0.020"/>
+    <origin xyz="0 0 0.019"/>
   </joint> 
 
+<!-- End of basic servo construction -->
+
+  <link name="top_mount_1">
+    <visual>
+      <geometry>
+        <box size=".048 .029 .063"/>
+      </geometry>
+      <material name="red">
+	<color rgba="255 0 0 1"/>
+      </material>
+      <origin rpy="0 1.57075 1.57075"/>
+      </visual>
+  </link>
+
+  <joint name="joint_1_to_mount_1" type="fixed">
+    <parent link="link_1"/>
+    <child link="top_mount_1"/>
+    <origin xyz="0 0.020 -0.019"/>
+  </joint>
+ 
+  <link name="bottom_mount_1">
+    <visual>
+      <geometry>
+        <box size=".032 .032 .002"/>
+      </geometry>
+      <material name="orange">
+	<color rgba="255 165 0 1"/>
+      </material>
+      <origin rpy="0 1.57075 1.57075"/>
+      </visual>
+  </link>
+
+  <joint name="mount_1_to_bottom_mount_1" type="fixed">
+    <parent link="top_mount_1"/>
+    <child link="bottom_mount_1"/>
+    <origin xyz="0 .0325 0"/>
+  </joint>
+
+<!-- Start of 2nd servo -->
+  <link name="servo_body_2">
+    <visual>
+        <geometry>
+          <box size=".032 .032 .050"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+  </link>
+  
+  <joint name="bottom_mount_1_to_servo_body_2" type="fixed">
+    <parent link="bottom_mount_1"/>
+    <child link="servo_body_2"/>
+    <origin xyz="0 0.025 0" rpy="1.57075 0 0"/>
+  </joint>
+
+  <link name="link_2_spindle">
+    <visual>
+      <geometry>
+        <cylinder length=".04" radius=".004"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+  </link>
+ 
+  <joint name="body_2_to_spindle" type="fixed">
+    <parent link="servo_body_2"/>
+    <child link="link_2_spindle"/>
+    <origin xyz="0 0 -0.016" rpy="-1.57075 0 0"/>
+  </joint>
+  
+  <link name="link_2">
+    <visual>
+      <geometry>
+        <cylinder length=".005" radius=".0115"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+  </link>
+    
+  <joint name="spindle_to_joint_2" type="revolute">
+    <parent link="link_2_spindle"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000.0" lower="-1.57" upper="1.57" velocity="1.00"/>
+    <child link="link_2"/>
+    <origin xyz="0 0 0.019"/>
+  </joint> 
+
+  <link name="top_mount_2">
+    <visual>
+      <geometry>
+        <box size=".048 .029 .037"/>
+      </geometry>
+      <material name="red">
+	<color rgba="255 0 0 1"/>
+      </material>
+      <origin rpy="0 1.57075 1.57075"/>
+      </visual>
+  </link>
+
+  <joint name="joint_2_to_mount_2" type="fixed">
+    <parent link="link_2"/>
+    <child link="top_mount_2"/>
+    <origin xyz="0 0.007 -0.019"/>
+  </joint>
+ 
 </robot>
