@@ -122,6 +122,7 @@ protected:
 	// create messages that are used to published feedback/result
 	segbot_arm_manipulation::TabletopGraspFeedback feedback_;
 	segbot_arm_manipulation::TabletopGraspResult result_;
+	//segbot_arm_manipulation::TabletopGraspGoal goal_;
   
 	
 	sensor_msgs::JointState current_state;
@@ -146,29 +147,45 @@ protected:
 	//used to compute transforms
 	tf::TransformListener listener;
 	
+	bool heard_string;
+	ros::Subscriber sub_string_;
+	
+	
+	//subscribers -- in an action server, these have to be class members
+	ros::Subscriber sub_angles;
+	ros::Subscriber sub_torques;
+	ros::Subscriber sub_tool;
+	ros::Subscriber sub_finger;
+	ros::Subscriber sub_grasps;
+	
 public:
 
   TabletopGraspActionServer(std::string name) :
-    as_(nh_, name, boost::bind(&TabletopGraspActionServer::executeCB, this, _1), false),
+	as_(nh_, name, boost::bind(&TabletopGraspActionServer::executeCB, this, _1), false),
     action_name_(name)
   {
+	
+	
+	
 	heardPose = false;
 	heardJoinstState = false;
 	heardGrasps = false;
+
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = nh_.subscribe ("/joint_states", 1, &TabletopGraspActionServer::joint_state_cb, this);
+	sub_angles = nh_.subscribe ("/joint_states", 1, &TabletopGraspActionServer::joint_state_cb, this);
+
 
 	//create subscriber to joint torques
-	ros::Subscriber sub_torques = nh_.subscribe ("/mico_arm_driver/out/joint_efforts", 1, &TabletopGraspActionServer::joint_effort_cb,this);
+	sub_torques = nh_.subscribe ("/mico_arm_driver/out/joint_efforts", 1, &TabletopGraspActionServer::joint_effort_cb,this);
 
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_position", 1, &TabletopGraspActionServer::toolpos_cb, this);
+	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_position", 1, &TabletopGraspActionServer::toolpos_cb, this);
 
 	//subscriber for fingers
-	ros::Subscriber sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &TabletopGraspActionServer::fingers_cb, this);
+	sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &TabletopGraspActionServer::fingers_cb, this);
 	  
 	//subscriber for grasps
-	ros::Subscriber sub_grasps = nh_.subscribe("/find_grasps/grasps_handles",1, &TabletopGraspActionServer::grasps_cb,this);  
+	sub_grasps = nh_.subscribe("/find_grasps/grasps_handles",1, &TabletopGraspActionServer::grasps_cb,this);  
 	  
 	//publish velocities
 	pub_velocity = nh_.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
@@ -192,6 +209,11 @@ public:
   ~TabletopGraspActionServer(void)
   {
   }
+  
+	void test_string_cb(const std_msgs::String& msg){
+		ROS_INFO("Received string!");
+		heard_string = true;
+	}
   
   //Joint state cb
 	void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
@@ -276,8 +298,16 @@ public:
 		}
 	}
 	
-	void executeCB(const segbot_arm_manipulation::TabletopGraspGoalConstPtr &goal)
+	
+	void executeCB(const segbot_arm_manipulation::TabletopGraspGoalConstPtr  &goal)
 	{
+		
+		if (goal->cloud_clusters.size() == 0){
+			ROS_INFO("No object point clouds received...aborting");
+			as_.setAborted(result_);
+			return;
+		}
+	
 		
 		ROS_INFO("Received action request...proceeding.");
 		listenForArmData(40.0);

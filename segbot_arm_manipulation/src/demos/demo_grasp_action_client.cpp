@@ -153,9 +153,9 @@ int main(int argc, char **argv) {
 	pressEnter("Demo starting...move the arm to a position where it is not occluding the table.");
 	
 	//store out of table joint position
-	listenForArmData();
+	/*listenForArmData();
 	joint_state_outofview = current_state;
-	pose_outofview = current_pose;
+	pose_outofview = current_pose;*/
 	
 	
 	while (ros::ok()){
@@ -186,6 +186,7 @@ int main(int argc, char **argv) {
 		
 		//create the action client
 		actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac("segbot_arm_grasp_action_server",true);
+		ac.waitForServer();
 		
 		//create and fill goal
 		segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
@@ -195,9 +196,7 @@ int main(int argc, char **argv) {
 			grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
 		}
 		grasp_goal.target_object_cluster_index = largest_pc_index;
-		
-		sleep(3.0);
-		
+				
 		//send the goal
 		ROS_INFO("Sending goal to action server...");
 		ac.sendGoal(grasp_goal);
@@ -206,9 +205,11 @@ int main(int argc, char **argv) {
 		ROS_INFO("Waiting for result...");
 		
 		ac.waitForResult();
+		ROS_INFO("Action Finished...");
+
 		
 		//lift and lower the object a bit, let it go and move back
-		lift(n,0.07);
+		/*lift(n,0.07);
 		lift(n,-0.07);
 		segbot_arm_manipulation::openHand();
 		lift(n,0.07);
@@ -217,6 +218,6 @@ int main(int argc, char **argv) {
 		segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
 	
 	
-		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");
+		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");*/
 	}
 }
