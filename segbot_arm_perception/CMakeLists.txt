@@ -98,7 +98,7 @@ catkin_python_setup()
 ## DEPENDS: system dependencies of this project that dependent projects also need
 
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES segbot_arm_perception
 #  CATKIN_DEPENDS other_catkin_pkg
   DEPENDS actionlib_msgs
@@ -110,7 +110,10 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(
+	include
+	${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a cpp library
 # add_library(segbot_arm_perception
