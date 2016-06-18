@@ -97,6 +97,8 @@ protected:
 	
 	segbot_arm_manipulation::TabletopApproachResult result_;
 	
+	ros::Subscriber sub_odom_;
+	
 public:
 
   TableApproachActionServer(std::string name) :
@@ -106,7 +108,7 @@ public:
 
 	
 	//subscribe to odometry 
-	ros::Subscriber sub_odom = nh_.subscribe("/odom", 1,&TableApproachActionServer::odom_cb,this);
+	sub_odom_= nh_.subscribe("/odom", 1,&TableApproachActionServer::odom_cb,this);
 
 	//publisher for debugging purposes
 	pose_pub = nh_.advertise<geometry_msgs::PoseStamped>("/segbot_table_approach_as/approach_table_target_pose", 1);

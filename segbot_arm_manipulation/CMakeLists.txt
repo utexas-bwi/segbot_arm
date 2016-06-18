@@ -22,6 +22,8 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_msgs
   nav_msgs
   sound_play
+  move_base_msgs
+  segbot_arm_perception
 )
 
 ## System dependencies are found with CMake's conventions
@@ -172,6 +174,10 @@ target_link_libraries(demo_grasp_action_client ${catkin_LIBRARIES} )
 
 add_executable(test_table_approach_actions src/demos/test_table_approach_actions.cpp)
 target_link_libraries(test_table_approach_actions ${catkin_LIBRARIES} )
+
+
+add_executable(object_to_office_task src/demos/object_to_office_task.cpp)
+target_link_libraries(object_to_office_task ${catkin_LIBRARIES} )
 
 
 ## Declare a cpp executable

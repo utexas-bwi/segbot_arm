@@ -9,9 +9,14 @@
 
 //action for grasping
 #include "segbot_arm_manipulation/TabletopGraspAction.h"
-
+#include "segbot_arm_manipulation/TabletopApproachAction.h"
 
 #include <segbot_arm_manipulation/arm_utils.h>
+
+#include <segbot_arm_perception/segbot_arm_perception.h>
+
+//includes related to bwi_common
+#include <move_base_msgs/MoveBaseAction.h>
 
 #define NUM_JOINTS 8 //6+2 for the arm
 
@@ -137,56 +142,87 @@ int main(int argc, char **argv) {
 	
 	ros::NodeHandle n;
 
-	//create subscriber to joint angles
+	//create subscribers for arm topics
 	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
-	
-	//create subscriber to tool position topic
 	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 	
-	//store out-of-view position here
+	//Step 1: store out-of-view position here
 	sensor_msgs::JointState joint_state_outofview;
 	geometry_msgs::PoseStamped pose_outofview;
 
-	pressEnter("Demo starting...move the arm to a position where it is not occluding the table.");
+	pressEnter("Please move the arm to out of view position...");
 	
-	//store out of table joint position
+	//store out of table view joint position -- this is the position in which the arm is not occluding objects on the table
 	listenForArmData();
 	joint_state_outofview = current_state;
 	pose_outofview = current_pose;
 	
+	//Step 2: call safety service to make the arm safe for base movement -- TO DO
 
-	while (ros::ok()){
+
+	//Step 3: issue a goal to move to the table in the pod -- for now, this is a hardcoded position in the map
+	actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac("move_base",true);
+	ac.waitForServer();
 	
-		//move the arm to side view
-	
-	
-		//get the table scene
-		segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
+	//create the goal
+	move_base_msgs::MoveBaseGoal goal;
+    goal.target_pose.header.stamp = ros::Time::now();
+    goal.target_pose.header.frame_id = "/map";
+    goal.target_pose.pose.position.x = 12.0;
+    goal.target_pose.pose.position.y = 12.0;
+    goal.target_pose.pose.position.z = 0.0;
+    goal.target_pose.pose.orientation.x = 0.0;
+    goal.target_pose.pose.orientation.y = 0.0;
+    goal.target_pose.pose.orientation.z = 0.0;
+    goal.target_pose.pose.orientation.w = 0.0;
+    
+	//send the goal and wait for result;
+    ac.sendGoal(goal);
+    ac.waitForResult();
+
+	//Step 4: approach the table using visual servoing
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopApproachAction> ac_approach("segbot_table_approach_as",true);
 		
-		if ((int)table_scene.cloud_clusters.size() == 0){
-			ROS_WARN("No objects found on table. The end...");
-			exit(1);
-		}
+	segbot_arm_manipulation::TabletopApproachGoal approach_goal;
+	approach_goal.command = "approach";
+	
+	//send the goal
+	ac_approach.sendGoal(approach_goal);
+	ac_approach.waitForResult();
+	
+	
+	//Step 6: move the arm out of the way
+	segbot_arm_manipulation::homeArm(n);
+	segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
+	
+	
+	//Step 7: get the table scene
+	segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
 		
-		//select the object with most points as the target object
-		int largest_pc_index = -1;
-		int largest_num_points = -1;
-		for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
+	if ((int)table_scene.cloud_clusters.size() == 0){
+		ROS_WARN("No objects found on table. The end...");
+		exit(1);
+	}
+		
+	//select the object with most points as the target object
+	int largest_pc_index = -1;
+	int largest_num_points = -1;
+	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
 			
-			int num_points_i = table_scene.cloud_clusters[i].height* table_scene.cloud_clusters[i].width;
+		int num_points_i = table_scene.cloud_clusters[i].height* table_scene.cloud_clusters[i].width;
 		
-			if (num_points_i > largest_num_points){
-				largest_num_points = num_points_i;
-				largest_pc_index = i;
-			}
+		if (num_points_i > largest_num_points){
+			largest_num_points = num_points_i;
+			largest_pc_index = i;
 		}
+	}
 		
 		//create the action client
-		actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac("segbot_arm_grasp_action_server",true);
-		ac.waitForServer();
+		actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_arm_grasp_action_server",true);
+		ac_grasp.waitForServer();
 		
 		//create and fill goal
 		segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
@@ -199,12 +235,12 @@ int main(int argc, char **argv) {
 				
 		//send the goal
 		ROS_INFO("Sending goal to action server...");
-		ac.sendGoal(grasp_goal);
+		ac_grasp.sendGoal(grasp_goal);
 		
 		//block until the action is completed
 		ROS_INFO("Waiting for result...");
 		
-		ac.waitForResult();
+		ac_grasp.waitForResult();
 		ROS_INFO("Action Finished...");
 
 		
@@ -219,5 +255,5 @@ int main(int argc, char **argv) {
 	
 	
 		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");*/
-	}
+	
 }
