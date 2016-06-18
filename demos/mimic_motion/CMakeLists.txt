@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_utils
   moveit_msgs
   segbot_arm_manipulation
+  segbot_arm_perception
 )
 
 ## System dependencies are found with CMake's conventions
