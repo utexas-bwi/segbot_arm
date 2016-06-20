@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <ros/package.h>
 
 #include <signal.h>
 
@@ -12,6 +13,7 @@
 #include "segbot_arm_manipulation/TabletopApproachAction.h"
 
 #include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/arm_positions_db.h>
 
 #include <segbot_arm_perception/segbot_arm_perception.h>
 
@@ -148,6 +150,13 @@ int main(int argc, char **argv) {
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
+	
+	//load database of joint- and tool-space positions
+	std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
+	std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
+	
+	ArmPositionDB positionDB(j_pos_filename, c_pos_filename);
+	positionDB.print();
 	
 	//Step 1: store out-of-view position here
 	sensor_msgs::JointState joint_state_outofview;
