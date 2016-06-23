@@ -1,0 +1,25 @@
+<launch>
+    <node name="dynamixel_manager" pkg="dynamixel_controllers" type="controller_manager.py" required="true" output="screen">
+        <rosparam>
+            namespace: dxl_manager
+            serial_ports:
+                dynamixel_arm_port:
+                    port_name: "/dev/ttyUSB0"
+                    baud_rate: 1000000
+                    min_motor_id: 1
+                    max_motor_id: 25
+                    update_rate: 20
+        </rosparam>
+    </node>
+
+    <!-- Start upper and lower arm torque controllers -->
+    <rosparam file="$(find dynamixel_arm)/config/dynamixel_arm_torque_controller.yaml" command="load"/>
+
+    <node name="dynamixel_arm_controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
+          args="--manager=dxl_manager
+                --port=dynamixel_arm_port
+                --type=simple
+				joint_0
+                joint_1"
+                output="screen"/>
+</launch>

@@ -3,7 +3,7 @@
   <link name="base_link">
     <visual>
         <geometry>
-            <mesh filename="package://dynamixel_arm/urdf/mesh/ax12_box.dae"/>    
+            <mesh filename="package://dynamixel_description/mesh/ax12_box.dae"/>    
       </geometry>
     <origin rpy="1.57075 0 0" xyz="0 0 0"/>
     </visual>
@@ -12,7 +12,7 @@
   <link name="wheel">
     <visual>
         <geometry>
-            <mesh filename="package://dynamixel_arm/urdf/mesh/ax12_wheel.dae"/>
+            <mesh filename="package://dynamixel_description/mesh/ax12_wheel.dae"/>
         </geometry>
         <origin xyz="0 -.01675 .01575"/>
     </visual>
