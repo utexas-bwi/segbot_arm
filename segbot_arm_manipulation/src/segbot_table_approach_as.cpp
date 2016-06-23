@@ -65,7 +65,7 @@
 
 //for playing sounds when backing up
 #include <sound_play/sound_play.h>
-
+#include <sound_play/SoundRequest.h>
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -91,6 +91,7 @@ protected:
 	
 	ros::Publisher pub_base_velocity;
 	ros::Publisher pose_pub;
+	ros::Publisher sound_pub;
 
 	//used to compute transforms
 	tf::TransformListener tf_listener;
@@ -112,6 +113,9 @@ public:
 
 	//publisher for debugging purposes
 	pose_pub = nh_.advertise<geometry_msgs::PoseStamped>("/segbot_table_approach_as/approach_table_target_pose", 1);
+	
+	
+	sound_pub = nh_.advertise<sound_play::SoundRequest>("/robotsound", 1);
 	
 	//velocity publisher
 	pub_base_velocity = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
@@ -159,6 +163,8 @@ public:
 			//step 1: query table_object_detection_node to segment the blobs on the table
 			
 			ros::ServiceClient client_tabletop_perception = nh_.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
+			
+			
 			segbot_arm_perception::TabletopPerception srv; //the srv request is just empty
 			
 			
@@ -349,15 +355,31 @@ public:
 			v_i.angular.x = 0; v_i.angular.y = 0;
 			
 			//create sound client and play sound
-			sound_play::SoundClient sc;
-			spinSleep(2.0);
-			sc.start(sound_play::SoundRequest::BACKINGUP);
+			//sound_play::SoundClient sc;
+			//spinSleep(2.0);
+			//sc.start(sound_play::SoundRequest::BACKINGUP);
+			//sc.say("Hello world!");
 			
+			//ros::Publisher pub_sound 
+			
+			sound_play::SoundRequest sound_msg;
+			sound_msg.sound = 1;
+			sound_msg.command = 1;
+			
+			ros::Rate r_sound(1);
+			for (int i = 0; i < 4; i ++){
+				sound_pub.publish(sound_msg);
+				r_sound.sleep();
+			
+			}
 			
 			while (ros::ok()){
 				double distance_traveled = sqrt(  pow(current_odom.pose.pose.position.x - start_odom_x,2) +
 												pow(current_odom.pose.pose.position.y - start_odom_y,2));
 												
+				
+				
+				
 				ROS_INFO("Distance traveled = %f",distance_traveled);				
 												
 				if (distance_traveled > distance_to_travel){
@@ -368,15 +390,18 @@ public:
 				v_i.linear.x = x_vel;
 				pub_base_velocity.publish(v_i);
 				
+				sound_pub.publish(sound_msg);
+				
 				r.sleep();
 				ros::spinOnce();
-				
 				
 				
 			}
 			v_i.linear.x = 0;
 			pub_base_velocity.publish(v_i);
-			sc.stop(sound_play::SoundRequest::BACKINGUP);
+			
+			
+			//sc.stop(sound_play::SoundRequest::BACKINGUP);
 			
 			
 			result_.success = true;

@@ -50,11 +50,14 @@ int main(int argc, char **argv) {
 	pressEnter("Demo starting.");
 	
 	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopApproachAction> ac("segbot_table_approach_as",true);
+	ac.waitForServer();	
+		
 		
 	segbot_arm_manipulation::TabletopApproachGoal approach_goal;
 	approach_goal.command = "approach";
 	
 	//send the goal
+	ROS_INFO("Sending goal to approach table...");
 	ac.sendGoal(approach_goal);
 		
 	//block until the action is completed
