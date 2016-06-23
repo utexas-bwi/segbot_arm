@@ -114,7 +114,7 @@ public:
 	//publisher for debugging purposes
 	pose_pub = nh_.advertise<geometry_msgs::PoseStamped>("/segbot_table_approach_as/approach_table_target_pose", 1);
 	
-	
+	//used to publish sound requests
 	sound_pub = nh_.advertise<sound_play::SoundRequest>("/robotsound", 1);
 	
 	//velocity publisher
@@ -334,7 +334,9 @@ public:
 		else if (goal->command == "back_out"){
 			//store current odom
 			heard_odom = false;
-			ros::Rate r(30);
+			
+			float vel_pub_rate = 30.0;
+			ros::Rate r(vel_pub_rate);
 			while (!heard_odom){
 				r.sleep();
 				ros::spinOnce();
@@ -363,22 +365,21 @@ public:
 			//ros::Publisher pub_sound 
 			
 			sound_play::SoundRequest sound_msg;
-			sound_msg.sound = 1;
-			sound_msg.command = 1;
+			sound_msg.sound = 1; //back out sound
+			sound_msg.command = 1; //play the sound
 			
+			//start playing sound to warn people of robot going backwards
 			ros::Rate r_sound(1);
 			for (int i = 0; i < 4; i ++){
 				sound_pub.publish(sound_msg);
 				r_sound.sleep();
-			
 			}
 			
+			int c = 0;
 			while (ros::ok()){
 				double distance_traveled = sqrt(  pow(current_odom.pose.pose.position.x - start_odom_x,2) +
 												pow(current_odom.pose.pose.position.y - start_odom_y,2));
 												
-				
-				
 				
 				ROS_INFO("Distance traveled = %f",distance_traveled);				
 												
@@ -390,7 +391,11 @@ public:
 				v_i.linear.x = x_vel;
 				pub_base_velocity.publish(v_i);
 				
-				sound_pub.publish(sound_msg);
+				c++;
+				if (c > vel_pub_rate){ //i.e., 1 second has passed
+					sound_pub.publish(sound_msg);
+					c = 0;
+				}
 				
 				r.sleep();
 				ros::spinOnce();
