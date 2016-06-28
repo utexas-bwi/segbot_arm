@@ -68,6 +68,7 @@ catkin_python_setup()
    ButtonDetection.srv
    TabletopReorder.srv
    SetObstacles.srv
+   GetCloud.srv
 )
 
 ## Generate actions in the 'action' folder

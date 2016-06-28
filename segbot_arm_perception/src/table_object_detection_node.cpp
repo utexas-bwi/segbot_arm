@@ -41,6 +41,7 @@
 
 #include "segbot_arm_perception/TabletopPerception.h"
 #include "segbot_arm_perception/TabletopReorder.h"
+#include "segbot_arm_perception/GetCloud.h"
 
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
@@ -394,6 +395,22 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	return true;
 }
 
+
+bool get_cloud_cb(segbot_arm_perception::GetCloud::Request &req, segbot_arm_perception::GetCloud::Response &res){
+	
+	ROS_INFO("[table_object_detection_node.cpp] retrieving point cloud...");
+	waitForCloudK(15);
+	cloud = cloud_aggregated;
+	
+	pcl::toROSMsg(*cloud,res.cloud);
+	res.cloud.header.frame_id = cloud->header.frame_id;
+	
+	ROS_INFO("[table_object_detection_node.cpp] ...done");
+	
+	
+	return true;
+}
+
 int main (int argc, char** argv)
 {
 	// Initialize ROS
@@ -412,9 +429,15 @@ int main (int argc, char** argv)
 	cloud_costmap_pub = nh.advertise<sensor_msgs::PointCloud2>("/xtion_obstacle_cloud", 1);
 
 
-	//service
+	//services
 	ros::ServiceServer service = nh.advertiseService("tabletop_object_detection_service", seg_cb);
+	
 	ros::ServiceServer reorder_service = nh.advertiseService("tabletop_object_reorder_service", cluster_reorder_cb);
+	
+	ros::ServiceServer getcloud_service = 
+	nh.advertiseService("tabletop_get_cloud_service", get_cloud_cb);
+	
+	
 	
 	tf::TransformListener listener;
 
