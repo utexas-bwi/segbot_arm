@@ -215,6 +215,7 @@ int main(int argc, char **argv) {
 		ac.waitForResult();
 		ROS_INFO("Action Finished...");
 
+	
 		
 		//lift and lower the object a bit, let it go and move back
 		/*lift(n,0.07);
@@ -224,8 +225,8 @@ int main(int argc, char **argv) {
 		
 		segbot_arm_manipulation::homeArm(n);
 		segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
+	*/
 	
-	
-		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");*/
+		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");
 	}
 }

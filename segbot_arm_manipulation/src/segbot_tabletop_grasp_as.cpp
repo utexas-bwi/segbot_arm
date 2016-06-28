@@ -367,7 +367,7 @@ public:
 			ROS_INFO("Received action request...proceeding.");
 			listenForArmData(40.0);
 			//declare some variables
-			sensor_msgs::PointCloud2 cloud_ros;
+			//sensor_msgs::PointCloud2 cloud_ros;
 
 			//the result
 			segbot_arm_manipulation::TabletopGraspResult result;
@@ -394,7 +394,10 @@ public:
 			//next, compute approach and grasp poses for each detected grasp
 			
 			//wait for transform from visual space to arm space
-			listener.waitForTransform(goal->cloud_clusters.at(goal->target_object_cluster_index).header.frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
+			ROS_INFO("Source frame id = %s",goal->cloud_clusters.at(goal->target_object_cluster_index).header.frame_id.c_str());
+			std::string sensor_frame_id = goal->cloud_clusters.at(goal->target_object_cluster_index).header.frame_id;
+			listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
+			ROS_INFO("Transform found.");
 			
 			//here, we'll store all grasp options that pass the filters
 			std::vector<GraspCartesianCommand> grasp_commands;
@@ -402,15 +405,17 @@ public:
 			for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
 				
 							
-				GraspCartesianCommand gc_i = segbot_arm_manipulation::grasp_utils::constructGraspCommand(current_grasps.grasps.at(i),HAND_OFFSET_APPROACH,HAND_OFFSET_GRASP, cloud_ros.header.frame_id);
+				GraspCartesianCommand gc_i = segbot_arm_manipulation::grasp_utils::constructGraspCommand(current_grasps.grasps.at(i),HAND_OFFSET_APPROACH,HAND_OFFSET_GRASP, sensor_frame_id);
 				
 				bool ok_with_plane = segbot_arm_manipulation::grasp_utils::checkPlaneConflict(gc_i,plane_coef_vector,MIN_DISTANCE_TO_PLANE);
 				
 				if (ok_with_plane){
 					
+					ROS_INFO("Transforming next pose...");
 					listener.transformPose("mico_api_origin", gc_i.approach_pose, gc_i.approach_pose);
 					listener.transformPose("mico_api_origin", gc_i.grasp_pose, gc_i.grasp_pose);
-					
+					ROS_INFO("done...");
+
 					//filter two -- if IK fails
 					moveit_msgs::GetPositionIK::Response  ik_response_approach = segbot_arm_manipulation::computeIK(nh_,gc_i.approach_pose);
 					
@@ -487,6 +492,9 @@ public:
 		
 			//close hand
 			segbot_arm_manipulation::closeHand();
+			
+			result_.success = true;
+			as_.setSucceeded(result_);
 		}
 	}
 
