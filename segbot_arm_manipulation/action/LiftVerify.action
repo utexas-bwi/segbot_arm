@@ -1,0 +1,8 @@
+#goal definition
+sensor_msgs/PointCloud2 tgt_cloud
+---
+#result definition
+bool success
+---
+#feedback
+bool success
