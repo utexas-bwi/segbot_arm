@@ -7,7 +7,7 @@
 	<node name="mico_moveit_caresianpose_service" pkg="moveit_utils" type="mico_moveit_cartesianpose_service" />
 	
 	<!-- safety service -->
-	<!-- <node name="mico_nav_safety_service" pkg="moveit_utils" type="mico_nav_safety_service" output="screen"/> -->
+	<node name="mico_nav_safety_service" pkg="moveit_utils" type="mico_nav_safety_service" output="screen"/> 
 	
 	<!-- Jivko's angular controler -->
 	<node name="angular_vel_control_srv" pkg="moveit_utils" type="angular_vel_control_srv" />
