@@ -190,6 +190,14 @@ int main(int argc, char **argv) {
 		
 		//create and fill goal
 		segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
+		
+		//we want the robot to execute the GRASP action
+		grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
+		
+		//for that action, we have to specify the method used for picking the target grasp out of the candidates
+		grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
+		
+		//finally, we fill in the table scene
 		grasp_goal.cloud_plane = table_scene.cloud_plane;
 		grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
 		for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){

@@ -1,8 +1,20 @@
+# some constants
+string GRASP="grasp"
+string VERIFY_GRASP="verify_grasp"
+
+string RANDOM_SELECTION="random"
+string CLOSEST_ORIENTATION_SELECTION="closest_orientation"
+
 # Goal
+string action_name
 sensor_msgs/PointCloud2 cloud_plane
 float32[4] cloud_plane_coef
 sensor_msgs/PointCloud2[] cloud_clusters
 int32 target_object_cluster_index
+
+# specific for "grasp" action
+string grasp_selection_method
+
 ---
 # Result
 bool success
