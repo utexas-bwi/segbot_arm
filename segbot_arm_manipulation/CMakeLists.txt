@@ -157,9 +157,6 @@ target_link_libraries(segbot_tabletop_grasp_as ${catkin_LIBRARIES})
 add_executable(segbot_table_approach_as src/segbot_table_approach_as.cpp)
 target_link_libraries(segbot_table_approach_as ${catkin_LIBRARIES})
 
-add_executable(arm_lift_verify_as_as src/arm_lift_verify_as.cpp)
-add_dependencies(arm_lift_verify_as jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
-target_link_libraries(arm_lift_verify_as ${catkin_LIBRARIES})
 
 ## Declare a cpp executable
 add_executable(ispy_arm_server src/ispy_arm_server.cpp)
