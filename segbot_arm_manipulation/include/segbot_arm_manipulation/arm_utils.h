@@ -18,6 +18,7 @@
 #include <moveit_utils/AngularVelCtrl.h>
 #include <moveit_utils/MicoMoveitJointPose.h>
 #include <moveit_utils/MicoMoveitCartesianPose.h>
+#include <moveit_utils/MicoNavSafety.h>
 
 
 #include <sensor_msgs/PointCloud2.h>
@@ -80,6 +81,23 @@ namespace segbot_arm_manipulation {
 		}
 		
 		return result;
+	}
+	
+	bool makeSafeForTravel(ros::NodeHandle n){
+		ros::ServiceClient safety_client = n.serviceClient<moveit_utils::MicoNavSafety>("/mico_nav_safety");
+		safety_client.waitForExistence();
+		moveit_utils::MicoNavSafety srv_safety;
+		srv_safety.request.getSafe = true;
+		if (safety_client.call(srv_safety))
+		{
+			//ROS_INFO("Safety service called successfully");
+			return true;
+		}
+		else
+		{
+			//ROS_ERROR("Failed to call safety service....aborting");
+			return false;
+		}
 	}
 	
 	void homeArm(ros::NodeHandle n){
