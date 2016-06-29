@@ -494,7 +494,7 @@ public:
 					
 					double sum_d = 0;
 					for (int p = 0; p < D_i.size(); p++)
-						sum_d += D[p];
+						sum_d += D_i[p];
 					
 					if (sum_d < min_diff){
 						selected_grasp_index = (int)i;
