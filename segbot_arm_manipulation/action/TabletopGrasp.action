@@ -3,6 +3,9 @@ string GRASP="grasp"
 
 string RANDOM_SELECTION="random"
 string CLOSEST_ORIENTATION_SELECTION="closest_orientation"
+string CLOSEST_JOINTSPACE_SELECTION="closest_joint_space"
+
+
 
 # Goal
 string action_name

@@ -429,7 +429,7 @@ public:
 							
 							
 							//now check to see how close the two sets of joint angles are -- if the joint configurations for the approach and grasp poses differ by too much, the grasp will not be accepted
-							std::vector<double> D = segbot_arm_manipulation::getJointAngleDifferences(ik_response_approach.solution.joint_state, ik_response_grasp.solution.joint_state );
+							std::vector<double> D = segbot_arm_manipulation::getJointAngleDifferences(ik_response_approach.solution.joint_state, ik_response_grasp.solution.joint_state);
 							
 							double sum_d = 0;
 							for (int p = 0; p < D.size(); p++){
@@ -485,6 +485,25 @@ public:
 				srand (time(NULL));
 				selected_grasp_index = rand() % grasp_commands.size(); 
 				ROS_INFO("Randomly selected grasp = %i",selected_grasp_index);     
+			}
+			else if (goal->grasp_selection_method == segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_JOINTSPACE_SELECTION){
+				
+				double min_diff = 1000000.0;
+				for (unsigned int i = 0; i < grasp_commands.size(); i++){
+					std::vector<double> D_i = segbot_arm_manipulation::getJointAngleDifferences(grasp_commands.at(i).approach_q, current_state);
+					
+					double sum_d = 0;
+					for (int p = 0; p < D_i.size(); p++)
+						sum_d += D[p];
+					
+					if (sum_d < min_diff){
+						selected_grasp_index = (int)i;
+						min_diff = sum_d;
+					}
+				}
+				
+				
+				
 			}
 			
 			if (selected_grasp_index == -1){
