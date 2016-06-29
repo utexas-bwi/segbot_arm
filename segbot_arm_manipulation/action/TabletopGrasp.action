@@ -1,5 +1,6 @@
 # some constants
-string GRASP="grasp"
+string GRASP="grasp"     # used for grasping
+string HANDOVER="handover"	# used for handing over an object based on haptic feedback
 
 string RANDOM_SELECTION="random"
 string CLOSEST_ORIENTATION_SELECTION="closest_orientation"

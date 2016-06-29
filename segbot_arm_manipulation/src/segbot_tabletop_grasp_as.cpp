@@ -101,6 +101,8 @@
 #define HAND_OFFSET_GRASP -0.02
 #define HAND_OFFSET_APPROACH -0.13
 
+//used to decide if someone is pulling an object from the arm
+#define FORCE_HANDOVER_THRESHOLD 0.4
 
 //used when deciding whether a pair of an approach pose and a grasp pose are good;
 //if the angular difference in joint space is too big, this means that the robot 
@@ -361,8 +363,6 @@ public:
 	{
 		if (goal->action_name == segbot_arm_manipulation::TabletopGraspGoal::GRASP){
 		
-			
-			
 			if (goal->cloud_clusters.size() == 0){
 				ROS_INFO("[segbot_tabletop_grap_as.cpp] No object point clouds received...aborting");
 				as_.setAborted(result_);
@@ -534,6 +534,44 @@ public:
 			result_.success = true;
 			as_.setSucceeded(result_);
 		}
+		else if (goal->action_name == segbot_arm_manipulation::TabletopGraspGoal::HANDOVER){
+			//TO DO: move to handover position
+			
+			//listen for haptic feedback
+			ros::Rate r(40);
+
+			double total_grav_free_effort = 0;
+			double total_delta;
+			double delta_effort[6];
+
+			sensor_msgs::JointState prev_effort_state = current_effort;
+
+			while (ros::ok()){
+		
+				ros::spinOnce();
+				
+				total_delta=0.0;
+				for (int i = 0; i < 6; i ++){
+					delta_effort[i] = fabs(current_effort.effort[i]-prev_effort_state.effort[i]);
+					total_delta+=delta_effort[i];
+				}
+				
+				if (total_delta > fabs(FORCE_HANDOVER_THRESHOLD)){
+					ROS_INFO("[segbot_tabletop_grasp_as.cpp] Force detected");
+					break;
+				}
+				
+				r.sleep();
+			}
+			
+			//now open the hand
+			segbot_arm_manipulation::openHand();
+			
+			result_.success = true;
+			as_.setSucceeded(result_);
+		}
+	
+	
 	}
 
 
