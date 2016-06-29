@@ -20,6 +20,9 @@
 //includes related to bwi_common
 #include <move_base_msgs/MoveBaseAction.h>
 
+
+#include <moveit_utils/MicoNavSafety.h>
+
 #define NUM_JOINTS 8 //6+2 for the arm
 
 //mico joint state safe
@@ -130,12 +133,22 @@ void lift(ros::NodeHandle n, double x){
 	segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 }
 
-void goToSafePose(ros::NodeHandle n){
-	geometry_msgs::PoseStamped pose_st;
-	pose_st.header.stamp = ros::Time(0);
-	pose_st.header.frame_id = "mico_link_base";
+bool makeSafeForTravel(ros::NodeHandle n){
 	
-	
+	ros::ServiceClient safety_client = n.serviceClient<moveit_utils::MicoNavSafety>("/mico_nav_safety");
+	safety_client.waitForExistence();
+	moveit_utils::MicoNavSafety srv_safety;
+	srv_safety.request.getSafe = true;
+	if (safety_client.call(srv_safety))
+	{
+		ROS_INFO("Safety service called successfully");
+		return true;
+	}
+	else
+	{
+		ROS_ERROR("Failed to call safety service....aborting");
+		return false;
+	}
 }
 
 int main(int argc, char **argv) {
@@ -170,23 +183,25 @@ int main(int argc, char **argv) {
 	pose_outofview = current_pose;
 	
 	//Step 2: call safety service to make the arm safe for base movement -- TO DO
-
-
+	bool safe = makeSafeForTravel(n);
+	if (!safe)
+		return 1;
+	
 	//Step 3: issue a goal to move to the table in the pod -- for now, this is a hardcoded position in the map
 	actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac("move_base",true);
 	ac.waitForServer();
 	
-	//create the goal
+	//create the goal - currently hardcoded until go to object bug is fixed
 	move_base_msgs::MoveBaseGoal goal;
     goal.target_pose.header.stamp = ros::Time::now();
     goal.target_pose.header.frame_id = "/map";
-    goal.target_pose.pose.position.x = 12.0;
-    goal.target_pose.pose.position.y = 12.0;
+    goal.target_pose.pose.position.x = -31.3875554082;
+    goal.target_pose.pose.position.y =  -3.73833188096;
     goal.target_pose.pose.position.z = 0.0;
     goal.target_pose.pose.orientation.x = 0.0;
     goal.target_pose.pose.orientation.y = 0.0;
-    goal.target_pose.pose.orientation.z = 0.0;
-    goal.target_pose.pose.orientation.w = 0.0;
+    goal.target_pose.pose.orientation.z = 0.71660551689;
+    goal.target_pose.pose.orientation.w = 0.697478697282;
     
 	//send the goal and wait for result;
     ac.sendGoal(goal);
@@ -208,7 +223,7 @@ int main(int argc, char **argv) {
 	segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
 	
 	
-	//Step 7: get the table scene
+	//Step 7: get the table scene and select object to grasp
 	segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
 		
 	if ((int)table_scene.cloud_clusters.size() == 0){
@@ -229,30 +244,40 @@ int main(int argc, char **argv) {
 		}
 	}
 		
-		//create the action client
-		actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_arm_grasp_action_server",true);
-		ac_grasp.waitForServer();
+	//Step 8: call the grasp action
+	
+	//create the action client
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_arm_grasp_action_server",true);
+	ac_grasp.waitForServer();
 		
-		//create and fill goal
-		segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
-		grasp_goal.cloud_plane = table_scene.cloud_plane;
-		grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
-		for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
-			grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
-		}
-		grasp_goal.target_object_cluster_index = largest_pc_index;
+	//create and fill goal
+	segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
+	grasp_goal.cloud_plane = table_scene.cloud_plane;
+	grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
+	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
+		grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
+	}
+	grasp_goal.target_object_cluster_index = largest_pc_index;
 				
-		//send the goal
-		ROS_INFO("Sending goal to action server...");
-		ac_grasp.sendGoal(grasp_goal);
-		
-		//block until the action is completed
-		ROS_INFO("Waiting for result...");
-		
-		ac_grasp.waitForResult();
-		ROS_INFO("Action Finished...");
+	//send the goal
+	ROS_INFO("Sending goal to action server...");
+	ac_grasp.sendGoal(grasp_goal);
+	ac_grasp.waitForResult();
+	ROS_INFO("Action Finished...");
 
+	//next, make arm safe again
+	safe = makeSafeForTravel(n);
+	if (!safe)
+		return 1;
 		
+	//next, back out
+	segbot_arm_manipulation::TabletopApproachGoal back_out_goal;
+	back_out_goal.command = "back_out";
+	ac_approach.sendGoal(back_out_goal);
+	ac_approach.waitForResult();
+	
+		
+	
 		//lift and lower the object a bit, let it go and move back
 		/*lift(n,0.07);
 		lift(n,-0.07);
