@@ -133,27 +133,10 @@ void lift(ros::NodeHandle n, double x){
 	segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 }
 
-bool makeSafeForTravel(ros::NodeHandle n){
-	
-	ros::ServiceClient safety_client = n.serviceClient<moveit_utils::MicoNavSafety>("/mico_nav_safety");
-	safety_client.waitForExistence();
-	moveit_utils::MicoNavSafety srv_safety;
-	srv_safety.request.getSafe = true;
-	if (safety_client.call(srv_safety))
-	{
-		ROS_INFO("Safety service called successfully");
-		return true;
-	}
-	else
-	{
-		ROS_ERROR("Failed to call safety service....aborting");
-		return false;
-	}
-}
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
-	ros::init(argc, argv, "demo_grasp_action_client");
+	ros::init(argc, argv, "object_to_office_task");
 	
 	ros::NodeHandle n;
 
@@ -183,7 +166,7 @@ int main(int argc, char **argv) {
 	pose_outofview = current_pose;
 	
 	//Step 2: call safety service to make the arm safe for base movement -- TO DO
-	bool safe = makeSafeForTravel(n);
+	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	if (!safe)
 		return 1;
 	
@@ -258,6 +241,7 @@ int main(int argc, char **argv) {
 		grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
 	}
 	grasp_goal.target_object_cluster_index = largest_pc_index;
+	grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
 				
 	//send the goal
 	ROS_INFO("Sending goal to action server...");
@@ -265,8 +249,9 @@ int main(int argc, char **argv) {
 	ac_grasp.waitForResult();
 	ROS_INFO("Action Finished...");
 
-	//next, make arm safe again
-	safe = makeSafeForTravel(n);
+	//next, lift and make arm safe again
+	lift(n,0.05);
+	safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	if (!safe)
 		return 1;
 		
@@ -276,7 +261,20 @@ int main(int argc, char **argv) {
 	ac_approach.sendGoal(back_out_goal);
 	ac_approach.waitForResult();
 	
-		
+	//next go to an office - TO DO
+	
+	
+	//hand over object
+	segbot_arm_manipulation::moveToPoseMoveIt(n,pose_outofview);
+	
+	segbot_arm_manipulation::TabletopGraspGoal handover_goal;
+	handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
+	handover_goal.timeout_seconds = 30.0;
+	
+	ac_grasp.sendGoal(grasp_goal);
+	ac_grasp.waitForResult();
+	
+	
 	
 		//lift and lower the object a bit, let it go and move back
 		/*lift(n,0.07);
