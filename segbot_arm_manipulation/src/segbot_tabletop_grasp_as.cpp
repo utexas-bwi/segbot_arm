@@ -538,13 +538,19 @@ public:
 			//TO DO: move to handover position
 			
 			//listen for haptic feedback
-			ros::Rate r(40);
+			
+			double rate = 40;
+			
+			ros::Rate r(rate);
 
 			double total_grav_free_effort = 0;
 			double total_delta;
 			double delta_effort[6];
 
 			sensor_msgs::JointState prev_effort_state = current_effort;
+
+
+			double elapsed_time = 0;
 
 			while (ros::ok()){
 		
@@ -562,6 +568,13 @@ public:
 				}
 				
 				r.sleep();
+				elapsed_time+=(1.0)/rate;
+				
+				if (goal->timeout_seconds > 0 && elapsed_time > goal->timeout_seconds){
+					
+					result_.success = false;
+					as_.setAborted(result_);
+				}
 			}
 			
 			//now open the hand

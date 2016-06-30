@@ -18,6 +18,9 @@ int32 target_object_cluster_index
 # specific for "grasp" action
 string grasp_selection_method
 
+# specific for "handover" action
+float32 timeout_seconds
+
 ---
 # Result
 bool success
