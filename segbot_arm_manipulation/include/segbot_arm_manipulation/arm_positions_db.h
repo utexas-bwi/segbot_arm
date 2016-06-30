@@ -25,6 +25,24 @@ class ArmPositionDB {
 	
 	public:
 	
+		bool hasJointPosition(std::string name){
+			for (unsigned int i = 0; i < j_position_names.size(); i++){
+				if (j_position_names[i] == name){
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		bool hasCarteseanPosition(std::string name){
+			for (unsigned int i = 0; i < tool_position_names.size(); i++){
+				if (tool_position_names[i] == name){
+					return true;
+				}
+			}
+			return false;
+		}
+	
 		geometry_msgs::Pose getToolPosition(std::string name){
 			for (unsigned int i = 0; i < tool_position_names.size(); i++){
 				if (tool_position_names[i] == name){
@@ -42,8 +60,6 @@ class ArmPositionDB {
 					return j_positions[i];
 				}
 			}
-			
-			
 		}
 		
 		void print(){
