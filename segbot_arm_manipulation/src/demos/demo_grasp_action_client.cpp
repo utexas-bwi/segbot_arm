@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
 		}
 		
 		//create the action client
-		actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac("segbot_arm_grasp_action_server",true);
+		actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac("segbot_tabletop_grasp_as",true);
 		ac.waitForServer();
 		
 		//create and fill goal

@@ -4,7 +4,6 @@
 	<node name="segbot_table_approach_as" pkg="segbot_arm_manipulation" type="segbot_table_approach_as" output="screen">
 	</node>
 	
-	
 	<!-- launch change detection service -->
 	<node name="segbot_tabletop_grasp_as" pkg="segbot_arm_manipulation" type="segbot_tabletop_grasp_as" output="screen">
 	</node>
