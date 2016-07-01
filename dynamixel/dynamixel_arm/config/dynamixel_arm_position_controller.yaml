@@ -1,21 +1,21 @@
-joint_0:
+spindle_to_joint_1:
     controller:
         package: dynamixel_controllers
         module: joint_position_controller
         type: JointPositionController
-    joint_name: joint_0
+    joint_name: spindle_to_joint_1
     joint_speed: 0.5
     motor:
         id: 1
         init: 512
         min: 0
         max: 1023
-joint_1:
+spindle_to_joint_2:
     controller:
         package: dynamixel_controllers
         module: joint_position_controller
         type: JointPositionController
-    joint_name: joint_1
+    joint_name: spindle_to_joint_2
     joint_speed: 0.5
     motor:
         id: 2

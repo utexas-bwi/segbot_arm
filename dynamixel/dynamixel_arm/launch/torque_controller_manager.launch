@@ -19,7 +19,7 @@
           args="--manager=dxl_manager
                 --port=dynamixel_arm_port
                 --type=simple
-				joint_0
-                joint_1"
+		spindle_to_joint_1
+                spindle_to_joint_2"
                 output="screen"/>
 </launch>

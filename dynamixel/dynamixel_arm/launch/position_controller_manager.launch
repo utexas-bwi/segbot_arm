@@ -9,20 +9,20 @@
                     port_name: "/dev/ttyUSB0"
                     baud_rate: 1000000
                     min_motor_id: 1
-                    max_motor_id: 25
+                    max_motor_id: 6
                     update_rate: 20
         </rosparam>
     </node>
 
     <!-- Start upper and lower arm joint controllers -->
-    <rosparam file="$(find dynamixel_arm)/config/dynamixel_arm_controller.yaml" command="load"/>
+    <rosparam file="$(find dynamixel_arm)/config/dynamixel_arm_position_controller.yaml" command="load"/>
 
     <node name="dynamixel_arm_controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
           args="--manager=dxl_manager
                 --port=dynamixel_arm_port
                 --type=simple
-		joint_0
-                joint_1"
+		spindle_to_joint_1
+                spindle_to_joint_2"
                 output="screen"/>
 
     <!-- Start joints trajectory controller controller -->
@@ -31,8 +31,8 @@
           args="--manager=dxl_manager
                 --type=meta
                 f_arm_controller
-                joint_0
-                joint_1
+                spindle_to_joint_1
+                spindle_to_joint_2
                 "
 		 output="screen"/>
 </launch>
