@@ -5,6 +5,7 @@
 #include <math.h>
 #include <cstdlib>
 #include <std_msgs/String.h>
+#include <std_msgs/Int8.h>
 
 #include <Eigen/Dense>
 #include <eigen_conversions/eigen_msg.h>
@@ -12,7 +13,9 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/WrenchStamped.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Float64.h>
 
 //tf stuff
 #include <tf/transform_datatypes.h>
@@ -43,6 +46,10 @@
 #include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/common/time.h>
 #include <pcl/common/common.h>
+
+#include <pcl/common/centroid.h>
+#include <pcl/common/impl/centroid.hpp>
+
 
 #include <pcl/filters/crop_box.h>
 #include <pcl/filters/passthrough.h>
@@ -81,9 +88,15 @@
 
 #include <segbot_arm_manipulation/arm_utils.h>
 
+//for feature extraction
+#include <segbot_arm_perception/FeatureExtraction.h>
+
 
 //Math and definitions
 #include <stdlib.h>
+
+//openCV includes
+//#include <opencv2/opencv.hpp>
 
 #define PI 3.14159265
 
@@ -140,11 +153,16 @@ ros::Publisher cloud_grasp_pub;
 ros::Publisher pose_array_pub;
 ros::Publisher pose_pub;
 ros::Publisher pose_fk_pub;
+
+//servie client
+ros::ServiceClient colorhist_client;
  
 sensor_msgs::PointCloud2 cloud_ros;
 
 bool heardGrasps = false;
+bool heardWrench = false;
 agile_grasp::Grasps current_grasps;
+geometry_msgs::WrenchStamped current_wrench;
 
 
 struct GraspCartesianCommand {
@@ -201,15 +219,24 @@ void grasps_cb(const agile_grasp::Grasps &msg){
 	heardGrasps = true;
 }
 
+
+//Callback for toolwrench 
+void wrench_cb(const geometry_msgs::WrenchStamped &msg){ 
+	current_wrench = msg;
+	heardWrench = true;
+}
+
+
 void listenForArmData(float rate){
 	heardPose = false;
 	heardJoinstState = false;
+	heardWrench = false;
 	ros::Rate r(rate);
 	
 	while (ros::ok()){
 		ros::spinOnce();
 		
-		if (heardPose && heardJoinstState)
+		if (heardPose && heardJoinstState && heardWrench)
 			return;
 		
 		r.sleep();
@@ -499,38 +526,70 @@ void lift(ros::NodeHandle n, double x){
 	segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 }
 
-/*Method to check if the fingers are open.
- * return: true if the fingers are open, grasp verified - false if the fingers are closed, grasp most likely failed
- * Jivko to work on reading force exerted downwards to help!
- */ 
+std::vector<double> get_color_hist(sensor_msgs::PointCloud2 desired_cloud){ 
+	segbot_arm_perception::FeatureExtraction srv; 
+	srv.request.params_int.push_back(8);
+	srv.request.cloud = desired_cloud; 
+	if(colorhist_client.call(srv)){
+		return srv.response.feature_vector;
+	}else{
+		ROS_ERROR("could not compute a color historgram");
+		return vector<double> (); 
+	}
+}
+
 bool fingers_open(){ 
-	 float tolerance = 140; //might want to update appropriately //might want to change to 120 according to data
+	 float tolerance = 120;
 	 
-	 float finger1_diff = abs(current_finger.finger1 - FINGER_FULLY_CLOSED); //make new fingers closed variable 
+	 float finger1_diff = abs(current_finger.finger1 - FINGER_FULLY_CLOSED); 
 	 float finger2_diff = abs(current_finger.finger2 - FINGER_FULLY_CLOSED);
-	 
-	 /*ROS_INFO_STREAM("finger 1:");
-	 ROS_INFO_STREAM(current_finger.finger1);
-	 ROS_INFO_STREAM("difference for finger 1");
-	 ROS_INFO_STREAM(finger1_diff);
-	 ROS_INFO_STREAM("finger 2");
-	 ROS_INFO_STREAM(current_finger.finger2);
-	 ROS_INFO_STREAM("difference for finger 2");
-	 ROS_INFO_STREAM(finger2_diff); */
+
 	 if(finger1_diff < tolerance && finger2_diff < tolerance){
 		 return false;
 	 }
 	return true; 
 }
 
-/*method to check if the desired object is no longer on the table
- * use point cloud 
- * Arm might be in the way of the sensor, in which case idk????
- */ 
-bool not_on_table(ros::NodeHandle n){
-	/*Find coordinates of original cloud
-	 *if the cloud is not at these coordinates, it's moved
-	 */ 
+double euclidean_distance(Eigen::Vector4f center_vector, Eigen::Vector4f new_center){
+	
+	double x_diff = (double) new_center(0) - center_vector(0);
+	double y_diff = (double) new_center(1) - center_vector(1);
+	double z_diff = (double) new_center(2) - center_vector(2);
+	return (double) sqrt(pow(x_diff, 2) + pow(y_diff, 2) + pow (z_diff, 2));
+	
+}
+
+double correlation_coeff(std::vector<double> orig_colorhist, std::vector<double> new_colorhist){
+	
+	if(orig_colorhist.size() != new_colorhist.size()){
+		ROS_ERROR("color histograms are not the same size. Values are not accurate. Abort.");
+		return 1.0;
+	}
+	
+	double sum_xy = 0.0;
+	double sum_x = 0.0;
+	double sum_y = 0.0;
+	double sum_x_2 = 0.0;
+	double sum_y_2 = 0.0;
+	double num = 0.0;
+	
+	for(unsigned int i = 0; i < orig_colorhist.size(); i++){
+		num++; 
+		sum_x += orig_colorhist.at(i);
+		sum_y += new_colorhist.at(i);
+		sum_x_2 += pow(orig_colorhist.at(i), 2);
+		sum_y_2 += pow(new_colorhist.at(i) , 2);
+		sum_xy += (orig_colorhist.at(i) * new_colorhist.at(i));
+	}
+	
+	double result = sum_xy - ((sum_x * sum_y)/ num);
+	result /= sqrt((sum_x_2 - (pow(sum_x , 2) / num)) * (sum_y_2 - (pow(sum_y , 2) /num)));
+	return result;
+	
+}
+
+bool not_on_table(ros::NodeHandle n, Eigen::Vector4f center_vector, std::vector<double> orig_colorhist){
+	//recheck table
 	segbot_arm_perception::TabletopPerception::Response new_scene = segbot_arm_manipulation::getTabletopScene(n);
 	std::vector<PointCloudT::Ptr > new_objects;
 	
@@ -543,108 +602,115 @@ bool not_on_table(ros::NodeHandle n){
 		pcl::fromPCLPointCloud2(pc_i,*object_i);
 		new_objects.push_back(object_i);
 	}
-	//NEEDS MORE, will this work if it detects the object in the air as "on the table"
-	//this doesn't guarantee you've picked up the correct object, just an object that
-	//looks like the desired one (there could be multiple 
-	
-	
-	pcl::PCLPointCloud2 pcl_pc2;
-    pcl_conversions::toPCL(cloud_ros,pcl_pc2);
-    PointCloudT::Ptr cloud_target(new PointCloudT);
-    pcl::fromPCLPointCloud2(pcl_pc2,*cloud_target);
-	
-	//should try to add approximate location if possible 
-	for(unsigned int i = 0; i < new_objects.size(); i++){
-		//int current_size = (int) new_objects.at(i) -> points.size(); //total amount of points 
-		pcl::IterativeClosestPoint<PointT, PointT> icp;
-		icp.setInputSource(new_objects.at(i)); 
-		icp.setInputTarget(cloud_target); // needs to be pcl
-		PointCloudT Final;
-		icp.align(Final);
-		if(icp.hasConverged()){
-			ROS_INFO_STREAM("it converged");
-			ROS_INFO_STREAM("the fitness score is:");
-			ROS_INFO_STREAM(icp.getFitnessScore());
-			return false; //an object on the table is the same as the desired
+	double tolerance = 0.1; //need to update this after testing 
+	for(unsigned int i = 0; i< new_objects.size(); i++){
+		ROS_INFO("check other object locations..");
+		Eigen::Vector4f new_center;
+		pcl::compute3DCentroid(*new_objects.at(i), new_center);
+		ROS_INFO("The current object's center is %f, %f, %f",new_center(0),new_center(1),new_center(2));
+		
+		double distance = euclidean_distance(center_vector, new_center);
+		
+		if(distance < tolerance){ 
+			sensor_msgs::PointCloud2 new_pc; 
+			pcl::toROSMsg(*new_objects.at(i), new_pc); 
+			std::vector<double> new_colorhist = get_color_hist(new_pc);
+			ROS_INFO("found an object with a similar center...");
+			
+			double corr = correlation_coeff(orig_colorhist, new_colorhist);
+			ROS_INFO_STREAM(corr);
+			if (corr > 0.8){ 
+				ROS_INFO("object is the same, return false");
+				return false; //this is the same object
+			}
 		}
+		
 	}
-	
-	//we've gone through all of the new objects and none of them match the desired object
-	return true; 
+	ROS_INFO("checked all objects currently on the table, none are the same, return true");
+	return true; //checked all objets on table, none are the desired
 	
 }
 
-/*method to check if the desired object has moved with the arm
- * this requires we know what the desired object looks like
- * 
- * possibly use the feature cloud in the PCL library? 
- * 
- * return: true if the object is now where the arm is, 
- * false otherwise
- * 
- * potential problems: arm blocking the view of the camera.
- * how can we fix this?
- * 		possibly switch to next camera? assuming that can see where the arm is
- */ 
-bool moved_with_arm(){
-	//get coordinates of the arm??
-	//somehow get the point cloud of the object 
-	//do icp
+
+bool move_force_verify(ros::NodeHandle n){
+	//name: ['mico_joint_1', 'mico_joint_2', 'mico_joint_3', 'mico_joint_4', 'mico_joint_5', 'mico_joint_6', 'mico_joint_finger_1', 'mico_joint_finger_2']
+	//position: [-1.3417218624707292, -0.44756153173493096, -0.2887493796082798, -1.1031276625138604, 1.1542971070664283, 2.9511931472480804, -0.0008399999999999999, 0.0]
+	//velocity: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+	//effort: [259758363770880.0, 3.49771372889357e-13, -3.833363283595124e+26, 4.5914945482066956e-41, -3.833369186553227e+26, 4.5914945482066956e-41, 0.0, 0.0]
+	 
+
+	 listenForArmData(30.0);
 	
+	 sensor_msgs::JointState original_state;
+	 original_state.position.push_back(-1.3417218624707292);
+	 original_state.position.push_back(-0.44756153173493096);
+	 original_state.position.push_back(-0.2887493796082798);
+	 original_state.position.push_back(-1.1031276625138604);
+	 original_state.position.push_back(1.1542971070664283);
+	 original_state.position.push_back(2.9511931472480804);
+	 original_state.position.push_back(current_finger.finger1);
+	 original_state.position.push_back(current_finger.finger2);
+	 
+	 double orig_down_force = 0.9;
+	 //make sure this does not open the fingers
+	 segbot_arm_manipulation::moveToJointState(n,original_state);
+	 double threshold = 0.2;
+	 listenForArmData(30.0);
+	 //need to also listen for wrench...
+	 double diff = current_wrench.wrench.force.z - orig_down_force; //if this is negative, we know nothing was grabbed
+	 if(diff>threshold){
+		 return true; //force didn't change, failed to grasp
+	 }
 	
-	return false; //dummy
+	return false; 
 }
 
 
 /*Method to verify if the arm has picked up the object
  * return: false if the arm failed in picking up the object, true if the arm succeed.
  * called before setting object back down. If grasp failed, try next grasp?
- * 
- * Method assumes robot has only two fingers
- * 
- * If the grasp has successfully happened, the fingers should be slightly open,
- * the table should no longer have the item on it, the item should now be in the air
- * with the arm
  */ 
 
-bool verify_pickup(){
+bool verify_pickup(ros::NodeHandle n, sensor_msgs::PointCloud2 ros_cloud, std::vector<double> orig_colorhist){
 	
-	 
-	 /*TO DO LIST:
-	  * Update tolerance appropriately after testing
-	  * 
-	  * in a separate method, have the arm try the next possibility if the arm failed
-	  * 
-	  * maybe use //moveToPoseMoveIt(n,pose_outofview); or similar!! to make sure hand doesn't interfere in third method
-	  * 
-	  * add to cmake list..........
-	  * 
-	  * turn arm on, see what the home and pose_outofview do on the robot, choose which is appropriate
-	  * 
-	  * finish other two methods 
-	  */
 	  
 	 /*Added:
 	  * added #include <stdlib.h>
 	  * added #include <pcl/io/pcd_io.h>
 		#include <pcl/point_types.h>
 		#include <pcl/registration/icp.h>
-		* 
-		* added 	cloud_target -> pc_target; in the main method
+	  * subscribed to pointcloud_feature_server service 
+	  * 
+	  * #include <pcl/common/centroid.h>
+	  * #include <segbot_arm_perception/FeatureExtraction.h>
+	  * added global orig_colorhist
+	  * 
+	  * added opencv for histogram comparison 
 	  */ 
-	 
+	
+	 bool moved = move_force_verify(n);
 	 bool fingers_still_open = fingers_open();
+	 //find center of original position of desired object
+	 PointCloudT pcl_pc;
+	 pcl::fromROSMsg(ros_cloud, pcl_pc);
+	 Eigen::Vector4f center_vector;
+	 pcl::compute3DCentroid(pcl_pc, center_vector);
 	 
-	 
+	 bool gone_from_table = not_on_table(n, center_vector, orig_colorhist);
+	  
 
-	return false; //dummy, needs to be updated
+	return (gone_from_table && fingers_still_open && moved); 
 }
+
+
+
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "grasp_and_verify");
 	
 	ros::NodeHandle n;
+	ROS_INFO("making service clients......");
 
 	//create subscriber to joint angles
 	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
@@ -659,7 +725,10 @@ int main(int argc, char **argv) {
 	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 	  
 	//subscriber for grasps
-	ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps_handles",1, grasps_cb);  
+	ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps_handles",1, grasps_cb); 
+	
+	//subscriber for wrench tool
+	ros::Subscriber sub_wrench = n.subscribe("/mico_arm_driver/out/tool_wrench", 1, wrench_cb);  
 	  
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
@@ -674,6 +743,11 @@ int main(int argc, char **argv) {
 	//debugging publisher
 	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud_debug", 10);
 	cloud_grasp_pub = n.advertise<sensor_msgs::PointCloud2>("agile_grasp_demo/cloud", 10);
+	
+	//pointcloud_feature_service service client
+	colorhist_client = n.serviceClient<segbot_arm_perception::FeatureExtraction>("/segbot_arm_perception/color_histogram_service");
+	
+	ROS_INFO("finished making service clients....");
 	
 	//used to compute transfers
 	tf::TransformListener listener;
@@ -700,7 +774,7 @@ int main(int argc, char **argv) {
 	segbot_arm_manipulation::openHand();
 	
 	segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
-	
+	ROS_INFO_STREAM("Detecting objects on table...");
 	
 	//step 2: extract the data from the response
 	detected_objects.clear();
@@ -712,6 +786,8 @@ int main(int argc, char **argv) {
 		detected_objects.push_back(object_i);
 	}
 	
+	ROS_INFO_STREAM("Finished detecting objects on table...");
+	
 	if (detected_objects.size() == 0){
 		ROS_WARN("[agile_grasp_demo.cpp] No objects detected...aborting.");
 		return 1;
@@ -722,17 +798,21 @@ int main(int argc, char **argv) {
 		plane_coef_vector(i)=table_scene.cloud_plane_coef[i];
 	
 	//step 3: select which object to grasp
+	ROS_INFO_STREAM("Selecting object to grasp...");
 	int selected_object = selectObjectToGrasp(detected_objects);
 	
 	//publish object to find grasp topic
 	pcl::PCLPointCloud2 pc_target;
 	pcl::toPCLPointCloud2(*detected_objects.at(selected_object),pc_target);
 	pcl_conversions::fromPCL(pc_target, cloud_ros);
-
 	
 	//publish to agile_grasp
 	ROS_INFO("Publishing point cloud...");
 	cloud_grasp_pub.publish(cloud_ros);
+	
+	ROS_INFO_STREAM("Making original color histogram");
+	std::vector<double> orig_colorhist = get_color_hist(cloud_ros);
+	ROS_INFO("Finished making color histogram");
 	
 	//wait for response at 30 Hz
 	listenForGrasps(30.0);
@@ -870,16 +950,13 @@ int main(int argc, char **argv) {
 	//LIFT action
 	
 	//we need to call angular velocity control before we can do cartesian control right after using the fingers
-	lift(n,0.065); 
+	//lift(n,0.065); 
+	bool force = move_force_verify(n);
 	spinSleep(0.5);
 	//this is where we should check for verification
-	bool verified = fingers_open();
-	ROS_INFO_STREAM("The status of the object is ");
-	ROS_INFO_STREAM(verified);
 	
-	ROS_INFO_STREAM("size of the desired cloud is:");
-	ROS_INFO_STREAM((int)cloud_ros.data.size());
-	bool table_verified = not_on_table(n);
+	bool verified = verify_pickup(n, cloud_ros, orig_colorhist); 
+	
 	lift(n,-0.05); 
 	segbot_arm_manipulation::openHand();
 	
