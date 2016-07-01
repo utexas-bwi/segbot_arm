@@ -92,6 +92,8 @@ protected:
   bool heardPose;
   bool heardJoinstState;
   bool heardWrench;
+  
+  int num_bins;
  
 public:
 
@@ -117,6 +119,8 @@ public:
 	  
 	//subscriber for wrench
 	sub_wrench = nh_.subscribe("/mico_arm_driver/out/tool_wrench", 1, &LiftVerifyActionServer::wrench_cb, this);
+	
+	ROS_INFO("Lift and verify action has started");
 	
     as_.start();
   }
@@ -230,6 +234,7 @@ public:
 	}
 	
 	void set_goal_joint_state(){
+		goal_state.position.clear();
 		goal_state.position.push_back(-1.3417218624707292);
 		goal_state.position.push_back(-0.44756153173493096);
 		goal_state.position.push_back(-0.2887493796082798);
@@ -247,7 +252,10 @@ public:
 		 listenForArmData(30.0);
 		 double diff = current_wrench.wrench.force.z - goal_down_force; 
 		 if(diff>threshold){
+			 ROS_INFO("force test succeeded");
 			 greater_force = true;
+		 }else{
+			 ROS_INFO("force test failed");
 		 }
 		 return greater_force;
 	}
@@ -259,8 +267,10 @@ public:
 		 double finger2_diff = (double) abs(current_finger.finger2 - FINGER_FULLY_CLOSED);
 
 		 if(finger1_diff < tolerance && finger2_diff < tolerance){
+			 ROS_INFO("fingers test failed");
 			 return false;
 		 }
+		 ROS_INFO("fingers test succeeded");
 		 return true; 
 	}
 	
@@ -281,7 +291,6 @@ public:
 		
 		double tolerance = 0.1; //need to update this after testing 
 		for(unsigned int i = 0; i< new_objects.size(); i++){
-			ROS_INFO("check other object locations..");
 			Eigen::Vector4f new_center;
 			pcl::compute3DCentroid(*new_objects.at(i), new_center);
 			ROS_INFO("The current object's center is %f, %f, %f",new_center(0),new_center(1),new_center(2));
@@ -289,7 +298,7 @@ public:
 			double distance = euclidean_distance(center_vector, new_center);
 			
 			if(distance < tolerance){ 
-				std::vector<double> new_colorhist = get_color_hist(*new_objects.at(i), 8);
+				std::vector<double> new_colorhist = get_color_hist(*new_objects.at(i), num_bins);
 				ROS_INFO("found an object with a similar center...");
 				
 				double corr = correlation_coeff(orig_colorhist, new_colorhist);
@@ -314,10 +323,12 @@ public:
 		segbot_arm_manipulation::moveToJointState(nh_, goal_state);
 		double goal_down_force = 0.9;
 		
+		
+		num_bins = goal -> bins;
 		//convert ros pointcloud to pcl 
 		PointCloudT pcl_pc;
 		pcl::fromROSMsg(goal -> tgt_cloud, pcl_pc);
-		std::vector<double> orig_colorhist = get_color_hist(pcl_pc, goal -> bins);
+		std::vector<double> orig_colorhist = get_color_hist(pcl_pc, num_bins);
 		
 		//find center of desired object 
 		Eigen::Vector4f center_vector;
@@ -335,6 +346,9 @@ public:
 		bool greater_force = down_force(goal_down_force);
 		bool fingers_still_open = fingers_open();
 		bool gone_from_table = not_on_table(center_vector, orig_colorhist);
+		ROS_INFO_STREAM(greater_force);
+		ROS_INFO_STREAM(fingers_still_open);
+		ROS_INFO_STREAM(gone_from_table);
 		result_.success = (greater_force && fingers_still_open && gone_from_table);
 		as_.setSucceeded(result_);
 	}
