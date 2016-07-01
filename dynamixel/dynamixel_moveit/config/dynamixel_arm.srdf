@@ -12,9 +12,9 @@
     <group name="arm">
         <chain base_link="base_link" tip_link="top_mount_2" />
     </group>
-    <!--PASSIVE JOINT: Purpose: this element is used to mark joints that are not actuated-->
-    <passive_joint name="spindle_to_joint_1" />
-    <passive_joint name="spindle_to_joint_2" />
+    <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
+    <virtual_joint name="spindle_to_joint_1" type="fixed" parent_frame="link_1" child_link="link_1_spindle" />
+    <virtual_joint name="spindle_to_joint_2" type="fixed" parent_frame="link_2" child_link="link_2_spindle" />
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_link" link2="bottom_mount_1" reason="Never" />
     <disable_collisions link1="base_link" link2="link_1" reason="Never" />

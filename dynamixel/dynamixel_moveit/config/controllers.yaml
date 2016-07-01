@@ -1,0 +1,8 @@
+controller_list:
+       - name: f_arm_controller
+         action_ns: follow_joint_trajectory
+         type: FollowJointTrajectory
+         default: true
+         joints:
+            - spindle_to_joint_1
+            - spindle_to_joint_2
