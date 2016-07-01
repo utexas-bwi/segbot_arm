@@ -17,10 +17,10 @@
 
 //get table scene and color histogram
 #include "segbot_arm_perception/TabletopPerception.h"
-#include <segbot_arm_perception/FeatureExtraction.h>
+#include <segbot_arm_perception/segbot_arm_perception.h>
 
 //actions
-#include <actionlib/client/simple_action_client.h>
+#include <actionlib/server/simple_action_server.h>
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
@@ -60,25 +60,27 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
+using namespace std;
+
 class LiftVerifyActionServer
 {
 protected:
 
   ros::NodeHandle nh_;
   
-  actionlib::SimpleActionServer<segbot_arm_manipulation::LiftVerifyActionServer> as_; 
+  actionlib::SimpleActionServer<segbot_arm_manipulation::LiftVerifyAction> as_; 
   
   std::string action_name_;
   
   segbot_arm_manipulation::LiftVerifyFeedback feedback_;
   segbot_arm_manipulation::LiftVerifyResult result_;
   
-  ros::serviceClient colorhist_client;
   
   ros::Subscriber sub_angles;
   ros::Subscriber sub_torques;
   ros::Subscriber sub_tool;
   ros::Subscriber sub_finger;
+  ros::Subscriber sub_wrench;
   
   sensor_msgs::JointState current_state;
   sensor_msgs::JointState current_effort;
@@ -114,10 +116,7 @@ public:
 	sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &LiftVerifyActionServer::fingers_cb, this);
 	  
 	//subscriber for wrench
-	sub_wrench = nh_.subscriber("/mico_arm_driver/out/tool_wrench", 1, &LiftVerifyActionServer::wrench_cb, this);
-	
-	//service client for pointcloud_feature_extraction
-	colorhist_client = nh_.serviceClient<segbot_arm_perception::FeatureExtraction>("/segbot_arm_perception/color_histogram_service");
+	sub_wrench = nh_.subscribe("/mico_arm_driver/out/tool_wrench", 1, &LiftVerifyActionServer::wrench_cb, this);
 	
     as_.start();
   }
@@ -174,18 +173,25 @@ public:
 		}
 	}	
 	
-	std::vector<double> get_color_hist(sensor_msgs::PointCloud2 desired_cloud){ 
-		segbot_arm_perception::FeatureExtraction srv; 
-		srv.request.params_int.push_back(8);
-		srv.request.cloud = desired_cloud; 
-		if(colorhist_client.call(srv)){
-			return srv.response.feature_vector;
-		}else{
-			ROS_ERROR("could not compute a color historgram");
-			return vector<double> (); 
-		}
+	std::vector<double> get_color_hist(PointCloudT desired_cloud, int dim){ 
+		std::vector<std::vector<std::vector<uint> > > hist3= segbot_arm_perception::computeRGBColorHistogram(desired_cloud, dim);
+		//int cloud_size = desired_cloud.points.size();
+		int i_offset = dim * dim;
+        int j_offset = dim;
+        std::vector<double> hist3_double_vector (dim * dim * dim, 0);
+        for (int i = 0; i < dim; i++) {
+            for (int j = 0; j < dim; j++) {
+                for (int k = 0; k < dim; k++) {
+                    hist3_double_vector[i * i_offset + j * j_offset + k] = hist3[i][j][k];
+                }
+            }
+        }
+		/*for (int i = 0; i < hist3_double_vector.size(); i++) {
+            hist3_double_vector[i] /= cloud_size;
+        }*/
+        return hist3_double_vector;	
 	}
-	
+
 	double euclidean_distance(Eigen::Vector4f center_vector, Eigen::Vector4f new_center){
 		double x_diff = (double) new_center(0) - center_vector(0);
 		double y_diff = (double) new_center(1) - center_vector(1);
@@ -283,9 +289,7 @@ public:
 			double distance = euclidean_distance(center_vector, new_center);
 			
 			if(distance < tolerance){ 
-				sensor_msgs::PointCloud2 new_pc; 
-				pcl::toROSMsg(*new_objects.at(i), new_pc); 
-				std::vector<double> new_colorhist = get_color_hist(new_pc);
+				std::vector<double> new_colorhist = get_color_hist(*new_objects.at(i), 8);
 				ROS_INFO("found an object with a similar center...");
 				
 				double corr = correlation_coeff(orig_colorhist, new_colorhist);
@@ -303,9 +307,6 @@ public:
 	
 	void executeCB(const segbot_arm_manipulation::LiftVerifyGoalConstPtr  &goal){
 		
-		//create color histogram of target object
-		std::vector<double> orig_colorhist = get_color_hist(goal -> tgt_cloud);
-		
 		listenForArmData(30.0);
 		set_goal_joint_state();
 		
@@ -313,9 +314,12 @@ public:
 		segbot_arm_manipulation::moveToJointState(nh_, goal_state);
 		double goal_down_force = 0.9;
 		
-		//get center point of tgt_cloud
+		//convert ros pointcloud to pcl 
 		PointCloudT pcl_pc;
 		pcl::fromROSMsg(goal -> tgt_cloud, pcl_pc);
+		std::vector<double> orig_colorhist = get_color_hist(pcl_pc, goal -> bins);
+		
+		//find center of desired object 
 		Eigen::Vector4f center_vector;
 		pcl::compute3DCentroid(pcl_pc, center_vector);
 		
@@ -328,7 +332,7 @@ public:
 			return;
         }
 		
-		bool greater_force = down_force(double goal_down_force);
+		bool greater_force = down_force(goal_down_force);
 		bool fingers_still_open = fingers_open();
 		bool gone_from_table = not_on_table(center_vector, orig_colorhist);
 		result_.success = (greater_force && fingers_still_open && gone_from_table);
