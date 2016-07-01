@@ -230,7 +230,7 @@ int main(int argc, char **argv) {
 	//Step 8: call the grasp action
 	
 	//create the action client
-	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_arm_grasp_action_server",true);
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_tabletop_grasp_as",true);
 	ac_grasp.waitForServer();
 		
 	//create and fill goal
