@@ -233,8 +233,13 @@ int main(int argc, char **argv) {
 		ROS_INFO("waiting for lift and verify action server result....");
 		lift_ac.waitForResult();
 		
-		ROS_INFO("lift and verify action finished");
-	
+		ROS_INFO("lift and verify action finished.");
+
+		if(lift_ac.getResult()){
+			ROS_INFO("Verification succeeded.");
+		}else{
+			ROS_WARN("Verification failed");
+		}
 		
 		//lift and lower the object a bit, let it go and move back
 		/*lift(n,0.07);
