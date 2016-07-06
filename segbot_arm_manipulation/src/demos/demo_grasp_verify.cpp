@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
 		grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
 		
 		//for that action, we have to specify the method used for picking the target grasp out of the candidates
-		grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_JOINTSPACE_SELECTION;
+		grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
 		
 		//finally, we fill in the table scene
 		grasp_goal.cloud_plane = table_scene.cloud_plane;
