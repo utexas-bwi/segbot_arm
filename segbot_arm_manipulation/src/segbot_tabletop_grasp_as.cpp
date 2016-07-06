@@ -9,65 +9,20 @@
 #include <time.h>       /* time */
 
 
-#include <std_msgs/String.h>
-
-
-
-#include <Eigen/Dense>
-#include <eigen_conversions/eigen_msg.h>
-
-#include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
-#include <geometry_msgs/PoseArray.h>
-#include <std_msgs/Float32.h>
-
-//tf stuff
-#include <tf/transform_datatypes.h>
-#include <tf_conversions/tf_eigen.h>
-#include <tf/transform_broadcaster.h>
+#include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/grasp_utils.h>
 
 
 //actions
 #include <actionlib/client/simple_action_client.h>
+#include <actionlib/server/simple_action_server.h>
+
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
 
-
-
-#include "agile_grasp/Grasps.h"
-
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_perception/TabletopPerception.h"
-
-// PCL specific includes
-//#include <pcl/conversions.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/console/parse.h>
-#include <pcl/point_types.h>
-#include <pcl/io/openni_grabber.h>
-#include <pcl/sample_consensus/sac_model_plane.h>
-#include <pcl/common/time.h>
-#include <pcl/common/common.h>
-
-#include <pcl/filters/crop_box.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/extract_indices.h>
-
-#include <pcl/ModelCoefficients.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/segmentation/extract_clusters.h>
-
-#include <pcl/kdtree/kdtree.h>
-
-#include <pcl_conversions/pcl_conversions.h>
-
-#include <tf/transform_listener.h>
-#include <tf/tf.h>
 
 #include <moveit_msgs/DisplayRobotState.h>
 // Kinematics
@@ -79,14 +34,11 @@
 #include <moveit_utils/MicoMoveitCartesianPose.h>
 
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/PoseArray.h>
 
 //the action definition
 #include "segbot_arm_manipulation/TabletopGraspAction.h"
 
-#include <actionlib/server/simple_action_server.h>
-
-#include <segbot_arm_manipulation/arm_utils.h>
-#include <segbot_arm_manipulation/grasp_utils.h>
 
 
 #define FINGER_FULLY_OPENED 6
