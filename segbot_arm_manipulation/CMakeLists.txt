@@ -73,6 +73,7 @@ add_action_files(
    TabletopGrasp.action
    TabletopApproach.action
    LiftVerify.action
+   Press.action
 )
 
 ## Generate services in the 'srv' folder
