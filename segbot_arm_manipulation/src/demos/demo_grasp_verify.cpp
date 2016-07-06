@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
 		grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
 		
 		//for that action, we have to specify the method used for picking the target grasp out of the candidates
-		grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
+		grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_JOINTSPACE_SELECTION;
 		
 		//finally, we fill in the table scene
 		grasp_goal.cloud_plane = table_scene.cloud_plane;
@@ -234,8 +234,10 @@ int main(int argc, char **argv) {
 		lift_ac.waitForResult();
 		
 		ROS_INFO("lift and verify action finished.");
-
-		if(lift_ac.getResult()){
+		segbot_arm_manipulation::LiftVerifyResult result = *lift_ac.getResult();
+		
+		bool verified = result.success;
+		if(verified){
 			ROS_INFO("Verification succeeded.");
 		}else{
 			ROS_WARN("Verification failed");
