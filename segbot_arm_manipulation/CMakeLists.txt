@@ -158,6 +158,10 @@ add_executable(arm_lift_verify_as src/arm_lift_verify_as.cpp)
 add_dependencies(arm_lift_verify_as jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(arm_lift_verify_as ${catkin_LIBRARIES})
 
+add_executable(arm_press_as src/arm_press_as.cpp)
+add_dependencies(arm_press_as jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
+target_link_libraries(arm_press_as ${catkin_LIBRARIES})
+
 add_executable(segbot_table_approach_as src/segbot_table_approach_as.cpp)
 target_link_libraries(segbot_table_approach_as ${catkin_LIBRARIES})
 
@@ -178,6 +182,9 @@ target_link_libraries(demo_grasp_action_client ${catkin_LIBRARIES} )
 
 add_executable(demo_grasp_verify src/demos/demo_grasp_verify.cpp)
 target_link_libraries(demo_grasp_verify ${catkin_LIBRARIES} )
+
+add_executable(demo_explore_object src/demos/demo_explore_object.cpp)
+target_link_libraries(demo_explore_object ${catkin_LIBRARIES} )
 
 add_executable(test_table_approach_actions src/demos/test_table_approach_actions.cpp)
 target_link_libraries(test_table_approach_actions ${catkin_LIBRARIES} )
