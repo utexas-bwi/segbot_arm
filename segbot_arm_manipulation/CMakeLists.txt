@@ -74,6 +74,7 @@ add_action_files(
    TabletopApproach.action
    LiftVerify.action
    Press.action
+   Push.action
 )
 
 ## Generate services in the 'srv' folder
@@ -161,6 +162,10 @@ target_link_libraries(arm_lift_verify_as ${catkin_LIBRARIES})
 add_executable(arm_press_as src/arm_press_as.cpp)
 add_dependencies(arm_press_as jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(arm_press_as ${catkin_LIBRARIES})
+
+add_executable(arm_push_as src/arm_push_as.cpp)
+add_dependencies(arm_push_as jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
+target_link_libraries(arm_push_as ${catkin_LIBRARIES})
 
 add_executable(segbot_table_approach_as src/segbot_table_approach_as.cpp)
 target_link_libraries(segbot_table_approach_as ${catkin_LIBRARIES})
