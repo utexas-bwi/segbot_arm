@@ -84,7 +84,6 @@ protected:
   
   sensor_msgs::JointState current_state;
   sensor_msgs::JointState current_effort;
-  sensor_msgs::JointState goal_state;
   jaco_msgs::FingerPosition current_finger;
   geometry_msgs::PoseStamped current_pose;
   geometry_msgs::WrenchStamped current_wrench;
@@ -233,18 +232,6 @@ public:
 		return result;
 	}
 	
-	void set_goal_joint_state(){
-		goal_state.position.clear();
-		goal_state.position.push_back(-1.3417218624707292);
-		goal_state.position.push_back(-0.44756153173493096);
-		goal_state.position.push_back(-0.2887493796082798);
-		goal_state.position.push_back(-1.1031276625138604);
-		goal_state.position.push_back(1.1542971070664283);
-		goal_state.position.push_back(2.9511931472480804);
-		goal_state.position.push_back(current_finger.finger1);
-		goal_state.position.push_back(current_finger.finger2);
-	}
-	
 	bool down_force(double goal_down_force){
 		 listenForArmData(30.0);
 		 bool greater_force = false;
@@ -317,10 +304,9 @@ public:
 	void executeCB(const segbot_arm_manipulation::LiftVerifyGoalConstPtr  &goal){
 		
 		listenForArmData(30.0);
-		set_goal_joint_state();
 		
 		//move arm to desired location
-		segbot_arm_manipulation::moveToJointState(nh_, goal_state);
+		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		double goal_down_force = 0.9;
 		
 		
