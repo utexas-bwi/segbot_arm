@@ -75,6 +75,7 @@ add_action_files(
    LiftVerify.action
    Press.action
    Push.action
+   Shake.action
 )
 
 ## Generate services in the 'srv' folder
@@ -166,6 +167,10 @@ target_link_libraries(arm_press_as ${catkin_LIBRARIES})
 add_executable(arm_push_as src/arm_push_as.cpp)
 add_dependencies(arm_push_as jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(arm_push_as ${catkin_LIBRARIES})
+
+add_executable(arm_shake_as src/arm_shake_as.cpp)
+add_dependencies(arm_shake_as jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
+target_link_libraries(arm_shake_as ${catkin_LIBRARIES})
 
 add_executable(segbot_table_approach_as src/segbot_table_approach_as.cpp)
 target_link_libraries(segbot_table_approach_as ${catkin_LIBRARIES})
