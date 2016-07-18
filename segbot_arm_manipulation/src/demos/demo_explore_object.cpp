@@ -28,7 +28,10 @@
 #include <segbot_arm_manipulation/arm_utils.h>
 
 #include <segbot_arm_manipulation/PressAction.h>
+#include <segbot_arm_manipulation/PushAction.h>
+#include <segbot_arm_manipulation/TabletopGraspAction.h>
 #include <segbot_arm_manipulation/LiftVerifyAction.h>
+#include <segbot_arm_manipulation/ShakeAction.h>
 
 //pcl includes
 #include <pcl_conversions/pcl_conversions.h>
@@ -193,6 +196,7 @@ sensor_msgs::JointState set_home_arm(){
 	//arm_home.position.push_back(current_finger.finger2);
 }
 
+
 int main (int argc, char** argv){
 	ros::init(argc, argv, "demo_explore_object");
 	
@@ -214,6 +218,7 @@ int main (int argc, char** argv){
 
 	listenForArmData();
 	
+	//get table scene and find all objects on table 
 	segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
 	
 	if ((int)table_scene.cloud_clusters.size() == 0){
@@ -225,7 +230,7 @@ int main (int argc, char** argv){
 	
 	int index = chose_object("Enter index of object or press enter to pick largest", table_scene);
 	
-	//create the action client
+	//create the action client to press object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::PressAction> press_ac("arm_press_as",true);
 	press_ac.waitForServer();
 	ROS_INFO("press action server made...");
@@ -244,6 +249,105 @@ int main (int argc, char** argv){
 	press_ac.waitForResult();
 	ROS_INFO("Press action Finished...");
 	
+	listenForArmData();
+	
+	//create the action client to push an object
+	actionlib::SimpleActionClient<segbot_arm_manipulation::PushAction> push_ac("arm_push_as",true);
+	press_ac.waitForServer();
+	ROS_INFO("push action server made....");
+	
+	segbot_arm_manipulation::PushGoal push_goal;
+	
+	push_goal.tgt_cloud = table_scene.cloud_clusters[index];
+	push_goal.cloud_plane = table_scene.cloud_plane; 
+	push_goal.arm_home = arm_home; 
+	
+	//send the goal
+	ROS_INFO("Sending goal to action server...");
+	push_ac.sendGoal(push_goal);
+	
+	ROS_INFO("Waiting for results");
+	push_ac.waitForResult();
+	ROS_INFO("Push action finished...");
+	
+	
+	listenForArmData();
+	
+	//create the action client to grasp
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> grasp_ac("segbot_tabletop_grasp_as",true);
+	grasp_ac.waitForServer();
+	ROS_INFO("action server made...");
+		
+	//create and fill goal
+	segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
+		
+	//we want the robot to execute the GRASP action
+	grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
+	grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
+	
+	//finally, we fill in the table scene
+	grasp_goal.cloud_plane = table_scene.cloud_plane;
+	grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
+	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
+		grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
+	}
+	grasp_goal.target_object_cluster_index = index;
+			
+	//send goal
+	ROS_INFO("Sending goal to action server...");
+	grasp_ac.sendGoal(grasp_goal);
+	
+	ROS_INFO("Waiting for result...");
+	grasp_ac.waitForResult();
+	
+	ROS_INFO("Grasp action Finished...");
+
+
+	//create action to lift and verify
+	actionlib::SimpleActionClient<segbot_arm_manipulation::LiftVerifyAction> lift_ac("arm_lift_verify_as", true);
+	lift_ac.waitForServer();
+	
+	//make goals to send to action
+	segbot_arm_manipulation::LiftVerifyGoal lift_verify_goal;
+	
+	lift_verify_goal.tgt_cloud = table_scene.cloud_clusters[index];
+	lift_verify_goal.bins = 8;
+	
+	ROS_INFO("sending goal to lift and verify action server...");
+	lift_ac.sendGoal(lift_verify_goal);
+	
+	ROS_INFO("waiting for lift and verify action server result....");
+	lift_ac.waitForResult();
+	
+	ROS_INFO("lift and verify action finished.");
+	segbot_arm_manipulation::LiftVerifyResult result = *lift_ac.getResult();
+	
+	bool verified = result.success;
+	
+	if(verified){
+		ROS_INFO("Verification succeeded.");
+	}else{
+		ROS_WARN("Verification failed");
+	}
+	
+	//create action to shake object
+	actionlib::SimpleActionClient<segbot_arm_manipulation::ShakeAction> shake_ac("arm_shake_as", true);
+	
+	//make and send goals to action 
+	segbot_arm_manipulation::ShakeGoal shake_goal;
+	shake_goal.tgt_cloud = table_scene.cloud_clusters[index];
+	shake_goal.cloud_plane = table_scene.cloud_plane;
+	shake_goal.arm_home = arm_home;
+	shake_goal.verified = verified; 
+	
+	ROS_INFO("sending goal to shake action server....");
+	shake_ac.sendGoal(shake_goal);
+	
+	ROS_INFO("waiting for shake action server result....");
+	shake_ac.waitForResult();
+	
+	ROS_INFO("shake action finished...");
+	segbot_arm_manipulation::ShakeResult shake_result = *shake_ac.getResult();
 	
 	
 	return 0;
