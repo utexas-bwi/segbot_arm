@@ -12,6 +12,17 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   actionlib_msgs
   actionlib
+  moveit_ros_planning_interface
+  moveit_utils
+  moveit_msgs
+  nav_msgs
+  move_base_msgs
+  segbot_arm_perception
+  segbot_arm_manipulation
+  pcl_ros
+  pcl_conversions
+  bwi_msgs
+  bwi_kr_execution
 )
 
 ## System dependencies are found with CMake's conventions
@@ -122,6 +133,11 @@ add_dependencies(mico_rotate_hand_action segbot_arm_tasks_generate_messages_cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(mico_shake_action ${catkin_LIBRARIES})
 target_link_libraries(mico_rotate_hand_action ${catkin_LIBRARIES})
+
+
+## example task 
+add_executable(object_to_office_task src/object_to_office_task.cpp)
+target_link_libraries(object_to_office_task ${catkin_LIBRARIES} )
 
 #############
 ## Install ##
