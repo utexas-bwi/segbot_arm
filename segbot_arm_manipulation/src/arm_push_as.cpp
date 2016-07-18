@@ -201,7 +201,7 @@ public:
 		//change the y (height) of the point
 		geometry_msgs::Point goal_pt;
 		goal_pt.x = min(0);
-		goal_pt.y = (center(1)/2);
+		goal_pt.y = (center(1) + max(1))/2; //pls check this 
 		goal_pt.z = min(2);
 		return goal_pt;
 	}
@@ -295,6 +295,8 @@ public:
 			return;
 		}
 		
+		listenForArmData(30.0);
+		
 		//|| (pcl::pointToPlaneDistance(pt, goal -> cloud_plane) < MIN_DISTANCE_TO_PLANE)
 		
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
@@ -308,6 +310,8 @@ public:
 	
 		//make sure the object is still in reach
 		//switch sides and move object back
+		
+		listenForArmData(30.0);
 		
 		//move arm home
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);

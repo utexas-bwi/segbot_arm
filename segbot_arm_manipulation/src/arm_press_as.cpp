@@ -322,6 +322,8 @@ public:
 			return;
 		}
 		
+		listenForArmData(30.0); 
+		
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 
@@ -330,7 +332,8 @@ public:
 		//To Do: check if a new goal has been sent
 		//TO DO: add startSensoryDataCollection(); and 	stopSensoryDataCollection();
 		//To Do: check if moveToPoseMoveIt is okay with the plane
-
+		
+		listenForArmData(30.0);
 				
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
