@@ -133,7 +133,7 @@ public:
 	//subscriber for wrench
 	sub_wrench = nh_.subscribe("/mico_arm_driver/out/tool_wrench", 1, &ShakeActionServer::wrench_cb, this);
 	
-	ROS_INFO("Press action has started");
+	ROS_INFO("Shake action has started");
 	
     as_.start();
   }
@@ -217,7 +217,7 @@ public:
 		
 		if(goal -> tgt_cloud.data.size() == 0){
 			result_.success = false;
-			ROS_INFO("[arm_press_as.cpp] No object point clouds received...aborting");
+			ROS_INFO("[arm_shake_as.cpp] No object point clouds received...aborting");
 			as_.setAborted(result_);
 			return;
 		}
