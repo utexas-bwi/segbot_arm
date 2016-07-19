@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <stdlib.h>
 #include <std_msgs/String.h>
+#include <stdio.h>
 
 #include <Eigen/Dense>
 #include <eigen_conversions/eigen_msg.h>
@@ -140,12 +141,13 @@ int chose_object(std::string message, segbot_arm_perception::TabletopPerception:
 //TO DO: make sure locations are accurate 
 void show_indicies(segbot_arm_perception::TabletopPerception::Response table_scene){
 	for(unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
+		char buffer [10];
 		//find the center of the point
 		sensor_msgs::PointCloud2 ros_curr = table_scene.cloud_clusters[i];
-		PointCloudT::Ptr pcl_curr;
-		pcl::fromROSMsg(ros_curr, *pcl_curr);
+		PointCloudT pcl_curr;
+		pcl::fromROSMsg(ros_curr, pcl_curr);
 		Eigen::Vector4f center;
-		pcl::compute3DCentroid(*pcl_curr, center);
+		pcl::compute3DCentroid(pcl_curr, center);
 		
 		//display a number in rviz for the index of every point cloud available
 		visualization_msgs::Marker marker;
@@ -155,7 +157,10 @@ void show_indicies(segbot_arm_perception::TabletopPerception::Response table_sce
 		marker.id = i;
 		marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
 		marker.action = visualization_msgs::Marker::ADD;
-		marker.text = "%d", i;
+		
+		std::stringstream sstm;
+		sstm << i;
+		marker.text = sstm.str();
 		
 		marker.pose.position.x = center(0); //TO DO: check that you can see the text
 		marker.pose.position.y = center(1);
@@ -167,7 +172,7 @@ void show_indicies(segbot_arm_perception::TabletopPerception::Response table_sce
 		marker.pose.orientation.w = 1.0;
 		
 		//I think scales can be left alone 
-		marker.scale.x = 1;
+		marker.scale.x = 10;
 		marker.scale.y = 0.1;
 		marker.scale.z = 1; //previously 0.1
 		
@@ -246,7 +251,7 @@ int main (int argc, char** argv){
 	pressEnter("Press enter to show indices or q to quit");
 	show_indicies(table_scene);
 	
-	int index = chose_object("Enter index of object or press enter to pick largest", table_scene);
+	int index = chose_object("Enter index of object or press enter to pick largest ", table_scene);
 	
 	pressEnter("Press enter to start press action or q to quit");
 	//create the action client to press object
