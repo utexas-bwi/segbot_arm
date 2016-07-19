@@ -1,0 +1,27 @@
+<launch>
+
+	<!-- launch tabletop detection service -->
+	<node name="segbot_table_approach_as" pkg="segbot_arm_manipulation" type="segbot_table_approach_as" output="screen">
+	</node>
+	
+	<!-- launch change detection service -->
+	<node name="segbot_tabletop_grasp_as" pkg="segbot_arm_manipulation" type="segbot_tabletop_grasp_as" output="screen">
+	</node>
+	
+	<!-- launch change detection service -->
+	<node name="arm_press_as" pkg="segbot_arm_manipulation" type="arm_press_as" output="screen">
+	</node>
+	
+	<!-- launch change detection service -->
+	<node name="arm_push_as" pkg="segbot_arm_manipulation" type="arm_push_as" output="screen">
+	</node>
+	
+	<!-- launch change detection service -->
+	<node name="arm_lift_verify_as" pkg="segbot_arm_manipulation" type="arm_lift_verify_as" output="screen">
+	</node>
+	
+	<!-- launch change detection service -->
+	<node name="arm_shake_as" pkg="segbot_arm_manipulation" type="arm_shake_as" output="screen">
+	</node>
+	
+</launch>
