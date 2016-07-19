@@ -196,6 +196,21 @@ sensor_msgs::JointState set_home_arm(){
 	//arm_home.position.push_back(current_finger.finger2);
 }
 
+void pressEnter(std::string message){
+	std::cout << message;
+	while (true){
+		char c = std::cin.get();
+		if (c == '\n')
+			break;
+		else if (c == 'q'){
+			ros::shutdown();
+			exit(1);
+		}
+		else {
+			std::cout <<  message;
+		}
+	}
+}
 
 int main (int argc, char** argv){
 	ros::init(argc, argv, "demo_explore_object");
@@ -218,6 +233,8 @@ int main (int argc, char** argv){
 
 	listenForArmData();
 	
+	pressEnter("Press enter to get table scene or q to quit");
+	
 	//get table scene and find all objects on table 
 	segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
 	
@@ -226,10 +243,12 @@ int main (int argc, char** argv){
 			exit(1);
 	} 
 	
+	pressEnter("Press enter to show indices or q to quit");
 	show_indicies(table_scene);
 	
 	int index = chose_object("Enter index of object or press enter to pick largest", table_scene);
 	
+	pressEnter("Press enter to start press action or q to quit");
 	//create the action client to press object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::PressAction> press_ac("arm_press_as",true);
 	press_ac.waitForServer();
@@ -251,6 +270,8 @@ int main (int argc, char** argv){
 	
 	listenForArmData();
 	
+	
+	pressEnter("Press enter to start push action or q to quit");
 	//create the action client to push an object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::PushAction> push_ac("arm_push_as",true);
 	press_ac.waitForServer();
@@ -272,6 +293,8 @@ int main (int argc, char** argv){
 	
 	
 	listenForArmData();
+	
+	pressEnter("Press enter to start grasp and verify action or q to quit");
 	
 	//create the action client to grasp
 	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> grasp_ac("segbot_tabletop_grasp_as",true);
@@ -303,6 +326,8 @@ int main (int argc, char** argv){
 	ROS_INFO("Grasp action Finished...");
 
 
+	listenForArmData();
+	
 	//create action to lift and verify
 	actionlib::SimpleActionClient<segbot_arm_manipulation::LiftVerifyAction> lift_ac("arm_lift_verify_as", true);
 	lift_ac.waitForServer();
@@ -330,6 +355,9 @@ int main (int argc, char** argv){
 		ROS_WARN("Verification failed");
 	}
 	
+	pressEnter("Press enter to start shake action or q to quit");
+	
+	listenForArmData();
 	//create action to shake object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::ShakeAction> shake_ac("arm_shake_as", true);
 	
