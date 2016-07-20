@@ -141,7 +141,6 @@ int chose_object(std::string message, segbot_arm_perception::TabletopPerception:
 //TO DO: make sure locations are accurate 
 void show_indicies(segbot_arm_perception::TabletopPerception::Response table_scene){
 	for(unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
-		char buffer [10];
 		//find the center of the point
 		sensor_msgs::PointCloud2 ros_curr = table_scene.cloud_clusters[i];
 		PointCloudT pcl_curr;
@@ -171,16 +170,15 @@ void show_indicies(segbot_arm_perception::TabletopPerception::Response table_sce
 		marker.pose.orientation.z = 0.0;
 		marker.pose.orientation.w = 1.0;
 		
-		//I think scales can be left alone 
-		marker.scale.x = 10;
+		marker.scale.x = 0.1;
 		marker.scale.y = 0.1;
-		marker.scale.z = 1; //previously 0.1
+		marker.scale.z = 0.1; 
 		
 		marker.color.a = 1.0; //alpha
 		
 		marker.color.r = 1.0;
-		marker.color.g = 1.0;
-		marker.color.b = 1.0;
+		marker.color.g = 0.0;
+		marker.color.b = 0.0;
 		//only if using a MESH_RESOURCE marker type:
 		marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
 		vis_pub.publish(marker);
@@ -190,15 +188,15 @@ void show_indicies(segbot_arm_perception::TabletopPerception::Response table_sce
 
 sensor_msgs::JointState set_home_arm(){
 	sensor_msgs::JointState arm_home;
-	arm_home.position.clear();
 	arm_home.position.push_back(-1.3417218624707292);
 	arm_home.position.push_back(-0.44756153173493096);
 	arm_home.position.push_back(-0.2887493796082798);
 	arm_home.position.push_back(-1.1031276625138604);
 	arm_home.position.push_back(1.1542971070664283);
 	arm_home.position.push_back(2.9511931472480804);
-	//arm_home.position.push_back(current_finger.finger1);
-	//arm_home.position.push_back(current_finger.finger2);
+	arm_home.position.push_back(FINGER_FULLY_CLOSED);
+	arm_home.position.push_back(FINGER_FULLY_CLOSED);
+	return arm_home;
 }
 
 void pressEnter(std::string message){
@@ -225,8 +223,6 @@ int main (int argc, char** argv){
 	heardPose = false;
 	heardJoinstState = false;
 	
-	sensor_msgs::JointState arm_home = set_home_arm();
-	
 	//create subscriber to joint angles
 	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
 	
@@ -234,7 +230,7 @@ int main (int argc, char** argv){
 	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
 	
 	//create a publisher for rviz markers
-	vis_pub = n.advertise<visualization_msgs::Marker>( "visualization_marker", 0 );
+	vis_pub = n.advertise<visualization_msgs::Marker>( "/visualization_marker", 0 );
 
 	listenForArmData();
 	
@@ -252,6 +248,11 @@ int main (int argc, char** argv){
 	show_indicies(table_scene);
 	
 	int index = chose_object("Enter index of object or press enter to pick largest ", table_scene);
+	ROS_INFO("index chosen is: ");
+	ROS_INFO_STREAM(index);
+	
+	sensor_msgs::JointState arm_home = set_home_arm();
+	ROS_INFO("made arm home to send");
 	
 	pressEnter("Press enter to start press action or q to quit");
 	//create the action client to press object
@@ -263,6 +264,7 @@ int main (int argc, char** argv){
 	
 	press_goal.tgt_cloud = table_scene.cloud_clusters[index];
 	press_goal.arm_home = arm_home; 
+	ROS_INFO("all goals initialized");
 	
 	//send the goal
 	ROS_INFO("Sending goal to action server...");
