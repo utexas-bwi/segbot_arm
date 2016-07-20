@@ -98,7 +98,7 @@ protected:
   geometry_msgs::PoseStamped current_pose;
   geometry_msgs::WrenchStamped current_wrench;
   
-  geometry_msgs::PoseStamped goal_pose; 
+   
   
   bool heardPose;
   bool heardJoinstState;
@@ -193,16 +193,18 @@ public:
 	}	
 	
 	geometry_msgs::Point find_front(PointCloudT pcl_cloud){
-		Eigen::Vector4f max;
-		Eigen::Vector4f min;
+		//Eigen::Vector4f max;
+		//Eigen::Vector4f min;
+		PointT max;
+		PointT min;
 		Eigen::Vector4f center; 
 		pcl::getMinMax3D(pcl_cloud, min, max);
 		pcl::compute3DCentroid(pcl_cloud, center);
-		//change the y (height) of the point
 		geometry_msgs::Point goal_pt;
-		goal_pt.x = min(0);
-		goal_pt.y = (center(1) + max(1))/2; //pls check this 
-		goal_pt.z = min(2);
+		goal_pt.x = min.x;
+		goal_pt.y = center(1); 
+		float dist = (max.z - min.z) /4;
+		goal_pt.z = min.z - dist;
 		return goal_pt;
 	}
 	
@@ -231,8 +233,9 @@ public:
 
 	
 	void executeCB(const segbot_arm_manipulation::PushGoalConstPtr  &goal){
-		
+		ROS_INFO("inside callback for push");
 		listenForArmData(30.0);
+		ROS_INFO("heard arm data");
 		
 		if(goal -> tgt_cloud.data.size() == 0){
 			result_.success = false;
@@ -250,11 +253,13 @@ public:
 			return;
         }
 		
+		ROS_INFO("checked for preempted and tgt cloud");
 		//step one: close fingers
 		//moveFinger(FINGER_FULLY_CLOSED);
 		
 		segbot_arm_manipulation::closeHand();
 		//step 2: transform into the arm's base
+		ROS_INFO("closed hand");
 		
 		std::string sensor_frame_id = goal -> tgt_cloud.header.frame_id;
 			
@@ -263,13 +268,17 @@ public:
 		PointCloudT pcl_cloud;
 		pcl::fromROSMsg(goal -> tgt_cloud, pcl_cloud);
 		
+		ROS_INFO("made tgt_cloud into pcl cloud and transformed frame id");
 		
 		//find the top of the object
 		
 		geometry_msgs::Point front = find_front(pcl_cloud);
-		
+		geometry_msgs::PoseStamped goal_pose;
+		goal_pose.header.frame_id = "mico_base_link";
 		goal_pose.pose.position = front; 
 
+		ROS_INFO("found front of object");
+		
 		//set orientation to have fingers to the left with the knuckles facing up or down
 		//for rostopic list 3.14/2,0,3.14/2 for a flat, fingers to left
 		goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);
@@ -326,8 +335,13 @@ public:
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "arm_push_as");
+  
+  ROS_WARN("about to call push action server");
 
   PushActionServer as(ros::this_node::getName());
+  
+  ROS_WARN("made push action server call");
+  
   ros::spin();
 
   return 0;

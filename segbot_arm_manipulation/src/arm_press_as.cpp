@@ -94,9 +94,7 @@ protected:
   
   jaco_msgs::FingerPosition current_finger;
   geometry_msgs::PoseStamped current_pose;
-  geometry_msgs::WrenchStamped current_wrench;
-  
-  geometry_msgs::PoseStamped goal_pose; 
+  geometry_msgs::WrenchStamped current_wrench; 
   
   bool heardPose;
   bool heardJoinstState;
@@ -264,9 +262,10 @@ public:
 	
 	
 	void executeCB(const segbot_arm_manipulation::PressGoalConstPtr  &goal){
-		
+		ROS_INFO("at beginning of press cb");
 		listenForArmData(30.0);
 		
+		ROS_INFO("first heard data in press cb");
 		if(goal -> tgt_cloud.data.size() == 0){
 			result_.success = false;
 			ROS_INFO("[arm_press_as.cpp] No object point clouds received...aborting");
@@ -282,7 +281,7 @@ public:
 			as_.setSucceeded(result_);
 			return;
         }
-		
+		ROS_INFO("checked that the goal is not preempted and tgt cloud is valid");
 		//step one: close fingers
 		//moveFinger(FINGER_FULLY_CLOSED);
 		
@@ -300,7 +299,9 @@ public:
 		//find the top of the object
 		geometry_msgs::Point top = find_top_center(pcl_cloud);
 		
+		geometry_msgs::PoseStamped goal_pose;
 		//set the goal pose to slightly above the object
+		goal_pose.header.frame_id = "mico_link_base";
 		goal_pose.pose.position = top; 
 		goal_pose.pose.position.z += 0.125; //TO DO: make sure this number is okay
 		
@@ -315,7 +316,7 @@ public:
 
 		//if the IK are invalid, it is not possible to press
 		//the arm has not moved yet so no need to return it anywhere
-		if (ik_response.error_code.val != 1){ //might change this
+		if (ik_response.error_code.val != 1){
 			result_.success = false;
 			ROS_INFO("[arm_press_as.cpp] Cannot move above object");
 			as_.setAborted(result_);

@@ -96,8 +96,6 @@ protected:
   geometry_msgs::PoseStamped current_pose;
   geometry_msgs::WrenchStamped current_wrench;
   
-  geometry_msgs::PoseStamped goal_pose; 
-  
   bool heardPose;
   bool heardJoinstState;
   bool heardWrench;
