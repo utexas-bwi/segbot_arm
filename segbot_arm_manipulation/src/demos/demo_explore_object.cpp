@@ -281,7 +281,7 @@ int main (int argc, char** argv){
 	pressEnter("Press enter to start push action or q to quit");
 	//create the action client to push an object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::PushAction> push_ac("arm_push_as",true);
-	press_ac.waitForServer();
+	push_ac.waitForServer();
 	ROS_INFO("push action server made....");
 	
 	segbot_arm_manipulation::PushGoal push_goal;
@@ -367,6 +367,7 @@ int main (int argc, char** argv){
 	listenForArmData();
 	//create action to shake object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::ShakeAction> shake_ac("arm_shake_as", true);
+	shake_ac.waitForServer();
 	
 	//make and send goals to action 
 	segbot_arm_manipulation::ShakeGoal shake_goal;
