@@ -274,7 +274,7 @@ public:
 		
 		geometry_msgs::Point front = find_front(pcl_cloud);
 		geometry_msgs::PoseStamped goal_pose;
-		goal_pose.header.frame_id = "mico_base_link";
+		goal_pose.header.frame_id = goal -> tgt_cloud.header.frame_id;
 		goal_pose.pose.position = front; 
 
 		ROS_INFO("found front of object");

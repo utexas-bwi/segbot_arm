@@ -301,7 +301,9 @@ public:
 		
 		geometry_msgs::PoseStamped goal_pose;
 		//set the goal pose to slightly above the object
-		goal_pose.header.frame_id = "mico_link_base";
+		ROS_INFO_STREAM("header info for goal pose");
+		ROS_INFO_STREAM(goal -> tgt_cloud.header.frame_id);
+		goal_pose.header.frame_id = goal -> tgt_cloud.header.frame_id;
 		goal_pose.pose.position = top; 
 		goal_pose.pose.position.z += 0.125; //TO DO: make sure this number is okay
 		
