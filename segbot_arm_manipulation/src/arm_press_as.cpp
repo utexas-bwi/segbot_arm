@@ -309,6 +309,13 @@ public:
 		
 		//set orientation to have fingers to the left with the knuckles facing up or down
 		goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);
+		//tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0)
+		//tf::createQuaternionMsgFromRollPitchYaw(0,0,-PI/2);
+		//pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
+		//pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,3.14/2);
+		tf::Quaternion quat;
+		std::vector<tf::Quaternion> possible_quats;
+		
 		
 		//transform into the arm's space
 		listener.transformPose("mico_api_origin", goal_pose, goal_pose);
@@ -318,6 +325,8 @@ public:
 
 		//if the IK are invalid, it is not possible to press
 		//the arm has not moved yet so no need to return it anywhere
+		ROS_INFO_STREAM("the ik response value was: ");
+		ROS_INFO_STREAM(ik_response.error_code.val);
 		if (ik_response.error_code.val != 1){
 			result_.success = false;
 			ROS_INFO("[arm_press_as.cpp] Cannot move above object");
