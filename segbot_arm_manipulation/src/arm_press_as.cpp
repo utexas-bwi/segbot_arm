@@ -326,19 +326,34 @@ public:
 		goal_pose.pose.position.z += 0.125; //TO DO: make sure this number is okay
 		
 		//set orientation to have fingers to the left with the knuckles facing up or down
-		goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);
-		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0);
+		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);
+		goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0);
 		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
 		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
+		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,3.14/2,0);
+		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0);
+
+
 		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,3.14/2);
+		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0, 3.14/2);
+		
+		std::vector<geometry_msgs::Quaternion> possible_quats;
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14,0, 0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,0, 3.14/2));
+		//possible_quats.push_back(tf::createQuaternionMsgsFromRollPitchYaw(0,0, -3.14/2));
 		
 		listenForArmData(30.0);
 		//goal_pose.pose.orientation = current_pose.pose.orientation;
+		ROS_INFO("goal pose orientation is: ");
+		ROS_INFO_STREAM(goal_pose.pose.orientation);
 		
 		//transform into the arm's space
 		listener.transformPose("mico_api_origin", goal_pose, goal_pose);
 		
 		debug_pub.publish(goal_pose);
+		ROS_INFO_STREAM("frame for goal_pose");
+		ROS_INFO_STREAM(goal_pose.header.frame_id);
 		
 		//compute IK
 		moveit_msgs::GetPositionIK::Response  ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
