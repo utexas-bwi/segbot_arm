@@ -11,6 +11,8 @@
 #include <Eigen/Dense>
 #include <eigen_conversions/eigen_msg.h>
 
+#include <sensor_msgs/point_cloud_conversion.h>
+
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseArray.h>
@@ -89,6 +91,8 @@ protected:
   ros::Subscriber sub_finger;
   ros::Subscriber sub_wrench;
   
+  ros::Publisher debug_pub;
+  
   sensor_msgs::JointState current_state;
   sensor_msgs::JointState current_effort;
   
@@ -134,6 +138,8 @@ public:
 	  
 	//subscriber for wrench
 	sub_wrench = nh_.subscribe("/mico_arm_driver/out/tool_wrench", 1, &PushActionServer::wrench_cb, this);
+	
+	debug_pub = nh_.advertise<geometry_msgs::PoseStamped>("/mico_arm_driver/in/debug_pose", 2);
 	
 	ROS_INFO("Push action has started");
 	
@@ -261,12 +267,21 @@ public:
 		//step 2: transform into the arm's base
 		ROS_INFO("closed hand");
 		
-		std::string sensor_frame_id = goal -> tgt_cloud.header.frame_id;
+		//step 2: transform into the arm's base
+		sensor_msgs::PointCloud2 tgt= goal -> tgt_cloud;
+		std::string sensor_frame_id = tgt.header.frame_id;
 			
+	
 		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
 		
+		sensor_msgs::PointCloud transformed_pc;
+		sensor_msgs::convertPointCloud2ToPointCloud(tgt,transformed_pc);
+		
+		listener.transformPointCloud("mico_link_base", transformed_pc ,transformed_pc); 
+		sensor_msgs::convertPointCloudToPointCloud2(transformed_pc, tgt);
+	
 		PointCloudT pcl_cloud;
-		pcl::fromROSMsg(goal -> tgt_cloud, pcl_cloud);
+		pcl::fromROSMsg(tgt, pcl_cloud);
 		
 		ROS_INFO("made tgt_cloud into pcl cloud and transformed frame id");
 		
@@ -276,6 +291,7 @@ public:
 		geometry_msgs::PoseStamped goal_pose;
 		goal_pose.header.frame_id = goal -> tgt_cloud.header.frame_id;
 		goal_pose.pose.position = front; 
+		debug_pub.publish(goal_pose);
 
 		ROS_INFO("found front of object");
 		
@@ -288,11 +304,6 @@ public:
 		
 		
 		moveit_msgs::GetPositionIK::Response ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
-
-		PointT pt;
-		pt.x = front.x;
-		pt.y = front.y;
-		pt.z = front.z; 
 
 		
 		//if the IK are invalid, it is not possible to press

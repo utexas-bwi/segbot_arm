@@ -11,6 +11,8 @@
 #include <Eigen/Dense>
 #include <eigen_conversions/eigen_msg.h>
 
+#include <sensor_msgs/point_cloud_conversion.h>
+
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseArray.h>
@@ -54,6 +56,8 @@
 
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
+
+#include <moveit_msgs/GetPositionIK.h>
 //defines
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
@@ -86,6 +90,8 @@ protected:
   ros::Subscriber sub_tool;
   ros::Subscriber sub_finger;
   ros::Subscriber sub_wrench;
+  
+  ros::Publisher debug_pub;
   
   sensor_msgs::JointState current_state;
   sensor_msgs::JointState current_effort;
@@ -130,6 +136,8 @@ public:
 	  
 	//subscriber for wrench
 	sub_wrench = nh_.subscribe("/mico_arm_driver/out/tool_wrench", 1, &PressActionServer::wrench_cb, this);
+	
+	debug_pub = nh_.advertise<geometry_msgs::PoseStamped>("/mico_arm_driver/in/debug_pose", 2);
 	
 	ROS_INFO("Press action has started");
 	
@@ -191,8 +199,8 @@ public:
 	//TO DO: make sure the xyz are facing the way I think they are 
 	geometry_msgs::Point find_top_center(PointCloudT pcl_curr){
 		//find max of all points
-		Eigen::Vector4f max;
-		Eigen::Vector4f min; 
+		PointT max;
+		PointT min; 
 		pcl::getMinMax3D(pcl_curr, min, max);
 
 		//find average of all points
@@ -202,7 +210,7 @@ public:
 		geometry_msgs::Point top_center;
 		top_center.x = centroid_pts(0);
 		top_center.y = centroid_pts(1);
-		top_center.z = max(2);
+		top_center.z = max.z;
 		return top_center;
 	}
 
@@ -288,13 +296,23 @@ public:
 		segbot_arm_manipulation::closeHand();
 	
 		//step 2: transform into the arm's base
+		sensor_msgs::PointCloud2 tgt= goal -> tgt_cloud;
 		
-		std::string sensor_frame_id = goal -> tgt_cloud.header.frame_id;
+		std::string sensor_frame_id = tgt.header.frame_id;
 			
+	
 		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
 		
+		sensor_msgs::PointCloud transformed_pc;
+		sensor_msgs::convertPointCloud2ToPointCloud(tgt,transformed_pc);
+		
+		listener.transformPointCloud("mico_link_base", transformed_pc ,transformed_pc); 
+		sensor_msgs::convertPointCloudToPointCloud2(transformed_pc, tgt);
+		
 		PointCloudT pcl_cloud;
-		pcl::fromROSMsg(goal -> tgt_cloud, pcl_cloud);
+		pcl::fromROSMsg(tgt, pcl_cloud);
+		
+		
 		
 		//find the top of the object
 		geometry_msgs::Point top = find_top_center(pcl_cloud);
@@ -302,33 +320,34 @@ public:
 		geometry_msgs::PoseStamped goal_pose;
 		//set the goal pose to slightly above the object
 		ROS_INFO_STREAM("header info for goal pose");
-		ROS_INFO_STREAM(goal -> tgt_cloud.header.frame_id);
-		goal_pose.header.frame_id = goal -> tgt_cloud.header.frame_id;
+		ROS_INFO_STREAM(tgt.header.frame_id);
+		goal_pose.header.frame_id = tgt.header.frame_id;
 		goal_pose.pose.position = top; 
 		goal_pose.pose.position.z += 0.125; //TO DO: make sure this number is okay
 		
 		//set orientation to have fingers to the left with the knuckles facing up or down
 		goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);
-		//tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0)
-		//tf::createQuaternionMsgFromRollPitchYaw(0,0,-PI/2);
-		//pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
-		//pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,3.14/2);
-		tf::Quaternion quat;
-		std::vector<tf::Quaternion> possible_quats;
+		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0);
+		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
+		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
+		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,3.14/2);
 		
+		listenForArmData(30.0);
+		//goal_pose.pose.orientation = current_pose.pose.orientation;
 		
 		//transform into the arm's space
 		listener.transformPose("mico_api_origin", goal_pose, goal_pose);
+		
+		debug_pub.publish(goal_pose);
 		
 		//compute IK
 		moveit_msgs::GetPositionIK::Response  ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
 
 		//if the IK are invalid, it is not possible to press
 		//the arm has not moved yet so no need to return it anywhere
-		ROS_INFO_STREAM("the ik response value was: ");
-		ROS_INFO_STREAM(ik_response.error_code.val);
 		if (ik_response.error_code.val != 1){
 			result_.success = false;
+			ROS_INFO_STREAM(ik_response.error_code.val);
 			ROS_INFO("[arm_press_as.cpp] Cannot move above object");
 			as_.setAborted(result_);
 			return;
