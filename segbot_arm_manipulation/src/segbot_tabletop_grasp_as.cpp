@@ -311,6 +311,17 @@ public:
 		}
 	}*/
 	
+	bool passesFilter(std::string filterName, GraspCartesianCommand gc){
+		if (filterName == segbot_arm_manipulation::TabletopGraspGoal::SIDEWAY_GRASP_FILTER){
+			//TO DO
+		}
+		else if (filterName == segbot_arm_manipulation::TabletopGraspGoal::TOPDOWN_GRASP_FILTER){
+			//TO DO
+		}
+		
+		return true;
+	}
+	
 	void executeCB(const segbot_arm_manipulation::TabletopGraspGoalConstPtr  &goal)
 	{
 		if (goal->action_name == segbot_arm_manipulation::TabletopGraspGoal::GRASP){
@@ -359,14 +370,21 @@ public:
 			//here, we'll store all grasp options that pass the filters
 			std::vector<GraspCartesianCommand> grasp_commands;
 			
+			
 			for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
 				
 							
 				GraspCartesianCommand gc_i = segbot_arm_manipulation::grasp_utils::constructGraspCommand(current_grasps.grasps.at(i),HAND_OFFSET_APPROACH,HAND_OFFSET_GRASP, sensor_frame_id);
 				
+				
+				
+				//filter 1: if the grasp is too close to plane, reject it
 				bool ok_with_plane = segbot_arm_manipulation::grasp_utils::checkPlaneConflict(gc_i,plane_coef_vector,MIN_DISTANCE_TO_PLANE);
 				
-				if (ok_with_plane){
+				//filter 2: apply grasp filter method in request
+				bool passed_filter = passesFilter(goal->grasp_filter_method,gc_i);
+				
+				if (passed_filter && ok_with_plane){
 					
 					listener.transformPose("mico_api_origin", gc_i.approach_pose, gc_i.approach_pose);
 					listener.transformPose("mico_api_origin", gc_i.grasp_pose, gc_i.grasp_pose);
