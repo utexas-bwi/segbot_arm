@@ -110,7 +110,7 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 }
 
 
-bool filter(PointCloudT::Ptr blob, Eigen::Vector4f plane_coefficients, double tolerance_min, double tolerance_max){
+bool filter(PointCloudT::Ptr blob, PointCloudT::Ptr plane_cloud, Eigen::Vector4f plane_coefficients, double tolerance_min, double tolerance_max){
 	
 	double min_distance = 1000.0;
 	double max_distance = -1000.0;
@@ -272,6 +272,8 @@ bool cluster_reorder_cb(segbot_arm_perception::TabletopReorder::Request &req, se
 
 bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_perception::TabletopPerception::Response &res)
 {
+	//create listener for transforms
+	tf::TransformListener tf_listener;
 	
 	//get the point cloud by aggregating k successive input clouds
 	waitForCloudK(15);
@@ -342,12 +344,42 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	
 	ROS_INFO("Found %i clusters.",(int)clusters.size());
 
-	
 	clusters_on_plane.clear();
+	
+	//if true, clouds on the other side of the plane will be rejected
+	bool check_below_plane = false;
+	pcl::PointCloud<PointT>::Ptr cloud_plane_transformed(new pcl::PointCloud<PointT>);
+	
+	if (check_below_plane){
+		
+		//wait for transform and perform it
+		tf_listener.waitForTransform(cloud->header.frame_id,"\base_link",ros::Time(0), ros::Duration(3.0)); 
+		
+		//convert plane cloud to ROS
+		sensor_msgs::PointCloud2 plane_cloud_ros;
+		pcl::toROSMsg(*cloud_plane,plane_cloud_ros);
+		plane_cloud_ros.header.frame_id = cloud->header.frame_id;
+		
+		//transform it to base link frame of reference
+		pcl_ros::transformPointCloud ("\base_link", plane_cloud_ros, plane_cloud_ros, tf_listener);
+					
+	}
 
 	for (unsigned int i = 0; i < clusters.size(); i++){
 		
-		if (filter(clusters.at(i),plane_coefficients,plane_distance_tolerance,plane_max_distance_tolerance)){
+		if (filter(clusters.at(i),cloud_plane,plane_coefficients,plane_distance_tolerance,plane_max_distance_tolerance)){
+			
+			//next check which clusters are below and which are aboe the plane
+			if (check_below_plane){
+				sensor_msgs::PointCloud2 cloud_i_ros;
+				pcl::toROSMsg(*clusters.at(i),cloud_i_ros);
+				cloud_i_ros.header.frame_id = cloud->header.frame_id;
+				
+				pcl_ros::transformPointCloud ("\base_link", cloud_i_ros,cloud_i_ros, tf_listener);
+				
+				//TO DO: check if cloud_i_ros has larger z than plane_cloud_ros
+			}
+			
 			clusters_on_plane.push_back(clusters.at(i));
 		}
 	}
@@ -436,10 +468,6 @@ int main (int argc, char** argv)
 	
 	ros::ServiceServer getcloud_service = 
 	nh.advertiseService("tabletop_get_cloud_service", get_cloud_cb);
-	
-	
-	
-	tf::TransformListener listener;
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
