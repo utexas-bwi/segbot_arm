@@ -98,7 +98,7 @@ void listenForArmData(){
 	ros::Rate r(10.0);
 	
 	while (ros::ok()){
-		ros::spinOnce();
+		ros::spinOnce();	
 		
 		if (heardJoinstState && heardPose)
 			return;
@@ -164,10 +164,13 @@ int main(int argc, char **argv) {
 	
 	//store out of table view joint position -- this is the position in which the arm is not occluding objects on the table
 	listenForArmData();
+	ROS_INFO("Acquired arm data...");
 	joint_state_outofview = current_state;
 	pose_outofview = current_pose;
 	
 	//Step 2: call safety service to make the arm safe for base movement -- TO DO
+	//close fingers while moving
+	segbot_arm_manipulation::closeHand();
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	if (!safe)
 		return 1;
@@ -194,18 +197,22 @@ int main(int argc, char **argv) {
     ac.sendGoal(goal);
     ac.waitForResult();
     
-    pressEnter("Press [ENTER] to proceed");
+    pressEnter("Press [ENTER] to approach table");
 
+	
 
 	//Step 4: approach the table using visual servoing
 	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopApproachAction> ac_approach("segbot_table_approach_as",true);
-		
+	ac_approach.waitForServer();
+	
 	segbot_arm_manipulation::TabletopApproachGoal approach_goal;
 	approach_goal.command = "approach";
 	
 	//send the goal
 	ac_approach.sendGoal(approach_goal);
 	ac_approach.waitForResult();
+	
+	
 	
 	pressEnter("Press [ENTER] to proceed");
 
@@ -256,7 +263,8 @@ int main(int argc, char **argv) {
 	}
 	grasp_goal.target_object_cluster_index = largest_pc_index;
 	grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
-				
+	grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
+			
 	//send the goal
 	ROS_INFO("Sending goal to action server...");
 	ac_grasp.sendGoal(grasp_goal);
