@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
 	handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
 	handover_goal.timeout_seconds = 30.0;
 	
-	ac_grasp.sendGoal(grasp_goal);
+	ac_grasp.sendGoal(handover_goal);
 	ac_grasp.waitForResult();
 	
 	
