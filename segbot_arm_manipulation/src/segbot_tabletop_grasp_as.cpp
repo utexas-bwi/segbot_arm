@@ -39,7 +39,10 @@
 //the action definition
 #include "segbot_arm_manipulation/TabletopGraspAction.h"
 
-
+//tf stuff
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
+#include <tf/transform_broadcaster.h>
 
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
@@ -194,6 +197,16 @@ public:
 	void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 	  current_pose = msg;
 	  heardPose = true;
+	  
+	  /*tf::Quaternion q(current_pose.pose.orientation.x, 
+								current_pose.pose.orientation.y, 
+								current_pose.pose.orientation.z, 
+								current_pose.pose.orientation.w);
+		tf::Matrix3x3 m(q);
+		
+		double r, p, y;
+		m.getRPY(r, p, y);
+	  ROS_INFO("RPY: %f %f %f",r,p,y);*/
 	  //  ROS_INFO_STREAM(current_pose);
 	}
 
@@ -312,11 +325,34 @@ public:
 	}*/
 	
 	bool passesFilter(std::string filterName, GraspCartesianCommand gc){
+		
+		tf::Quaternion q(gc.approach_pose.pose.orientation.x, 
+								gc.approach_pose.pose.orientation.y, 
+								gc.approach_pose.pose.orientation.z, 
+								gc.approach_pose.pose.orientation.w);
+		tf::Matrix3x3 m(q);
+			
+		double r, p, y;
+		m.getRPY(r, p, y);
+		 ROS_INFO("RPY: %f %f %f",r,p,y);
+		
 		if (filterName == segbot_arm_manipulation::TabletopGraspGoal::SIDEWAY_GRASP_FILTER){
-			//TO DO
+			ROS_INFO("%f, %f",fabs(p),fabs(3.14/2.0 - r) ); 
+			if ( fabs(p) < 1.75 && fabs(3.14/2.0 - r) < 1.75){
+				return true;
+			}
+			else {
+				return false;
+			}
+			
 		}
 		else if (filterName == segbot_arm_manipulation::TabletopGraspGoal::TOPDOWN_GRASP_FILTER){
-			//TO DO
+			if ( (fabs(r) - 3.14) < 0.55){
+				return true;
+			}
+			else {
+				return false;
+			}
 		}
 		
 		return true;
@@ -385,6 +421,8 @@ public:
 				bool passed_filter = passesFilter(goal->grasp_filter_method,gc_i);
 				
 				if (passed_filter && ok_with_plane){
+					ROS_INFO("Found grasp fine with filter and plane");
+					
 					
 					listener.transformPose("mico_api_origin", gc_i.approach_pose, gc_i.approach_pose);
 					listener.transformPose("mico_api_origin", gc_i.grasp_pose, gc_i.grasp_pose);
@@ -481,6 +519,8 @@ public:
 				as_.setAborted(result_);
 				return;
 			}
+			
+			
 
 			//publish individual pose for visualization purposes
 			pose_pub.publish(grasp_commands.at(selected_grasp_index).approach_pose);

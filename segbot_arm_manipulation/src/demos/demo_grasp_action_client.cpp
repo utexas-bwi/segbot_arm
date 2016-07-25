@@ -198,6 +198,11 @@ int main(int argc, char **argv) {
 		//grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
 		grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_JOINTSPACE_SELECTION;
 		
+		
+		grasp_goal.grasp_filter_method=segbot_arm_manipulation::TabletopGraspGoal::TOPDOWN_GRASP_FILTER;
+		
+		
+		
 		//finally, we fill in the table scene
 		grasp_goal.cloud_plane = table_scene.cloud_plane;
 		grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
