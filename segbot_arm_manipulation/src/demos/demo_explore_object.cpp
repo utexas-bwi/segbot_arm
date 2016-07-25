@@ -11,6 +11,8 @@
 #include <Eigen/Dense>
 #include <eigen_conversions/eigen_msg.h>
 
+#include <sensor_msgs/point_cloud_conversion.h>
+
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseArray.h>
@@ -37,26 +39,15 @@
 //pcl includes
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
-#include <pcl/console/parse.h>
-#include <pcl/point_types.h>
-#include <pcl/io/openni_grabber.h>
-#include <pcl/sample_consensus/sac_model_plane.h>
+
 #include <pcl/common/time.h>
 #include <pcl/common/common.h>
 #include <pcl/common/centroid.h>
 #include <pcl/common/impl/centroid.hpp>
-#include <pcl/filters/crop_box.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/ModelCoefficients.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/segmentation/extract_clusters.h>
-#include <pcl/kdtree/kdtree.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
+
+
+#include <tf/transform_listener.h>
+#include <tf/tf.h>
 
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
@@ -74,6 +65,8 @@ geometry_msgs::PoseStamped current_pose;
 
 bool heardJoinstState;
 bool heardPose;
+
+tf::TransformListener listener;
 
 using namespace std;
 
@@ -142,9 +135,22 @@ int chose_object(std::string message, segbot_arm_perception::TabletopPerception:
 void show_indicies(segbot_arm_perception::TabletopPerception::Response table_scene){
 	for(unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
 		//find the center of the point
-		sensor_msgs::PointCloud2 ros_curr = table_scene.cloud_clusters[i];
+		sensor_msgs::PointCloud2 tgt = table_scene.cloud_clusters[i];
+		
+		std::string sensor_frame_id = tgt.header.frame_id;
+		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
+		
+		
+		sensor_msgs::PointCloud tran_pc;
+		sensor_msgs::convertPointCloud2ToPointCloud(tgt,tran_pc);
+		
+		listener.transformPointCloud("mico_link_base", tran_pc ,tran_pc); 
+		sensor_msgs::convertPointCloudToPointCloud2(tran_pc, tgt);
+		
 		PointCloudT pcl_curr;
-		pcl::fromROSMsg(ros_curr, pcl_curr);
+		pcl::fromROSMsg(tgt, pcl_curr);
+		
+		
 		Eigen::Vector4f center;
 		pcl::compute3DCentroid(pcl_curr, center);
 		
