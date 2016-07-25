@@ -268,6 +268,25 @@ public:
 		arm_vel.publish(v);
 	}
 	
+	std::vector<geometry_msgs::PoseStamped> find_quats(geometry_msgs::PoseStamped goal_pose){
+		std::vector<geometry_msgs::Quaternion> possible_quats;
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14,0, 0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,0, 3.14/2));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,0,0));
+		std::vector<geometry_msgs::PoseStamped> ik_possible;
+		
+		for(unsigned int i = 0; i< possible_quats.size(); i++){
+			goal_pose.pose.orientation = possible_quats.at(i);
+			moveit_msgs::GetPositionIK::Response  ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
+			if (ik_response.error_code.val == 1){
+				ik_possible.push_back(goal_pose);
+			}
+		}
+		
+		return ik_possible;
+	}
 	
 	void executeCB(const segbot_arm_manipulation::PressGoalConstPtr  &goal){
 		ROS_INFO("at beginning of press cb");
@@ -323,25 +342,18 @@ public:
 		ROS_INFO_STREAM(tgt.header.frame_id);
 		goal_pose.header.frame_id = tgt.header.frame_id;
 		goal_pose.pose.position = top; 
-		goal_pose.pose.position.z += 0.125; //TO DO: make sure this number is okay
+		goal_pose.pose.position.z += 0.125; 
 		
-		//set orientation to have fingers to the left with the knuckles facing up or down
-		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);
 		goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0);
-		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,-3.14/2);
-		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
-		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,3.14/2,0);
-		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0);
 
-
-		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,3.14/2);
-		//goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0, 3.14/2);
 		
 		std::vector<geometry_msgs::Quaternion> possible_quats;
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14,0, 0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14,0, 0));
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0));
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,0, 3.14/2));
-		//possible_quats.push_back(tf::createQuaternionMsgsFromRollPitchYaw(0,0, -3.14/2));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,0,0));
+		
 		
 		listenForArmData(30.0);
 		//goal_pose.pose.orientation = current_pose.pose.orientation;
