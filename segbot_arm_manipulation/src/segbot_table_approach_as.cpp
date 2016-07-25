@@ -172,14 +172,18 @@ public:
 		if (goal->command == "approach"){
 		
 			//step 1: query table_object_detection_node to segment the blobs on the table
-			
+			posDB->print();
 			//first, we need to move the arm out of view so the camera can see the table
 			if (posDB->hasCarteseanPosition("side_view")){
-				geometry_msgs::PoseStamped out_of_view_pose = posDB->getToolPositionStamped("side_view","mico_api_origin");
+				geometry_msgs::PoseStamped out_of_view_pose = posDB->getToolPositionStamped("side_view","/mico_link_base");
 				
 				//now go to the pose
 				segbot_arm_manipulation::moveToPoseMoveIt(nh_,out_of_view_pose);
 			}
+			else {
+				ROS_ERROR("[segbot_table_approach_as.cpp] Cannot move arm out of view!");
+			}
+				
 			
 			ros::ServiceClient client_tabletop_perception = nh_.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
 			
