@@ -131,7 +131,6 @@ int chose_object(std::string message, segbot_arm_perception::TabletopPerception:
 }
 
 
-//TO DO: make sure locations are accurate 
 void show_indicies(segbot_arm_perception::TabletopPerception::Response table_scene){
 	for(unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
 		//first transform into cloud into the arm's space

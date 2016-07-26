@@ -343,7 +343,6 @@ public:
 		//step 6: press down on the object
 		press_down(1.5);
 		
-		//TO DO: add startSensoryDataCollection(); and 	stopSensoryDataCollection();
 		
 		listenForArmData(30.0);
 		

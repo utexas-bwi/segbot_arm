@@ -237,9 +237,7 @@ public:
 		pcl::fromROSMsg(goal -> tgt_cloud, pcl_cloud);
 		
 		listenForArmData(30.0);
-		
-		//TO DO: if verified is false, call grasp action client
-		
+				
 		//step 2 : determine if object in in hand
 		if(goal -> verified){
 			//step 3: shake the object
