@@ -261,6 +261,7 @@ public:
 			
 			moveit_msgs::GetPositionIK::Response ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
 			if(ik_response.error_code.val == 1) {
+				ROS_INFO_STREAM(i);
 				ik_possible.push_back(goal_pose);
 			}
 			//ROS_INFO_STREAM(ik_response.error_code.val);
@@ -295,9 +296,8 @@ public:
 		
 		//step 2: transform into the arm's base
 		sensor_msgs::PointCloud2 tgt= goal -> tgt_cloud;
+		
 		std::string sensor_frame_id = tgt.header.frame_id;
-			
-	
 		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
 		
 		sensor_msgs::PointCloud transformed_pc;
@@ -305,6 +305,8 @@ public:
 		
 		listener.transformPointCloud("mico_link_base", transformed_pc ,transformed_pc); 
 		sensor_msgs::convertPointCloudToPointCloud2(transformed_pc, tgt);
+		
+		ROS_INFO_STREAM(tgt.header.frame_id);
 	
 		PointCloudT pcl_cloud;
 		pcl::fromROSMsg(tgt, pcl_cloud);
