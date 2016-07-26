@@ -197,7 +197,7 @@ public:
 		segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 	}	
 
-	void shake(const segbot_arm_manipulation::ShakeGoalConstPtr &goal, ros::NodeHandle nh_){
+	void shake(){
 		//preliminary lift to get object off of the table
 		lift(nh_, 0.1);
 		
@@ -228,7 +228,7 @@ public:
 			as_.setSucceeded(result_);
 			return;
         }
-        
+        //step 1: transform to mico link space
         std::string sensor_frame_id = goal -> tgt_cloud.header.frame_id;
 			
 		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
@@ -240,16 +240,19 @@ public:
 		
 		//TO DO: if verified is false, call grasp action client
 		
-		
+		//step 2 : determine if object in in hand
 		if(goal -> verified){
-			shake(goal, nh_);
+			//step 3: shake the object
+			shake();
 		}else{
+			//object is not in hand, abort
 			ROS_WARN("object must already be in hand... aborting");
 			result_.success = false;
 			as_.setAborted(result_);
 			return;
 		}
-				
+			
+		//step 4: move arm home		
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 
