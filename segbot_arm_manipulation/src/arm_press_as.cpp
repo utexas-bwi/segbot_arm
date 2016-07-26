@@ -244,7 +244,7 @@ public:
 		return result_pt;
 	}*/
 	
-	void press_down(){
+	void press_down(float duration){
 		geometry_msgs::TwistStamped v;
 		 
 		v.twist.linear.x = 0;
@@ -255,30 +255,34 @@ public:
 		v.twist.angular.y = 0.0;
 		v.twist.angular.z = 0.0;
 		
-		ros::Rate r(40);
-		
-		geometry_msgs::Pose tool_pose_last = current_pose.pose;
-		while(current_pose.pose.position.z <= tool_pose_last.position.z){
+		float rate = 40;
+		ros::Rate r(rate);
+		for(int i = 0; i< (int) rate * duration; i++){
 			arm_vel.publish(v);
 			r.sleep();
-			tool_pose_last = current_pose.pose;
 			ros::spinOnce();
-		} 
+		}
 		v.twist.linear.z = 0.0;
 		arm_vel.publish(v);
 	}
 	
 	std::vector<geometry_msgs::PoseStamped> find_quats(geometry_msgs::PoseStamped goal_pose){
 		std::vector<geometry_msgs::Quaternion> possible_quats;
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14,0, 0));
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,0, 3.14/2));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0, -3.14/2, 3.14/2));
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,0,0));
-		std::vector<geometry_msgs::PoseStamped> ik_possible;
 		
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14,0, 0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,0));
+		
+		
+		std::vector<geometry_msgs::PoseStamped> ik_possible;
 		for(unsigned int i = 0; i< possible_quats.size(); i++){
 			goal_pose.pose.orientation = possible_quats.at(i);
+			
+			//transform into the arm's space
+			listener.transformPose("mico_api_origin", goal_pose, goal_pose);
+			
 			moveit_msgs::GetPositionIK::Response  ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
 			if (ik_response.error_code.val == 1){
 				ik_possible.push_back(goal_pose);
@@ -289,10 +293,8 @@ public:
 	}
 	
 	void executeCB(const segbot_arm_manipulation::PressGoalConstPtr  &goal){
-		ROS_INFO("at beginning of press cb");
 		listenForArmData(30.0);
 		
-		ROS_INFO("first heard data in press cb");
 		if(goal -> tgt_cloud.data.size() == 0){
 			result_.success = false;
 			ROS_INFO("[arm_press_as.cpp] No object point clouds received...aborting");
@@ -308,13 +310,12 @@ public:
 			as_.setSucceeded(result_);
 			return;
         }
+        
 		ROS_INFO("checked that the goal is not preempted and tgt cloud is valid");
-		//step one: close fingers
-		//moveFinger(FINGER_FULLY_CLOSED);
-		
+		//step 1: close fingers
 		segbot_arm_manipulation::closeHand();
 	
-		//step 2: transform into the arm's base
+		//step 2: transform into the arm's base, transform cloud
 		sensor_msgs::PointCloud2 tgt= goal -> tgt_cloud;
 		
 		std::string sensor_frame_id = tgt.header.frame_id;
@@ -333,66 +334,48 @@ public:
 		
 		
 		
-		//find the top of the object
+		//step 3: find the top of the object, set goal to slightly above object
 		geometry_msgs::Point top = find_top_center(pcl_cloud);
-		
 		geometry_msgs::PoseStamped goal_pose;
-		//set the goal pose to slightly above the object
-		ROS_INFO_STREAM("header info for goal pose");
-		ROS_INFO_STREAM(tgt.header.frame_id);
+		
 		goal_pose.header.frame_id = tgt.header.frame_id;
 		goal_pose.pose.position = top; 
 		goal_pose.pose.position.z += 0.125; 
 		
-		goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,0,0);
-
-		
-		std::vector<geometry_msgs::Quaternion> possible_quats;
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14,0, 0));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,0, 3.14/2));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,0,0));
-		
-		
-		listenForArmData(30.0);
-		//goal_pose.pose.orientation = current_pose.pose.orientation;
-		ROS_INFO("goal pose orientation is: ");
-		ROS_INFO_STREAM(goal_pose.pose.orientation);
-		
-		//transform into the arm's space
-		listener.transformPose("mico_api_origin", goal_pose, goal_pose);
-		
-		debug_pub.publish(goal_pose);
-		ROS_INFO_STREAM("frame for goal_pose");
-		ROS_INFO_STREAM(goal_pose.header.frame_id);
-		
-		//compute IK
-		moveit_msgs::GetPositionIK::Response  ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
-
+		//step 4: find the hand orientation
 		//if the IK are invalid, it is not possible to press
-		//the arm has not moved yet so no need to return it anywhere
-		if (ik_response.error_code.val != 1){
+		std::vector<geometry_msgs::PoseStamped> ik_possible = find_quats(goal_pose);
+		
+		if(ik_possible.size() == 0){
 			result_.success = false;
-			ROS_INFO_STREAM(ik_response.error_code.val);
-			ROS_INFO("[arm_press_as.cpp] Cannot move above object");
+			ROS_INFO("[arm_press_as.cpp] No possible poses...");
 			as_.setAborted(result_);
 			return;
 		}
 		
+		goal_pose = ik_possible.at(0);
+		
+		listenForArmData(30.0);
+		
+		debug_pub.publish(goal_pose);
+		
+		ROS_INFO_STREAM("frame for goal_pose");
+		ROS_INFO_STREAM(goal_pose.header.frame_id);
+		
 		listenForArmData(30.0); 
 		
+		//step 5: move to goal position
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 
-		press_down();
+		//step 6: press down on the object
+		press_down(1.5);
 		
-		//To Do: check if a new goal has been sent
 		//TO DO: add startSensoryDataCollection(); and 	stopSensoryDataCollection();
-		//To Do: check if moveToPoseMoveIt is okay with the plane
 		
 		listenForArmData(30.0);
-				
+		
+		//step 7: move arm home		
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 

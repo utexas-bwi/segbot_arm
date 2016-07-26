@@ -198,28 +198,29 @@ public:
 		}
 	}	
 	
-	geometry_msgs::Point find_front(PointCloudT pcl_cloud){
-		//Eigen::Vector4f max;
-		//Eigen::Vector4f min;
+	geometry_msgs::Point find_right_side(PointCloudT pcl_cloud){
 		PointT max;
 		PointT min;
-		Eigen::Vector4f center; 
 		pcl::getMinMax3D(pcl_cloud, min, max);
+		
+		Eigen::Vector4f center; 
 		pcl::compute3DCentroid(pcl_cloud, center);
+		
 		geometry_msgs::Point goal_pt;
-		goal_pt.x = min.x;
-		goal_pt.y = center(1); 
+		goal_pt.x = center(0);
+		goal_pt.y = max.y; 
+		
 		float dist = (max.z - min.z) /4;
 		goal_pt.z = min.z - dist;
 		return goal_pt;
 	}
 	
-	void push(float duration){//TO DO: check which axis to change 
+	void push(float duration){ 
 		geometry_msgs::TwistStamped v;
 		 
 		v.twist.linear.x = 0;
-		v.twist.linear.y = 0.0;
-		v.twist.linear.z = 0.125;
+		v.twist.linear.y = 0.125;
+		v.twist.linear.z = 0.0;
 		
 		v.twist.angular.x = 0.0;
 		v.twist.angular.y = 0.0;
@@ -233,15 +234,36 @@ public:
 			ros::spinOnce();
 		}
 		
-		v.twist.linear.z = 0.0;
+		v.twist.linear.y = 0.0;
 		arm_vel.publish(v);
+	}
+	
+	std::vector<geometry_msgs::PoseStamped> find_quats (geometry_msgs::PoseStamped goal_pose){
+		std::vector<geometry_msgs::Quaternion> possible_quats;
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2, 0, 3.14/2));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2, 0, 3.14/2));
+
+		
+		std::vector<geometry_msgs::PoseStamped> ik_possible;
+		for(unsigned int i = 0; i< possible_quats.size(); i++){
+			goal_pose.pose.orientation = possible_quats.at(i);
+			
+			//transform into the arm's space
+			listener.transformPose("mico_api_origin", goal_pose, goal_pose);
+			
+			moveit_msgs::GetPositionIK::Response ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
+			if(ik_response.error_code.val == 1) {
+				ik_possible.push_back(goal_pose);
+			}
+			//ROS_INFO_STREAM(ik_response.error_code.val);
+		}
+		
+		return ik_possible;
 	}
 
 	
 	void executeCB(const segbot_arm_manipulation::PushGoalConstPtr  &goal){
-		ROS_INFO("inside callback for push");
 		listenForArmData(30.0);
-		ROS_INFO("heard arm data");
 		
 		if(goal -> tgt_cloud.data.size() == 0){
 			result_.success = false;
@@ -261,11 +283,7 @@ public:
 		
 		ROS_INFO("checked for preempted and tgt cloud");
 		//step one: close fingers
-		//moveFinger(FINGER_FULLY_CLOSED);
-		
 		segbot_arm_manipulation::closeHand();
-		//step 2: transform into the arm's base
-		ROS_INFO("closed hand");
 		
 		//step 2: transform into the arm's base
 		sensor_msgs::PointCloud2 tgt= goal -> tgt_cloud;
@@ -285,55 +303,46 @@ public:
 		
 		ROS_INFO("made tgt_cloud into pcl cloud and transformed frame id");
 		
-		//find the top of the object
+		//step 3: find the side of the object, set to slightly in further right of object
+		geometry_msgs::Point right_side = find_right_side(pcl_cloud);
 		
-		geometry_msgs::Point front = find_front(pcl_cloud);
 		geometry_msgs::PoseStamped goal_pose;
 		goal_pose.header.frame_id = goal -> tgt_cloud.header.frame_id;
-		goal_pose.pose.position = front; 
-		debug_pub.publish(goal_pose);
-
-		ROS_INFO("found front of object");
 		
-		//set orientation to have fingers to the left with the knuckles facing up or down
-		//for rostopic list 3.14/2,0,3.14/2 for a flat, fingers to left
-		goal_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14,3.14/1.9,0);
+		goal_pose.pose.position = right_side; 
+		goal_pose.pose.position.y += 0.05;
 		
-		//transform into the arm's space
-		listener.transformPose("mico_api_origin", goal_pose, goal_pose);
+		ROS_INFO("found right side of object");
+	
+		//step 4: find the possible hand orientation
+		std::vector<geometry_msgs::PoseStamped> ik_possible = find_quats(goal_pose);
 		
-		
-		moveit_msgs::GetPositionIK::Response ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
-
-		
-		//if the IK are invalid, it is not possible to press
-		//the arm has not moved yet so no need to return it anywhere
-		if (ik_response.error_code.val != 1 ){ //might change this
+		//if the IK are invalid, it is not possible to push
+		if (ik_possible.size() == 0 ){ 
 			result_.success = false;
-			ROS_INFO("[arm_push_as.cpp] Cannot move in front of object");
+			ROS_INFO("[arm_push_as.cpp] No possible pose");
 			as_.setAborted(result_);
 			return;
 		}
+		
+		goal_pose = ik_possible.at(0);
+		
+		debug_pub.publish(goal_pose);
 		
 		listenForArmData(30.0);
 		
 		//|| (pcl::pointToPlaneDistance(pt, goal -> cloud_plane) < MIN_DISTANCE_TO_PLANE)
 		
+		//step 5: move to the goal pose
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 
-		//get min point of pointcloud
-		//check if it's touching the edge of the table 
-		
-		//push
-		push(1.0);
-	
-		//make sure the object is still in reach
-		//switch sides and move object back
+		//step 6: push the object 
+		push(1.5);
 		
 		listenForArmData(30.0);
 		
-		//move arm home
+		//step 7: move arm home
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 
