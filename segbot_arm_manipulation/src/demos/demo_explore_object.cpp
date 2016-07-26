@@ -134,7 +134,7 @@ int chose_object(std::string message, segbot_arm_perception::TabletopPerception:
 //TO DO: make sure locations are accurate 
 void show_indicies(segbot_arm_perception::TabletopPerception::Response table_scene){
 	for(unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
-		//find the center of the point
+		//first transform into cloud into the arm's space
 		sensor_msgs::PointCloud2 tgt = table_scene.cloud_clusters[i];
 		
 		std::string sensor_frame_id = tgt.header.frame_id;
@@ -167,7 +167,7 @@ void show_indicies(segbot_arm_perception::TabletopPerception::Response table_sce
 		sstm << i;
 		marker.text = sstm.str();
 		
-		marker.pose.position.x = center(0); //TO DO: check that you can see the text
+		marker.pose.position.x = center(0); 
 		marker.pose.position.y = center(1);
 		marker.pose.position.z = center(2);
 	
