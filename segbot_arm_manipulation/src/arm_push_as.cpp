@@ -209,9 +209,8 @@ public:
 		geometry_msgs::Point goal_pt;
 		goal_pt.x = center(0);
 		goal_pt.y = max.y; 
+		goal_pt.z = center(2);
 		
-		float dist = (max.z - min.z) /4;
-		goal_pt.z = min.z - dist;
 		return goal_pt;
 	}
 	
@@ -226,9 +225,17 @@ public:
 		v.twist.angular.y = 0.0;
 		v.twist.angular.z = 0.0;
 		
-		float rate = 40;
+		float rate = 100;
 		ros::Rate r(rate);
 		for(int i = 0; i< (int) rate * duration; i++){
+			v.twist.linear.x = 0;
+			v.twist.linear.y = 0.125;
+			v.twist.linear.z = 0.0;
+			
+			v.twist.angular.x = 0.0;
+			v.twist.angular.y = 0.0;
+			v.twist.angular.z = 0.0;
+			
 			arm_vel.publish(v);
 			r.sleep();
 			ros::spinOnce();
@@ -240,10 +247,9 @@ public:
 	
 	std::vector<geometry_msgs::PoseStamped> find_quats (geometry_msgs::PoseStamped goal_pose){
 		std::vector<geometry_msgs::Quaternion> possible_quats;
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2, 0, 3.14/2));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2, 0, 3.14/2));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0, -3.14/2, 0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, -3.14/2, 0));
 
-		
 		std::vector<geometry_msgs::PoseStamped> ik_possible;
 		for(unsigned int i = 0; i< possible_quats.size(); i++){
 			goal_pose.pose.orientation = possible_quats.at(i);
@@ -304,6 +310,7 @@ public:
 		ROS_INFO("made tgt_cloud into pcl cloud and transformed frame id");
 		
 		//step 3: find the side of the object, set to slightly in further right of object
+
 		geometry_msgs::Point right_side = find_right_side(pcl_cloud);
 		
 		geometry_msgs::PoseStamped goal_pose;
@@ -338,10 +345,11 @@ public:
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 
 		//step 6: push the object 
-		push(1.5);
+		push(3.5);
 		
 		listenForArmData(30.0);
 		
+		segbot_arm_manipulation::homeArm(nh_);
 		//step 7: move arm home
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
@@ -355,12 +363,8 @@ public:
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "arm_push_as");
-  
-  ROS_WARN("about to call push action server");
 
   PushActionServer as(ros::this_node::getName());
-  
-  ROS_WARN("made push action server call");
   
   ros::spin();
 

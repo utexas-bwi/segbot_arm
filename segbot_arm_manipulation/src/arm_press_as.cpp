@@ -216,6 +216,7 @@ public:
 
 	void press_down(float duration){
 		geometry_msgs::TwistStamped v;
+		ROS_INFO("inside press down");
 		 
 		v.twist.linear.x = 0;
 		v.twist.linear.y = 0.0;
@@ -225,9 +226,19 @@ public:
 		v.twist.angular.y = 0.0;
 		v.twist.angular.z = 0.0;
 		
-		float rate = 40;
+		float rate = 100;
 		ros::Rate r(rate);
 		for(int i = 0; i< (int) rate * duration; i++){
+			ROS_INFO("inside loop to move down");
+			
+			v.twist.linear.x = 0;
+			v.twist.linear.y = 0.0;
+			v.twist.linear.z = -0.125;
+			
+			v.twist.angular.x = 0.0;
+			v.twist.angular.y = 0.0;
+			v.twist.angular.z = 0.0;
+			
 			arm_vel.publish(v);
 			r.sleep();
 			ros::spinOnce();
@@ -239,13 +250,15 @@ public:
 	//go through a list of ideal quaternions and check if they are possible
 	std::vector<geometry_msgs::PoseStamped> find_quats(geometry_msgs::PoseStamped goal_pose){
 		std::vector<geometry_msgs::Quaternion> possible_quats;
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14,0));
+		
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/4,0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2,-3.14/4,0));
+
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0, -3.14/2, 3.14/2));
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0));
 		
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14,0, 0));
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,0));
-		
 		
 		std::vector<geometry_msgs::PoseStamped> ik_possible;
 		for(unsigned int i = 0; i< possible_quats.size(); i++){
@@ -256,6 +269,7 @@ public:
 			
 			moveit_msgs::GetPositionIK::Response  ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
 			if (ik_response.error_code.val == 1){
+				ROS_INFO_STREAM(i);
 				ik_possible.push_back(goal_pose);
 			}
 		}
@@ -341,11 +355,12 @@ public:
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 
 		//step 6: press down on the object
-		press_down(1.5);
+		press_down(3.5);
 		
 		
 		listenForArmData(30.0);
 		
+		segbot_arm_manipulation::homeArm(nh_);
 		//step 7: move arm home		
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
