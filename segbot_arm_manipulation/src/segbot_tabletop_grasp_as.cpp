@@ -205,8 +205,8 @@ public:
 		tf::Matrix3x3 m(q);
 		
 		double r, p, y;
-		m.getRPY(r, p, y);
-	  ROS_INFO("RPY: %f %f %f",r,p,y);*/
+		m.getRPY(r, p, y);*/
+	  //ROS_INFO("RPY: %f %f %f",r,p,y);
 	  //  ROS_INFO_STREAM(current_pose);
 	}
 
@@ -334,20 +334,25 @@ public:
 			
 		double r, p, y;
 		m.getRPY(r, p, y);
-		 ROS_INFO("RPY: %f %f %f",r,p,y);
+		
+		ROS_INFO_STREAM(gc.approach_pose);
+		ROS_INFO("RPY: %f %f %f",r,p,y);
 		
 		if (filterName == segbot_arm_manipulation::TabletopGraspGoal::SIDEWAY_GRASP_FILTER){
-			ROS_INFO("%f, %f",fabs(p),fabs(3.14/2.0 - r) ); 
-			if ( fabs(p) < 1.75 && fabs(3.14/2.0 - r) < 1.75){
+			
+			//ROS_INFO("%f, %f",fabs(p),fabs(3.14/2.0 - r) ); 
+			
+			//ideally roll should be PI/2, while pitch should be 0
+			
+			if ( r > 1.1 && r < 1.9 && p > -0.25 && p < 0.25)
 				return true;
-			}
-			else {
-				return false;
-			}
+			else return false;
 			
 		}
 		else if (filterName == segbot_arm_manipulation::TabletopGraspGoal::TOPDOWN_GRASP_FILTER){
-			if ( (fabs(r) - 3.14) < 0.55){
+			double roll_abs = fabs(r);
+			
+			if ( roll_abs < 3.3 && roll_abs > 2.6 && p > -0.3 && p < 0.3){
 				return true;
 			}
 			else {
@@ -417,6 +422,11 @@ public:
 				//filter 1: if the grasp is too close to plane, reject it
 				bool ok_with_plane = segbot_arm_manipulation::grasp_utils::checkPlaneConflict(gc_i,plane_coef_vector,MIN_DISTANCE_TO_PLANE);
 				
+				//for filter 2, the grasps need to be in the arm's frame of reference
+				listener.transformPose("mico_link_base", gc_i.approach_pose, gc_i.approach_pose);
+				listener.transformPose("mico_link_base", gc_i.grasp_pose, gc_i.grasp_pose);
+
+				
 				//filter 2: apply grasp filter method in request
 				bool passed_filter = passesFilter(goal->grasp_filter_method,gc_i);
 				
@@ -424,9 +434,7 @@ public:
 					ROS_INFO("Found grasp fine with filter and plane");
 					
 					
-					listener.transformPose("mico_api_origin", gc_i.approach_pose, gc_i.approach_pose);
-					listener.transformPose("mico_api_origin", gc_i.grasp_pose, gc_i.grasp_pose);
-
+					
 					//filter two -- if IK fails
 					moveit_msgs::GetPositionIK::Response  ik_response_approach = segbot_arm_manipulation::computeIK(nh_,gc_i.approach_pose);
 					
@@ -434,6 +442,8 @@ public:
 						moveit_msgs::GetPositionIK::Response  ik_response_grasp = segbot_arm_manipulation::computeIK(nh_,gc_i.grasp_pose);
 				
 						if (ik_response_grasp.error_code.val == 1){
+							
+							ROS_INFO("...grasp fine with IK");
 							
 							
 							//now check to see how close the two sets of joint angles are -- if the joint configurations for the approach and grasp poses differ by too much, the grasp will not be accepted
@@ -455,6 +465,8 @@ public:
 								gc_i.grasp_q = ik_response_grasp.solution.joint_state;
 								
 								grasp_commands.push_back(gc_i);
+								
+								ROS_INFO("...fine with continuity");
 							}
 						}
 					}
@@ -520,7 +532,9 @@ public:
 				return;
 			}
 			
-			
+			//compute RPY for target pose
+			ROS_INFO("Selected approach pose:");
+			ROS_INFO_STREAM(grasp_commands.at(selected_grasp_index).approach_pose);
 
 			//publish individual pose for visualization purposes
 			pose_pub.publish(grasp_commands.at(selected_grasp_index).approach_pose);
