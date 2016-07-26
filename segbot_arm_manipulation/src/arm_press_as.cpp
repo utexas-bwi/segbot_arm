@@ -137,6 +137,7 @@ public:
 	//subscriber for wrench
 	sub_wrench = nh_.subscribe("/mico_arm_driver/out/tool_wrench", 1, &PressActionServer::wrench_cb, this);
 	
+	//advertise the goal pose for debugging
 	debug_pub = nh_.advertise<geometry_msgs::PoseStamped>("/mico_arm_driver/in/debug_pose", 2);
 	
 	ROS_INFO("Press action has started");
@@ -196,7 +197,6 @@ public:
 		}
 	}	
 	
-	//TO DO: make sure the xyz are facing the way I think they are 
 	geometry_msgs::Point find_top_center(PointCloudT pcl_curr){
 		//find max of all points
 		PointT max;
@@ -214,36 +214,6 @@ public:
 		return top_center;
 	}
 
-	void moveFinger(int finger_value) {
-		actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
-
-		jaco_msgs::SetFingersPositionGoal goalFinger;
-
-		goalFinger.fingers.finger1 = finger_value;
-		goalFinger.fingers.finger2 = finger_value;
-		// Not used for our arm
-		goalFinger.fingers.finger3 = 0;
-		ac.waitForServer();
-		ac.sendGoal(goalFinger);
-		ac.waitForResult();
-	}
-	
-	/*geometry_msgs::Point find_top(PointCloudT pcl_cloud){
-		//cloud is checked for size in the callback function
-		geometry_msgs::Point result_pt;
-		PointT max_point = pcl_cloud.points[0];
-		for(unsigned int i = 0; i < pcl_cloud.points.size(); i++){
-			PointT current = pcl_cloud.points[i];
-			if(current.z >= max_point.z){
-				max_point = current; 
-			}
-		}
-		result_pt.x = max_point.x;
-		result_pt.y = max_point.y;
-		result_pt.z = max_point.z;
-		return result_pt;
-	}*/
-	
 	void press_down(float duration){
 		geometry_msgs::TwistStamped v;
 		 
@@ -266,6 +236,7 @@ public:
 		arm_vel.publish(v);
 	}
 	
+	//go through a list of ideal quaternions and check if they are possible
 	std::vector<geometry_msgs::PoseStamped> find_quats(geometry_msgs::PoseStamped goal_pose){
 		std::vector<geometry_msgs::Quaternion> possible_quats;
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0));
@@ -353,6 +324,7 @@ public:
 			return;
 		}
 		
+		//for now, just pick the first possible pose
 		goal_pose = ik_possible.at(0);
 		
 		listenForArmData(30.0);
