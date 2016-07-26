@@ -46,9 +46,6 @@
 #include <pcl/common/impl/centroid.hpp>
 
 
-#include <tf/transform_listener.h>
-#include <tf/tf.h>
-
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
 
@@ -66,7 +63,6 @@ geometry_msgs::PoseStamped current_pose;
 bool heardJoinstState;
 bool heardPose;
 
-tf::TransformListener listener;
 
 using namespace std;
 
@@ -133,29 +129,23 @@ int chose_object(std::string message, segbot_arm_perception::TabletopPerception:
 
 void show_indicies(segbot_arm_perception::TabletopPerception::Response table_scene){
 	for(unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
-		//first transform into cloud into the arm's space
 		sensor_msgs::PointCloud2 tgt = table_scene.cloud_clusters[i];
 		
 		std::string sensor_frame_id = tgt.header.frame_id;
-		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
-		
-		
-		sensor_msgs::PointCloud tran_pc;
-		sensor_msgs::convertPointCloud2ToPointCloud(tgt,tran_pc);
-		
-		listener.transformPointCloud("mico_link_base", tran_pc ,tran_pc); 
-		sensor_msgs::convertPointCloudToPointCloud2(tran_pc, tgt);
-		
+
 		PointCloudT pcl_curr;
 		pcl::fromROSMsg(tgt, pcl_curr);
 		
+		PointT max;
+		PointT min;
+		pcl::getMinMax3D(pcl_curr, min, max);
 		
 		Eigen::Vector4f center;
 		pcl::compute3DCentroid(pcl_curr, center);
 		
 		//display a number in rviz for the index of every point cloud available
 		visualization_msgs::Marker marker;
-		marker.header.frame_id = "base_link";
+		marker.header.frame_id = sensor_frame_id;//"base_link";
 		marker.header.stamp = ros::Time();
 		marker.ns = "my_namespace";
 		marker.id = i;
@@ -168,7 +158,7 @@ void show_indicies(segbot_arm_perception::TabletopPerception::Response table_sce
 		
 		marker.pose.position.x = center(0); 
 		marker.pose.position.y = center(1);
-		marker.pose.position.z = center(2);
+		marker.pose.position.z = min.z;
 	
 		marker.pose.orientation.x = 0.0;
 		marker.pose.orientation.y = 0.0;
@@ -294,6 +284,7 @@ int main (int argc, char** argv){
 	push_goal.tgt_cloud = table_scene.cloud_clusters[index];
 	push_goal.cloud_plane = table_scene.cloud_plane; 
 	push_goal.arm_home = arm_home; 
+	push_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
 	
 	//send the goal
 	ROS_INFO("Sending goal to action server...");
