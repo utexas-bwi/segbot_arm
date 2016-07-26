@@ -8,6 +8,7 @@
 #include <std_msgs/String.h>
 
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 
 #define NUM_JOINTS_ARMONLY 6
 
@@ -42,6 +43,24 @@ class ArmPositionDB {
 			}
 			return false;
 		}
+		
+		geometry_msgs::PoseStamped getToolPositionStamped(
+						std::string name,
+						std::string frame_id){
+			for (unsigned int i = 0; i < tool_position_names.size(); i++){
+				if (tool_position_names[i] == name){
+					geometry_msgs::PoseStamped target_pose;
+					target_pose.header.stamp = ros::Time::now();
+					target_pose.header.frame_id = frame_id;
+					target_pose.pose=t_positions[i];
+					return target_pose;
+				}
+			}
+			
+			ROS_ERROR("[arm_positions_db.h] Requesting pose that is not in DB!");
+			geometry_msgs::PoseStamped p_empty;
+			return p_empty;
+		}
 	
 		geometry_msgs::Pose getToolPosition(std::string name){
 			for (unsigned int i = 0; i < tool_position_names.size(); i++){
@@ -50,8 +69,8 @@ class ArmPositionDB {
 				}
 			}
 			
-		//	geometry_msgs::Pose p_empty;
-		//	return NULL;
+			geometry_msgs::Pose p_empty;
+			return p_empty;
 		}
 		
 		std::vector<float> getJointPosition(std::string name){

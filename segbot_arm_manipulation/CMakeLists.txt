@@ -200,8 +200,8 @@ add_executable(test_table_approach_actions src/demos/test_table_approach_actions
 target_link_libraries(test_table_approach_actions ${catkin_LIBRARIES} )
 
 
-add_executable(object_to_office_task src/demos/object_to_office_task.cpp)
-target_link_libraries(object_to_office_task ${catkin_LIBRARIES} )
+#(object_to_office_task src/demos/object_to_office_task.cpp)
+#target_link_libraries(object_to_office_task ${catkin_LIBRARIES} )
 
 
 ## Declare a cpp executable

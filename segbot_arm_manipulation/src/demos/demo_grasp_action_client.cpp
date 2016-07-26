@@ -195,7 +195,14 @@ int main(int argc, char **argv) {
 		grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
 		
 		//for that action, we have to specify the method used for picking the target grasp out of the candidates
-		grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
+		//grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
+		grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_JOINTSPACE_SELECTION;
+		
+		
+		//grasp_goal.grasp_filter_method=segbot_arm_manipulation::TabletopGraspGoal::TOPDOWN_GRASP_FILTER;
+		grasp_goal.grasp_filter_method=segbot_arm_manipulation::TabletopGraspGoal::SIDEWAY_GRASP_FILTER;
+		
+		
 		
 		//finally, we fill in the table scene
 		grasp_goal.cloud_plane = table_scene.cloud_plane;
@@ -218,14 +225,15 @@ int main(int argc, char **argv) {
 	
 		
 		//lift and lower the object a bit, let it go and move back
-		/*lift(n,0.07);
+		lift(n,0.07);
+		sleep(2.0);
 		lift(n,-0.07);
 		segbot_arm_manipulation::openHand();
 		lift(n,0.07);
 		
 		segbot_arm_manipulation::homeArm(n);
 		segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
-	*/
+	
 	
 		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");
 	}

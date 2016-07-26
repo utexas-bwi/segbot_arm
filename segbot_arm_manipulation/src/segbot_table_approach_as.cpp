@@ -1,4 +1,6 @@
 #include <ros/ros.h>
+#include <ros/package.h>
+
 #include <signal.h>
 #include <iostream>
 #include <vector>
@@ -62,6 +64,7 @@
 #include <nav_msgs/Odometry.h>
 
 #include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/arm_positions_db.h>
 
 //for playing sounds when backing up
 #include <sound_play/sound_play.h>
@@ -100,6 +103,9 @@ protected:
 	
 	ros::Subscriber sub_odom_;
 	
+	//holds set of predefined positions
+	ArmPositionDB *posDB;
+	
 public:
 
   TableApproachActionServer(std::string name) :
@@ -120,7 +126,12 @@ public:
 	//velocity publisher
 	pub_base_velocity = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 	
-    
+    //load database of joint- and tool-space positions
+	std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
+	std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
+	
+	posDB = new ArmPositionDB(j_pos_filename, c_pos_filename);
+	
     as_.start();
   }
 
@@ -161,6 +172,18 @@ public:
 		if (goal->command == "approach"){
 		
 			//step 1: query table_object_detection_node to segment the blobs on the table
+			posDB->print();
+			//first, we need to move the arm out of view so the camera can see the table
+			if (posDB->hasCarteseanPosition("side_view")){
+				geometry_msgs::PoseStamped out_of_view_pose = posDB->getToolPositionStamped("side_view","/mico_link_base");
+				
+				//now go to the pose
+				segbot_arm_manipulation::moveToPoseMoveIt(nh_,out_of_view_pose);
+			}
+			else {
+				ROS_ERROR("[segbot_table_approach_as.cpp] Cannot move arm out of view!");
+			}
+				
 			
 			ros::ServiceClient client_tabletop_perception = nh_.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
 			
@@ -190,10 +213,20 @@ public:
 				plane_coef_vector(i)=srv.response.cloud_plane_coef[i];
 
 			if (srv.response.is_plane_found == false){
-				ROS_INFO("Table not found. The end.");
+				ROS_ERROR("[segbot_table_approach_as.cpp] Table not found. The end.");
 				result_.success = false;
 				result_.error_msg = "table_not_found";
-				as_.setSucceeded(result_);
+				as_.setAborted(result_);
+				return;
+			}
+			
+			//next, make arm safe to move again
+			bool safe = segbot_arm_manipulation::makeSafeForTravel(nh_);
+			if (!safe) {
+				ROS_ERROR("[segbot_table_approach_as.cpp] Cannot make arm safe for travel! Aborting!");
+				result_.success = false;
+				result_.error_msg = "cannot_make_arm_safe";
+				as_.setAborted(result_);
 				return;
 			}
 			

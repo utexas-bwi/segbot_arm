@@ -9,65 +9,20 @@
 #include <time.h>       /* time */
 
 
-#include <std_msgs/String.h>
-
-
-
-#include <Eigen/Dense>
-#include <eigen_conversions/eigen_msg.h>
-
-#include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
-#include <geometry_msgs/PoseArray.h>
-#include <std_msgs/Float32.h>
-
-//tf stuff
-#include <tf/transform_datatypes.h>
-#include <tf_conversions/tf_eigen.h>
-#include <tf/transform_broadcaster.h>
+#include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/grasp_utils.h>
 
 
 //actions
 #include <actionlib/client/simple_action_client.h>
+#include <actionlib/server/simple_action_server.h>
+
 #include "jaco_msgs/SetFingersPositionAction.h"
 #include "jaco_msgs/ArmPoseAction.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
 
-
-
-#include "agile_grasp/Grasps.h"
-
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_perception/TabletopPerception.h"
-
-// PCL specific includes
-//#include <pcl/conversions.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/console/parse.h>
-#include <pcl/point_types.h>
-#include <pcl/io/openni_grabber.h>
-#include <pcl/sample_consensus/sac_model_plane.h>
-#include <pcl/common/time.h>
-#include <pcl/common/common.h>
-
-#include <pcl/filters/crop_box.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/extract_indices.h>
-
-#include <pcl/ModelCoefficients.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/segmentation/extract_clusters.h>
-
-#include <pcl/kdtree/kdtree.h>
-
-#include <pcl_conversions/pcl_conversions.h>
-
-#include <tf/transform_listener.h>
-#include <tf/tf.h>
 
 #include <moveit_msgs/DisplayRobotState.h>
 // Kinematics
@@ -79,15 +34,15 @@
 #include <moveit_utils/MicoMoveitCartesianPose.h>
 
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/PoseArray.h>
 
 //the action definition
 #include "segbot_arm_manipulation/TabletopGraspAction.h"
 
-#include <actionlib/server/simple_action_server.h>
-
-#include <segbot_arm_manipulation/arm_utils.h>
-#include <segbot_arm_manipulation/grasp_utils.h>
-
+//tf stuff
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
+#include <tf/transform_broadcaster.h>
 
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
@@ -242,6 +197,16 @@ public:
 	void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 	  current_pose = msg;
 	  heardPose = true;
+	  
+	  /*tf::Quaternion q(current_pose.pose.orientation.x, 
+								current_pose.pose.orientation.y, 
+								current_pose.pose.orientation.z, 
+								current_pose.pose.orientation.w);
+		tf::Matrix3x3 m(q);
+		
+		double r, p, y;
+		m.getRPY(r, p, y);*/
+	  //ROS_INFO("RPY: %f %f %f",r,p,y);
 	  //  ROS_INFO_STREAM(current_pose);
 	}
 
@@ -359,6 +324,45 @@ public:
 		}
 	}*/
 	
+	bool passesFilter(std::string filterName, GraspCartesianCommand gc){
+		
+		tf::Quaternion q(gc.approach_pose.pose.orientation.x, 
+								gc.approach_pose.pose.orientation.y, 
+								gc.approach_pose.pose.orientation.z, 
+								gc.approach_pose.pose.orientation.w);
+		tf::Matrix3x3 m(q);
+			
+		double r, p, y;
+		m.getRPY(r, p, y);
+		
+		ROS_INFO_STREAM(gc.approach_pose);
+		ROS_INFO("RPY: %f %f %f",r,p,y);
+		
+		if (filterName == segbot_arm_manipulation::TabletopGraspGoal::SIDEWAY_GRASP_FILTER){
+			
+			//ROS_INFO("%f, %f",fabs(p),fabs(3.14/2.0 - r) ); 
+			
+			//ideally roll should be PI/2, while pitch should be 0
+			
+			if ( r > 1.1 && r < 1.9 && p > -0.25 && p < 0.25)
+				return true;
+			else return false;
+			
+		}
+		else if (filterName == segbot_arm_manipulation::TabletopGraspGoal::TOPDOWN_GRASP_FILTER){
+			double roll_abs = fabs(r);
+			
+			if ( roll_abs < 3.3 && roll_abs > 2.6 && p > -0.3 && p < 0.3){
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
 	void executeCB(const segbot_arm_manipulation::TabletopGraspGoalConstPtr  &goal)
 	{
 		if (goal->action_name == segbot_arm_manipulation::TabletopGraspGoal::GRASP){
@@ -407,18 +411,30 @@ public:
 			//here, we'll store all grasp options that pass the filters
 			std::vector<GraspCartesianCommand> grasp_commands;
 			
+			
 			for (unsigned int i = 0; i < current_grasps.grasps.size(); i++){
 				
 							
 				GraspCartesianCommand gc_i = segbot_arm_manipulation::grasp_utils::constructGraspCommand(current_grasps.grasps.at(i),HAND_OFFSET_APPROACH,HAND_OFFSET_GRASP, sensor_frame_id);
 				
+				
+				
+				//filter 1: if the grasp is too close to plane, reject it
 				bool ok_with_plane = segbot_arm_manipulation::grasp_utils::checkPlaneConflict(gc_i,plane_coef_vector,MIN_DISTANCE_TO_PLANE);
 				
-				if (ok_with_plane){
-					
-					listener.transformPose("mico_api_origin", gc_i.approach_pose, gc_i.approach_pose);
-					listener.transformPose("mico_api_origin", gc_i.grasp_pose, gc_i.grasp_pose);
+				//for filter 2, the grasps need to be in the arm's frame of reference
+				listener.transformPose("mico_link_base", gc_i.approach_pose, gc_i.approach_pose);
+				listener.transformPose("mico_link_base", gc_i.grasp_pose, gc_i.grasp_pose);
 
+				
+				//filter 2: apply grasp filter method in request
+				bool passed_filter = passesFilter(goal->grasp_filter_method,gc_i);
+				
+				if (passed_filter && ok_with_plane){
+					ROS_INFO("Found grasp fine with filter and plane");
+					
+					
+					
 					//filter two -- if IK fails
 					moveit_msgs::GetPositionIK::Response  ik_response_approach = segbot_arm_manipulation::computeIK(nh_,gc_i.approach_pose);
 					
@@ -426,6 +442,8 @@ public:
 						moveit_msgs::GetPositionIK::Response  ik_response_grasp = segbot_arm_manipulation::computeIK(nh_,gc_i.grasp_pose);
 				
 						if (ik_response_grasp.error_code.val == 1){
+							
+							ROS_INFO("...grasp fine with IK");
 							
 							
 							//now check to see how close the two sets of joint angles are -- if the joint configurations for the approach and grasp poses differ by too much, the grasp will not be accepted
@@ -447,6 +465,8 @@ public:
 								gc_i.grasp_q = ik_response_grasp.solution.joint_state;
 								
 								grasp_commands.push_back(gc_i);
+								
+								ROS_INFO("...fine with continuity");
 							}
 						}
 					}
@@ -511,6 +531,10 @@ public:
 				as_.setAborted(result_);
 				return;
 			}
+			
+			//compute RPY for target pose
+			ROS_INFO("Selected approach pose:");
+			ROS_INFO_STREAM(grasp_commands.at(selected_grasp_index).approach_pose);
 
 			//publish individual pose for visualization purposes
 			pose_pub.publish(grasp_commands.at(selected_grasp_index).approach_pose);
