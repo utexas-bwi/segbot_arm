@@ -247,6 +247,8 @@ public:
 	
 	std::vector<geometry_msgs::PoseStamped> find_quats (geometry_msgs::PoseStamped goal_pose){
 		std::vector<geometry_msgs::Quaternion> possible_quats;
+		//TO DO: delete the following testing line
+		possible_quats.push_back(current_pose.pose.orientation);
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0, -3.14/2, 0));
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, -3.14/2, 0));
 
