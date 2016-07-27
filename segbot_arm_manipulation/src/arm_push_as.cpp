@@ -215,6 +215,7 @@ public:
 	}
 	
 	void push(float duration){ 
+		listenForArmData(30.0);
 		geometry_msgs::TwistStamped v;
 		 
 		v.twist.linear.x = 0;
@@ -227,6 +228,7 @@ public:
 		
 		float rate = 100;
 		ros::Rate r(rate);
+		listenForArmData(30.0);
 		for(int i = 0; i< (int) rate * duration; i++){
 			v.twist.linear.x = 0;
 			v.twist.linear.y = 0.125;
@@ -318,10 +320,10 @@ public:
 		geometry_msgs::Point right_side = find_right_side(pcl_cloud);
 		
 		geometry_msgs::PoseStamped goal_pose;
-		goal_pose.header.frame_id = goal -> tgt_cloud.header.frame_id;
+		goal_pose.header.frame_id = tgt.header.frame_id;
 		
 		goal_pose.pose.position = right_side; 
-		goal_pose.pose.position.y += 0.05;
+		goal_pose.pose.position.y -= 0.125;
 		
 		ROS_INFO("found right side of object");
 	
@@ -341,21 +343,21 @@ public:
 		debug_pub.publish(goal_pose);
 		
 		listenForArmData(30.0);
-		
-		//|| (pcl::pointToPlaneDistance(pt, goal -> cloud_plane) < MIN_DISTANCE_TO_PLANE)
-		
+				
 		//step 5: move to the goal pose
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
+		listenForArmData(30.0);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 
 		//step 6: push the object 
-		push(3.5);
+		push(5);
 		
 		listenForArmData(30.0);
 		
 		segbot_arm_manipulation::homeArm(nh_);
 		//step 7: move arm home
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
+		listenForArmData(30.0);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 
 		

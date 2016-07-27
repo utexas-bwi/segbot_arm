@@ -228,9 +228,8 @@ public:
 		
 		float rate = 100;
 		ros::Rate r(rate);
-		for(int i = 0; i< (int) rate * duration; i++){
-			ROS_INFO("inside loop to move down");
-			
+		listenForArmData(30.0);
+		for(int i = 0; i< (int) rate * duration; i++){			
 			v.twist.linear.x = 0;
 			v.twist.linear.y = 0.0;
 			v.twist.linear.z = -0.125;
@@ -259,6 +258,8 @@ public:
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0));
 		
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,0));
+		//in case the ideal hands don't work, try the current one
+		possible_quats.push_back(current_pose.pose.orientation);
 		
 		std::vector<geometry_msgs::PoseStamped> ik_possible;
 		for(unsigned int i = 0; i< possible_quats.size(); i++){
@@ -273,7 +274,6 @@ public:
 				ik_possible.push_back(goal_pose);
 			}
 		}
-		
 		return ik_possible;
 	}
 	
@@ -352,10 +352,11 @@ public:
 		
 		//step 5: move to goal position
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
+		listenForArmData(30.0);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 
 		//step 6: press down on the object
-		press_down(3.5);
+		press_down(5);
 		
 		
 		listenForArmData(30.0);
@@ -363,6 +364,7 @@ public:
 		segbot_arm_manipulation::homeArm(nh_);
 		//step 7: move arm home		
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
+		listenForArmData(30.0);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 
 		
