@@ -247,9 +247,9 @@ public:
 	}
 	
 	//go through a list of ideal quaternions and check if they are possible
-	std::vector<geometry_msgs::PoseStamped> find_quats(geometry_msgs::PoseStamped goal_pose){
+/*	std::vector<geometry_msgs::PoseStamped> find_quats(geometry_msgs::PoseStamped goal_pose){
 		std::vector<geometry_msgs::Quaternion> possible_quats;
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14,0));
+		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0));
 		
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/4,0));
 		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2,-3.14/4,0));
@@ -275,6 +275,36 @@ public:
 			}
 		}
 		return ik_possible;
+	}*/
+	
+	std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
+		float change = 0.0;
+		float semi_circle = 3.14/4;
+		
+		listener.waitForTransform(goal_pose.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
+		std::vector<geometry_msgs::Quaternion> possible_quats;
+		while(change < semi_circle){
+			geometry_msgs::Quaternion quat1= tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, - change ,0);
+			geometry_msgs::Quaternion quat2 = tf::createQuaternionMsgFromRollPitchYaw(3.14/2, - change ,0);
+			
+			goal_pose.pose.orientation = quat1;
+			moveit_msgs::GetPositionIK::Response  ik_response_1 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
+			if (ik_response_1.error_code.val == 1){
+				possible_quats.push_back(goal_pose.pose.orientation);
+			}
+			
+			goal_pose.pose.orientation = quat2; 
+			moveit_msgs::GetPositionIK::Response  ik_response_2 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
+			if (ik_response_2.error_code.val == 1){
+				possible_quats.push_back(goal_pose.pose.orientation);
+			}
+			
+			change += 3.14/16;
+		}
+		
+		//checked all, none worked
+		return possible_quats;
+		
 	}
 	
 	void executeCB(const segbot_arm_manipulation::PressGoalConstPtr  &goal){
@@ -328,18 +358,17 @@ public:
 		goal_pose.pose.position.z += 0.125; 
 		
 		//step 4: find the hand orientation
-		//if the IK are invalid, it is not possible to press
-		std::vector<geometry_msgs::PoseStamped> ik_possible = find_quats(goal_pose);
-		
-		if(ik_possible.size() == 0){
+		std::vector<geometry_msgs::Quaternion> possible_quats = find_quat(goal_pose);
+
+		if(possible_quats.size() == 0 ){
 			result_.success = false;
 			ROS_INFO("[arm_press_as.cpp] No possible poses...");
 			as_.setAborted(result_);
 			return;
 		}
 		
-		//for now, just pick the first possible pose
-		goal_pose = ik_possible.at(0);
+		//for now go to first possible pose
+		goal_pose.pose.orientation = possible_quats.at(0);
 		
 		listenForArmData(30.0);
 		
