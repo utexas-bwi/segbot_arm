@@ -245,38 +245,8 @@ public:
 		v.twist.linear.z = 0.0;
 		arm_vel.publish(v);
 	}
-	
-	//go through a list of ideal quaternions and check if they are possible
-/*	std::vector<geometry_msgs::PoseStamped> find_quats(geometry_msgs::PoseStamped goal_pose){
-		std::vector<geometry_msgs::Quaternion> possible_quats;
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/2,0));
-		
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2,-3.14/4,0));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2,-3.14/4,0));
 
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0, -3.14/2, 3.14/2));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0));
-		
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,0));
-		//in case the ideal hands don't work, try the current one
-		possible_quats.push_back(current_pose.pose.orientation);
-		
-		std::vector<geometry_msgs::PoseStamped> ik_possible;
-		for(unsigned int i = 0; i< possible_quats.size(); i++){
-			goal_pose.pose.orientation = possible_quats.at(i);
-			
-			//transform into the arm's space
-			listener.transformPose("mico_api_origin", goal_pose, goal_pose);
-			
-			moveit_msgs::GetPositionIK::Response  ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
-			if (ik_response.error_code.val == 1){
-				ROS_INFO_STREAM(i);
-				ik_possible.push_back(goal_pose);
-			}
-		}
-		return ik_possible;
-	}*/
-	
+
 	std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
 		float change = 0.0;
 		float semi_circle = 3.14/4;
@@ -302,7 +272,6 @@ public:
 			change += 3.14/16;
 		}
 		
-		//checked all, none worked
 		return possible_quats;
 		
 	}

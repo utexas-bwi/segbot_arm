@@ -247,31 +247,36 @@ public:
 		arm_vel.publish(v);
 	}
 	
-	std::vector<geometry_msgs::PoseStamped> find_quats (geometry_msgs::PoseStamped goal_pose){
+	std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
+		float change = 0.0;
+		float semi_circle = 3.14/4; 
+		
+		listener.waitForTransform(goal_pose.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
+		
 		std::vector<geometry_msgs::Quaternion> possible_quats;
-		//TO DO: delete the following testing line
-		possible_quats.push_back(current_pose.pose.orientation);
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(0, -3.14/2, 0));
-		possible_quats.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, -3.14/2, 0));
-
-		std::vector<geometry_msgs::PoseStamped> ik_possible;
-		for(unsigned int i = 0; i< possible_quats.size(); i++){
-			goal_pose.pose.orientation = possible_quats.at(i);
-			
-			//transform into the arm's space
-			listener.transformPose("mico_api_origin", goal_pose, goal_pose);
-			
-			moveit_msgs::GetPositionIK::Response ik_response = segbot_arm_manipulation::computeIK(nh_,goal_pose);
-			if(ik_response.error_code.val == 1) {
-				ROS_INFO_STREAM(i);
-				ik_possible.push_back(goal_pose);
+		while(change < semi_circle){
+			geometry_msgs::Quaternion quat1 = tf::createQuaternionMsgFromRollPitchYaw(0 , -3.14 , change);
+			//geometry_msgs::Quaternion quat2 = tf::createQuaternionMsgFromRollPitchYaw(0 , 3.14  , 0);
+			 
+			goal_pose.pose.orientation = quat1;
+			moveit_msgs::GetPositionIK::Response  ik_response_1 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
+			if (ik_response_1.error_code.val == 1){
+				possible_quats.push_back(goal_pose.pose.orientation);
+				
 			}
-			//ROS_INFO_STREAM(ik_response.error_code.val);
+			
+			/*goal_pose.pose.orientation = quat2; 
+			moveit_msgs::GetPositionIK::Response  ik_response_2 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
+			if (ik_response_2.error_code.val == 1){
+				possible_quats.push_back(goal_pose.pose.orientation);
+			}*/
+			
+			change += 3.14/16;
 		}
 		
-		return ik_possible;
+		return possible_quats;
+		
 	}
-
 	
 	void executeCB(const segbot_arm_manipulation::PushGoalConstPtr  &goal){
 		listenForArmData(30.0);
@@ -299,24 +304,24 @@ public:
 		//step 2: transform into the arm's base
 		sensor_msgs::PointCloud2 tgt= goal -> tgt_cloud;
 		
+		//transform into the arm's base
 		std::string sensor_frame_id = tgt.header.frame_id;
 		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
 		
+		//transform given point cloud into arm's base then create a pcl point cloud
 		sensor_msgs::PointCloud transformed_pc;
 		sensor_msgs::convertPointCloud2ToPointCloud(tgt,transformed_pc);
 		
 		listener.transformPointCloud("mico_link_base", transformed_pc ,transformed_pc); 
 		sensor_msgs::convertPointCloudToPointCloud2(transformed_pc, tgt);
-		
-		ROS_INFO_STREAM(tgt.header.frame_id);
-	
+			
 		PointCloudT pcl_cloud;
 		pcl::fromROSMsg(tgt, pcl_cloud);
 		
 		ROS_INFO("made tgt_cloud into pcl cloud and transformed frame id");
 		
-		//step 3: find the side of the object, set to slightly in further right of object
-
+		
+		//step 3: find the side of the object, set to slightly further right of object
 		geometry_msgs::Point right_side = find_right_side(pcl_cloud);
 		
 		geometry_msgs::PoseStamped goal_pose;
@@ -327,18 +332,19 @@ public:
 		
 		ROS_INFO("found right side of object");
 	
-		//step 4: find the possible hand orientation
-		std::vector<geometry_msgs::PoseStamped> ik_possible = find_quats(goal_pose);
+	
+		//step 4: find the possible hand orientations
+		std::vector<geometry_msgs::Quaternion> ik_possible = find_quat(goal_pose);
 		
-		//if the IK are invalid, it is not possible to push
+		//if all IK are invalid, it is not possible to push
 		if (ik_possible.size() == 0 ){ 
 			result_.success = false;
-			ROS_INFO("[arm_push_as.cpp] No possible pose");
+			ROS_INFO("[arm_push_as.cpp] No possible pose... aborting");
 			as_.setAborted(result_);
 			return;
 		}
 		
-		goal_pose = ik_possible.at(0);
+		goal_pose.pose.orientation = ik_possible.at(0);
 		
 		debug_pub.publish(goal_pose);
 		
@@ -354,8 +360,10 @@ public:
 		
 		listenForArmData(30.0);
 		
+		
 		segbot_arm_manipulation::homeArm(nh_);
-		//step 7: move arm home
+		
+		//step 7: move arm to goal's arm home
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		listenForArmData(30.0);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
