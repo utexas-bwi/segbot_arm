@@ -211,6 +211,70 @@ void pressEnter(std::string message){
 	}
 }
 
+std::vector<double> get_color_hist(PointCloudT desired_cloud, int dim){ 
+	//get a color histogram and turn it into a one dimensional vector for comparison
+	std::vector<std::vector<std::vector<uint> > > hist3= segbot_arm_perception::computeRGBColorHistogram(desired_cloud, dim);
+	int i_offset = dim * dim;
+	int j_offset = dim;
+	std::vector<double> hist3_double_vector (dim * dim * dim, 0);
+	for (int i = 0; i < dim; i++) {
+		for (int j = 0; j < dim; j++) {
+			for (int k = 0; k < dim; k++) {
+				hist3_double_vector[i * i_offset + j * j_offset + k] = hist3[i][j][k];
+			}
+		}
+	}
+	return hist3_double_vector;	
+}
+	
+double correlation_coeff(std::vector<double> orig_colorhist, std::vector<double> new_colorhist){
+	//compares color histogram to determine if the objects are similar
+	if(orig_colorhist.size() != new_colorhist.size()){
+		ROS_ERROR("!!!color histograms are not the same size. Values will not be accurate. Abort.!!!");
+		return 0.0;
+	}
+	
+	double sum_xy = 0.0;
+	double sum_x = 0.0;
+	double sum_y = 0.0;
+	double sum_x_2 = 0.0;
+	double sum_y_2 = 0.0;
+	double num = 0.0;
+	
+	for(unsigned int i = 0; i < orig_colorhist.size(); i++){
+		num++; 
+		sum_x += orig_colorhist.at(i);
+		sum_y += new_colorhist.at(i);
+		sum_x_2 += pow(orig_colorhist.at(i), 2);
+		sum_y_2 += pow(new_colorhist.at(i) , 2);
+		sum_xy += (orig_colorhist.at(i) * new_colorhist.at(i));
+	}
+	
+	double result = sum_xy - ((sum_x * sum_y)/ num);
+	result /= sqrt((sum_x_2 - (pow(sum_x , 2) / num)) * (sum_y_2 - (pow(sum_y , 2) /num)));
+	return result;
+}
+
+int refind_obj(segbot_arm_perception::TabletopPerception::Response table_scene, sensor_msgs::PointCloud2 tgt){
+	PointCloudT pcl_tgt;
+	pcl::fromROSMsg(tgt, pcl_tgt);
+	std::vector<double> tgt_color_hist = get_color_hist(pcl_tgt, 8);
+
+	for(int i = 0; i< table_scene.cloud_clusters.size(); i++){
+		PointCloudT pcl_curr;
+		pcl::fromROSMsg(table_scene.cloud_clusters.at(i), pcl_curr);
+		std::vector<double> curr_color_hist = get_color_hist(pcl_curr, 8);
+		double corr = correlation_coeff(tgt_color_hist, curr_color_hist);
+		if(corr > 0.8){
+			return i;
+		}
+		
+	}
+	
+	return -1;
+}
+
+
 int main (int argc, char** argv){
 	ros::init(argc, argv, "demo_explore_object");
 	
@@ -300,10 +364,22 @@ int main (int argc, char** argv){
 	ROS_INFO("Push action finished...");
 	
 	
+	
 	listenForArmData();
 	
+	sensor_msgs::PointCloud2 tgt = table_scene.cloud_clusters[index];
+	//the object has moved from the above actions, recheck table	
+	table_scene = segbot_arm_manipulation::getTabletopScene(n);
+	//for now, use color histograms to find the object again
+	index = refind_obj(table_scene, tgt);
 	
-	
+	if(index < 0){
+		ROS_INFO("object is no longer on table... ending");
+		ros::shutdown();
+		exit(1);
+	}
+
+
 	
 	pressEnter("Press enter to start grasp and verify action or q to quit");
 	
