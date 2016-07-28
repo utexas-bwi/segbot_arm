@@ -98,6 +98,7 @@ void listenForArmData(){
 	}
 }
 
+
 int largest_obj(segbot_arm_perception::TabletopPerception::Response table_scene){
 	int largest_pc_index = -1;
 	int largest_num_points = -1;
@@ -229,6 +230,8 @@ int main (int argc, char** argv){
 
 	listenForArmData();
 	
+	
+	
 	pressEnter("Press enter to get table scene or q to quit");
 	
 	//get table scene and find all objects on table 
@@ -243,11 +246,12 @@ int main (int argc, char** argv){
 	show_indicies(table_scene);
 	
 	int index = chose_object("Enter index of object or press enter to pick largest ", table_scene);
-	ROS_INFO("index chosen is: ");
-	ROS_INFO_STREAM(index);
-	
+
 	sensor_msgs::JointState arm_home = set_home_arm();
 	ROS_INFO("made arm home to send");
+	
+	
+	
 	
 	pressEnter("Press enter to start press action or q to quit");
 	//create the action client to press object
@@ -273,6 +277,7 @@ int main (int argc, char** argv){
 	listenForArmData();
 	
 	
+	
 	pressEnter("Press enter to start push action or q to quit");
 	//create the action client to push an object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::PushAction> push_ac("arm_push_as",true);
@@ -296,6 +301,9 @@ int main (int argc, char** argv){
 	
 	
 	listenForArmData();
+	
+	
+	
 	
 	pressEnter("Press enter to start grasp and verify action or q to quit");
 	
@@ -331,6 +339,9 @@ int main (int argc, char** argv){
 
 	listenForArmData();
 	
+	
+	
+	
 	//create action to lift and verify
 	actionlib::SimpleActionClient<segbot_arm_manipulation::LiftVerifyAction> lift_ac("arm_lift_verify_as", true);
 	lift_ac.waitForServer();
@@ -361,6 +372,10 @@ int main (int argc, char** argv){
 	pressEnter("Press enter to start shake action or q to quit");
 	
 	listenForArmData();
+	
+	
+	
+	
 	//create action to shake object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::ShakeAction> shake_ac("arm_shake_as", true);
 	shake_ac.waitForServer();
