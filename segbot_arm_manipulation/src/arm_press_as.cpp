@@ -245,6 +245,8 @@ public:
 		v.twist.linear.z = 0.0;
 		arm_vel.publish(v);
 	}
+	
+
 
 
 	std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
@@ -252,7 +254,8 @@ public:
 		float semi_circle = 3.14/4;
 		
 		listener.waitForTransform(goal_pose.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
-		std::vector<geometry_msgs::Quaternion> possible_quats;
+		
+		std::vector<geometry_msgs::Quaternion> possible_quats;		
 		while(change < semi_circle){
 			geometry_msgs::Quaternion quat1= tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, - change ,0);
 			geometry_msgs::Quaternion quat2 = tf::createQuaternionMsgFromRollPitchYaw(3.14/2, - change ,0);
@@ -275,7 +278,7 @@ public:
 		return possible_quats;
 		
 	}
-	
+
 	void executeCB(const segbot_arm_manipulation::PressGoalConstPtr  &goal){
 		listenForArmData(30.0);
 		
