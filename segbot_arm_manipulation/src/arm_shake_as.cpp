@@ -188,6 +188,7 @@ public:
 		}
 	}
 	
+	//method to shake object, use planner
 	void lift(ros::NodeHandle n, double x){
 		listenForArmData(30.0);
 
@@ -243,7 +244,7 @@ public:
 			//step 3: shake the object
 			shake();
 		}else{
-			//object is not in hand, abort
+			//for now if object is not in hand, abort
 			ROS_WARN("object must already be in hand... aborting");
 			result_.success = false;
 			as_.setAborted(result_);
@@ -254,7 +255,7 @@ public:
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 
-		
+		//step 5: set result of action
 		result_.success = true;
 		as_.setSucceeded(result_);
 	}
