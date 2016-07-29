@@ -160,14 +160,12 @@ public:
 	//Joint effort cb
 	void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
 	  current_effort = *input;
-	  //ROS_INFO_STREAM(current_effort);
 	}
 
 	//tool position cb
 	void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 	  current_pose = msg;
 	  heardPose = true;
-	  //  ROS_INFO_STREAM(current_pose);
 	}
 
 	//fingers state cb
@@ -197,6 +195,7 @@ public:
 		}
 	}	
 	
+	//method to find the middle top of the point cloud to be pressed
 	geometry_msgs::Point find_top_center(PointCloudT pcl_curr){
 		//find max of all points
 		PointT max;
@@ -207,6 +206,7 @@ public:
 		Eigen::Vector4f centroid_pts;
 		pcl::compute3DCentroid(pcl_curr, centroid_pts);
 		
+		//make a point using the center and max points
 		geometry_msgs::Point top_center;
 		top_center.x = centroid_pts(0);
 		top_center.y = centroid_pts(1);
@@ -214,6 +214,7 @@ public:
 		return top_center;
 	}
 
+	//method using cartesian velocities to press down on the objec
 	void press_down(float duration){
 		geometry_msgs::TwistStamped v;
 		ROS_INFO("inside press down");
@@ -248,26 +249,30 @@ public:
 	
 
 
-
+	//method to find possible hand orientations
 	std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
 		float change = 0.0;
 		float semi_circle = 3.14/4;
 		
 		listener.waitForTransform(goal_pose.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
 		
-		std::vector<geometry_msgs::Quaternion> possible_quats;		
+		std::vector<geometry_msgs::Quaternion> possible_quats;	
+		
+		//creates hand orientations in a certain range, checks IK, if possible add to vector of possible quats
 		while(change < semi_circle){
 			geometry_msgs::Quaternion quat1= tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, - change ,0);
 			geometry_msgs::Quaternion quat2 = tf::createQuaternionMsgFromRollPitchYaw(3.14/2, - change ,0);
 			
 			goal_pose.pose.orientation = quat1;
 			moveit_msgs::GetPositionIK::Response  ik_response_1 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
+			
 			if (ik_response_1.error_code.val == 1){
 				possible_quats.push_back(goal_pose.pose.orientation);
 			}
 			
 			goal_pose.pose.orientation = quat2; 
 			moveit_msgs::GetPositionIK::Response  ik_response_2 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
+			
 			if (ik_response_2.error_code.val == 1){
 				possible_quats.push_back(goal_pose.pose.orientation);
 			}
@@ -344,6 +349,7 @@ public:
 		
 		listenForArmData(30.0);
 		
+		//publish pose to rviz for debugging
 		debug_pub.publish(goal_pose);
 		
 		ROS_INFO_STREAM("frame for goal_pose");
@@ -363,12 +369,13 @@ public:
 		listenForArmData(30.0);
 		
 		segbot_arm_manipulation::homeArm(nh_);
+		
 		//step 7: move arm home		
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		listenForArmData(30.0);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 
-		
+		//step 8: set result of action
 		result_.success = true;
 		as_.setSucceeded(result_);
 	}

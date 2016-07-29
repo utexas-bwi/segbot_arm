@@ -98,7 +98,7 @@ void listenForArmData(){
 	}
 }
 
-
+//finds the object on the table
 int largest_obj(segbot_arm_perception::TabletopPerception::Response table_scene){
 	int largest_pc_index = -1;
 	int largest_num_points = -1;
@@ -113,13 +113,15 @@ int largest_obj(segbot_arm_perception::TabletopPerception::Response table_scene)
 	}
 }
 
+//ask user to input the index of desired object or selects the largest object on the table
 int chose_object(std::string message, segbot_arm_perception::TabletopPerception::Response table_scene){
 	std::cout << message;
+	char size = (char) table_scene.cloud_clusters.size();
 	while (true){
 		char c = std::cin.get();
 		if (c == '\n') {
 			return largest_obj(table_scene);
-		} else if (c >= '0' && c <= '9') {
+		} else if (c >= '0' && c <= size) {
 			return c - '0';
 		} else {
 			std::cout <<  message;
@@ -128,6 +130,7 @@ int chose_object(std::string message, segbot_arm_perception::TabletopPerception:
 }
 
 
+//display a number in rviz for the index of every point cloud available
 void show_indicies(segbot_arm_perception::TabletopPerception::Response table_scene){
 	for(unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
 		sensor_msgs::PointCloud2 tgt = table_scene.cloud_clusters[i];
@@ -144,7 +147,6 @@ void show_indicies(segbot_arm_perception::TabletopPerception::Response table_sce
 		Eigen::Vector4f center;
 		pcl::compute3DCentroid(pcl_curr, center);
 		
-		//display a number in rviz for the index of every point cloud available
 		visualization_msgs::Marker marker;
 		marker.header.frame_id = sensor_frame_id;//"base_link";
 		marker.header.stamp = ros::Time();
@@ -183,6 +185,7 @@ void show_indicies(segbot_arm_perception::TabletopPerception::Response table_sce
 }
 
 sensor_msgs::JointState set_home_arm(){
+	//set arm home to a specific location
 	sensor_msgs::JointState arm_home;
 	arm_home.position.push_back(-1.3417218624707292);
 	arm_home.position.push_back(-0.44756153173493096);
@@ -255,23 +258,33 @@ double correlation_coeff(std::vector<double> orig_colorhist, std::vector<double>
 	return result;
 }
 
+//method to refind the original target object on the table after previous actions have moved it
 int refind_obj(segbot_arm_perception::TabletopPerception::Response table_scene, sensor_msgs::PointCloud2 tgt){
 	PointCloudT pcl_tgt;
 	pcl::fromROSMsg(tgt, pcl_tgt);
+	
 	std::vector<double> tgt_color_hist = get_color_hist(pcl_tgt, 8);
 
+	double max_index = 0;
 	for(int i = 0; i< table_scene.cloud_clusters.size(); i++){
 		PointCloudT pcl_curr;
 		pcl::fromROSMsg(table_scene.cloud_clusters.at(i), pcl_curr);
+		
 		std::vector<double> curr_color_hist = get_color_hist(pcl_curr, 8);
-		double corr = correlation_coeff(tgt_color_hist, curr_color_hist);
-		if(corr > 0.8){
+		
+		double corr = correlation_coeff(tgt_color_hist, curr_color_hist); //compare original and new color histogram
+		
+		ROS_INFO("current correlation: ");
+		ROS_INFO_STREAM(corr);
+		
+		if(corr > 0.7){
 			return i;
 		}
 		
 	}
 	
-	return -1;
+	
+	return max_index;
 }
 
 
@@ -365,22 +378,23 @@ int main (int argc, char** argv){
 	
 	
 	
+	
 	listenForArmData();
 	
-	sensor_msgs::PointCloud2 tgt = table_scene.cloud_clusters[index];
 	//the object has moved from the above actions, recheck table	
+	sensor_msgs::PointCloud2 tgt = table_scene.cloud_clusters[index];
 	table_scene = segbot_arm_manipulation::getTabletopScene(n);
+	
+	if ((int)table_scene.cloud_clusters.size() == 0){
+			ROS_WARN("No objects found on table. The end...");
+			exit(1);
+	} 
+	
 	//for now, use color histograms to find the object again
 	index = refind_obj(table_scene, tgt);
-	
-	if(index < 0){
-		ROS_INFO("object is no longer on table... ending");
-		ros::shutdown();
-		exit(1);
-	}
 
 
-	
+
 	pressEnter("Press enter to start grasp and verify action or q to quit");
 	
 	//create the action client to grasp
@@ -395,7 +409,7 @@ int main (int argc, char** argv){
 	grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
 	grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
 	
-	//finally, we fill in the table scene
+	//fill in the table scene
 	grasp_goal.cloud_plane = table_scene.cloud_plane;
 	grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
 	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
@@ -445,13 +459,14 @@ int main (int argc, char** argv){
 		ROS_WARN("Verification failed");
 	}
 	
+	
+	
+	
+	
 	pressEnter("Press enter to start shake action or q to quit");
 	
 	listenForArmData();
-	
-	
-	
-	
+
 	//create action to shake object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::ShakeAction> shake_ac("arm_shake_as", true);
 	shake_ac.waitForServer();
@@ -470,7 +485,7 @@ int main (int argc, char** argv){
 	shake_ac.waitForResult();
 	
 	ROS_INFO("shake action finished...");
-	segbot_arm_manipulation::ShakeResult shake_result = *shake_ac.getResult();
+
 	
 	
 	return 0;

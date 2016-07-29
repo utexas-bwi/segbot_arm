@@ -198,6 +198,7 @@ public:
 		}
 	}	
 	
+	//method to find the center right point of the target object
 	geometry_msgs::Point find_right_side(PointCloudT pcl_cloud){
 		PointT max;
 		PointT min;
@@ -206,6 +207,7 @@ public:
 		Eigen::Vector4f center; 
 		pcl::compute3DCentroid(pcl_cloud, center);
 		
+		//create a point from the center and max points
 		geometry_msgs::Point goal_pt;
 		goal_pt.x = center(0);
 		goal_pt.y = max.y; 
@@ -214,6 +216,7 @@ public:
 		return goal_pt;
 	}
 	
+	//use cartesian velocities to push the object to the left
 	void push(float duration){ 
 		listenForArmData(30.0);
 		geometry_msgs::TwistStamped v;
@@ -247,6 +250,7 @@ public:
 		arm_vel.publish(v);
 	}
 	
+	//method to find possible hand orientations
 	std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
 		float change = 0.0;
 		float semi_circle = 3.14/4; 
@@ -254,9 +258,10 @@ public:
 		listener.waitForTransform(goal_pose.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
 		
 		std::vector<geometry_msgs::Quaternion> possible_quats;
+		
+		//creates a range of possible hand orientations, checks IK, adds to a vector of possible 
 		while(change < semi_circle){
 			geometry_msgs::Quaternion quat1 = tf::createQuaternionMsgFromRollPitchYaw(0 , -3.14 , change);
-			//geometry_msgs::Quaternion quat2 = tf::createQuaternionMsgFromRollPitchYaw(0 , 3.14  , 0);
 			 
 			goal_pose.pose.orientation = quat1;
 			moveit_msgs::GetPositionIK::Response  ik_response_1 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
@@ -264,13 +269,6 @@ public:
 				possible_quats.push_back(goal_pose.pose.orientation);
 				
 			}
-			
-			/*goal_pose.pose.orientation = quat2; 
-			moveit_msgs::GetPositionIK::Response  ik_response_2 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
-			if (ik_response_2.error_code.val == 1){
-				possible_quats.push_back(goal_pose.pose.orientation);
-			}*/
-			
 			change += 3.14/16;
 		}
 		
@@ -344,6 +342,7 @@ public:
 			return;
 		}
 		
+		//for now use the first possible orientation
 		goal_pose.pose.orientation = ik_possible.at(0);
 		
 		debug_pub.publish(goal_pose);
@@ -368,7 +367,7 @@ public:
 		listenForArmData(30.0);
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 
-		
+		//step 8: set result of action
 		result_.success = true;
 		as_.setSucceeded(result_);
 	}
