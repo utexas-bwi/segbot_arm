@@ -261,7 +261,7 @@ public:
 		
 		//creates a range of possible hand orientations, checks IK, adds to a vector of possible 
 		while(change < semi_circle){
-			geometry_msgs::Quaternion quat1 = tf::createQuaternionMsgFromRollPitchYaw(0 , -3.14 , change);
+			geometry_msgs::Quaternion quat1 = tf::createQuaternionMsgFromRollPitchYaw(0 , -3.14/2 , change);
 			 
 			goal_pose.pose.orientation = quat1;
 			moveit_msgs::GetPositionIK::Response  ik_response_1 = segbot_arm_manipulation::computeIK(nh_,goal_pose);

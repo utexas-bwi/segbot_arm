@@ -197,18 +197,57 @@ public:
 		p_target.pose.position.z += x;
 		segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 	}	
-
-	void shake(){
-		//preliminary lift to get object off of the table
-		lift(nh_, 0.1);
-		
-		//shake 
-		lift(nh_, -0.05);
-		lift(nh_, 0.05);
-		lift(nh_, -0.05);
-		
-		segbot_arm_manipulation::openHand();
+	
+	void shake_down(float duration){
+		geometry_msgs::TwistStamped v;
+		ROS_INFO("inside shake down");
+		 
+		float rate = 100;
+		ros::Rate r(rate);
+		listenForArmData(30.0);
+		for(int i = 0; i< (int) rate * duration; i++){			
+			v.twist.linear.x = 0;
+			v.twist.linear.y = 0.0;
+			v.twist.linear.z = +0.125;
+			
+			v.twist.angular.x = 0.0;
+			v.twist.angular.y = 0.0;
+			v.twist.angular.z = 0.0;
+			
+			arm_vel.publish(v);
+			r.sleep();
+			ros::spinOnce();
+		}
+		v.twist.linear.z = 0.0;
+		arm_vel.publish(v);
 	}
+	
+	
+	void shake_up(float duration){
+		geometry_msgs::TwistStamped v;
+		ROS_INFO("inside shake up");
+		 
+		float rate = 100;
+		ros::Rate r(rate);
+		listenForArmData(30.0);
+		for(int i = 0; i< (int) rate * duration; i++){			
+			v.twist.linear.x = 0;
+			v.twist.linear.y = 0.0;
+			v.twist.linear.z = -0.125;
+			
+			v.twist.angular.x = 0.0;
+			v.twist.angular.y = 0.0;
+			v.twist.angular.z = 0.0;
+			
+			arm_vel.publish(v);
+			r.sleep();
+			ros::spinOnce();
+		}
+		v.twist.linear.z = 0.0;
+		arm_vel.publish(v);
+		
+	}
+
 	
 	void executeCB(const segbot_arm_manipulation::ShakeGoalConstPtr  &goal){
 		
@@ -242,7 +281,11 @@ public:
 		//step 2 : determine if object in in hand
 		if(goal -> verified){
 			//step 3: shake the object
-			shake();
+			shake_up(2.5);
+			shake_down(2.5);
+			shake_up(2.5);
+			segbot_arm_manipulation::openHand();
+
 		}else{
 			//for now if object is not in hand, abort
 			ROS_WARN("object must already be in hand... aborting");

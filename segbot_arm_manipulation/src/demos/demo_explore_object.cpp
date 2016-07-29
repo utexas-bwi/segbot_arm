@@ -264,7 +264,7 @@ int refind_obj(segbot_arm_perception::TabletopPerception::Response table_scene, 
 	pcl::fromROSMsg(tgt, pcl_tgt);
 	
 	std::vector<double> tgt_color_hist = get_color_hist(pcl_tgt, 8);
-
+	double max = -0.1;
 	double max_index = 0;
 	for(int i = 0; i< table_scene.cloud_clusters.size(); i++){
 		PointCloudT pcl_curr;
@@ -277,8 +277,9 @@ int refind_obj(segbot_arm_perception::TabletopPerception::Response table_scene, 
 		ROS_INFO("current correlation: ");
 		ROS_INFO_STREAM(corr);
 		
-		if(corr > 0.7){
-			return i;
+		if(corr > max){
+			max = corr;
+			max_index = i;
 		}
 		
 	}

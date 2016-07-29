@@ -193,6 +193,19 @@ public:
 			
 			r.sleep();
 		}
+	}
+	
+	void clear_msgs(){
+		ros::Time start = ros::Time::now();
+		ros::Duration timeout = ros::Duration(0.7);
+
+		ros::Rate r (5);
+		
+		while((ros::Time::now() - start) < timeout){
+			ros::spinOnce();
+			r.sleep();
+		}
+		
 	}	
 	
 	//method to find the middle top of the point cloud to be pressed
@@ -248,7 +261,6 @@ public:
 	}
 	
 
-
 	//method to find possible hand orientations
 	std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
 		float change = 0.0;
@@ -260,8 +272,8 @@ public:
 		
 		//creates hand orientations in a certain range, checks IK, if possible add to vector of possible quats
 		while(change < semi_circle){
-			geometry_msgs::Quaternion quat1= tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, - change ,0);
-			geometry_msgs::Quaternion quat2 = tf::createQuaternionMsgFromRollPitchYaw(3.14/2, - change ,0);
+			geometry_msgs::Quaternion quat1= tf::createQuaternionMsgFromRollPitchYaw(3.14/2, - change ,0);
+			geometry_msgs::Quaternion quat2 = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, - change ,0);
 			
 			goal_pose.pose.orientation = quat1;
 			moveit_msgs::GetPositionIK::Response  ik_response_1 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
@@ -359,12 +371,13 @@ public:
 		
 		//step 5: move to goal position
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
+		clear_msgs();
 		listenForArmData(30.0);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
-
+		
+		listenForArmData(30.0);
 		//step 6: press down on the object
 		press_down(5);
-		
 		
 		listenForArmData(30.0);
 		
