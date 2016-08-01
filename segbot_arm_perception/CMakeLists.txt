@@ -53,14 +53,6 @@ include_directories(
 	${catkin_INCLUDE_DIRS}
 )
 
-add_executable(log_perception_action src/log_perception_action.cpp)
-add_dependencies(log_perception_action segbot_arm_perception_gencpp)
-target_link_libraries(log_perception_action ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
-add_executable(log_perception_action_client src/log_perception_action_client.cpp)
-target_link_libraries(log_perception_action_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-add_dependencies(log_perception_action_client segbot_arm_perception_gencpp)
-
 add_executable(obstacle_cloud_manager src/obstacle_cloud_manager.cpp)
 add_dependencies(obstacle_cloud_manager segbot_arm_perception_gencpp)
 target_link_libraries(obstacle_cloud_manager ${catkin_LIBRARIES} ${PCL_LIBRARIES})
