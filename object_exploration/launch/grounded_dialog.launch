@@ -1,4 +1,0 @@
-<launch>
-	<node name="question_dialog_plugin" pkg="segbot_gui" type="question_dialog_plugin" />
-	<node name="grounded_dialog" pkg="object_exploration" type="grounded_dialog" />
-</launch>
