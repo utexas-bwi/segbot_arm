@@ -28,11 +28,11 @@ add_service_files(
    GetCloud.srv
 )
 
- add_action_files(
-   DIRECTORY action
-   FILES
-   LogPerception.action
-)
+# add_action_files(
+#   DIRECTORY action
+#   FILES
+#   LogPerception.action
+#)
 
  generate_messages(
    DEPENDENCIES
