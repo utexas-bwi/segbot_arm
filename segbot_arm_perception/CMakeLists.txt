@@ -30,8 +30,7 @@ add_service_files(
 
  add_action_files(
    DIRECTORY action
-   FILES
-   LogPerception.action
+   FILES LogPerception.action
 )
 
  generate_messages(
