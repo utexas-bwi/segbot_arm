@@ -348,7 +348,10 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	
 	//if true, clouds on the other side of the plane will be rejected
 	bool check_below_plane = false;
-	pcl::PointCloud<PointT>::Ptr cloud_plane_transformed(new pcl::PointCloud<PointT>);
+	double plane_z = -1.0;
+	PointCloudT::Ptr cloud_plane_baselink (new PointCloudT);
+	Eigen::Vector4f plane_centroid;
+   
 	
 	if (check_below_plane){
 		
@@ -363,6 +366,11 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 		//transform it to base link frame of reference
 		pcl_ros::transformPointCloud ("\base_link", plane_cloud_ros, plane_cloud_ros, tf_listener);
 					
+		//convert to PCL format and take centroid
+		pcl::fromROSMsg (plane_cloud_ros, *cloud_plane_baselink);
+		pcl::compute3DCentroid (*cloud_plane_baselink, plane_centroid);
+		
+		ROS_INFO("[table_object_detection_node.cpp] Plane xyz: %f, %f, %f",plane_centroid(0),plane_centroid(1),plane_centroid(2));
 	}
 
 	for (unsigned int i = 0; i < clusters.size(); i++){
@@ -377,10 +385,30 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 				
 				pcl_ros::transformPointCloud ("\base_link", cloud_i_ros,cloud_i_ros, tf_listener);
 				
+				//convert to PCL format and take centroid
+				PointCloudT::Ptr cluster_i_baselink (new PointCloudT);
+				pcl::fromROSMsg (cloud_i_ros, *cluster_i_baselink);
+				
+				Eigen::Vector4f centroid_i;
+				pcl::compute3DCentroid (*cluster_i_baselink, centroid_i);
+				
+				ROS_INFO("[table_object_detection_node.cpp] cluster %i xyz: %f, %f, %f",i,centroid_i(0),centroid_i(1),centroid_i(2));
+				
+				//check z's
+				if (centroid_i(2) < plane_centroid(2)){
+					//below the table (maybe the edge of the table, etc)
+					ROS_INFO("[table_object_detection_node.cpp] Rejected as below the table...");
+				}
+				else {
+					//above the table
+					clusters_on_plane.push_back(clusters.at(i));
+				}
+				
 				//TO DO: check if cloud_i_ros has larger z than plane_cloud_ros
 			}
-			
-			clusters_on_plane.push_back(clusters.at(i));
+			else {
+				clusters_on_plane.push_back(clusters.at(i));
+			}
 		}
 	}
 	
