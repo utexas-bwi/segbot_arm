@@ -10,6 +10,9 @@ env:
     - CATKIN_WS_SRC=${CATKIN_WS}/src
   matrix:
     - CI_ROS_DISTRO="indigo"
+before_install:
+  - git clone https://github.com/utexas-bwi/jaco-ros.git
+  - git clone https://github.com/jsinapov/agile_grasp
 install:
   - sudo sh -c 'echo "deb http://packages.ros.org/ros-shadow-fixed/ubuntu trusty main" > /etc/apt/sources.list.d/ros-latest.list'
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
