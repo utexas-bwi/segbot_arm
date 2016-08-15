@@ -28,13 +28,7 @@ add_service_files(
    GetCloud.srv
 )
 
-# add_action_files(
-#   DIRECTORY action
-#   FILES
-#   LogPerception.action
-#)
-
- generate_messages(
+generate_messages(
    DEPENDENCIES
    std_msgs
    std_srvs
@@ -52,6 +46,11 @@ include_directories(
 	include
 	${catkin_INCLUDE_DIRS}
 )
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE)
 
 add_executable(obstacle_cloud_manager src/obstacle_cloud_manager.cpp)
 add_dependencies(obstacle_cloud_manager segbot_arm_perception_gencpp)
