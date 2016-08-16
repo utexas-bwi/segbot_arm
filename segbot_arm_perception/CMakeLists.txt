@@ -71,6 +71,5 @@ target_link_libraries(button_detection_srv_node ${catkin_LIBRARIES} ${PCL_LIBRAR
 add_dependencies(button_detection_srv_node segbot_arm_perception_gencpp)
 
 install(PROGRAMS
-  scripts/test_ml_classifiers.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
