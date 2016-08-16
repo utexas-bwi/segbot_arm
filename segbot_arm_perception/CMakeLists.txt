@@ -14,8 +14,6 @@ find_package(catkin REQUIRED
  	actionlib_msgs
 )
 
-catkin_python_setup()
-
 add_service_files(
    FILES
    PlanarSegmentation.srv
