@@ -18,6 +18,7 @@ install:
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
   - sudo apt-get install -qq -y python-rosdep
+  - sudo apt-get install ros-$CI_ROS_DISTRO-agile-grasp
   - sudo rosdep init
   - rosdep update
   # Use rosdep to install all dependencies (including ROS itself)
