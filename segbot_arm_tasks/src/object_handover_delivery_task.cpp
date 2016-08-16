@@ -104,8 +104,9 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 	
 	//retrieve params
+	ros::NodeHandle privateNode("~");
 	std::string delivery_door;
-	n.param<std::string>("location",delivery_door,"d3_414a");
+	privateNode.param<std::string>("door",delivery_door,"d4_414a");
   
 	ROS_INFO("Target location: %s",delivery_door.c_str());
 
@@ -144,7 +145,7 @@ int main(int argc, char **argv) {
 	
 	//now make safe
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
-	
+	pressEnter("Press [Enter] to proceed with navigation");
 	//now travel: to do
 	
 	bwi_kr_execution::ExecutePlanGoal goal_asp;
