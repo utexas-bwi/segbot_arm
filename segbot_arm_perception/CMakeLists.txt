@@ -14,8 +14,6 @@ find_package(catkin REQUIRED
  	actionlib_msgs
 )
 
-catkin_python_setup()
-
 add_service_files(
    FILES
    PlanarSegmentation.srv
@@ -28,13 +26,7 @@ add_service_files(
    GetCloud.srv
 )
 
-# add_action_files(
-#   DIRECTORY action
-#   FILES
-#   LogPerception.action
-#)
-
- generate_messages(
+generate_messages(
    DEPENDENCIES
    std_msgs
    std_srvs
@@ -52,6 +44,11 @@ include_directories(
 	include
 	${catkin_INCLUDE_DIRS}
 )
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE)
 
 add_executable(obstacle_cloud_manager src/obstacle_cloud_manager.cpp)
 add_dependencies(obstacle_cloud_manager segbot_arm_perception_gencpp)
@@ -74,6 +71,5 @@ target_link_libraries(button_detection_srv_node ${catkin_LIBRARIES} ${PCL_LIBRAR
 add_dependencies(button_detection_srv_node segbot_arm_perception_gencpp)
 
 install(PROGRAMS
-  scripts/test_ml_classifiers.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

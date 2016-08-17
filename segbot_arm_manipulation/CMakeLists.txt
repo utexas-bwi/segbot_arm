@@ -53,7 +53,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  DEPENDS segbot_arm_perception actionlib_msgs
+  DEPENDS message_runtime segbot_arm_perception actionlib_msgs geometry_msgs std_msgs
 )
 
 include_directories(
@@ -66,15 +66,16 @@ add_dependencies(segbot_tabletop_grasp_as jaco_msgs_gencpp agile_grasp_gencpp se
 target_link_libraries(segbot_tabletop_grasp_as ${catkin_LIBRARIES})
 
 add_executable(arm_lift_verify_as src/arm_lift_verify_as.cpp)
-add_dependencies(arm_lift_verify_as jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(arm_lift_verify_as ${catkin_LIBRARIES})
+add_dependencies(arm_lift_verify_as jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
 
 add_executable(segbot_table_approach_as src/segbot_table_approach_as.cpp)
 target_link_libraries(segbot_table_approach_as ${catkin_LIBRARIES})
+add_dependencies(segbot_table_approach_as segbot_arm_manipulation_gencpp)
 
 add_executable(ispy_arm_server src/ispy_arm_server.cpp)
 target_link_libraries(ispy_arm_server ${catkin_LIBRARIES} )
-add_dependencies(ispy_arm_server jaco_msgs_gencpp)
+add_dependencies(ispy_arm_server jaco_msgs_gencpp segbot_arm_manipulation_gencpp)
 
 add_executable(demo_obstacle_avoidance src/demos/demo_obstacle_avoidance.cpp)
 target_link_libraries(demo_obstacle_avoidance ${catkin_LIBRARIES} )
@@ -82,9 +83,18 @@ add_dependencies(demo_obstacle_avoidance jaco_msgs_gencpp)
 
 add_executable(demo_grasp_action_client src/demos/demo_grasp_action_client.cpp)
 target_link_libraries(demo_grasp_action_client ${catkin_LIBRARIES} )
+add_dependencies(demo_grasp_action_client segbot_arm_manipulation_gencpp)
 
 add_executable(demo_grasp_verify src/demos/demo_grasp_verify.cpp)
 target_link_libraries(demo_grasp_verify ${catkin_LIBRARIES} )
+add_dependencies(demo_grasp_verify segbot_arm_manipulation_gencpp)
 
 add_executable(test_table_approach_actions src/demos/test_table_approach_actions.cpp)
 target_link_libraries(test_table_approach_actions ${catkin_LIBRARIES} )
+add_dependencies(test_table_approach_actions segbot_arm_manipulation_gencpp)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE)
+

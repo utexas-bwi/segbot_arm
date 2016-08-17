@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   image_transport
   message_generation
+  segbot_arm_perception
   )
 find_package(OpenCV REQUIRED)
 
