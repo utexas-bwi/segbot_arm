@@ -135,6 +135,36 @@ int main(int argc, char **argv) {
 	segbot_arm_manipulation::homeArm(n);
 	segbot_arm_manipulation::openHand();
 	
+	/*if (positionDB.hasJointPosition("handover_front")){
+		std::vector<float> handover_position = positionDB.getJointPosition("handover_front");
+		sensor_msgs::JointState handover_js = segbot_arm_manipulation::valuesToJointState(handover_position);
+		segbot_arm_manipulation::moveToJointState(n,handover_js);
+		pressEnter("Press [Enter]");
+	}
+	else {
+		ROS_ERROR("handover_front position does not exist! Aborting...");
+		return 1;
+	}*/
+	
+	if (positionDB.hasCarteseanPosition("handover_front")){
+		/*std::vector<float> handover_position = positionDB.getJointPosition("handover_front");
+		sensor_msgs::JointState handover_js = segbot_arm_manipulation::valuesToJointState(handover_position);
+		segbot_arm_manipulation::moveToJointState(n,handover_js);*/
+		
+		geometry_msgs::PoseStamped handover_pose = positionDB.getToolPositionStamped("handover_front","mico_link_base");
+		
+		segbot_arm_manipulation::moveToPoseMoveIt(n,handover_pose);
+		segbot_arm_manipulation::moveToPoseMoveIt(n,handover_pose);
+
+		
+		pressEnter("Press [Enter]");
+	}
+	else {
+		ROS_ERROR("handover_front position does not exist! Aborting...");
+		return 1;
+	}
+	
+
 	//now receive object
 	segbot_arm_manipulation::TabletopGraspGoal receive_goal;
 	receive_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER_FROM_HUMAN;
@@ -144,6 +174,7 @@ int main(int argc, char **argv) {
 	ac_grasp.waitForResult();
 	
 	//now make safe
+	segbot_arm_manipulation::homeArm(n);
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	pressEnter("Press [Enter] to proceed with navigation");
 	//now travel: to do
@@ -169,6 +200,16 @@ int main(int argc, char **argv) {
 	//no home and let go
 	segbot_arm_manipulation::homeArm(n);
 	
+	if (positionDB.hasJointPosition("handover_front")){
+		std::vector<float> handover_position = positionDB.getJointPosition("handover_front");
+		sensor_msgs::JointState handover_js = segbot_arm_manipulation::valuesToJointState(handover_position);
+		segbot_arm_manipulation::moveToJointState(n,handover_js);
+	}
+	else {
+		ROS_ERROR("handover_front position does not exist! Aborting...");
+		return 1;
+	}
+	
 	segbot_arm_manipulation::TabletopGraspGoal handover_goal;
 	handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
 	handover_goal.timeout_seconds = -1.0;
@@ -176,4 +217,9 @@ int main(int argc, char **argv) {
 	ac_grasp.sendGoal(handover_goal);
 	ac_grasp.waitForResult();
 
+	
+	segbot_arm_manipulation::homeArm(n);
+	segbot_arm_manipulation::closeHand();
+	segbot_arm_manipulation::makeSafeForTravel(n);
+	
 }
