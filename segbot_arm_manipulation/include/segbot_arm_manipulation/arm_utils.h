@@ -43,6 +43,25 @@ std::string arm_joint_names [] = {"mico_joint_1","mico_joint_2", "mico_joint_3",
 
 namespace segbot_arm_manipulation {
 	
+	sensor_msgs::JointState valuesToJointState(std::vector<double> joint_values){
+		sensor_msgs::JointState js;
+		
+		for (unsigned int i = 0; i < 8; i ++){
+			js.name.push_back(arm_joint_names[i]);
+			
+			if (i < 6){
+				js.position.push_back(joint_values.at(i));
+			}
+			else 
+				js.position.push_back(0.0);
+				
+			js.velocity.push_back(0.0);
+			js.effort.push_back(0.0);
+		}
+		
+		return js;
+	}
+	
 	std::vector<double> getJointAngleDifferences(sensor_msgs::JointState A, sensor_msgs::JointState B){
 		std::vector<double> result;
 		
