@@ -43,7 +43,7 @@ std::string arm_joint_names [] = {"mico_joint_1","mico_joint_2", "mico_joint_3",
 
 namespace segbot_arm_manipulation {
 	
-	sensor_msgs::JointState valuesToJointState(std::vector<double> joint_values){
+	sensor_msgs::JointState valuesToJointState(std::vector<float> joint_values){
 		sensor_msgs::JointState js;
 		
 		for (unsigned int i = 0; i < 8; i ++){
