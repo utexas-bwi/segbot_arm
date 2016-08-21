@@ -77,12 +77,13 @@ void listenForArmData(){
 	
 	heardJoinstState = false;
 	heardPose = false;
+	heardWrench = false;
 	ros::Rate r(10.0);
 	
 	while (ros::ok()){
 		ros::spinOnce();
 		
-		if (heardJoinstState && heardPose)
+		if (heardJoinstState && heardPose && heardWrench)
 			return;
 		
 		r.sleep();
@@ -123,14 +124,22 @@ int main(int argc, char **argv) {
 	//subscriber for wrench
 	ros::Subscriber sub_wrench = n.subscribe("/mico_arm_driver/out/tool_wrench", 1, wrench_cb);
 	
-	//velocity publisher
+	//base velocity publisher
 	ros::Publisher pub_base_velocity = n.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 	
+	//hand velocity publisher
+	ros::Publisher pub_hand_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 1);
+	
+
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 	
 	pressEnter("Demo starting. Position arm and press [Enter]");
+	
+	listenForArmData();
+	geometry_msgs::PoseStamped default_pose = current_pose;
+	
 	
 	double rate = 40.0;
 	ros::Rate r(rate);
@@ -212,6 +221,30 @@ int main(int argc, char **argv) {
 			//publish
 			//pub_base_velocity.publish(v_i);
 			
+			//if no force is applied, then move hand back to starting position
+			if (v_i.angular.z == 0 && v_i.linear.x == 0){
+				geometry_msgs::TwistStamped velocityMsg; //vel command to hand
+				float theta = 0.075;
+				float constant_m = 3.0;
+				
+				//find out how far we are from the default position
+				float dx = constant_m*( - current_pose.pose.position.x + default_pose.pose.position.x );
+				float dy = constant_m*(- current_pose.pose.position.y + default_pose.pose.position.y);
+				float dz = constant_m*(- current_pose.pose.position.z + default_pose.pose.position.z);
+				
+				if (dx > theta)
+					velocityMsg.twist.linear.x = dx;
+				
+				if (dy > theta)
+					velocityMsg.twist.linear.y = dy;
+				
+				if (dz > theta)
+					velocityMsg.twist.linear.z = dz;
+				
+				pub_hand_velocity.publish(velocityMsg);
+			}
+			
+			heardWrench = false;
 		}
 		
 		r.sleep();
