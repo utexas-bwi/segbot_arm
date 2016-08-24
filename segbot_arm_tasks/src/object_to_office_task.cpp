@@ -323,19 +323,4 @@ int main(int argc, char **argv) {
 	
 	ac_grasp.sendGoal(handover_goal);
 	ac_grasp.waitForResult();
-	
-	
-	
-		//lift and lower the object a bit, let it go and move back
-		/*lift(n,0.07);
-		lift(n,-0.07);
-		segbot_arm_manipulation::openHand();
-		lift(n,0.07);
-		
-		segbot_arm_manipulation::homeArm(n);
-		segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
-	
-	
-		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");*/
-	
 }
