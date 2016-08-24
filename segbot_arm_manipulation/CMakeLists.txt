@@ -93,6 +93,11 @@ add_executable(test_table_approach_actions src/demos/test_table_approach_actions
 target_link_libraries(test_table_approach_actions ${catkin_LIBRARIES} )
 add_dependencies(test_table_approach_actions segbot_arm_manipulation_gencpp)
 
+add_executable(demo_hand_lead src/demos/demo_hand_lead.cpp)
+target_link_libraries(demo_hand_lead ${catkin_LIBRARIES} )
+add_dependencies(demo_hand_lead segbot_arm_manipulation_gencpp)
+
+
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"

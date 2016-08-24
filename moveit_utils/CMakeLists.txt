@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   jaco_msgs
   sensor_msgs
   std_msgs
+  std_srvs
   tf
   )
 find_package(Boost REQUIRED thread)

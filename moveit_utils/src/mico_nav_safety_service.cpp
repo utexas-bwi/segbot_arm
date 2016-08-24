@@ -1,7 +1,17 @@
 #include <signal.h>
+
+#include <signal.h>
+#include <vector>
+#include <string>
+#include <sys/stat.h>
+#include <ros/ros.h>
+#include <ros/package.h>
+
+#include <std_msgs/Bool.h>
+
 //services
 #include "moveit_utils/MicoMoveitJointPose.h"
-#include "ros/ros.h"
+
 #include "moveit_utils/MicoNavSafety.h"
 #include <moveit_msgs/GetPositionFK.h>
 #include <bwi_msgs/StopBaseStatus.h>
@@ -10,10 +20,12 @@
 
 #include "jaco_msgs/JointAngles.h"
 #include <sensor_msgs/JointState.h>
-#include <std_msgs/Bool.h>
+
 
 #include <boost/assign/std/vector.hpp>
 #include <tf/transform_listener.h>
+
+#include <std_srvs/SetBool.h>
 
 using namespace boost::assign;
 
@@ -53,6 +65,9 @@ bwi_msgs::StopBaseStatus last_status;
 bwi_msgs::StopBase::Request sb_req;
 bwi_msgs::StopBase::Response sb_resp;
 
+//if disabled, the node publishes "safe" regardless of arm position
+bool enabled = true;
+
 void sig_handler(int sig){
     g_caught_sigint = true;
     ROS_INFO("caugt sigint, init shutdown seq...");
@@ -62,53 +77,61 @@ void sig_handler(int sig){
 
 bool checkIfSafe(){
 	
-    while(!fkine_client.exists()){
-        ROS_INFO("Waiting for service");
-        sleep(1.0);
-    }
+	if (enabled){
+		while(!fkine_client.exists()){
+			ROS_INFO("Waiting for service");
+			sleep(1.0);
+		}
 
-    /*
-     * Forward Kinematic service call
-     */
+		/*
+		 * Forward Kinematic service call
+		 */
 
-    moveit_msgs::GetPositionFK::Request fkine_request;
-    moveit_msgs::GetPositionFK::Response fkine_response;
+		moveit_msgs::GetPositionFK::Request fkine_request;
+		moveit_msgs::GetPositionFK::Response fkine_response;
 
-    sensor_msgs::JointState q_true = js_cur;
+		sensor_msgs::JointState q_true = js_cur;
 
-    //Load request with the desired link
-    fkine_request.fk_link_names.push_back("mico_link_1");
-    fkine_request.fk_link_names.push_back("mico_link_2");
-    fkine_request.fk_link_names.push_back("mico_link_3");
-    fkine_request.fk_link_names.push_back("mico_link_4");
-    fkine_request.fk_link_names.push_back("mico_link_5");
-    fkine_request.fk_link_names.push_back("mico_link_hand");
-    fkine_request.fk_link_names.push_back("mico_link_finger_1");
-    fkine_request.fk_link_names.push_back("mico_link_finger_2");
+		//Load request with the desired link
+		fkine_request.fk_link_names.push_back("mico_link_1");
+		fkine_request.fk_link_names.push_back("mico_link_2");
+		fkine_request.fk_link_names.push_back("mico_link_3");
+		fkine_request.fk_link_names.push_back("mico_link_4");
+		fkine_request.fk_link_names.push_back("mico_link_5");
+		fkine_request.fk_link_names.push_back("mico_link_hand");
+		fkine_request.fk_link_names.push_back("mico_link_finger_1");
+		fkine_request.fk_link_names.push_back("mico_link_finger_2");
 
-    if(fkine_client.call(fkine_request, fkine_response)){
-        ros::spinOnce();
-        ROS_DEBUG("IK call successful.");
-    } else {
-        ROS_ERROR("IK call failed. Moveit! probably can't be contacted. Preempting movement.");
-        return false;
-    }
-    
-    /*
-     * Check if any joints are outside the radius
-     */
-    bool temp = true;
-	for(int i = 0; i < fkine_response.pose_stamped.size(); i++){
-		if(fkine_response.pose_stamped.at(i).pose.position.x > inflationRad ||
-				fkine_response.pose_stamped.at(i).pose.position.y > inflationRad ||
-				fkine_response.pose_stamped.at(i).pose.position.x < -inflationRad ||
-				fkine_response.pose_stamped.at(i).pose.position.y < -inflationRad)
-			temp = false;
+		if(fkine_client.call(fkine_request, fkine_response)){
+			ros::spinOnce();
+			ROS_DEBUG("IK call successful.");
+		} else {
+			ROS_ERROR("IK call failed. Moveit! probably can't be contacted. Preempting movement.");
+			return false;
+		}
+		
+		/*
+		 * Check if any joints are outside the radius
+		 */
+		bool temp = true;
+		for(int i = 0; i < fkine_response.pose_stamped.size(); i++){
+			if(fkine_response.pose_stamped.at(i).pose.position.x > inflationRad ||
+					fkine_response.pose_stamped.at(i).pose.position.y > inflationRad ||
+					fkine_response.pose_stamped.at(i).pose.position.x < -inflationRad ||
+					fkine_response.pose_stamped.at(i).pose.position.y < -inflationRad)
+				temp = false;
+		}
+		safe = temp;
+		pub_data.data = temp;
+		pub.publish(pub_data);
+		return temp;
 	}
-	safe = temp;
-	pub_data.data = temp;
-	pub.publish(pub_data);
-	return temp;
+	else {
+		//if disabled, just assume safe
+		pub_data.data = true;
+		pub.publish(pub_data);
+		return true;
+	}
 }
 
 void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
@@ -163,6 +186,12 @@ bool service_cb(moveit_utils::MicoNavSafety::Request &req, moveit_utils::MicoNav
     return true;
 }
 
+bool set_mode_cb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res){
+	enabled = req.data;
+	res.success = true;
+	return true;
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "mico_nav_safety_node");
@@ -173,6 +202,10 @@ int main(int argc, char **argv)
     ros::ServiceServer srv = nh.advertiseService("mico_nav_safety", service_cb);
     fkine_client = nh.serviceClient<moveit_msgs::GetPositionFK>("compute_fk");
     stopbase_client = nh.serviceClient<bwi_msgs::StopBase>("stop_base");
+
+	//service for enabling and disabling the safety mode
+	ros::ServiceServer srv_mode = nh.advertiseService("mico_nav_safety/set_mode", set_mode_cb);
+    
 
     q_safe += -1.4918,-1.804,-0.1299,-2.1717,.5688,2.6787; //defines the 'go-to' safe position
 
