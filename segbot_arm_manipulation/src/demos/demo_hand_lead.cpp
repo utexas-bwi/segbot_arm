@@ -22,11 +22,11 @@
 #define MIN_FORWARD_FORCE_THRESHOLD 2.0
 #define MAX_FORWARD_FORCE_THRESHOLD 3.0
 
-#define MIN_SIDEWAY_FORCE_THRESHOLD 2.0
+#define MIN_SIDEWAY_FORCE_THRESHOLD 2.2
 #define MAX_SIDEWAY_FORCE_THRESHOLD 3.0
 
-#define MAX_FORWARD_VEL 0.3
-#define MAX_TURN_VEL 0.2
+#define MAX_FORWARD_VEL 0.4
+#define MAX_TURN_VEL 0.25
 
 //global variables for storing data
 sensor_msgs::JointState current_state;
@@ -149,6 +149,8 @@ int main(int argc, char **argv) {
 	
 	double elapsed_time = 0.0;
 	
+	
+	
 	while (elapsed_time < 1.0){
 		ros::spinOnce();
 		
@@ -156,6 +158,7 @@ int main(int argc, char **argv) {
 			x_vals.push_back(current_wrench.wrench.force.x);
 			y_vals.push_back(current_wrench.wrench.force.y);
 			z_vals.push_back(current_wrench.wrench.force.z);	
+			ROS_INFO("Heard wrench!");
 		}
 		
 		r.sleep();
@@ -188,8 +191,8 @@ int main(int argc, char **argv) {
 			ROS_INFO("Current force: %f, %f, %f",
 			current_wrench.wrench.force.x,current_wrench.wrench.force.y,current_wrench.wrench.force.z);
 			
-			double forward_force = current_wrench.wrench.force.y - y_mean_zero;
-			double sideway_force = current_wrench.wrench.force.x - x_mean_zero;
+			double forward_force = -1*(current_wrench.wrench.force.x - x_mean_zero);
+			double sideway_force = current_wrench.wrench.force.y - y_mean_zero;
 			
 			ROS_INFO("Forward: %f\tSideways: %f",forward_force,sideway_force);
 			
@@ -201,17 +204,23 @@ int main(int argc, char **argv) {
 				if (forward_force > MAX_FORWARD_FORCE_THRESHOLD)
 					forward_force = MAX_FORWARD_FORCE_THRESHOLD;
 					
-				double x_vel = (forward_force-MIN_FORWARD_FORCE_THRESHOLD) / (MAX_FORWARD_FORCE_THRESHOLD - MIN_FORWARD_FORCE_THRESHOLD);
+				double x_vel = MAX_FORWARD_VEL*(forward_force-MIN_FORWARD_FORCE_THRESHOLD) / (MAX_FORWARD_FORCE_THRESHOLD - MIN_FORWARD_FORCE_THRESHOLD);
 				
 				v_i.linear.x = x_vel;
 			}
 			
 			if (fabs(sideway_force) > MIN_SIDEWAY_FORCE_THRESHOLD){
-				double sign = 1.0;
+				
+				
+				double sign = -1.0;
 				if (sideway_force < 0.0)
-					sign = -1.0;
+					sign = 1.0;
 					
-				double angular_vel = sign*(fabs(sideway_force)-MIN_SIDEWAY_FORCE_THRESHOLD) / (MAX_SIDEWAY_FORCE_THRESHOLD - MIN_SIDEWAY_FORCE_THRESHOLD);
+				if (fabs(sideway_force) > MAX_SIDEWAY_FORCE_THRESHOLD)
+					sideway_force = MAX_SIDEWAY_FORCE_THRESHOLD;
+				
+					
+				double angular_vel = MAX_TURN_VEL*sign*(fabs(sideway_force)-MIN_SIDEWAY_FORCE_THRESHOLD) / (MAX_SIDEWAY_FORCE_THRESHOLD - MIN_SIDEWAY_FORCE_THRESHOLD);
 				
 				v_i.angular.z = angular_vel;
 			}
@@ -219,7 +228,7 @@ int main(int argc, char **argv) {
 			ROS_INFO("Linear vel.: %f\tAngular vel.: %f",v_i.linear.x,v_i.angular.z);
 			
 			//publish
-			//pub_base_velocity.publish(v_i);
+			pub_base_velocity.publish(v_i);
 			
 			//if no force is applied, then move hand back to starting position
 			if (v_i.angular.z == 0 && v_i.linear.x == 0){
@@ -240,6 +249,8 @@ int main(int argc, char **argv) {
 				
 				if (dz > theta)
 					velocityMsg.twist.linear.z = dz;
+					
+				ROS_INFO("Publishing c.vels: %f, %f, %f",dx,dy,dz);
 				
 				pub_hand_velocity.publish(velocityMsg);
 			}

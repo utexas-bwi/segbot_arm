@@ -173,8 +173,17 @@ public:
 		
 			//step 1: query table_object_detection_node to segment the blobs on the table
 			posDB->print();
+			
+			
+			
+			//home the arm
+			segbot_arm_manipulation::homeArm(nh_);
+			segbot_arm_manipulation::closeHand();
+	
+			
 			//first, we need to move the arm out of view so the camera can see the table
 			if (posDB->hasCarteseanPosition("side_view")){
+				ROS_INFO("Moving out of the way...");
 				geometry_msgs::PoseStamped out_of_view_pose = posDB->getToolPositionStamped("side_view","/mico_link_base");
 				
 				//now go to the pose
@@ -184,6 +193,7 @@ public:
 				ROS_ERROR("[segbot_table_approach_as.cpp] Cannot move arm out of view!");
 			}
 				
+			
 			
 			ros::ServiceClient client_tabletop_perception = nh_.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
 			segbot_arm_perception::TabletopPerception srv; //the srv request is just empty
@@ -216,20 +226,13 @@ public:
 				return;
 			}
 			
-			//next, make arm safe to move again
-			bool safe = segbot_arm_manipulation::makeSafeForTravel(nh_);
-			if (!safe) {
-				ROS_ERROR("[segbot_table_approach_as.cpp] Cannot make arm safe for travel! Aborting!");
-				result_.success = false;
-				result_.error_msg = "cannot_make_arm_safe";
-				as_.setAborted(result_);
-				return;
-			}
+			ROS_INFO("Wait for transform...");
+			tf_listener.waitForTransform(srv.response.cloud_plane.header.frame_id, "/base_footprint", ros::Time(0.0), ros::Duration(30.0)); 
+			ROS_INFO("..done!");
 			
 			//transform clound into base_link frame of reference
 			sensor_msgs::PointCloud cloud_pc1;
 			sensor_msgs::convertPointCloud2ToPointCloud(srv.response.cloud_plane,cloud_pc1);
-			tf_listener.waitForTransform(srv.response.cloud_plane.header.frame_id, "/base_footprint", ros::Time(0.0), ros::Duration(3.0)); 
 			
 			sensor_msgs::PointCloud transformed_cloud;
 			tf_listener.transformPointCloud("/base_footprint",cloud_pc1,transformed_cloud);	
@@ -269,6 +272,20 @@ public:
 			double pub_rate = 30;
 			
 			double turn_velocity = 0.5*target_turn_angle/duration;
+			
+			
+			//next, make arm safe to move again
+			segbot_arm_manipulation::homeArm(nh_);
+			bool safe = segbot_arm_manipulation::makeSafeForTravel(nh_);
+			if (!safe) {
+				ROS_ERROR("[segbot_table_approach_as.cpp] Cannot make arm safe for travel! Aborting!");
+				result_.success = false;
+				result_.error_msg = "cannot_make_arm_safe";
+				as_.setAborted(result_);
+				return;
+			}
+			
+			
 			
 			ros::Rate r(pub_rate);
 			
