@@ -68,6 +68,10 @@ target_link_libraries(ex3_home_arm ${catkin_LIBRARIES} )
 add_executable(ex4_cartesian_vel_control src/ex4_cartesian_vel_control.cpp)
 target_link_libraries(ex4_cartesian_vel_control ${catkin_LIBRARIES} )
 
+add_executable(ex5_angular_vel_control src/ex5_angular_vel_control.cpp)
+target_link_libraries(ex5_angular_vel_control ${catkin_LIBRARIES} )
+
+
 
 ## example task 
 #add_executable(object_handover_delivery_task src/object_handover_delivery_task.cpp)
