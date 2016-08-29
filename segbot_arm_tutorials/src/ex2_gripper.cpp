@@ -18,8 +18,6 @@
 //our own arm library 
 #include <segbot_arm_manipulation/arm_utils.h>
 
-
-
 #define NUM_JOINTS 8 //6+2 for the arm
 
 //global variables for storing sensory data
@@ -39,10 +37,10 @@ bool g_caught_sigint=false;
 
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig) {
-  g_caught_sigint = true;
-  ROS_INFO("caught sigint, init shutdown sequence...");
-  ros::shutdown();
-  exit(1);
+	g_caught_sigint = true;
+	ROS_INFO("caught sigint, init shutdown sequence...");
+	ros::shutdown();
+	exit(1);
 };
 
 //Joint positions cb
@@ -56,21 +54,21 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& msg) {
 
 //tool pose cb
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
-  current_pose = msg;
-  heardPose = true;
+	current_pose = msg;
+	heardPose = true;
 }
 
 //joint effort cb
 void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
-  current_efforts = *msg;
-  heardEfforts = true;
-  //ROS_INFO_STREAM(current_effort);
+	current_efforts = *msg;
+	heardEfforts = true;
+	//ROS_INFO_STREAM(current_effort);
 }
 
 //fingers state cb
 void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
-  current_finger = *msg;
-  heardFingers = true;
+	current_finger = *msg;
+	heardFingers = true;
 }
 
 //blocking call to listen for arm data (in this case, joint states)
