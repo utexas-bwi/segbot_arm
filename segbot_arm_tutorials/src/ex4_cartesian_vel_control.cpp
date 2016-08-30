@@ -174,13 +174,36 @@ int main(int argc, char **argv) {
 		r.sleep();
 		
 		elapsed_time += (1.0/pub_rate);
+		
 		if (elapsed_time > duration)
 			break;
 	}
 	
+	
+	velocityMsg.twist.linear.z = -0.2;
+	
+	elapsed_time = 0.0;
+	while (ros::ok()){
+		//collect messages
+		ros::spinOnce();
+		
+		//publish velocity message
+		pub_velocity.publish(velocityMsg);
+		
+		r.sleep();
+		
+		elapsed_time += (1.0/pub_rate);
+		
+		if (elapsed_time > duration)
+			break;
+	}
+	
+	
 	//publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
 	velocityMsg.twist.linear.z = 0.0; 
 	pub_velocity.publish(velocityMsg);
+
+	
 
 	//the end
 	ros::shutdown();
