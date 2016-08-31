@@ -64,8 +64,6 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
-using namespace std;
-
 class ShakeActionServer
 {
 protected:
@@ -76,6 +74,7 @@ protected:
   
   std::string action_name_;
   
+  //messages for publishing feedback and result of action
   segbot_arm_manipulation::ShakeFeedback feedback_;
   segbot_arm_manipulation::ShakeResult result_;
   
@@ -151,14 +150,12 @@ public:
 	//Joint effort cb
 	void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
 	  current_effort = *input;
-	  //ROS_INFO_STREAM(current_effort);
 	}
 
 	//tool position cb
 	void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 	  current_pose = msg;
 	  heardPose = true;
-	  //  ROS_INFO_STREAM(current_pose);
 	}
 
 	//fingers state cb
@@ -281,7 +278,7 @@ public:
 		//step 2 : determine if object in in hand
 		if(goal -> verified){
 			//step 3: shake the object
-			shake_up(2.5);
+			shake_up(4); //raise above table
 			shake_down(2.5);
 			shake_up(2.5);
 			segbot_arm_manipulation::openHand();

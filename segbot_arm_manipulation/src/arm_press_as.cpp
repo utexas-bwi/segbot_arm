@@ -68,7 +68,6 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
-using namespace std;
 
 class PressActionServer
 {
@@ -80,6 +79,7 @@ protected:
   
   std::string action_name_;
   
+  //messages to publish feedback and result of action
   segbot_arm_manipulation::PressFeedback feedback_;
   segbot_arm_manipulation::PressResult result_;
   
@@ -178,7 +178,8 @@ public:
 		current_wrench = msg;
 		heardWrench = true;
 	}
-		
+	
+	//wait for updated data	
 	void listenForArmData(float rate){
 		heardPose = false;
 		heardJoinstState = false;
@@ -194,19 +195,7 @@ public:
 			r.sleep();
 		}
 	}
-	
-	void clear_msgs(){
-		ros::Time start = ros::Time::now();
-		ros::Duration timeout = ros::Duration(0.7);
 
-		ros::Rate r (5);
-		
-		while((ros::Time::now() - start) < timeout){
-			ros::spinOnce();
-			r.sleep();
-		}
-		
-	}	
 	
 	//method to find the middle top of the point cloud to be pressed
 	geometry_msgs::Point find_top_center(PointCloudT pcl_curr){
@@ -227,10 +216,9 @@ public:
 		return top_center;
 	}
 
-	//method using cartesian velocities to press down on the objec
+	//method using cartesian velocities to press down on the object
 	void press_down(float duration){
 		geometry_msgs::TwistStamped v;
-		ROS_INFO("inside press down");
 		 
 		v.twist.linear.x = 0;
 		v.twist.linear.y = 0.0;
@@ -270,7 +258,7 @@ public:
 		
 		std::vector<geometry_msgs::Quaternion> possible_quats;	
 		
-		//creates hand orientations in a certain range, checks IK, if possible add to vector of possible quats
+		//creates hand orientations in a certain range, checks IK, if possible add to vector of possible quaternions
 		while(change < semi_circle){
 			geometry_msgs::Quaternion quat1= tf::createQuaternionMsgFromRollPitchYaw(3.14/2, - change ,0);
 			geometry_msgs::Quaternion quat2 = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, - change ,0);
@@ -364,18 +352,15 @@ public:
 		//publish pose to rviz for debugging
 		debug_pub.publish(goal_pose);
 		
-		ROS_INFO_STREAM("frame for goal_pose");
-		ROS_INFO_STREAM(goal_pose.header.frame_id);
-		
 		listenForArmData(30.0); 
 		
 		//step 5: move to goal position
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
-		clear_msgs();
 		listenForArmData(30.0);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
 		
 		listenForArmData(30.0);
+		
 		//step 6: press down on the object
 		press_down(5);
 		

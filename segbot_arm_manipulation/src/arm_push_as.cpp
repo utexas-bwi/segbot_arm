@@ -68,8 +68,6 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 
 #define MIN_DISTANCE_TO_PLANE 0.05
 
-using namespace std;
-
 class PushActionServer
 {
 protected:
@@ -161,14 +159,12 @@ public:
 	//Joint effort cb
 	void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
 	  current_effort = *input;
-	  //ROS_INFO_STREAM(current_effort);
 	}
 
 	//tool position cb
 	void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 	  current_pose = msg;
 	  heardPose = true;
-	  //  ROS_INFO_STREAM(current_pose);
 	}
 
 	//fingers state cb
@@ -181,7 +177,8 @@ public:
 		current_wrench = msg;
 		heardWrench = true;
 	}
-		
+	
+	//wait for updated data	
 	void listenForArmData(float rate){
 		heardPose = false;
 		heardJoinstState = false;
@@ -259,7 +256,7 @@ public:
 		
 		std::vector<geometry_msgs::Quaternion> possible_quats;
 		
-		//creates a range of possible hand orientations, checks IK, adds to a vector of possible 
+		//creates a range of possible hand orientations, checks IK, adds to a vector of possible quaternions 
 		while(change < semi_circle){
 			geometry_msgs::Quaternion quat1 = tf::createQuaternionMsgFromRollPitchYaw(0 , -3.14/2 , change);
 			 
@@ -295,7 +292,6 @@ public:
 			return;
         }
 		
-		ROS_INFO("checked for preempted and tgt cloud");
 		//step one: close fingers
 		segbot_arm_manipulation::closeHand();
 		
@@ -356,7 +352,6 @@ public:
 
 		//step 6: push the object 
 		push(5);
-		
 		listenForArmData(30.0);
 		
 		
