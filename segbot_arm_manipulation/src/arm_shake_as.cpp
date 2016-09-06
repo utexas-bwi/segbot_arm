@@ -279,8 +279,8 @@ public:
 		if(goal -> verified){
 			//step 3: shake the object
 			shake_up(4); //raise above table
-			shake_down(2.5);
-			shake_up(2.5);
+			shake_down(1.5);
+			shake_up(1.5);
 			segbot_arm_manipulation::openHand();
 
 		}else{
