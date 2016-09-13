@@ -219,41 +219,46 @@ int main(int argc, char **argv) {
 		//block until the action is completed
 		ROS_INFO("Waiting for result...");
 		
-		ac.waitForResult();
-		ROS_INFO("Action Finished...");
+		bool result = ac.waitForResult();
 
-	
+		actionlib::SimpleClientGoalState state = ac.getState();
+		ROS_INFO("Action finished: %s",state.toString().c_str());
+		if (state.state_ == actionlib::SimpleClientGoalState::ABORTED){\
+			ROS_WARN("Grasping server aborted action...");
+		}
+		else {
 		
-		//lift and lower the object a bit, let it go and move back
-		lift(n,0.07);
+			//lift and lower the object a bit, let it go and move back
+			lift(n,0.07);
+			
+			//home the arm
+			segbot_arm_manipulation::homeArm(n);
+			
+			//make safe to travel -- generally, from home position, this works
+			bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
+			
+			//now home the arm again
+			segbot_arm_manipulation::homeArm(n);
+			
+			//now wait for human to pull on object
+			segbot_arm_manipulation::TabletopGraspGoal handover_goal;
+			handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
+			
 		
-		//home the arm
-		segbot_arm_manipulation::homeArm(n);
-		
-		//make safe to travel -- generally, from home position, this works
-		bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
-		
-		//now home the arm again
-		segbot_arm_manipulation::homeArm(n);
-		
-		//now wait for human to pull on object
-		segbot_arm_manipulation::TabletopGraspGoal handover_goal;
-		handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
-		
-	
-		ac.waitForServer();
-		ROS_INFO("Sending goal to action server...");
-		ac.sendGoal(handover_goal);
-		
-		//block until the action is completed
-		ROS_INFO("Waiting for result...");
-		
-		ac.waitForResult();
-		ROS_INFO("Action Finished...");
-		
-		//move out of view and try again
-		segbot_arm_manipulation::homeArm(n);
-		segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
+			ac.waitForServer();
+			ROS_INFO("Sending goal to action server...");
+			ac.sendGoal(handover_goal);
+			
+			//block until the action is completed
+			ROS_INFO("Waiting for result...");
+			
+			ac.waitForResult();
+			ROS_INFO("Action Finished...");
+			
+			//move out of view and try again
+			segbot_arm_manipulation::homeArm(n);
+			segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
+		}
 		
 		/*sleep(2.0);
 		lift(n,-0.07);
