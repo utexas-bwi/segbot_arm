@@ -48,6 +48,19 @@ void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
   current_pose = msg;
   heardPose = true;
 }
+sensor_msgs::JointState set_home_arm(){
+	//set arm "home" to a specific location, out of view of camera
+	sensor_msgs::JointState arm_home;
+	arm_home.position.push_back(-1.3417218624707292);
+	arm_home.position.push_back(-0.44756153173493096);
+	arm_home.position.push_back(-0.2887493796082798);
+	arm_home.position.push_back(-1.1031276625138604);
+	arm_home.position.push_back(1.1542971070664283);
+	arm_home.position.push_back(2.9511931472480804);
+	arm_home.position.push_back(FINGER_FULLY_CLOSED);
+	arm_home.position.push_back(FINGER_FULLY_CLOSED);
+	return arm_home;
+}
 
 //blocking call to listen for arm data
 void listenForArmData(){
@@ -176,6 +189,7 @@ int main(int argc, char **argv) {
 		//make goals to send to action
 		segbot_arm_manipulation::LiftVerifyGoal lift_verify_goal;
 		lift_verify_goal.tgt_cloud = table_scene.cloud_clusters[largest_pc_index];
+		lift_verify_goal.arm_home = set_home_arm();
 		lift_verify_goal.bins = 8;
 		
 		ROS_INFO("sending goal to lift and verify action server...");
