@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(segbot_arm_tasks)
+project(segbot_arm_tutorials)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -22,7 +22,6 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   pcl_conversions
   bwi_msgs
-  bwi_kr_execution
 )
 
 
@@ -55,10 +54,28 @@ include_directories(
 )
 
 
-## example task 
-add_executable(object_to_office_task src/object_to_office_task.cpp)
-target_link_libraries(object_to_office_task ${catkin_LIBRARIES} )
+## executables
+
+add_executable(ex1_subscribing_to_topics src/ex1_subscribing_to_topics.cpp)
+target_link_libraries(ex1_subscribing_to_topics ${catkin_LIBRARIES} )
+
+add_executable(ex2_gripper src/ex2_gripper.cpp)
+target_link_libraries(ex2_gripper ${catkin_LIBRARIES} )
+
+add_executable(ex3_home_arm src/ex3_home_arm.cpp)
+target_link_libraries(ex3_home_arm ${catkin_LIBRARIES} )
+
+add_executable(ex4_cartesian_vel_control src/ex4_cartesian_vel_control.cpp)
+target_link_libraries(ex4_cartesian_vel_control ${catkin_LIBRARIES} )
+
+add_executable(ex5_angular_vel_control src/ex5_angular_vel_control.cpp)
+target_link_libraries(ex5_angular_vel_control ${catkin_LIBRARIES} )
+
+add_executable(ex6_detect_force src/ex6_detect_force.cpp)
+target_link_libraries(ex6_detect_force ${catkin_LIBRARIES} )
+
+
 
 ## example task 
-add_executable(object_handover_delivery_task src/object_handover_delivery_task.cpp)
-target_link_libraries(object_handover_delivery_task ${catkin_LIBRARIES} )
+#add_executable(object_handover_delivery_task src/object_handover_delivery_task.cpp)
+#target_link_libraries(object_handover_delivery_task ${catkin_LIBRARIES} )

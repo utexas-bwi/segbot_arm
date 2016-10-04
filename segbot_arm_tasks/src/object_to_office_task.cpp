@@ -171,6 +171,7 @@ int main(int argc, char **argv) {
 	//Step 2: call safety service to make the arm safe for base movement -- TO DO
 	//close fingers while moving
 	segbot_arm_manipulation::closeHand();
+	segbot_arm_manipulation::homeArm(n);
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	if (!safe)
 		return 1;
@@ -279,13 +280,13 @@ int main(int argc, char **argv) {
 	
 	pressEnter("Press [ENTER] to proceed");
 
-	
+
+	segbot_arm_manipulation::homeArm(n);
 	safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	if (!safe)
 		return 1;
 		
-	pressEnter("Press [ENTER] to proceed");
-
+	
 	
 	//next, back out
 	segbot_arm_manipulation::TabletopApproachGoal back_out_goal;
@@ -294,7 +295,7 @@ int main(int argc, char **argv) {
 	ac_approach.waitForResult();
 	
 	//next go to an office - TO DO
-	std::string location = "d3_414a1";
+	std::string location = "d3_414b1";
 
 	bwi_kr_execution::ExecutePlanGoal goal_asp;
     bwi_kr_execution::AspRule rule;
@@ -323,19 +324,4 @@ int main(int argc, char **argv) {
 	
 	ac_grasp.sendGoal(handover_goal);
 	ac_grasp.waitForResult();
-	
-	
-	
-		//lift and lower the object a bit, let it go and move back
-		/*lift(n,0.07);
-		lift(n,-0.07);
-		segbot_arm_manipulation::openHand();
-		lift(n,0.07);
-		
-		segbot_arm_manipulation::homeArm(n);
-		segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
-	
-	
-		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");*/
-	
 }

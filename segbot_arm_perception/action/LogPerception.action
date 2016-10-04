@@ -1,9 +1,0 @@
-#goal definition
-string filePath
-bool start
----
-#result definition
-bool success
----
-#feedback
-bool logging

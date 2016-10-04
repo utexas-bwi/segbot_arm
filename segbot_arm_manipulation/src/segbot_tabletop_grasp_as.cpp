@@ -57,7 +57,7 @@
 #define HAND_OFFSET_APPROACH -0.13
 
 //used to decide if someone is pulling an object from the arm
-#define FORCE_HANDOVER_THRESHOLD 0.4
+#define FORCE_HANDOVER_THRESHOLD 3.0
 
 //used when deciding whether a pair of an approach pose and a grasp pose are good;
 //if the angular difference in joint space is too big, this means that the robot 
@@ -363,6 +363,49 @@ public:
 		return true;
 	}
 	
+	/*
+	 * blocks until force of sufficient amount is detected or timeout is exceeded
+	 * returns true of force degected, false if timeout
+	 */
+	bool waitForForce(double force_threshold, double timeout){
+		double rate = 40.0;
+		ros::Rate r(rate);
+
+		double total_grav_free_effort = 0;
+		double total_delta;
+		double delta_effort[6];
+
+		listenForArmData(rate);
+		sensor_msgs::JointState prev_effort_state = current_effort;
+
+		double elapsed_time = 0;
+
+		while (ros::ok()){
+		
+			ros::spinOnce();
+				
+			total_delta=0.0;
+			for (int i = 0; i < 6; i ++){
+				delta_effort[i] = fabs(current_effort.effort[i]-prev_effort_state.effort[i]);
+				total_delta+=delta_effort[i];
+				//ROS_INFO("Total delta=%f",total_delta);
+			}
+				
+			if (total_delta > fabs(FORCE_HANDOVER_THRESHOLD)){
+				ROS_INFO("[segbot_tabletop_grasp_as.cpp] Force detected");
+				return true;	
+			}
+				
+			r.sleep();
+			elapsed_time+=(1.0)/rate;
+				
+			if (timeout > 0 && elapsed_time > timeout){		
+				ROS_WARN("[segbot_tabletop_grasp_as.cpp] Wait for force function timed out");
+				return false;
+			}
+		}
+	}
+	
 	void executeCB(const segbot_arm_manipulation::TabletopGraspGoalConstPtr  &goal)
 	{
 		if (goal->action_name == segbot_arm_manipulation::TabletopGraspGoal::GRASP){
@@ -557,9 +600,12 @@ public:
 			
 			result_.success = true;
 			as_.setSucceeded(result_);
+			return;
 		}
 		else if (goal->action_name == segbot_arm_manipulation::TabletopGraspGoal::HANDOVER){
 			//TO DO: move to handover position
+			
+			ROS_INFO("Starting handover action...");
 			
 			//listen for haptic feedback
 			
@@ -571,6 +617,7 @@ public:
 			double total_delta;
 			double delta_effort[6];
 
+			listenForArmData(40.0);
 			sensor_msgs::JointState prev_effort_state = current_effort;
 
 
@@ -584,11 +631,19 @@ public:
 				for (int i = 0; i < 6; i ++){
 					delta_effort[i] = fabs(current_effort.effort[i]-prev_effort_state.effort[i]);
 					total_delta+=delta_effort[i];
+					ROS_INFO("Total delta=%f",total_delta);
 				}
 				
 				if (total_delta > fabs(FORCE_HANDOVER_THRESHOLD)){
 					ROS_INFO("[segbot_tabletop_grasp_as.cpp] Force detected");
-					break;
+					
+					//now open the hand
+					segbot_arm_manipulation::openHand();
+					
+					result_.success = true;
+					as_.setSucceeded(result_);
+					return;
+					
 				}
 				
 				r.sleep();
@@ -596,16 +651,39 @@ public:
 				
 				if (goal->timeout_seconds > 0 && elapsed_time > goal->timeout_seconds){
 					
+					ROS_WARN("Handover action timed out...");
+					
 					result_.success = false;
 					as_.setAborted(result_);
+					
+					return;
 				}
 			}
 			
-			//now open the hand
-			segbot_arm_manipulation::openHand();
+			
 			
 			result_.success = true;
 			as_.setSucceeded(result_);
+		}
+		else if (goal->action_name == segbot_arm_manipulation::TabletopGraspGoal::HANDOVER_FROM_HUMAN){
+			//open fingers
+			segbot_arm_manipulation::openHand();
+			
+			//update readings
+			listenForArmData(40.0);
+			
+			bool result = waitForForce(FORCE_HANDOVER_THRESHOLD,goal->timeout_seconds);
+		
+			if (result){
+				segbot_arm_manipulation::closeHand();
+				result_.success = true;
+				as_.setSucceeded(result_);
+			}
+			else {
+				result_.success = false;
+				as_.setAborted(result_);
+			}
+		
 		}
 	
 	
