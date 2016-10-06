@@ -13,7 +13,7 @@
 #include <segbot_arm_manipulation/arm_utils.h>
 
 #define NUM_JOINTS 8 //6+2 for the arm
-
+#define FINGER_FULLY_CLOSED 7300
 
 //global variables for storing data
 sensor_msgs::JointState current_state;
