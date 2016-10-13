@@ -30,10 +30,12 @@ sensor_msgs::JointState current_efforts;
 jaco_msgs::FingerPosition current_finger;
 
 //globs variable for joystick
-float data_1;
-float data_2;
-float data_3;
-float data_4;
+float linear_x;
+float linear_y;
+float linear_z;
+float angular_x;
+float angular_y;
+float angular_z;
 
 
 bool heardJoinstState;
@@ -86,15 +88,17 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 	//vel.linear = l_scale_*joy->axes[linear_];
 	//vel_pub_.publish(vel);
 
-	data_1 = joy->axes[0];
-	data_2 = joy->axes[1];
-	data_3 = joy->axes[2];
-	data_4 = joy->axes[3];
 
+  //in meters -- need to scale
+	linear_x = .2 * joy->axes[0]; //left axis stick L/R
+	linear_y = .2 * joy->axes[1]; //left axis stick U/D
+  linear_z = .2 * joy->axes[2] - joy->axes[5]; //left trigger (up) - right trigger (down)
 
+  angular_x = .2 * joy->axes[3]; //right axis stick L/R
+  angular_y = .2 * joy->axes[4]; //right axis stick U/D
+  angular_z = .2 * joy->buttons[4] - joy->buttons[5]; //left back button (up) - right back button (down)
 
 }
-
 
 //blocking call to listen for arm data (in this case, joint states)
 void listenForArmData(){
@@ -153,28 +157,6 @@ int main(int argc, char **argv) {
 	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, linear_message);
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 
-	// Print Data from the Controller - Experiment Purpose
-	while(ros::ok()){
-
-	// TO UPDATE / REFRESH DATA
-	ros::spinOnce();
-
-		ROS_INFO("Data 1");
-		ROS_INFO_STREAM(data_1);
-		ROS_INFO("Data 2");
-		ROS_INFO_STREAM(data_2);
-		ROS_INFO("Data 3");
-		ROS_INFO_STREAM(data_3);
-		ROS_INFO("Data 4");
-		ROS_INFO_STREAM(data_4);
-
-		ros::Rate r(40.0);
-		r.sleep();
-
-	}
-	
-
-	
 	// * Publishers
 	 
 
@@ -187,58 +169,35 @@ int main(int argc, char **argv) {
 	//close fingers and "home" the arm
 	pressEnter("Press [Enter] to start");
 	
-	//construct message
-	geometry_msgs::TwistStamped velocityMsg;
-	velocityMsg.twist.linear.x = 0.0;
-	velocityMsg.twist.linear.y = 0.0;
-	velocityMsg.twist.linear.z = 0.2; 
-	velocityMsg.twist.angular.x = 0.0;
-	velocityMsg.twist.angular.y = 0.0;
-	velocityMsg.twist.angular.z = 0.0;
-
-	double duration = 1.0; //2 seconds
-	double elapsed_time = 0.0;
-	
 	double pub_rate = 40.0; //we publish at 40 hz
 	ros::Rate r(pub_rate);
 	
+	geometry_msgs::TwistStamped velocityMsg;
 	while (ros::ok()){
 		//collect messages
 		ros::spinOnce();
+	
+    //construct message
+	  velocityMsg.twist.linear.x = linear_x;
+	  velocityMsg.twist.linear.y = linear_y;
+	  velocityMsg.twist.linear.z = linear_z; 
+	  velocityMsg.twist.angular.x = angular_x;
+	  velocityMsg.twist.angular.y = angular_y;
+	  velocityMsg.twist.angular.z = angular_z;
 		
 		//publish velocity message
 		pub_velocity.publish(velocityMsg);
 		
-		r.sleep();
-		
-		elapsed_time += (1.0/pub_rate);
-		
-		if (elapsed_time > duration)
-			break;
-	}
-	
-	
-	velocityMsg.twist.linear.z = -0.2;
-	
-	elapsed_time = 0.0;
-	while (ros::ok()){
-		//collect messages
-		ros::spinOnce();
-		
-		//publish velocity message
-		pub_velocity.publish(velocityMsg);
-		
-		r.sleep();
-		
-		elapsed_time += (1.0/pub_rate);
-		
-		if (elapsed_time > duration)
-			break;
 	}
 	
 	
 	// //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
-	velocityMsg.twist.linear.z = 0.0; 
+	velocityMsg.twist.linear.x = 0;
+  velocityMsg.twist.linear.y = 0;
+  velocityMsg.twist.linear.z = 0; 
+  velocityMsg.twist.angular.x = 0;
+  velocityMsg.twist.angular.y = 0;
+	velocityMsg.twist.angular.z = 0;
 	pub_velocity.publish(velocityMsg);
 
 	
