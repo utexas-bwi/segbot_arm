@@ -13,11 +13,11 @@
 #include <actionlib/client/simple_action_client.h>
 
 //JACO messages and actions
-//#include <jaco_msgs/FingerPosition.h>
-//#include <jaco_msgs/HomeArm.h>
+#include <jaco_msgs/FingerPosition.h>
+#include <jaco_msgs/HomeArm.h>
 
 //our own arm library 
-//#include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/arm_utils.h>
 
 #include <sensor_msgs/Joy.h>
 
@@ -27,7 +27,7 @@
 sensor_msgs::JointState current_state;
 geometry_msgs::PoseStamped current_pose;
 sensor_msgs::JointState current_efforts;
-//jaco_msgs::FingerPosition current_finger;
+jaco_msgs::FingerPosition current_finger;
 
 //globs variable for joystick
 float data_1;
@@ -74,10 +74,10 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
 	//ROS_INFO_STREAM(current_effort);
 }
 
-// void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
-// 	current_finger = *msg;
-// 	heardFingers = true;
-// }
+void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
+ 	current_finger = *msg;
+ 	heardFingers = true;
+ }
 
 // Call back function when joy stick message recieved
 void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {

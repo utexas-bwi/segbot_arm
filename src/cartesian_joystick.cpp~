@@ -13,11 +13,11 @@
 #include <actionlib/client/simple_action_client.h>
 
 //JACO messages and actions
-//#include <jaco_msgs/FingerPosition.h>
-//#include <jaco_msgs/HomeArm.h>
+#include <jaco_msgs/FingerPosition.h>
+#include <jaco_msgs/HomeArm.h>
 
 //our own arm library 
-//#include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/arm_utils.h>
 
 #include <sensor_msgs/Joy.h>
 
@@ -27,11 +27,13 @@
 sensor_msgs::JointState current_state;
 geometry_msgs::PoseStamped current_pose;
 sensor_msgs::JointState current_efforts;
-jaco_msgs::FingerPosition current_finger;
+//jaco_msgs::FingerPosition current_finger;
 
 //globs variable for joystick
-float linear_data;
-float angular_data;
+float data_1;
+float data_2;
+float data_3;
+float data_4;
 
 
 bool heardJoinstState;
@@ -72,11 +74,10 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
 	//ROS_INFO_STREAM(current_effort);
 }
 
-//fingers state cb
-void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
-	current_finger = *msg;
-	heardFingers = true;
-}
+// void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
+// 	current_finger = *msg;
+// 	heardFingers = true;
+// }
 
 // Call back function when joy stick message recieved
 void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
@@ -85,8 +86,10 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 	//vel.linear = l_scale_*joy->axes[linear_];
 	//vel_pub_.publish(vel);
 
-	linear_data = joy->axes[1];
-	angular_data = joy->axes[2];
+	data_1 = joy->axes[0];
+	data_2 = joy->axes[1];
+	data_3 = joy->axes[2];
+	data_4 = joy->axes[3];
 
 
 
@@ -142,101 +145,101 @@ int main(int argc, char **argv) {
 	double a_scale;
 
 	ros::NodeHandle n;
-
 	ros::Subscriber joy_sub;
+	ros::Publisher pub_velocity;
 
 
 	// joy is the name of the topic to subscribed to
 	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, linear_message);
+	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 
-	ROS_INFO("Current Linear Velocity");
-	ROS_INFO_STREAM(linear_data);
-	ROS_INFO_STREAM(angular_data);
+	// Print Data from the Controller - Experiment Purpose
+	while(ros::ok()){
 
-	//create subscribers for arm topics
+	// TO UPDATE / REFRESH DATA
+	ros::spinOnce();
+
+		ROS_INFO("Data 1");
+		ROS_INFO_STREAM(data_1);
+		ROS_INFO("Data 2");
+		ROS_INFO_STREAM(data_2);
+		ROS_INFO("Data 3");
+		ROS_INFO_STREAM(data_3);
+		ROS_INFO("Data 4");
+		ROS_INFO_STREAM(data_4);
+
+		ros::Rate r(40.0);
+		r.sleep();
+
+	}
 	
-	//joint positions
-	//ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
+
 	
-	//cartesean tool position and orientation
-	//ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
-
-	//joint efforts (aka haptics)
-	//ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
-
-	//finger positions
-	//ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	// * Publishers
 	 
-	/*
-	 * Publishers
-	 */  
-	 
-	//publish cartesian tool velocities
-	//ros::Publisher pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
-	
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 	
 	//listen for arm data
-	listenForArmData();
+	//listenForArmData();
 
 	//close fingers and "home" the arm
-	//pressEnter("Press [Enter] to start");
+	pressEnter("Press [Enter] to start");
 	
 	//construct message
-	// geometry_msgs::TwistStamped velocityMsg;
-	// velocityMsg.twist.linear.x = 0.0;
-	// velocityMsg.twist.linear.y = 0.0;
-	// velocityMsg.twist.linear.z = 0.2; 
-	// velocityMsg.twist.angular.x = 0.0;
-	// velocityMsg.twist.angular.y = 0.0;
-	// velocityMsg.twist.angular.z = 0.0;
+	geometry_msgs::TwistStamped velocityMsg;
+	velocityMsg.twist.linear.x = 0.0;
+	velocityMsg.twist.linear.y = 0.0;
+	velocityMsg.twist.linear.z = 0.2; 
+	velocityMsg.twist.angular.x = 0.0;
+	velocityMsg.twist.angular.y = 0.0;
+	velocityMsg.twist.angular.z = 0.0;
 
-	// double duration = 1.0; //2 seconds
-	// double elapsed_time = 0.0;
+	double duration = 1.0; //2 seconds
+	double elapsed_time = 0.0;
 	
-	// double pub_rate = 40.0; //we publish at 40 hz
-	// ros::Rate r(pub_rate);
+	double pub_rate = 40.0; //we publish at 40 hz
+	ros::Rate r(pub_rate);
 	
-	// while (ros::ok()){
-	// 	//collect messages
-	// 	ros::spinOnce();
+	while (ros::ok()){
+		//collect messages
+		ros::spinOnce();
 		
-	// 	//publish velocity message
-	// 	pub_velocity.publish(velocityMsg);
+		//publish velocity message
+		pub_velocity.publish(velocityMsg);
 		
-	// 	r.sleep();
+		r.sleep();
 		
-	// 	elapsed_time += (1.0/pub_rate);
+		elapsed_time += (1.0/pub_rate);
 		
-	// 	if (elapsed_time > duration)
-	// 		break;
-	// }
+		if (elapsed_time > duration)
+			break;
+	}
 	
 	
-	// velocityMsg.twist.linear.z = -0.2;
+	velocityMsg.twist.linear.z = -0.2;
 	
-	// elapsed_time = 0.0;
-	// while (ros::ok()){
-	// 	//collect messages
-	// 	ros::spinOnce();
+	elapsed_time = 0.0;
+	while (ros::ok()){
+		//collect messages
+		ros::spinOnce();
 		
-	// 	//publish velocity message
-	// 	pub_velocity.publish(velocityMsg);
+		//publish velocity message
+		pub_velocity.publish(velocityMsg);
 		
-	// 	r.sleep();
+		r.sleep();
 		
-	// 	elapsed_time += (1.0/pub_rate);
+		elapsed_time += (1.0/pub_rate);
 		
-	// 	if (elapsed_time > duration)
-	// 		break;
-	// }
+		if (elapsed_time > duration)
+			break;
+	}
 	
 	
 	// //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
-	// velocityMsg.twist.linear.z = 0.0; 
-	// pub_velocity.publish(velocityMsg);
+	velocityMsg.twist.linear.z = 0.0; 
+	pub_velocity.publish(velocityMsg);
 
 	
 

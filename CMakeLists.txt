@@ -5,6 +5,23 @@ project(joystick_bwi)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  jaco_msgs
+  moveit_msgs
+  roscpp
+  rospy
+  std_msgs
+  actionlib_msgs
+  actionlib
+  moveit_ros_planning_interface
+  moveit_utils
+  moveit_msgs
+  nav_msgs
+  move_base_msgs
+  segbot_arm_perception
+  segbot_arm_manipulation
+  pcl_ros
+  pcl_conversions
+  bwi_msgs
   roscpp
 
 )
@@ -103,6 +120,7 @@ catkin_package(
 #  LIBRARIES joystick_bwi
 #  CATKIN_DEPENDS ps3joy roscpp turtlesim
 #  DEPENDS system_lib
+	CATKIN_DEPENDS actionlib_msgs
 )
 
 ###########
