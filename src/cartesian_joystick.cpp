@@ -74,7 +74,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
 	current_efforts = *msg;
 	heardEfforts = true;
 	//ROS_INFO_STREAM(current_effort);
-}
+}t 
 
 void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
  	current_finger = *msg;
@@ -84,15 +84,15 @@ void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
 // Call back function when joy stick message recieved
 void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 	//turtlesim::Velocity vel;
-    //vel.angular = a_scale_*joy->axes[angular_];
+    	//vel.angular = a_scale_*joy->axes[angular_];
 	//vel.linear = l_scale_*joy->axes[linear_];
 	//vel_pub_.publish(vel);
 
 
   	//in meters -- need to scale
-	linear_x = .2 * joy->axes[0]; //left axis stick L/R
-	linear_y = .2 * joy->axes[1]; //left axis stick U/D
-    	linear_z = .2 * joy->axes[2] - joy->axes[5]; //left trigger (up) - right trigger (down)
+	linear_x = -0.4 * joy->axes[1]; //left axis stick L/R
+	linear_y = -0.4 * joy->axes[0]; //left axis stick U/D
+    	linear_z = -0.4 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
 
 	// Take care of the noise
 	if(joy->axes[0] < 0.2 && joy->axes[0] > -0.2){
@@ -107,9 +107,11 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 		linear_z = 0;  //make it 0
 	 }
 
-  	angular_x = .2 * joy->axes[3]; //right axis stick L/R
-  	angular_y = .2 * joy->axes[4]; //right axis stick U/D
-  	angular_z = .2 * joy->buttons[4] - joy->buttons[5]; //left back button (up) - right back button (down)
+		
+
+  	angular_x = -0.4 * joy->axes[3]; //right axis stick L/R
+  	angular_y = -0.4 * joy->axes[4]; //right axis stick U/D
+  	angular_z = -0.4 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
 
 }
 
