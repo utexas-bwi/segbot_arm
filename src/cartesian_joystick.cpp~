@@ -74,7 +74,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
 	current_efforts = *msg;
 	heardEfforts = true;
 	//ROS_INFO_STREAM(current_effort);
-}
+}t 
 
 void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
  	current_finger = *msg;
@@ -90,16 +90,16 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 
 
   	//in meters -- need to scale
-	linear_x = -0.4 * joy->axes[1]; //left axis stick L/R
-	linear_y = -0.4 * joy->axes[0]; //left axis stick U/D
+	linear_x = 0.4 * joy->axes[1]; //left axis stick L/R
+	linear_y = 0.4 * joy->axes[0]; //left axis stick U/D
     	linear_z = -0.4 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
 
 	// Take care of the noise
-	if(joy->axes[0] < 0.2 && joy->axes[0] > -0.2){
+	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
 		linear_x = 0; //make it 0
 	 }
 	
-	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
+	if(joy->axes[0] < 0.2 && joy->axes[0] > -0.2){
 		linear_y = 0; //make it 0
 	 }
 

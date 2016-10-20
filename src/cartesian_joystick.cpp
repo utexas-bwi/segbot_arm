@@ -95,11 +95,11 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
     	linear_z = -0.4 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
 
 	// Take care of the noise
-	if(joy->axes[0] < 0.2 && joy->axes[0] > -0.2){
+	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
 		linear_x = 0; //make it 0
 	 }
 	
-	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
+	if(joy->axes[0] < 0.2 && joy->axes[0] > -0.2){
 		linear_y = 0; //make it 0
 	 }
 
