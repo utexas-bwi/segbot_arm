@@ -74,7 +74,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
 	current_efforts = *msg;
 	heardEfforts = true;
 	//ROS_INFO_STREAM(current_effort);
-}t 
+} 
 
 void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
  	current_finger = *msg;
@@ -90,9 +90,9 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 
 
   	//in meters -- need to scale
-	linear_x = -0.4 * joy->axes[1]; //left axis stick L/R
-	linear_y = -0.4 * joy->axes[0]; //left axis stick U/D
-    	linear_z = -0.4 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
+	linear_x = 0.6 * joy->axes[1]; //left axis stick L/R
+	linear_y = 0.6 * joy->axes[0]; //left axis stick U/D
+    	linear_z = -0.6 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
 
 	// Take care of the noise
 	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
@@ -109,9 +109,9 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 
 		
 
-  	angular_x = -0.4 * joy->axes[3]; //right axis stick L/R
-  	angular_y = -0.4 * joy->axes[4]; //right axis stick U/D
-  	angular_z = -0.4 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
+  	angular_x = 0.6 * joy->axes[3]; //right axis stick L/R
+  	angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
+  	angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
 
 }
 
@@ -153,7 +153,9 @@ void pressEnter(std::string message){
 	}
 }
 
-
+bool allZeros(geometry_msgs::TwistStamped velocityMsg) {
+	return (velocityMsg.twist.linear.x == 0 && velocityMsg.twist.linear.y == 0 && velocityMsg.twist.linear.z == 0 && velocityMsg.twist.angular.x && velocityMsg.twist.angular.y == 0 && velocityMsg.twist.angular.z == 0);
+}
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
@@ -190,22 +192,22 @@ int main(int argc, char **argv) {
 	
 	geometry_msgs::TwistStamped velocityMsg;
 	while (ros::ok()){
-
+		if (allZeros(velocityMsg))
+			continue;
     		//construct message
 	 	velocityMsg.twist.linear.x = linear_x;
 	  	velocityMsg.twist.linear.y = linear_y;
 	  	velocityMsg.twist.linear.z = linear_z; 
-	  	//velocityMsg.twist.angular.x = angular_x;
-	  	//velocityMsg.twist.angular.y = angular_y;
-	        //velocityMsg.twist.angular.z = angular_z;
+	  	velocityMsg.twist.angular.x = angular_x;
+	  	velocityMsg.twist.angular.y = angular_y;
+	        velocityMsg.twist.angular.z = angular_z;
 
 		ROS_INFO("Linear x: %f\n", linear_x);
 		ROS_INFO("Linear y: %f\n", linear_y);
 		ROS_INFO("Linear z: %f\n", linear_z);
-
-		velocityMsg.twist.angular.x = 0;
-	  	velocityMsg.twist.angular.y = 0;
-	        velocityMsg.twist.angular.z = 0;
+		ROS_INFO("Angular x: %f\n", angular_x);
+		ROS_INFO("Angular y: %f\n", angular_y);
+		ROS_INFO("Angular z: %f\n", angular_z);
 		
 		//publish velocity message
 		pub_velocity.publish(velocityMsg);
