@@ -89,10 +89,23 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 	//vel_pub_.publish(vel);
 
 
-  //in meters -- need to scale
-	linear_x = .2 * joy->axes[0]; //left axis stick L/D
+  	//in meters -- need to scale
+	linear_x = .2 * joy->axes[0]; //left axis stick L/R
 	linear_y = .2 * joy->axes[1]; //left axis stick U/D
-    linear_z = .2 * joy->axes[2] - joy->axes[5]; //left trigger (up) - right trigger (down)
+    	linear_z = .2 * joy->axes[2] - joy->axes[5]; //left trigger (up) - right trigger (down)
+
+	// Take care of the noise
+	if(joy->axes[0] < 0.2 && joy->axes[0] > -0.2){
+		linear_x = 0; //make it 0
+	 }
+	
+	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
+		linear_y = 0; //make it 0
+	 }
+
+	if((joy->axes[2] - joy->axes[5]) < 0.2 && (joy->axes[2] - joy->axes[5]) > -0.2){
+		linear_z = 0;  //make it 0
+	 }
 
   	angular_x = .2 * joy->axes[3]; //right axis stick L/R
   	angular_y = .2 * joy->axes[4]; //right axis stick U/D
@@ -176,16 +189,21 @@ int main(int argc, char **argv) {
 	geometry_msgs::TwistStamped velocityMsg;
 	while (ros::ok()){
 
-
-		
-	
-    	//construct message
+    		//construct message
 	 	velocityMsg.twist.linear.x = linear_x;
 	  	velocityMsg.twist.linear.y = linear_y;
 	  	velocityMsg.twist.linear.z = linear_z; 
-	  	velocityMsg.twist.angular.x = angular_x;
-	  	velocityMsg.twist.angular.y = angular_y;
-	    velocityMsg.twist.angular.z = angular_z;
+	  	//velocityMsg.twist.angular.x = angular_x;
+	  	//velocityMsg.twist.angular.y = angular_y;
+	        //velocityMsg.twist.angular.z = angular_z;
+
+		ROS_INFO("Linear x: %f\n", linear_x);
+		ROS_INFO("Linear y: %f\n", linear_y);
+		ROS_INFO("Linear z: %f\n", linear_z);
+
+		velocityMsg.twist.angular.x = 0;
+	  	velocityMsg.twist.angular.y = 0;
+	        velocityMsg.twist.angular.z = 0;
 		
 		//publish velocity message
 		pub_velocity.publish(velocityMsg);
@@ -197,7 +215,7 @@ int main(int argc, char **argv) {
 	}
 	
 	
-	// //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
+//publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 	        seconds
 	velocityMsg.twist.linear.x = 0;
   	velocityMsg.twist.linear.y = 0;
   	velocityMsg.twist.linear.z = 0; 
