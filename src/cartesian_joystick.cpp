@@ -36,6 +36,8 @@ float linear_z;
 float angular_x;
 float angular_y;
 float angular_z;
+float finger_1;
+float finger_2;
 
 
 bool heardJoinstState;
@@ -97,6 +99,13 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
     angular_x = 0.6 * joy->axes[3]; //right axis stick L/R
   	angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
   	angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
+
+
+  	finger_1 = 100 * joy->buttons[3];
+  	finger_2 = 100 * joy->buttons[3];
+
+  	finger_1 = 7000 * joy->buttons[0];
+  	finger_2 = 7000 * joy->buttons[0];
 
 	// Take care of the noise
 	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
@@ -187,6 +196,13 @@ int main(int argc, char **argv) {
 	ros::Publisher pub_angular_velocity;
 
 
+	// for the fingers
+	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+	ac.waitForServer();
+
+	//construction the action request
+	jaco_msgs::SetFingersPositionGoal goalFinger;
+
 	// joy is the name of the topic to subscribed to
 	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, linear_message);
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
@@ -219,6 +235,11 @@ int main(int argc, char **argv) {
 	  	velocityMsg.twist.angular.y = angular_y;
 	    velocityMsg.twist.angular.z = angular_z;
 
+	    //construction the action request
+	
+		goalFinger.fingers.finger1 = finger_1; //100 is open, 7500 is close
+		goalFinger.fingers.finger2 = finger_2;
+
 		ROS_INFO("Linear x: %f\n", linear_x);
 		ROS_INFO("Linear y: %f\n", linear_y);
 		ROS_INFO("Linear z: %f\n", linear_z);
@@ -229,6 +250,14 @@ int main(int argc, char **argv) {
 		//publish velocity message
 		pub_velocity.publish(velocityMsg);
 
+		// send only if buttons are pressed
+		if(finger_1 > 0){
+
+			ac.sendGoal(goalFinger);
+			ac.waitForResult();
+
+		}
+
 		//collect messages
 		ros::spinOnce();
 		
@@ -237,12 +266,15 @@ int main(int argc, char **argv) {
 	
 	
 //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 	        seconds
+	ROS_INFO("Out of While Loop");
 	velocityMsg.twist.linear.x = 0;
   	velocityMsg.twist.linear.y = 0;
   	velocityMsg.twist.linear.z = 0; 
   	velocityMsg.twist.angular.x = 0;
   	velocityMsg.twist.angular.y = 0;
 	velocityMsg.twist.angular.z = 0;
+	goalFinger.fingers.finger1 = 0; //100 is open, 7500 is close
+	goalFinger.fingers.finger2 = 0;
 	pub_velocity.publish(velocityMsg);
 
 	
