@@ -92,7 +92,11 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
   	//in meters -- need to scale
 	linear_x = 0.6 * joy->axes[1]; //left axis stick L/R
 	linear_y = 0.6 * joy->axes[0]; //left axis stick U/D
-    	linear_z = -0.6 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
+    linear_z = -0.6 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
+
+    angular_x = 0.6 * joy->axes[3]; //right axis stick L/R
+  	angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
+  	angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
 
 	// Take care of the noise
 	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
@@ -107,11 +111,22 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 		linear_z = 0;  //make it 0
 	 }
 
+	 // noise for angular 
+	 if(joy->axes[3] < 0.2 && joy->axes[3] > -0.2){
+		angular_x = 0; //make it 0
+	 }
+	
+	if(joy->axes[4] < 0.2 && joy->axes[4] > -0.2){
+		angular_y = 0; //make it 0
+	 }
+
+	if((joy->buttons[4] - joy->buttons[5]) < 0.2 && (joy->buttons[4] - joy->buttons[5]) > -0.2){
+		angular_z = 0;  //make it 0
+	 }
+
 		
 
-  	angular_x = 0.6 * joy->axes[3]; //right axis stick L/R
-  	angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
-  	angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
+  
 
 }
 
@@ -169,11 +184,13 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 	ros::Subscriber joy_sub;
 	ros::Publisher pub_velocity;
+	ros::Publisher pub_angular_velocity;
 
 
 	// joy is the name of the topic to subscribed to
 	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, linear_message);
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	//pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
 
 	// * Publishers
 	 
@@ -200,7 +217,7 @@ int main(int argc, char **argv) {
 	  	velocityMsg.twist.linear.z = linear_z; 
 	  	velocityMsg.twist.angular.x = angular_x;
 	  	velocityMsg.twist.angular.y = angular_y;
-	        velocityMsg.twist.angular.z = angular_z;
+	    velocityMsg.twist.angular.z = angular_z;
 
 		ROS_INFO("Linear x: %f\n", linear_x);
 		ROS_INFO("Linear y: %f\n", linear_y);
