@@ -36,6 +36,8 @@ float linear_z;
 float angular_x;
 float angular_y;
 float angular_z;
+float finger_open_prev;
+float finger_open_current;
 float finger_1;
 float finger_2;
 
@@ -44,6 +46,7 @@ bool heardJoinstState;
 bool heardPose;
 bool heardEfforts;
 bool heardFingers;
+bool reset;
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -101,7 +104,7 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
   	angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
 
 
-  	finger_1 = 100 * joy->buttons[3];
+  	finger_1 = 100 * joy->buttons[3]; // Button to Open
   	finger_2 = 100 * joy->buttons[3];
 
   	finger_1 = 7000 * joy->buttons[0];
@@ -133,9 +136,37 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 		angular_z = 0;  //make it 0
 	 }
 
-		
+
 
   
+
+}
+
+void fingerData(const sensor_msgs::Joy::ConstPtr& joy){
+
+	if(joy->buttons[3] == 0){
+
+		finger_open_prev = 0;
+		reset = true;
+
+	}
+	else{
+
+		// continious press
+		// first time
+		if(reset){
+			finger_open_current = 7300; // To start with
+			finger_open_prev = 7300;
+			reset = false;
+
+		}
+		else{
+			finger_open_current = finger_open_prev - 200;
+			finger_open_prev = finger_open_current;
+			
+		}
+		
+	}
 
 }
 
@@ -248,19 +279,20 @@ int main(int argc, char **argv) {
 		ROS_INFO("Angular z: %f\n", angular_z);
 		
 		//publish velocity message
+
+		ROS_INFO("Publishing Velocity Message");
 		pub_velocity.publish(velocityMsg);
 
 		// send only if buttons are pressed
 		if(finger_1 > 0){
-
 			ac.sendGoal(goalFinger);
 			ac.waitForResult();
-
 		}
+
+
 
 		//collect messages
 		ros::spinOnce();
-		
 		r.sleep();
 	}
 	
