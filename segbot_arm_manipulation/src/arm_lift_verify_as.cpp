@@ -349,7 +349,9 @@ public:
 		bool gone_from_table = not_on_table(center_vector, orig_colorhist);
 		
 		//all three conditions must be met for success
-		result_.success = (greater_force && fingers_still_open && gone_from_table);
+		//result_.success = (greater_force && fingers_still_open && gone_from_table);
+		result_.success = ((greater_force && fingers_still_open) || (greater_force && gone_from_table) || 
+			(fingers_still_open && gone_from_table));
 		as_.setSucceeded(result_);
 	}
 };
