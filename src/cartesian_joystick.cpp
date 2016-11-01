@@ -36,11 +36,8 @@ float linear_z;
 float angular_x;
 float angular_y;
 float angular_z;
-float finger_open_prev;
-float finger_open_current;
 float finger_1;
 float finger_2;
-
 
 bool heardJoinstState;
 bool heardPose;
@@ -87,7 +84,7 @@ void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
  }
 
 // Call back function when joy stick message recieved
-void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
+void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	//turtlesim::Velocity vel;
     	//vel.angular = a_scale_*joy->axes[angular_];
 	//vel.linear = l_scale_*joy->axes[linear_];
@@ -97,24 +94,33 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
   	//in meters -- need to scale
 	linear_x = 0.6 * joy->axes[1]; //left axis stick L/R
 	linear_y = 0.6 * joy->axes[0]; //left axis stick U/D
-    linear_z = -0.6 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
+  linear_z = -0.6 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
 
-    angular_x = 0.6 * joy->axes[3]; //right axis stick L/R
-  	angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
-  	angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
+  angular_x = 0.4 * joy->axes[3]; //right axis stick L/R
+  angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
+  angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
 
+  //100 is open, 7500 is closed
+  if (joy->buttons[3] != joy->buttons[0]) { //if only one button pressed
+    if (joy->buttons[3] != 0) {
+      if (finger_1 >= 200 && finger_2 >= 200) {
+         finger_1 = current_finger.finger1 - 100;
+         finger_2 = current_finger.finger2 - 100;
+      }
+    }
+    else {
+      if (finger_1 <= 7400 && finger_2 <= 7400) {
+         finger_1 = current_finger.finger1 + 100;
+         finger_2 = current_finger.finger2 + 100;
+      }
+    }
+  }
 
-  	finger_1 = 100 * joy->buttons[3]; // Button to Open
-  	finger_2 = 100 * joy->buttons[3];
-
-  	finger_1 = 7000 * joy->buttons[0];
-  	finger_2 = 7000 * joy->buttons[0];
-
-	// Take care of the noise
+	// noice for cartesian
 	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
 		linear_x = 0; //make it 0
 	 }
-	
+
 	if(joy->axes[0] < 0.2 && joy->axes[0] > -0.2){
 		linear_y = 0; //make it 0
 	 }
@@ -136,12 +142,8 @@ void  linear_message(const sensor_msgs::Joy::ConstPtr& joy) {
 		angular_z = 0;  //make it 0
 	 }
 
-
-
-  
-
 }
-
+/*
 void fingerData(const sensor_msgs::Joy::ConstPtr& joy){
 
 	if(joy->buttons[3] == 0){
@@ -169,7 +171,7 @@ void fingerData(const sensor_msgs::Joy::ConstPtr& joy){
 	}
 
 }
-
+*/
 //blocking call to listen for arm data (in this case, joint states)
 void listenForArmData(){
 	
@@ -223,24 +225,27 @@ int main(int argc, char **argv) {
 
 	ros::NodeHandle n;
 	ros::Subscriber joy_sub;
+  ros::Subscriber finger_pos_sub;
 	ros::Publisher pub_velocity;
 	ros::Publisher pub_angular_velocity;
 
 
-	// for the fingers
-	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
-	ac.waitForServer();
 
 	//construction the action request
 	jaco_msgs::SetFingersPositionGoal goalFinger;
 
 	// joy is the name of the topic to subscribed to
-	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, linear_message);
-	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, joy_cb);
+	finger_pos_sub = n.subscribe("/mico_arm_driver/out/finger_position", 10, fingers_cb);
+  
+  pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	//pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
 
+	//for the fingers
+	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+  ac.waitForServer();
 	// * Publishers
-	 
+  ROS_INFO("I arrived here.\n");
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
@@ -258,16 +263,24 @@ int main(int argc, char **argv) {
 	while (ros::ok()){
 		if (allZeros(velocityMsg))
 			continue;
-    		//construct message
+    
+    bool linearZero = (linear_x == 0) && (linear_y == 0) && (linear_z == 0);
+    
+    //construct message
 	 	velocityMsg.twist.linear.x = linear_x;
-	  	velocityMsg.twist.linear.y = linear_y;
-	  	velocityMsg.twist.linear.z = linear_z; 
-	  	velocityMsg.twist.angular.x = angular_x;
-	  	velocityMsg.twist.angular.y = angular_y;
-	    velocityMsg.twist.angular.z = angular_z;
-
-	    //construction the action request
-	
+	 	velocityMsg.twist.linear.y = linear_y;
+	 	
+    if (angular_x > 0 && linearZero) {
+      linear_z = 0.01;
+    }
+	 	
+    velocityMsg.twist.linear.z = linear_z; 
+    
+    velocityMsg.twist.angular.x = angular_x;
+	 	velocityMsg.twist.angular.y = angular_y;
+	  velocityMsg.twist.angular.z = angular_z;
+ 
+	    //construction the action request	
 		goalFinger.fingers.finger1 = finger_1; //100 is open, 7500 is close
 		goalFinger.fingers.finger2 = finger_2;
 
@@ -289,8 +302,6 @@ int main(int argc, char **argv) {
 			ac.waitForResult();
 		}
 
-
-
 		//collect messages
 		ros::spinOnce();
 		r.sleep();
@@ -300,16 +311,12 @@ int main(int argc, char **argv) {
 //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 	        seconds
 	ROS_INFO("Out of While Loop");
 	velocityMsg.twist.linear.x = 0;
-  	velocityMsg.twist.linear.y = 0;
-  	velocityMsg.twist.linear.z = 0; 
-  	velocityMsg.twist.angular.x = 0;
-  	velocityMsg.twist.angular.y = 0;
+  velocityMsg.twist.linear.y = 0;
+  velocityMsg.twist.linear.z = 0; 
+  velocityMsg.twist.angular.x = 0;
+  velocityMsg.twist.angular.y = 0;
 	velocityMsg.twist.angular.z = 0;
-	goalFinger.fingers.finger1 = 0; //100 is open, 7500 is close
-	goalFinger.fingers.finger2 = 0;
 	pub_velocity.publish(velocityMsg);
-
-	
 
 	//the end
 	ros::shutdown();
