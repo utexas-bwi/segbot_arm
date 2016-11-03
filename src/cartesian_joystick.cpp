@@ -90,8 +90,6 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	//vel.linear = l_scale_*joy->axes[linear_];
 	//vel_pub_.publish(vel);
 
-
-  	//in meters -- need to scale
 	linear_x = 0.6 * joy->axes[1]; //left axis stick L/R
 	linear_y = 0.6 * joy->axes[0]; //left axis stick U/D
   linear_z = -0.6 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
@@ -241,11 +239,11 @@ int main(int argc, char **argv) {
   pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	//pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
 
-	//for the fingers
-	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
-  ac.waitForServer();
+//	//for the fingers
+//	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+//  ac.waitForServer();
 	// * Publishers
-  ROS_INFO("I arrived here.\n");
+//  ROS_INFO("I arrived here.\n");
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
@@ -261,54 +259,65 @@ int main(int argc, char **argv) {
 	
 	geometry_msgs::TwistStamped velocityMsg;
 	while (ros::ok()){
-		if (allZeros(velocityMsg))
-			continue;
+    while (ros::ok() && (finger_1 != current_finger.finger1)){
+  	  if (allZeros(velocityMsg))
+	      continue;
     
-    bool linearZero = (linear_x == 0) && (linear_y == 0) && (linear_z == 0);
+      bool linearZero = (linear_x == 0) && (linear_y == 0) && (linear_z == 0);
+      bool angularZero = (angular_x == 0) && (angular_y == 0) && (angular_z == 0);
     
+    /*Corner cases*/
+    //angular_x needs a linear component
+     if (angular_x > 0 && linearZero) {
+        linear_z = 0.1;
+     }
+  // //fingers need other movement
+  //  if (finger_1 != current_finger.finger1 && finger_2 != current_finger.finger2) {
+  //    if (linearZero && angularZero) {
+  //     linear_z = 0.1;
+  //     angular_z = 0.1;
+  //    }
+  //  }
+
     //construct message
-	 	velocityMsg.twist.linear.x = linear_x;
-	 	velocityMsg.twist.linear.y = linear_y;
-	 	
-    if (angular_x > 0 && linearZero) {
-      linear_z = 0.01;
-    }
-	 	
-    velocityMsg.twist.linear.z = linear_z; 
+	   velocityMsg.twist.linear.x = linear_x;
+	   velocityMsg.twist.linear.y = linear_y;
+     velocityMsg.twist.linear.z = linear_z; 
     
-    velocityMsg.twist.angular.x = angular_x;
-	 	velocityMsg.twist.angular.y = angular_y;
-	  velocityMsg.twist.angular.z = angular_z;
+     velocityMsg.twist.angular.x = angular_x;
+	   velocityMsg.twist.angular.y = angular_y;
+	   velocityMsg.twist.angular.z = angular_z;
  
 	    //construction the action request	
-		goalFinger.fingers.finger1 = finger_1; //100 is open, 7500 is close
-		goalFinger.fingers.finger2 = finger_2;
+	//   goalFinger.fingers.finger1 = finger_1; //100 is open, 7500 is close
+	//	 goalFinger.fingers.finger2 = finger_2;
 
-		ROS_INFO("Linear x: %f\n", linear_x);
-		ROS_INFO("Linear y: %f\n", linear_y);
-		ROS_INFO("Linear z: %f\n", linear_z);
-		ROS_INFO("Angular x: %f\n", angular_x);
-		ROS_INFO("Angular y: %f\n", angular_y);
-		ROS_INFO("Angular z: %f\n", angular_z);
+		 ROS_INFO("Linear x: %f\n", linear_x);
+		 ROS_INFO("Linear y: %f\n", linear_y);
+		 ROS_INFO("Linear z: %f\n", linear_z);
+		 ROS_INFO("Angular x: %f\n", angular_x);
+		 ROS_INFO("Angular y: %f\n", angular_y);
+		 ROS_INFO("Angular z: %f\n", angular_z);
 		
-		//publish velocity message
+		 //publish velocity message
 
-		ROS_INFO("Publishing Velocity Message");
-		pub_velocity.publish(velocityMsg);
-
-		// send only if buttons are pressed
-		if(finger_1 > 0){
-			ac.sendGoal(goalFinger);
-			ac.waitForResult();
-		}
-
-		//collect messages
-		ros::spinOnce();
-		r.sleep();
+		 ROS_INFO("Publishing Velocity Message");
+		 pub_velocity.publish(velocityMsg);
+		 
+     //collect messages
+		 ros::spinOnce();
+		 r.sleep();
+   }
+	 // send only if buttons are pressed
+	 if(finger_1 != current_finger.finger1) {
+		 ROS_INFO("Finger1: %f->%f\n", current_finger.finger1, finger_1);
+		 ROS_INFO("Finger2: %f->%f\n", current_finger.finger2, finger_2);
+     segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+   }
 	}
 	
 	
-//publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 	        seconds
+//publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
 	ROS_INFO("Out of While Loop");
 	velocityMsg.twist.linear.x = 0;
   velocityMsg.twist.linear.y = 0;
