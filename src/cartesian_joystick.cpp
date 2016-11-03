@@ -36,8 +36,16 @@ float linear_z;
 float angular_x;
 float angular_y;
 float angular_z;
-float finger_1;
-float finger_2;
+float finger_1 = 7200;
+float finger_2 = 7200;
+
+bool fingers_opened;
+bool fingers_closed;
+
+bool fingers_fully_opened;
+bool fingers_fully_closed;
+
+bool fingers_changed;
 
 bool heardJoinstState;
 bool heardPose;
@@ -98,22 +106,35 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
   angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
   angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
 
+  if (joy->buttons[2] != joy->buttons[1]) {
+	if (joy->buttons[2] != 0)
+		fingers_fully_opened = true;
+	else
+		fingers_fully_closed = true;
+  }
+
   //100 is open, 7500 is closed
   if (joy->buttons[3] != joy->buttons[0]) { //if only one button pressed
     if (joy->buttons[3] != 0) {
       if (finger_1 >= 200 && finger_2 >= 200) {
-         finger_1 = current_finger.finger1 - 100;
-         finger_2 = current_finger.finger2 - 100;
+	      fingers_opened = true;
+	      fingers_closed = false;
       }
     }
     else {
-      if (finger_1 <= 7400 && finger_2 <= 7400) {
-         finger_1 = current_finger.finger1 + 100;
-         finger_2 = current_finger.finger2 + 100;
-      }
+	   fingers_opened = false;
+	   fingers_closed = true;
     }
   }
-
+  else{
+	  fingers_opened = false;
+	  fingers_closed = true;
+  }
+  
+  if (joy->buttons[3] != 0 || joy->buttons[2] != 0 || joy->buttons[1] != 0 || joy->buttons[0] != 0)
+	fingers_changed = true;
+  else
+    fingers_changed = false;
 	// noice for cartesian
 	if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2){
 		linear_x = 0; //make it 0
@@ -259,16 +280,20 @@ int main(int argc, char **argv) {
 	
 	geometry_msgs::TwistStamped velocityMsg;
 	while (ros::ok()){
-    while (ros::ok() && (finger_1 != current_finger.finger1)){
+		ROS_INFO("Entered First While");
+    while (ros::ok() && (!fingers_changed)){
   	  if (allZeros(velocityMsg))
+			//ROS_INFO("Entered 2 While");
 	      continue;
+	      ROS_INFO("Entered 3 While");
+
     
       bool linearZero = (linear_x == 0) && (linear_y == 0) && (linear_z == 0);
       bool angularZero = (angular_x == 0) && (angular_y == 0) && (angular_z == 0);
     
     /*Corner cases*/
     //angular_x needs a linear component
-     if (angular_x > 0 && linearZero) {
+     if (angular_x != 0 && linearZero) {
         linear_z = 0.1;
      }
   // //fingers need other movement
@@ -308,12 +333,53 @@ int main(int argc, char **argv) {
 		 ros::spinOnce();
 		 r.sleep();
    }
-	 // send only if buttons are pressed
-	 if(finger_1 != current_finger.finger1) {
-		 ROS_INFO("Finger1: %f->%f\n", current_finger.finger1, finger_1);
-		 ROS_INFO("Finger2: %f->%f\n", current_finger.finger2, finger_2);
-     segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+	
+	if (fingers_fully_closed) {
+		finger_1 = 100;
+		finger_2 = 100;
+		segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+		continue;
+	}
+	if (fingers_fully_opened) {
+		finger_1 = 7200;
+		finger_2 = 7200;
+		segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+		continue;
+	}
+	// send only if buttons are pressed
+	while(fingers_opened) {
+		 
+		 ROS_INFO("Finger1->%f\n", finger_1);
+		 ROS_INFO("Finger2->%f\n", finger_2);
+		 if (finger_1 >= 700 && finger_2 >= 700) {
+			finger_1 -= 600;
+		    finger_2 -= 600;
+			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+		 }
+	
+         ros::spinOnce();
+		 r.sleep();
    }
+   
+	 // send only if buttons are pressed
+	while(fingers_closed) {
+		 
+		 ROS_INFO("Finger1->%f\n", finger_1);
+		 ROS_INFO("Finger2->%f\n", finger_2);
+		 if (finger_1 <= 6600 && finger_2 >= 6600) {
+			finger_1 += 600;
+		    finger_2 += 600;
+			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+		 }
+	
+         ros::spinOnce();
+		 r.sleep();
+    }
+   
+    ros::spinOnce();
+    r.sleep();
+   
+   
 	}
 	
 	
