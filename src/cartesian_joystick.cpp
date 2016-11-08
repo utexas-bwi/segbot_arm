@@ -160,7 +160,7 @@ void pressEnter(std::string message){
 }
 
 bool allZeros(geometry_msgs::TwistStamped velocityMsg) {
-	return (velocityMsg.twist.linear.x == 0 && velocityMsg.twist.linear.y == 0 && velocityMsg.twist.linear.z == 0 && velocityMsg.twist.angular.x && velocityMsg.twist.angular.y == 0 && velocityMsg.twist.angular.z == 0);
+	return (velocityMsg.twist.linear.x == 0 && velocityMsg.twist.linear.y == 0 && velocityMsg.twist.linear.z == 0 && velocityMsg.twist.angular.x == 0 && velocityMsg.twist.angular.y == 0 && velocityMsg.twist.angular.z == 0);
 }
 
 int main(int argc, char **argv) {
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
 		ROS_INFO("Entered First While");
     	while (ros::ok() && (!fingers_changed)) {
   			if (allZeros(velocityMsg))
-	        	continue;
+	       		continue;
 	   	
 	   		ROS_INFO("Entered 3 While");
 
