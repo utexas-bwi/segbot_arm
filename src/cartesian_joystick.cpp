@@ -100,49 +100,45 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 
 	linear_x = 0.6 * joy->axes[1]; //left axis stick L/R
 	linear_y = 0.6 * joy->axes[0]; //left axis stick U/D
-        linear_z = -0.6 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
+    linear_z = -0.6 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
 
-        angular_x = 0.4 * joy->axes[3]; //right axis stick L/R
-        angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
-        angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
+    angular_x = 0.4 * joy->axes[3]; //right axis stick L/R
+    angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
+    angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
 
-        if (joy->buttons[2] != joy->buttons[1]) {
-	    if (joy->buttons[2] != 0)
-		fingers_fully_opened = true;
-	    else
-		fingers_fully_closed = true;
-        }
+    if (joy->buttons[2] != joy->buttons[1]) {
+	    if (joy->buttons[2] != 0) fingers_fully_opened = true;
+	    else fingers_fully_closed = true;
+     }
 
-       //100 is open, 7500 is closed
-       if (joy->buttons[3] != joy->buttons[0]) { //if only one button pressed
-           if (joy->buttons[3] != 0) {
-               if (finger_1 >= 200 && finger_2 >= 200) {
+    //100 is open, 7500 is closed
+    if (joy->buttons[3] != joy->buttons[0]) { //if only one button pressed
+        if (joy->buttons[3] != 0) {
 	           fingers_opened = true;
 	           fingers_closed = false;
-               }
-           } else {
-               fingers_opened = false;
-	       fingers_closed = true;
-           }
-       } else {
+        } else {
            fingers_opened = false;
+	       fingers_closed = true;
+        }
+    } else {
+       fingers_opened = false;
 	   fingers_closed = true;
-       }
+    }
   
-       if (joy->buttons[3] != 0 || joy->buttons[2] != 0 || joy->buttons[1] != 0 || joy->buttons[0] != 0)
-           fingers_changed = true;
-       else
-           fingers_changed = false;
+    if (joy->buttons[3] != 0 || joy->buttons[2] != 0 || joy->buttons[1] != 0 || joy->buttons[0] != 0)
+        fingers_changed = true;
+    else
+        fingers_changed = false;
 
-       // noise for cartesian
-       if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2) linear_x = 0; //make it 0
-       if(joy->axes[0] < 0.2 && joy->axes[0] > -0.2) linear_y = 0; //make it 0
-       if((joy->axes[2] - joy->axes[5]) < 0.2 && (joy->axes[2] - joy->axes[5]) > -0.2) linear_z = 0;  //make it 0
+    // noise for cartesian
+    if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2) linear_x = 0; //make it 0
+    if(joy->axes[0] < 0.2 && joy->axes[0] > -0.2) linear_y = 0; //make it 0
+    if((joy->axes[2] - joy->axes[5]) < 0.2 && (joy->axes[2] - joy->axes[5]) > -0.2) linear_z = 0;  //make it 0
 
 	 // noise for angular 
-       if(joy->axes[3] < 0.2 && joy->axes[3] > -0.2) angular_x = 0; //make it 0
-       if(joy->axes[4] < 0.2 && joy->axes[4] > -0.2) angular_y = 0; //make it 0
-       if((joy->buttons[4] - joy->buttons[5]) < 0.2 && (joy->buttons[4] - joy->buttons[5]) > -0.2) angular_z = 0;  //make it 0
+    if(joy->axes[3] < 0.2 && joy->axes[3] > -0.2) angular_x = 0; //make it 0
+    if(joy->axes[4] < 0.2 && joy->axes[4] > -0.2) angular_y = 0; //make it 0
+    if((joy->buttons[4] - joy->buttons[5]) < 0.2 && (joy->buttons[4] - joy->buttons[5]) > -0.2) angular_z = 0;  //make it 0
 
 }
 
@@ -249,6 +245,7 @@ int main(int argc, char **argv) {
  	    }
 	
 		if (fingers_fully_closed) {
+			ROS_INFO("Fingers fully closed\n"); 
 			finger_1 = 100;
 			finger_2 = 100;
 			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
@@ -256,6 +253,7 @@ int main(int argc, char **argv) {
 		}
 	
 		if (fingers_fully_opened) {
+			ROS_INFO("Fingers fully opened\n"); 
 			finger_1 = 7200;
 			finger_2 = 7200;
 			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
@@ -264,6 +262,7 @@ int main(int argc, char **argv) {
 	
 		// send only if buttons are pressed
 		while(fingers_opened) {
+			ROS_INFO("Fingers opened\n");
 			ROS_INFO("Finger1->%f\n", finger_1);
 		 	ROS_INFO("Finger2->%f\n", finger_2);
 		 	if (finger_1 >= 700 && finger_2 >= 700) {
@@ -277,7 +276,8 @@ int main(int argc, char **argv) {
     	}
    
 		// send only if buttons are pressed
-		while(fingers_closed) { 
+		while(fingers_closed) {
+			ROS_INFO("Fingers closed\n"); 
 			ROS_INFO("Finger1->%f\n", finger_1);
 			ROS_INFO("Finger2->%f\n", finger_2);
 			if (finger_1 <= 6600 && finger_2 >= 6600) {
