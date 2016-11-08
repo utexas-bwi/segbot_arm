@@ -23,12 +23,6 @@
 
 #define NUM_JOINTS 8 //6+2 for the arm
 
-//global variables for storing sensory data
-sensor_msgs::JointState current_state;
-geometry_msgs::PoseStamped current_pose;
-sensor_msgs::JointState current_efforts;
-jaco_msgs::FingerPosition current_finger;
-
 //globs variable for joystick
 float linear_x;
 float linear_y;
@@ -39,19 +33,14 @@ float angular_z;
 float finger_1 = 7200;
 float finger_2 = 7200;
 
-bool fingers_opened;
-bool fingers_closed;
-
-bool fingers_fully_opened;
-bool fingers_fully_closed;
+bool fingers_opening;
+bool fingers_closing;
+bool fingers_opening_fully;
+bool fingers_closing_fully;
 
 bool fingers_changed;
 
-bool heardJoinstState;
-bool heardPose;
-bool heardEfforts;
-bool heardFingers;
-bool reset;
+bool homingArm;
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -64,39 +53,8 @@ void sig_handler(int sig) {
 	exit(1);
 };
 
-//Joint positions cb
-void joint_state_cb (const sensor_msgs::JointStateConstPtr& msg) {
-	
-	if (msg->position.size() == NUM_JOINTS){
-		current_state = *msg;
-		heardJoinstState = true;
-	}
-}
-
-//tool pose cb
-void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
-	current_pose = msg;
-	heardPose = true;
-}
-
-//joint effort cb
-void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
-	current_efforts = *msg;
-	heardEfforts = true;
-	//ROS_INFO_STREAM(current_effort);
-} 
-
-void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
- 	current_finger = *msg;
- 	heardFingers = true;
- }
-
 // Call back function when joy stick message recieved
 void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
-	//turtlesim::Velocity vel;
-    	//vel.angular = a_scale_*joy->axes[angular_];
-	//vel.linear = l_scale_*joy->axes[linear_];
-	//vel_pub_.publish(vel);
 
 	linear_x = 0.6 * joy->axes[1]; //left axis stick L/R
 	linear_y = 0.6 * joy->axes[0]; //left axis stick U/D
@@ -107,28 +65,33 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
     angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
 
     if (joy->buttons[2] != joy->buttons[1]) {
-	    if (joy->buttons[2] != 0) fingers_fully_opened = true;
-	    else fingers_fully_closed = true;
+	    if (joy->buttons[2] != 0) fingers_opening_fully = true;
+	    else fingers_closing_fully = true;
      }
 
     //100 is open, 7500 is closed
     if (joy->buttons[3] != joy->buttons[0]) { //if only one button pressed
         if (joy->buttons[3] != 0) {
-	           fingers_opened = true;
-	           fingers_closed = false;
+	        fingers_opening = true;
+	        fingers_closing = false;
         } else {
-           fingers_opened = false;
-	       fingers_closed = true;
+           fingers_opening = false;
+	       fingers_closing = true;
         }
     } else {
-       fingers_opened = false;
-	   fingers_closed = true;
+       fingers_opening = false;
+	   fingers_closing = false;
     }
   
     if (joy->buttons[3] != 0 || joy->buttons[2] != 0 || joy->buttons[1] != 0 || joy->buttons[0] != 0)
         fingers_changed = true;
     else
         fingers_changed = false;
+
+    if (joy->buttons[8] != 0)
+    	homingArm = true;
+    else
+    	homingArm = false;
 
     // noise for cartesian
     if(joy->axes[1] < 0.2 && joy->axes[1] > -0.2) linear_x = 0; //make it 0
@@ -174,50 +137,39 @@ int main(int argc, char **argv) {
 
 	ros::NodeHandle n;
 	ros::Subscriber joy_sub;
-    ros::Subscriber finger_pos_sub;
+
 	ros::Publisher pub_velocity;
-	ros::Publisher pub_angular_velocity;
-
-
 
 	//construction the action request
 	jaco_msgs::SetFingersPositionGoal goalFinger;
 
 	// joy is the name of the topic to subscribed to
 	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, joy_cb);
-	finger_pos_sub = n.subscribe("/mico_arm_driver/out/finger_position", 10, fingers_cb);
   
     pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
-
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 	
-	//listen for arm data
-	//listenForArmData();
-
+	segbot_arm_manipulation::homeArm(n);
+	segbot_arm_manipulation::moveFingers(7200, 7200);
+	
 	//close fingers and "home" the arm
 	pressEnter("Press [Enter] to start");
-	
+
 	double pub_rate = 40.0; //we publish at 40 hz
 	ros::Rate r(pub_rate);
 	
 	geometry_msgs::TwistStamped velocityMsg;
 	while (ros::ok()){
 		ROS_INFO("Entered First While");
-    	while (ros::ok() && (!fingers_changed)) {
-  			if (allZeros(velocityMsg))
-	       		continue;
-	   	
+    	while (ros::ok() && (!fingers_changed) && (!homingArm)) {
+    		ros::spinOnce();
+    		r.sleep();
 	   		ROS_INFO("Entered 3 While");
 
-    
     		bool linearZero = (linear_x == 0) && (linear_y == 0) && (linear_z == 0);
     		bool angularZero = (angular_x == 0) && (angular_y == 0) && (angular_z == 0);
-    
-    		/*Corner cases*/
-    		//angular_x needs a linear component
-    		if (angular_x != 0 && linearZero) linear_z = 0.1;
 
     		//construct message
 			velocityMsg.twist.linear.x = linear_x;
@@ -234,38 +186,51 @@ int main(int argc, char **argv) {
 			ROS_INFO("Angular x: %f\n", angular_x);
 			ROS_INFO("Angular y: %f\n", angular_y);
 			ROS_INFO("Angular z: %f\n", angular_z);
+
+			if (allZeros(velocityMsg))
+				continue;
 		
 			//publish velocity message
 			ROS_INFO("Publishing Velocity Message");
 			pub_velocity.publish(velocityMsg);
 		 
     		//collect messages
-			ros::spinOnce();
-			r.sleep();
+    		ros::spinOnce();
+    		r.sleep();
+	   	
  	    }
 	
-		if (fingers_fully_closed) {
+		if (ros::ok() && fingers_closing_fully) {
 			ROS_INFO("Fingers fully closed\n"); 
-			finger_1 = 100;
-			finger_2 = 100;
-			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
-			continue;
-		}
-	
-		if (fingers_fully_opened) {
-			ROS_INFO("Fingers fully opened\n"); 
 			finger_1 = 7200;
 			finger_2 = 7200;
 			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+			fingers_closing_fully = false;
+
+			ros::spinOnce();
+    		r.sleep();
+			continue;
+		}
+	
+		if (ros::ok() && fingers_opening_fully) {
+			ROS_INFO("Fingers fully opened\n"); 
+			finger_1 = 100;
+			finger_2 = 100;
+			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+			fingers_opening_fully = false;
+
+			ros::spinOnce();
+    		r.sleep();
 			continue;
 		}
 	
 		// send only if buttons are pressed
-		while(fingers_opened) {
+		while(ros::ok() && fingers_opening) {
 			ROS_INFO("Fingers opened\n");
 			ROS_INFO("Finger1->%f\n", finger_1);
 		 	ROS_INFO("Finger2->%f\n", finger_2);
 		 	if (finger_1 >= 700 && finger_2 >= 700) {
+		 		ROS_INFO("Opening fingers\n");
 				finger_1 -= 600;
 		    	finger_2 -= 600;
 				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
@@ -273,14 +238,16 @@ int main(int argc, char **argv) {
 	
         	ros::spinOnce();
 			r.sleep();
+			continue;
     	}
    
 		// send only if buttons are pressed
-		while(fingers_closed) {
+		while(ros::ok() && fingers_closing) {
 			ROS_INFO("Fingers closed\n"); 
 			ROS_INFO("Finger1->%f\n", finger_1);
 			ROS_INFO("Finger2->%f\n", finger_2);
-			if (finger_1 <= 6600 && finger_2 >= 6600) {
+			if (finger_1 <= 6600 && finger_2 <= 6600) {
+				ROS_INFO("Closing fingers\n");
 				finger_1 += 600;
 		    	finger_2 += 600;
 				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
@@ -288,6 +255,16 @@ int main(int argc, char **argv) {
 	
         	ros::spinOnce();
 			r.sleep();
+			continue;
+    	}
+
+    	if (ros::ok() && homingArm) {
+    		segbot_arm_manipulation::homeArm(n);
+    		homingArm = false;
+
+    		ros::spinOnce();
+    		r.sleep();
+    		continue;
     	}
    
     	ros::spinOnce();
