@@ -112,7 +112,6 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
         fingers_changed = true;
     else {
         fingers_changed = false;
-        return;
     }
 
     if (fully_open_button != fully_close_button && (slowly_close_button == 0 && slowly_open_button == 0)) {
