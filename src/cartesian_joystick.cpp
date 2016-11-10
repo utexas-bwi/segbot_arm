@@ -60,17 +60,17 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	linear_y = 0.6 * joy->axes[0]; //left axis stick U/D
     linear_z = -0.6 * (joy->axes[2] - joy->axes[5]); //left trigger (up) - right trigger (down)
 
-    angular_x = 0.4 * joy->axes[3]; //right axis stick L/R
-    angular_y = 0.6 * joy->axes[4]; //right axis stick U/D
+    angular_x = 0.6 * joy->axes[4]; //right axis stick L/R
+    angular_y = 0.6 * joy->axes[3]; //right axis stick U/D
     angular_z = -0.6 * (joy->buttons[4] - joy->buttons[5]); //left back button (up) - right back button (down)
 
-    if (joy->buttons[2] != joy->buttons[1]) {
+    if (joy->buttons[2] != joy->buttons[1] && (joy->buttons[3] == 0 && joy->buttons[0] == 0)) {
 	    if (joy->buttons[2] != 0) fingers_opening_fully = true;
 	    else fingers_closing_fully = true;
-     }
+    }
 
     //100 is open, 7500 is closed
-    if (joy->buttons[3] != joy->buttons[0]) { //if only one button pressed
+    if (joy->buttons[3] != joy->buttons[0] && (joy->buttons[2] == 0 && joy->buttons[1] == 0)) { //if only one button pressed
         if (joy->buttons[3] != 0) {
 	        fingers_opening = true;
 	        fingers_closing = false;
@@ -99,8 +99,8 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
     if((joy->axes[2] - joy->axes[5]) < 0.2 && (joy->axes[2] - joy->axes[5]) > -0.2) linear_z = 0;  //make it 0
 
 	 // noise for angular 
-    if(joy->axes[3] < 0.2 && joy->axes[3] > -0.2) angular_x = 0; //make it 0
-    if(joy->axes[4] < 0.2 && joy->axes[4] > -0.2) angular_y = 0; //make it 0
+    if(joy->axes[4] < 0.2 && joy->axes[4] > -0.2) angular_x = 0; //make it 0
+    if(joy->axes[3] < 0.2 && joy->axes[3] > -0.2) angular_y = 0; //make it 0
     if((joy->buttons[4] - joy->buttons[5]) < 0.2 && (joy->buttons[4] - joy->buttons[5]) > -0.2) angular_z = 0;  //make it 0
 
 }
