@@ -75,8 +75,8 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	int slowly_close_button = joy->buttons[12]; // RIGHT (4 Direction Button)
 
 	// To switch between arm and base
-	int switch_mode_button1 = joy->buttons[7]; 
-	int switch_mode_button2 = joy->buttons[8];
+	int switch_mode_button1 = joy->buttons[6]; 
+	int switch_mode_button2 = joy->buttons[7];
 	
 
 	int home_button = joy->buttons[8]; // home button - for homing the arm
