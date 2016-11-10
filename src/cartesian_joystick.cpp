@@ -20,6 +20,8 @@
 #include <segbot_arm_manipulation/arm_utils.h>
 
 #include <sensor_msgs/Joy.h>
+#include "bwi_services/SpeakMessage.h"
+
 
 #define NUM_JOINTS 8 //6+2 for the arm
 
@@ -37,10 +39,10 @@ bool fingers_opening;
 bool fingers_closing;
 bool fingers_opening_fully;
 bool fingers_closing_fully;
-
 bool fingers_changed;
-
 bool homingArm;
+bool mode_changed; 
+
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -62,10 +64,20 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
     //joy->button[3] = A -- fingers opening slowly
     //joy->button[0] = Y -- fingers closing slowly
 
-	int fully_open_button = joy->buttons[2]; // X
-	int fully_close_button = joy->buttons[1]; // B
-	int slowly_close_button = joy->buttons[3]; // A
-	int slowly_open_button = joy->buttons[0]; // Y
+	// int fully_open_button = joy->buttons[2]; // X
+	// int fully_close_button = joy->buttons[1]; // B
+	// int slowly_close_button = joy->buttons[3]; // A
+	// int slowly_open_button = joy->buttons[0]; // Y
+
+	int fully_open_button = joy->buttons[13]; // UP (4 Direction Button)
+	int fully_close_button = joy->buttons[14]; // DOWN (4 Direction Button)
+	int slowly_open_button = joy->buttons[11]; // LEFT (4 Direction Button)
+	int slowly_close_button = joy->buttons[12]; // RIGHT (4 Direction Button)
+
+	// To switch between arm and base
+	int switch_mode_button1 = joy->buttons[7]; 
+	int switch_mode_button2 = joy->buttons[8];
+	
 
 	int home_button = joy->buttons[8]; // home button - for homing the arm
 
@@ -79,6 +91,12 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	float angular_x_input = joy->axes[4]; //right axis stick L/R
 	float angular_y_input = joy->axes[3]; //right axis stick U/D
 	float angular_z_input = joy->buttons[4] - joy->buttons[5]; //left back button (up) - right back button (down)
+
+
+	if(switch_mode_button1 != 0 && switch_mode_button2 != 0){
+		mode_changed = true;
+		return;
+	}
 
 	//remove all noise
 	if(linear_x_input < 0.2 && linear_x_input > -0.2) linear_x = 0; //make it 0
@@ -184,6 +202,9 @@ int main(int argc, char **argv) {
 	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, joy_cb);
   
     pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+    ros::ServiceClient speak_message_client = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");
+
+
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
@@ -200,7 +221,7 @@ int main(int argc, char **argv) {
 	geometry_msgs::TwistStamped velocityMsg;
 	while (ros::ok()){
 		ROS_INFO("Entered First While");
-    	while (ros::ok() && (!fingers_changed) && (!homingArm)) {
+    	while (ros::ok() && (!fingers_changed) && (!homingArm) && (!mode_changed)) {
 
     		ros::spinOnce();
     		r.sleep();
@@ -237,8 +258,22 @@ int main(int argc, char **argv) {
     		//ros::spinOnce();
     		//r.sleep();
 	   	
+
  	    }
-	
+
+		
+ 	    if(ros::ok() && mode_changed){
+
+ 	        bwi_services::SpeakMessage speak_srv;
+    		speak_srv.request.message = "Switching Mode";
+    		speak_message_client.call(speak_srv);
+    		mode_changed = false;
+
+    		ros::spinOnce();
+    		r.sleep();
+			continue;
+ 	    }
+
 		if (ros::ok() && fingers_closing_fully) {
 			ROS_INFO("Fingers fully closed\n"); 
 			finger_1 = 7200;
