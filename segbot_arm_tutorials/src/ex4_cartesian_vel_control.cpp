@@ -18,6 +18,7 @@
 
 //our own arm library 
 #include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/arm_positions_db.h>
 
 
 
@@ -146,14 +147,28 @@ int main(int argc, char **argv) {
 	//listen for arm data
 	listenForArmData();
 
-	//close fingers and "home" the arm
-	pressEnter("Press [Enter] to start");
+
+	//load database of joint- and tool-space positions
+	std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
+	std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
+	
+	ArmPositionDB positionDB(j_pos_filename, c_pos_filename);
+
+
+	//move the arm to a pose using MoveIt
+	pressEnter("Press [Enter] to move the arm using moveit");
+	geometry_msgs::PoseStamped out_of_view_pose = positionDB.getToolPositionStamped("side_view","/mico_link_base");
+				
+	//now go to the pose
+	segbot_arm_manipulation::moveToPoseMoveIt(n,out_of_view_pose);
+	
+	pressEnter("Press [Enter] to try cartesian vel. control");
 	
 	//construct message
 	geometry_msgs::TwistStamped velocityMsg;
-	velocityMsg.twist.linear.x = 0.0;
+	velocityMsg.twist.linear.x = 0.2;
 	velocityMsg.twist.linear.y = 0.0;
-	velocityMsg.twist.linear.z = 0.2; 
+	velocityMsg.twist.linear.z = 0.0; 
 	velocityMsg.twist.angular.x = 0.0;
 	velocityMsg.twist.angular.y = 0.0;
 	velocityMsg.twist.angular.z = 0.0;
@@ -180,7 +195,7 @@ int main(int argc, char **argv) {
 	}
 	
 	
-	velocityMsg.twist.linear.z = -0.2;
+	velocityMsg.twist.linear.x = -0.2;
 	
 	elapsed_time = 0.0;
 	while (ros::ok()){
@@ -200,7 +215,7 @@ int main(int argc, char **argv) {
 	
 	
 	//publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
-	velocityMsg.twist.linear.z = 0.0; 
+	velocityMsg.twist.linear.x = 0.0; 
 	pub_velocity.publish(velocityMsg);
 
 	
