@@ -1,0 +1,14 @@
+<launch>
+  <node name="cartesian_joystick" pkg="joystick_bwi" type="joystick_bwi" output="screen" />
+  <node name="joy_node" pkg="joy" type="joy" />
+  <node name="speak_message_service" pkg="bwi_services" type="speak_message_service" >
+     <param name="speed" value="160" type="int" />
+     <param name="voice" value="default" type="str" />
+     <param name="pitch" value="50" type="int" />
+  </node>
+</launch>
+  
+
+
+
+
