@@ -83,6 +83,7 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 
 	float positive_multiplier = 0.6;
 	float negative_multiplier = -0.6;
+	float lower_negative_multiplier = -0.8;
 
 	float linear_x_input = joy->axes[1]; //left axis stick L/R
 	float linear_y_input = joy->axes[0]; //left axis stick U/D
@@ -115,7 +116,7 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
     	else angular_y = positive_multiplier * angular_y_input;
 
     if(angular_z_input < 0.2 && angular_z_input > -0.2) angular_z = 0;  //make it 0
-    	else angular_z = negative_multiplier * angular_z_input;
+    	else angular_z = lower_negative_multiplier * angular_z_input;
 
 
     // if (joy->buttons[2] != joy->buttons[1] && (joy->buttons[3] == 0 && joy->buttons[0] == 0)) {
