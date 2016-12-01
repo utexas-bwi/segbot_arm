@@ -6,7 +6,7 @@ echo Recording data. Press Ctrl-C when recording is completed
 (cd /home/users/fri/lafd_ws/src/joystick_bwi/bagfiles/joint_states && rosbag record joint_states) &
 (cd /home/users/fri/lafd_ws/src/joystick_bwi/bagfiles/tool_position && rosbag record mico_arm_driver/out/tool_position) &
 (cd /home/users/fri/lafd_ws/src/joystick_bwi/bagfiles/point_cloud && rosbag record /xtion_camera/depth_registered/points) & 
-(cd /home/users/fri/lafd_ws/src/joystick_bwi/bagfiles/xtion_camera/images && rosrun image_view image_saver image:=/xtion_camera/rgb/image_raw)
+(cd /home/users/fri/lafd_ws/src/joystick_bwi/bagfiles/xtion_camera && rosrun image_view image_saver image:=/xtion_camera/rgb/image_raw)
 
 
 read -rsp $'Press any key to continue...\n' -n1 key
@@ -29,6 +29,6 @@ for i in $(ls *.bag); do rostopic echo -b $i -p mico_arm_driver/out/tool_positio
 
 # point cloud
 cd /home/users/fri/lafd_ws/src/joystick_bwi/bagfiles/point_cloud
-for i in $(ls *.bag); do rosrun pcl_ros bag_to_pcd $i /xtion_camera/depth_registered/points /home/users/fri/lafd_ws/src/joystick_bwi/bagfiles/point_cloud/point_cloud_files; done
+for i in $(ls *.bag); do rosrun pcl_ros bag_to_pcd $i /xtion_camera/depth_registered/points /home/users/fri/lafd_ws/src/joystick_bwi/bagfiles/point_cloud; done
 
 echo Converting completed.
