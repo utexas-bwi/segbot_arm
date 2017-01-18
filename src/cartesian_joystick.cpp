@@ -25,7 +25,7 @@
 
 #define NUM_JOINTS 8 //6+2 for the arm
 
-//globs variable for joystick
+//global variables for joystick values
 float linear_x;
 float linear_y;
 float linear_z;
@@ -59,15 +59,9 @@ void sig_handler(int sig) {
 void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 
 	//joy->button[2] = X -- fingers fully opened
-    //joy->button[1] = B -- fingers fully closed
-
-    //joy->button[3] = A -- fingers opening slowly
-    //joy->button[0] = Y -- fingers closing slowly
-
-	// int fully_open_button = joy->buttons[2]; // X
-	// int fully_close_button = joy->buttons[1]; // B
-	// int slowly_close_button = joy->buttons[3]; // A
-	// int slowly_open_button = joy->buttons[0]; // Y
+  //joy->button[1] = B -- fingers fully closed
+  //joy->button[3] = A -- fingers opening slowly
+  //joy->button[0] = Y -- fingers closing slowly
 
 	int fully_open_button = joy->buttons[13]; // UP (4 Direction Button)
 	int fully_close_button = joy->buttons[14]; // DOWN (4 Direction Button)
@@ -77,7 +71,6 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	// To switch between arm and base
 	int switch_mode_button1 = joy->buttons[6]; 
 	int switch_mode_button2 = joy->buttons[7];
-	
 
 	int home_button = joy->buttons[8]; // home button - for homing the arm
 
@@ -93,7 +86,6 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	float angular_y_input = joy->axes[3]; //right axis stick U/D
 	float angular_z_input = joy->buttons[4] - joy->buttons[5]; //left back button (up) - right back button (down)
 
-
 	if(switch_mode_button1 != 0 && switch_mode_button2 != 0){
 		mode_changed = true;
 		return;
@@ -103,29 +95,23 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	if(linear_x_input < 0.2 && linear_x_input > -0.2) linear_x = 0; //make it 0
 		else linear_x = positive_multiplier * linear_x_input; 
 
-    if(linear_y_input < 0.2 && linear_y_input > -0.2) linear_y = 0; //make it 0
+  if(linear_y_input < 0.2 && linear_y_input > -0.2) linear_y = 0; //make it 0
     	else linear_y = positive_multiplier * linear_y_input;
 
-    if(linear_z_input < 0.2 && linear_z_input > -0.2) linear_z = 0;  //make it 0
+  if(linear_z_input < 0.2 && linear_z_input > -0.2) linear_z = 0;  //make it 0
     	else linear_z = negative_multiplier * linear_z_input;
 
-    if(angular_x_input < 0.2 && angular_x_input > -0.2) angular_x = 0; //make it 0
+  if(angular_x_input < 0.2 && angular_x_input > -0.2) angular_x = 0; //make it 0
     	else angular_x = positive_multiplier * angular_x_input;
 
-    if(angular_y_input < 0.2 && angular_y_input > -0.2) angular_y = 0; //make it 0
+  if(angular_y_input < 0.2 && angular_y_input > -0.2) angular_y = 0; //make it 0
     	else angular_y = positive_multiplier * angular_y_input;
 
-    if(angular_z_input < 0.2 && angular_z_input > -0.2) angular_z = 0;  //make it 0
+  if(angular_z_input < 0.2 && angular_z_input > -0.2) angular_z = 0;  //make it 0
     	else angular_z = lower_negative_multiplier * angular_z_input;
 
 
-    // if (joy->buttons[2] != joy->buttons[1] && (joy->buttons[3] == 0 && joy->buttons[0] == 0)) {
-	   //  if (joy->buttons[2] != 0) fingers_opening_fully = true;
-	   //  else fingers_closing_fully = true;
-    // }
-
     //100 is open, 7200 is closed
-
     // if any of the finger buttons is pressed
     if (slowly_open_button != 0 || slowly_close_button != 0 || fully_open_button != 0 || fully_close_button != 0)
         fingers_changed = true;
@@ -139,8 +125,8 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	    else 
 	    	fingers_closing_fully = true;
     } else {
-    	fingers_opening_fully = false;
-    	fingers_closing_fully = false;
+    	  fingers_opening_fully = false;
+    	  fingers_closing_fully = false;
     }
 
     //if only one button pressed
@@ -149,12 +135,12 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	        fingers_opening = true;
 	        fingers_closing = false;
         } else {
-           fingers_opening = false;
-	       fingers_closing = true;
+            fingers_opening = false;
+	          fingers_closing = true;
         }
     } else {
-       fingers_opening = false;
-	   fingers_closing = false;
+        fingers_opening = false;
+	      fingers_closing = false;
     }
 
     if (home_button != 0)
@@ -202,10 +188,8 @@ int main(int argc, char **argv) {
 	// joy is the name of the topic the joystick publishes to
 	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, joy_cb);
   
-    pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
-    ros::ServiceClient speak_message_client = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");
-
-
+  pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+  ros::ServiceClient speak_message_client = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
@@ -221,59 +205,48 @@ int main(int argc, char **argv) {
 	
 	geometry_msgs::TwistStamped velocityMsg;
 	while (ros::ok()){
-		ROS_INFO("Entered First While");
-    	while (ros::ok() && (!fingers_changed) && (!homingArm) && (!mode_changed)) {
+    while (ros::ok() && (!fingers_changed) && (!homingArm) && (!mode_changed)) {
+    	ros::spinOnce();
+    	r.sleep();
 
-    		ros::spinOnce();
-    		r.sleep();
+    	bool linearZero = (linear_x == 0) && (linear_y == 0) && (linear_z == 0);
+    	bool angularZero = (angular_x == 0) && (angular_y == 0) && (angular_z == 0);
 
-	   		ROS_INFO("Entered 3 While");
-
-    		bool linearZero = (linear_x == 0) && (linear_y == 0) && (linear_z == 0);
-    		bool angularZero = (angular_x == 0) && (angular_y == 0) && (angular_z == 0);
-
-    		//construct message
+    	//construct message
 			velocityMsg.twist.linear.x = linear_x;
 			velocityMsg.twist.linear.y = linear_y;
-    		velocityMsg.twist.linear.z = linear_z; 
+    	velocityMsg.twist.linear.z = linear_z; 
     
-    		velocityMsg.twist.angular.x = angular_x;
+    	velocityMsg.twist.angular.x = angular_x;
 			velocityMsg.twist.angular.y = angular_y;
 			velocityMsg.twist.angular.z = angular_z;
 
-			ROS_INFO("Linear x: %f\n", linear_x);
-			ROS_INFO("Linear y: %f\n", linear_y);
-			ROS_INFO("Linear z: %f\n", linear_z);
-			ROS_INFO("Angular x: %f\n", angular_x);
-			ROS_INFO("Angular y: %f\n", angular_y);
-			ROS_INFO("Angular z: %f\n", angular_z);
+			//ROS_INFO("Linear x: %f\n", linear_x);
+			//ROS_INFO("Linear y: %f\n", linear_y);
+			//ROS_INFO("Linear z: %f\n", linear_z);
+			//ROS_INFO("Angular x: %f\n", angular_x);
+			//ROS_INFO("Angular y: %f\n", angular_y);
+			//ROS_INFO("Angular z: %f\n", angular_z);
 
 			if (allZeros(velocityMsg))
-				continue;
+			 	continue;
 		
 			//publish velocity message
 			//ROS_INFO("Publishing Velocity Message");
 			pub_velocity.publish(velocityMsg);
-		 
-    		//collect messages
-    		//ros::spinOnce();
-    		//r.sleep();
-	   	
-
- 	    }
+ 	  }
 
 		
- 	    if(ros::ok() && mode_changed){
+ 	  /*if (ros::ok() && mode_changed){
+      bwi_services::SpeakMessage speak_srv;
+    	speak_srv.request.message = "Switching Mode";
+    	speak_message_client.call(speak_srv);
+    	mode_changed = false;
 
- 	        bwi_services::SpeakMessage speak_srv;
-    		speak_srv.request.message = "Switching Mode";
-    		speak_message_client.call(speak_srv);
-    		mode_changed = false;
-
-    		ros::spinOnce();
-    		r.sleep();
+    	ros::spinOnce();
+    	r.sleep();
 			continue;
- 	    }
+ 	  }*/
 
 		if (ros::ok() && fingers_closing_fully) {
 			ROS_INFO("Fingers fully closed\n"); 
@@ -283,7 +256,7 @@ int main(int argc, char **argv) {
 			fingers_closing_fully = false;
 
 			ros::spinOnce();
-    		r.sleep();
+    	r.sleep();
 			continue;
 		}
 	
@@ -295,7 +268,7 @@ int main(int argc, char **argv) {
 			fingers_opening_fully = false;
 
 			ros::spinOnce();
-    		r.sleep();
+    	r.sleep();
 			continue;
 		}
 	
@@ -307,14 +280,14 @@ int main(int argc, char **argv) {
 		 	if (finger_1 >= 700 && finger_2 >= 700) {
 		 		ROS_INFO("Opening fingers\n");
 				finger_1 -= 600;
-		    	finger_2 -= 600;
+		    finger_2 -= 600;
 				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
 		 	}
 	
-        	ros::spinOnce();
+      ros::spinOnce();
 			r.sleep();
 			continue;
-    	}
+    }
    
 		// send only if buttons are pressed
 		while(ros::ok() && fingers_closing) {
@@ -324,42 +297,42 @@ int main(int argc, char **argv) {
 			if (finger_1 <= 6600 && finger_2 <= 6600) {
 				ROS_INFO("Closing fingers\n");
 				finger_1 += 600;
-		    	finger_2 += 600;
+		    finger_2 += 600;
 				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
 			}
 	
-        	ros::spinOnce();
+      ros::spinOnce();
 			r.sleep();
 			continue;
-    	}
+    }
 
-    	if (ros::ok() && homingArm) {
-    		ROS_INFO("Homing arm\n");
-    		segbot_arm_manipulation::homeArm(n);
+    if (ros::ok() && homingArm) {
+    	ROS_INFO("Homing arm\n");
+    	segbot_arm_manipulation::homeArm(n);
 
-    		finger_1 = 7200;
+    	finger_1 = 7200;
 			finger_2 = 7200;
 			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
 
-    		homingArm = false;
+    	homingArm = false;
 
-    		ros::spinOnce();
-    		r.sleep();
-    		continue;
-    	}
-   
     	ros::spinOnce();
     	r.sleep();
-   	}
+    	continue;
+    }
+   
+    ros::spinOnce();
+    r.sleep();
+  }
 	
 	
 //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
-	ROS_INFO("Out of While Loop");
+	ROS_INFO("Ending");
 	velocityMsg.twist.linear.x = 0;
-  	velocityMsg.twist.linear.y = 0;
-  	velocityMsg.twist.linear.z = 0; 
-  	velocityMsg.twist.angular.x = 0;
-  	velocityMsg.twist.angular.y = 0;
+  velocityMsg.twist.linear.y = 0;
+  velocityMsg.twist.linear.z = 0; 
+  velocityMsg.twist.angular.x = 0;
+  velocityMsg.twist.angular.y = 0;
 	velocityMsg.twist.angular.z = 0;
 
 	pub_velocity.publish(velocityMsg);
