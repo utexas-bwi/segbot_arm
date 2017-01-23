@@ -41,6 +41,9 @@ bool fingers_opening_fully;
 bool fingers_closing_fully;
 bool fingers_changed;
 bool homingArm;
+
+bool emergency_brake;
+
 bool mode_changed;
 
 bool ARM_MODE = false;
@@ -143,10 +146,14 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	      fingers_closing = false;
     }
 
-    if (home_button != 0)
+    if (home_button != 0) {
     	homingArm = true;
-    else
+      emergency_brake = true;
+    } else {
     	homingArm = false;
+      emergency_brake = false;
+    }
+    
 }
 
 // Blocking call for user input
@@ -173,7 +180,7 @@ bool allZeros(geometry_msgs::TwistStamped velocityMsg) {
 				&& velocityMsg.twist.angular.z == 0);
 }
 
-void publishArm(ros::Publisher pub_velocity) {
+void publishArm(ros::Publisher pub_arm) {
 	geometry_msgs::TwistStamped velocityMsg;
   //construct message
 	velocityMsg.twist.linear.x = linear_x;
@@ -196,7 +203,7 @@ void publishArm(ros::Publisher pub_velocity) {
 		
 	//publish velocity message
 	//ROS_INFO("Publishing Velocity Message");
-	pub_velocity.publish(velocityMsg);
+	pub_arm.publish(velocityMsg);
 }
 
 void publishFingers(ros::Rate r) {
@@ -264,9 +271,32 @@ void homeArm(ros::NodeHandle n) {
   homingArm = false;
 }
 
-void publishBase() {
-  ROS_INFO("BASE\n");
+bool allZeros(geometry_msgs::Twist base_msg) {
+	return (base_msg.linear.x == 0 && base_msg.linear.y == 0 
+				&& base_msg.linear.z == 0
+			&& base_msg.angular.x == 0 && base_msg.angular.y == 0 
+				&& base_msg.angular.z == 0);
+}
 
+void publishBase(ros::Publisher pub_base) {
+  ROS_INFO("BASE\n");
+  geometry_msgs::Twist base_msg;
+  base_msg.linear.x = linear_y;
+  base_msg.angular.z = linear_x;
+	
+  if (allZeros(base_msg))
+	  return;
+
+  pub_base.publish(base_msg);
+}
+
+void emergency_braking(ros::Publisher pub_base) {
+  ROS_INFO("Braking.");
+  geometry_msgs::Twist base_msg;
+  base_msg.linear.x = 0;
+  base_msg.angular.z = 0;
+
+  pub_base.publish(base_msg);
 }
 
 void switchMode(ros::ServiceClient speak_message_client) {
@@ -290,7 +320,8 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 	ros::Subscriber joy_sub;
 
-	ros::Publisher pub_velocity;
+	ros::Publisher pub_arm;
+  ros::Publisher pub_base;
 
 	//construction the action request
 	jaco_msgs::SetFingersPositionGoal goalFinger;
@@ -298,7 +329,8 @@ int main(int argc, char **argv) {
 	// joy is the name of the topic the joystick publishes to
 	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, joy_cb);
   
-  pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+  pub_arm = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+  pub_base = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
   ros::ServiceClient speak_message_client = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");
 
 	//register ctrl-c
@@ -320,12 +352,12 @@ int main(int argc, char **argv) {
     	r.sleep();
 
       if (mode == ARM_MODE) 
-        publishArm(pub_velocity);
+        publishArm(pub_arm);
  	    if (mode == BASE_MODE)
-        publishBase();
+        publishBase(pub_base);
     }
 
-	  if (ros::ok()) {
+	  if (ros::ok() && mode == ARM_MODE) {
       if (mode_changed)
         switchMode(speak_message_client);
       else if (fingers_closing_fully || fingers_opening_fully || fingers_opening || fingers_closing)
@@ -337,20 +369,37 @@ int main(int argc, char **argv) {
     	r.sleep();
 			continue;
     }
+
+    if (ros::ok() && mode == BASE_MODE) {
+      if (emergency_brake)
+        emergency_braking(pub_base);
+
+      ros::spinOnce();
+    	r.sleep();
+			continue; 
+    }
   }
 	
 	
-  //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
+  //publish 0 velocity command -- otherwise arm/base will continue moving with the last command for 0.25 seconds
 	ROS_INFO("Ending");
-	geometry_msgs::TwistStamped velocityMsg;
-	velocityMsg.twist.linear.x = 0;
-  velocityMsg.twist.linear.y = 0;
-  velocityMsg.twist.linear.z = 0; 
-  velocityMsg.twist.angular.x = 0;
-  velocityMsg.twist.angular.y = 0;
-	velocityMsg.twist.angular.z = 0;
+	geometry_msgs::TwistStamped arm_msg;
+	arm_msg.twist.linear.x = 0;
+  arm_msg.twist.linear.y = 0;
+  arm_msg.twist.linear.z = 0; 
+  arm_msg.twist.angular.x = 0;
+  arm_msg.twist.angular.y = 0;
+	arm_msg.twist.angular.z = 0;
+	pub_arm.publish(arm_msg);
 
-	pub_velocity.publish(velocityMsg);
+	geometry_msgs::Twist base_msg;
+  base_msg.linear.x = 0;
+  base_msg.linear.y = 0;
+  base_msg.linear.z = 0;
+  base_msg.angular.x = 0;
+  base_msg.angular.y = 0;
+  base_msg.angular.z = 0;
+  pub_base.publish(base_msg);
 
 	//the end
 	ros::shutdown();
