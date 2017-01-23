@@ -145,7 +145,6 @@ include_directories(
 # add_dependencies(joystick_bwi ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(teleop_turtle_joy src/teleop_turtle_joy.cpp)
 add_executable(cartesian_joystick src/cartesian_joystick.cpp)
 
 ## Add cmake target dependencies of the executable
@@ -153,9 +152,6 @@ add_executable(cartesian_joystick src/cartesian_joystick.cpp)
 # add_dependencies(joystick_bwi_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(teleop_turtle_joy 
-   ${catkin_LIBRARIES}
- )
 target_link_libraries(cartesian_joystick
    ${catkin_LIBRARIES}
  )

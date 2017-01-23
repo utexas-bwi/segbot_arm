@@ -173,7 +173,8 @@ bool allZeros(geometry_msgs::TwistStamped velocityMsg) {
 				&& velocityMsg.twist.angular.z == 0);
 }
 
-void publishArm() {
+void publishArm(ros::Publisher pub_velocity) {
+	geometry_msgs::TwistStamped velocityMsg;
   //construct message
 	velocityMsg.twist.linear.x = linear_x;
 	velocityMsg.twist.linear.y = linear_y;
@@ -198,7 +199,7 @@ void publishArm() {
 	pub_velocity.publish(velocityMsg);
 }
 
-void publishFingers() {
+void publishFingers(ros::Rate r) {
 		if (fingers_closing_fully) {
 			ROS_INFO("Fingers fully closed\n"); 
 			finger_1 = 7200;
@@ -252,7 +253,7 @@ void publishFingers() {
     }
 }
 
-void homeArm() {
+void homeArm(ros::NodeHandle n) {
   ROS_INFO("Homing arm\n");
   segbot_arm_manipulation::homeArm(n);
 
@@ -268,7 +269,7 @@ void publishBase() {
 
 }
 
-void switchMode() {
+void switchMode(ros::ServiceClient speak_message_client) {
   bwi_services::SpeakMessage speak_srv;
   speak_srv.request.message = "Switching mode. ";
   if (mode == ARM_MODE) {
@@ -276,7 +277,7 @@ void switchMode() {
     speak_srv.request.message += "Now in base mode.";
   } else {
     mode = ARM_MODE;
-    speak_srv.request.message += "Now in arm mode."
+    speak_srv.request.message += "Now in arm mode.";
   }
   speak_message_client.call(speak_srv);
   mode_changed = false;
@@ -312,7 +313,6 @@ int main(int argc, char **argv) {
 	double pub_rate = 40.0; //we publish at 40 hz
 	ros::Rate r(pub_rate);
 	
-	geometry_msgs::TwistStamped velocityMsg;
 	while (ros::ok()) {
     while (ros::ok() && (!fingers_changed) && (!homingArm) && (!mode_changed)) {
       
@@ -320,18 +320,18 @@ int main(int argc, char **argv) {
     	r.sleep();
 
       if (mode == ARM_MODE) 
-        publishArm();
+        publishArm(pub_velocity);
  	    if (mode == BASE_MODE)
         publishBase();
     }
 
 	  if (ros::ok()) {
-      if (mode_change)
-        switchMode();
+      if (mode_changed)
+        switchMode(speak_message_client);
       else if (fingers_closing_fully || fingers_opening_fully || fingers_opening || fingers_closing)
-        publishFingers();
+        publishFingers(r);
       else if (homingArm)
-        homeArm();
+        homeArm(n);
 
       ros::spinOnce();
     	r.sleep();
@@ -342,6 +342,7 @@ int main(int argc, char **argv) {
 	
   //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
 	ROS_INFO("Ending");
+	geometry_msgs::TwistStamped velocityMsg;
 	velocityMsg.twist.linear.x = 0;
   velocityMsg.twist.linear.y = 0;
   velocityMsg.twist.linear.z = 0; 

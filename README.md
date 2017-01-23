@@ -18,5 +18,8 @@ Open fully - 4-direction pad UP
 Close fully - 4-direction pad DOWN
 
 Home arm - Center button
-
 Switch modes - Back + Start buttons
+
+Segway base controls:
+
+
