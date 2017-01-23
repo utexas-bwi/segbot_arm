@@ -41,7 +41,12 @@ bool fingers_opening_fully;
 bool fingers_closing_fully;
 bool fingers_changed;
 bool homingArm;
-bool mode_changed; 
+bool mode_changed;
+
+bool ARM_MODE = false;
+bool BASE_MODE = true;
+
+bool mode = ARM_MODE;
 
 
 //true if Ctrl-C is pressed
@@ -58,15 +63,10 @@ void sig_handler(int sig) {
 // Call back function when joy stick message recieved
 void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 
-	//joy->button[2] = X -- fingers fully opened
-  //joy->button[1] = B -- fingers fully closed
-  //joy->button[3] = A -- fingers opening slowly
-  //joy->button[0] = Y -- fingers closing slowly
-
-	int fully_open_button = joy->buttons[13]; // UP (4 Direction Button)
-	int fully_close_button = joy->buttons[14]; // DOWN (4 Direction Button)
-	int slowly_open_button = joy->buttons[11]; // LEFT (4 Direction Button)
-	int slowly_close_button = joy->buttons[12]; // RIGHT (4 Direction Button)
+	int fully_open_button = joy->buttons[13]; // UP (4-Direction pad)
+	int fully_close_button = joy->buttons[14]; // DOWN (4-Direction pad)
+	int slowly_open_button = joy->buttons[11]; // LEFT (4-Direction pad)
+	int slowly_close_button = joy->buttons[12]; // RIGHT (4-Direction pad)
 
 	// To switch between arm and base
 	int switch_mode_button1 = joy->buttons[6]; 
@@ -173,6 +173,115 @@ bool allZeros(geometry_msgs::TwistStamped velocityMsg) {
 				&& velocityMsg.twist.angular.z == 0);
 }
 
+void publishArm() {
+  //construct message
+	velocityMsg.twist.linear.x = linear_x;
+	velocityMsg.twist.linear.y = linear_y;
+  velocityMsg.twist.linear.z = linear_z; 
+    
+  velocityMsg.twist.angular.x = angular_x;
+	velocityMsg.twist.angular.y = angular_y;
+	velocityMsg.twist.angular.z = angular_z;
+
+	//ROS_INFO("Linear x: %f\n", linear_x);
+	//ROS_INFO("Linear y: %f\n", linear_y);
+	//ROS_INFO("Linear z: %f\n", linear_z);
+	//ROS_INFO("Angular x: %f\n", angular_x);
+	//ROS_INFO("Angular y: %f\n", angular_y);
+	//ROS_INFO("Angular z: %f\n", angular_z);
+
+	if (allZeros(velocityMsg))
+	  return;
+		
+	//publish velocity message
+	//ROS_INFO("Publishing Velocity Message");
+	pub_velocity.publish(velocityMsg);
+}
+
+void publishFingers() {
+		if (fingers_closing_fully) {
+			ROS_INFO("Fingers fully closed\n"); 
+			finger_1 = 7200;
+			finger_2 = 7200;
+			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+			fingers_closing_fully = false;
+      
+      return;
+		}
+	
+		if (fingers_opening_fully) {
+			ROS_INFO("Fingers fully opened\n"); 
+			finger_1 = 100;
+			finger_2 = 100;
+			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+			fingers_opening_fully = false;
+
+			return;
+		}
+	
+		// send only if buttons are pressed
+		while(ros::ok() && fingers_opening) {
+			ROS_INFO("Fingers opened\n");
+			ROS_INFO("Finger1->%f\n", finger_1);
+		 	ROS_INFO("Finger2->%f\n", finger_2);
+		 	if (finger_1 >= 700 && finger_2 >= 700) {
+		 		ROS_INFO("Opening fingers\n");
+				finger_1 -= 600;
+		    finger_2 -= 600;
+				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+		 	}
+	
+      ros::spinOnce();
+			r.sleep();
+    }
+   
+		// send only if buttons are pressed
+		while(ros::ok() && fingers_closing) {
+			ROS_INFO("Fingers closed\n"); 
+			ROS_INFO("Finger1->%f\n", finger_1);
+			ROS_INFO("Finger2->%f\n", finger_2);
+			if (finger_1 <= 6600 && finger_2 <= 6600) {
+				ROS_INFO("Closing fingers\n");
+				finger_1 += 600;
+		    finger_2 += 600;
+				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+			}
+	
+      ros::spinOnce();
+			r.sleep();
+    }
+}
+
+void homeArm() {
+  ROS_INFO("Homing arm\n");
+  segbot_arm_manipulation::homeArm(n);
+
+  finger_1 = 7200;
+	finger_2 = 7200;
+	segbot_arm_manipulation::moveFingers(finger_1, finger_2);
+
+  homingArm = false;
+}
+
+void publishBase() {
+  ROS_INFO("BASE\n");
+
+}
+
+void switchMode() {
+  bwi_services::SpeakMessage speak_srv;
+  speak_srv.request.message = "Switching mode. ";
+  if (mode == ARM_MODE) {
+    mode = BASE_MODE;
+    speak_srv.request.message += "Now in base mode.";
+  } else {
+    mode = ARM_MODE;
+    speak_srv.request.message += "Now in arm mode."
+  }
+  speak_message_client.call(speak_srv);
+  mode_changed = false;
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "cartesian_joystick");
@@ -204,129 +313,34 @@ int main(int argc, char **argv) {
 	ros::Rate r(pub_rate);
 	
 	geometry_msgs::TwistStamped velocityMsg;
-	while (ros::ok()){
+	while (ros::ok()) {
     while (ros::ok() && (!fingers_changed) && (!homingArm) && (!mode_changed)) {
-    	ros::spinOnce();
-    	r.sleep();
-
-    	bool linearZero = (linear_x == 0) && (linear_y == 0) && (linear_z == 0);
-    	bool angularZero = (angular_x == 0) && (angular_y == 0) && (angular_z == 0);
-
-    	//construct message
-			velocityMsg.twist.linear.x = linear_x;
-			velocityMsg.twist.linear.y = linear_y;
-    	velocityMsg.twist.linear.z = linear_z; 
-    
-    	velocityMsg.twist.angular.x = angular_x;
-			velocityMsg.twist.angular.y = angular_y;
-			velocityMsg.twist.angular.z = angular_z;
-
-			//ROS_INFO("Linear x: %f\n", linear_x);
-			//ROS_INFO("Linear y: %f\n", linear_y);
-			//ROS_INFO("Linear z: %f\n", linear_z);
-			//ROS_INFO("Angular x: %f\n", angular_x);
-			//ROS_INFO("Angular y: %f\n", angular_y);
-			//ROS_INFO("Angular z: %f\n", angular_z);
-
-			if (allZeros(velocityMsg))
-			 	continue;
-		
-			//publish velocity message
-			//ROS_INFO("Publishing Velocity Message");
-			pub_velocity.publish(velocityMsg);
- 	  }
-
-		
- 	  /*if (ros::ok() && mode_changed){
-      bwi_services::SpeakMessage speak_srv;
-    	speak_srv.request.message = "Switching Mode";
-    	speak_message_client.call(speak_srv);
-    	mode_changed = false;
-
-    	ros::spinOnce();
-    	r.sleep();
-			continue;
- 	  }*/
-
-		if (ros::ok() && fingers_closing_fully) {
-			ROS_INFO("Fingers fully closed\n"); 
-			finger_1 = 7200;
-			finger_2 = 7200;
-			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
-			fingers_closing_fully = false;
-
-			ros::spinOnce();
-    	r.sleep();
-			continue;
-		}
-	
-		if (ros::ok() && fingers_opening_fully) {
-			ROS_INFO("Fingers fully opened\n"); 
-			finger_1 = 100;
-			finger_2 = 100;
-			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
-			fingers_opening_fully = false;
-
-			ros::spinOnce();
-    	r.sleep();
-			continue;
-		}
-	
-		// send only if buttons are pressed
-		while(ros::ok() && fingers_opening) {
-			ROS_INFO("Fingers opened\n");
-			ROS_INFO("Finger1->%f\n", finger_1);
-		 	ROS_INFO("Finger2->%f\n", finger_2);
-		 	if (finger_1 >= 700 && finger_2 >= 700) {
-		 		ROS_INFO("Opening fingers\n");
-				finger_1 -= 600;
-		    finger_2 -= 600;
-				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
-		 	}
-	
+      
       ros::spinOnce();
-			r.sleep();
-			continue;
-    }
-   
-		// send only if buttons are pressed
-		while(ros::ok() && fingers_closing) {
-			ROS_INFO("Fingers closed\n"); 
-			ROS_INFO("Finger1->%f\n", finger_1);
-			ROS_INFO("Finger2->%f\n", finger_2);
-			if (finger_1 <= 6600 && finger_2 <= 6600) {
-				ROS_INFO("Closing fingers\n");
-				finger_1 += 600;
-		    finger_2 += 600;
-				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
-			}
-	
-      ros::spinOnce();
-			r.sleep();
-			continue;
-    }
-
-    if (ros::ok() && homingArm) {
-    	ROS_INFO("Homing arm\n");
-    	segbot_arm_manipulation::homeArm(n);
-
-    	finger_1 = 7200;
-			finger_2 = 7200;
-			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
-
-    	homingArm = false;
-
-    	ros::spinOnce();
     	r.sleep();
-    	continue;
+
+      if (mode == ARM_MODE) 
+        publishArm();
+ 	    if (mode == BASE_MODE)
+        publishBase();
     }
-   
-    ros::spinOnce();
-    r.sleep();
+
+	  if (ros::ok()) {
+      if (mode_change)
+        switchMode();
+      else if (fingers_closing_fully || fingers_opening_fully || fingers_opening || fingers_closing)
+        publishFingers();
+      else if (homingArm)
+        homeArm();
+
+      ros::spinOnce();
+    	r.sleep();
+			continue;
+    }
   }
 	
 	
-//publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
+  //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
 	ROS_INFO("Ending");
 	velocityMsg.twist.linear.x = 0;
   velocityMsg.twist.linear.y = 0;
