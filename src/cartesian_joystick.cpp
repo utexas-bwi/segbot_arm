@@ -287,16 +287,25 @@ void emergency_braking(ros::Publisher pub_base) {
   pub_base.publish(base_msg);
 }
 
-void switchMode(ros::ServiceClient speak_message_client) {
+void switchMode(ros::ServiceClient speak_message_client, ros::NodeHandle n) {
   bwi_services::SpeakMessage speak_srv;
   speak_srv.request.message = "Switching mode. ";
   if (mode == ARM_MODE) {
+  	
+    bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
+    if (!safe) {
+    	ROS_INFO("Could not switch to base mode. Arm not safe for travel.");
+    	mode_changed = false;
+    	return;
+    }
+
     mode = BASE_MODE;
     ROS_INFO("Now in BASE Mode");
     speak_srv.request.message += "Now in base mode.";
   } else {
     mode = ARM_MODE;
     ROS_INFO("Now in ARM Mode");
+    homeArm(n);
     speak_srv.request.message += "Now in arm mode.";
   }
   speak_message_client.call(speak_srv);
@@ -343,13 +352,13 @@ int main(int argc, char **argv) {
 
 	      if (mode == ARM_MODE) 
 	        publishArm(pub_arm);
-	 	    if (mode == BASE_MODE)
+	 	  if (mode == BASE_MODE)
 	        publishBase(pub_base);
 	    }
 
 	  	if (ros::ok()) {
 	  		if (mode_changed)
-        		switchMode(speak_message_client);
+        		switchMode(speak_message_client, n);
 
       		ros::spinOnce();
     		r.sleep();
