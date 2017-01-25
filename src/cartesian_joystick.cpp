@@ -347,25 +347,32 @@ int main(int argc, char **argv) {
 	        publishBase(pub_base);
 	    }
 
-	  if (ros::ok() && mode == ARM_MODE) {
-      if (mode_changed)
-        switchMode(speak_message_client);
-      else if (fingers_closing_fully || fingers_opening_fully || fingers_opening || fingers_closing)
-        publishFingers(r);
-      else if (homingArm)
-        homeArm(n);
+	  	if (ros::ok()) {
+	  		if (mode_changed)
+        		switchMode(speak_message_client);
 
-      ros::spinOnce();
-    	r.sleep();
+      		ros::spinOnce();
+    		r.sleep();
+			continue; 
+	  	}
+
+	  	if (ros::ok() && mode == ARM_MODE) {
+      		if (fingers_closing_fully || fingers_opening_fully || fingers_opening || fingers_closing)
+        		publishFingers(r);
+      		else if (homingArm)
+        		homeArm(n);
+
+      		ros::spinOnce();
+    		r.sleep();
 			continue;
-    }
+    	}
 
-    if (ros::ok() && mode == BASE_MODE) {
-      if (emergency_brake)
-        emergency_braking(pub_base);
+    	if (ros::ok() && mode == BASE_MODE) {
+    		if (emergency_brake)
+        		emergency_braking(pub_base);
 
-      ros::spinOnce();
-    	r.sleep();
+      		ros::spinOnce();
+    		r.sleep();
 			continue; 
     }
   }
