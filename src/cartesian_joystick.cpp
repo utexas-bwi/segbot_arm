@@ -98,19 +98,19 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	if(linear_x_input < 0.2 && linear_x_input > -0.2) linear_x = 0; //make it 0
 		else linear_x = positive_multiplier * linear_x_input; 
 
-  if(linear_y_input < 0.2 && linear_y_input > -0.2) linear_y = 0; //make it 0
+  	if(linear_y_input < 0.2 && linear_y_input > -0.2) linear_y = 0; //make it 0
     	else linear_y = positive_multiplier * linear_y_input;
 
-  if(linear_z_input < 0.2 && linear_z_input > -0.2) linear_z = 0;  //make it 0
+  	if(linear_z_input < 0.2 && linear_z_input > -0.2) linear_z = 0;  //make it 0
     	else linear_z = negative_multiplier * linear_z_input;
 
-  if(angular_x_input < 0.2 && angular_x_input > -0.2) angular_x = 0; //make it 0
+  	if(angular_x_input < 0.2 && angular_x_input > -0.2) angular_x = 0; //make it 0
     	else angular_x = positive_multiplier * angular_x_input;
 
-  if(angular_y_input < 0.2 && angular_y_input > -0.2) angular_y = 0; //make it 0
+  	if(angular_y_input < 0.2 && angular_y_input > -0.2) angular_y = 0; //make it 0
     	else angular_y = positive_multiplier * angular_y_input;
 
-  if(angular_z_input < 0.2 && angular_z_input > -0.2) angular_z = 0;  //make it 0
+  	if(angular_z_input < 0.2 && angular_z_input > -0.2) angular_z = 0;  //make it 0
     	else angular_z = lower_negative_multiplier * angular_z_input;
 
 
@@ -139,19 +139,19 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	        fingers_closing = false;
         } else {
             fingers_opening = false;
-	          fingers_closing = true;
+	        fingers_closing = true;
         }
     } else {
         fingers_opening = false;
-	      fingers_closing = false;
+	    fingers_closing = false;
     }
 
     if (home_button != 0) {
     	homingArm = true;
-      emergency_brake = true;
+      	emergency_brake = true;
     } else {
     	homingArm = false;
-      emergency_brake = false;
+     	emergency_brake = false;
     }
     
 }
@@ -182,12 +182,11 @@ bool allZeros(geometry_msgs::TwistStamped velocityMsg) {
 
 void publishArm(ros::Publisher pub_arm) {
 	geometry_msgs::TwistStamped velocityMsg;
-  //construct message
+  	//construct message
 	velocityMsg.twist.linear.x = linear_x;
 	velocityMsg.twist.linear.y = linear_y;
-  velocityMsg.twist.linear.z = linear_z; 
-    
-  velocityMsg.twist.angular.x = angular_x;
+ 	velocityMsg.twist.linear.z = linear_z; 
+  	velocityMsg.twist.angular.x = angular_x;
 	velocityMsg.twist.angular.y = angular_y;
 	velocityMsg.twist.angular.z = angular_z;
 
@@ -208,40 +207,32 @@ void publishArm(ros::Publisher pub_arm) {
 
 void publishFingers(ros::Rate r) {
 		if (fingers_closing_fully) {
-			ROS_INFO("Fingers fully closed\n"); 
 			finger_1 = 7200;
 			finger_2 = 7200;
 			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
 			fingers_closing_fully = false;
-      
-      return;
+      		return;
 		}
 	
 		if (fingers_opening_fully) {
-			ROS_INFO("Fingers fully opened\n"); 
 			finger_1 = 100;
 			finger_2 = 100;
 			segbot_arm_manipulation::moveFingers(finger_1, finger_2);
 			fingers_opening_fully = false;
-
 			return;
 		}
 	
 		// send only if buttons are pressed
 		while(ros::ok() && fingers_opening) {
-			ROS_INFO("Fingers opened\n");
-			ROS_INFO("Finger1->%f\n", finger_1);
-		 	ROS_INFO("Finger2->%f\n", finger_2);
 		 	if (finger_1 >= 700 && finger_2 >= 700) {
-		 		ROS_INFO("Opening fingers\n");
 				finger_1 -= 600;
-		    finger_2 -= 600;
+		    	finger_2 -= 600;
 				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
 		 	}
 	
-      ros::spinOnce();
+      		ros::spinOnce();
 			r.sleep();
-    }
+    	}
    
 		// send only if buttons are pressed
 		while(ros::ok() && fingers_closing) {
@@ -251,23 +242,21 @@ void publishFingers(ros::Rate r) {
 			if (finger_1 <= 6600 && finger_2 <= 6600) {
 				ROS_INFO("Closing fingers\n");
 				finger_1 += 600;
-		    finger_2 += 600;
+		    	finger_2 += 600;
 				segbot_arm_manipulation::moveFingers(finger_1, finger_2);
 			}
 	
-      ros::spinOnce();
+      		ros::spinOnce();
 			r.sleep();
-    }
+    	}
 }
 
 void homeArm(ros::NodeHandle n) {
   ROS_INFO("Homing arm\n");
   segbot_arm_manipulation::homeArm(n);
-
   finger_1 = 7200;
-	finger_2 = 7200;
-	segbot_arm_manipulation::moveFingers(finger_1, finger_2);
-
+  finger_2 = 7200;
+  segbot_arm_manipulation::moveFingers(finger_1, finger_2);
   homingArm = false;
 }
 
@@ -279,7 +268,6 @@ bool allZeros(geometry_msgs::Twist base_msg) {
 }
 
 void publishBase(ros::Publisher pub_base) {
-  ROS_INFO("BASE\n");
   geometry_msgs::Twist base_msg;
   base_msg.linear.x = linear_y;
   base_msg.angular.z = linear_x;
@@ -304,9 +292,11 @@ void switchMode(ros::ServiceClient speak_message_client) {
   speak_srv.request.message = "Switching mode. ";
   if (mode == ARM_MODE) {
     mode = BASE_MODE;
+    ROS_INFO("Now in BASE Mode");
     speak_srv.request.message += "Now in base mode.";
   } else {
     mode = ARM_MODE;
+    ROS_INFO("Now in ARM Mode");
     speak_srv.request.message += "Now in arm mode.";
   }
   speak_message_client.call(speak_srv);
@@ -321,7 +311,7 @@ int main(int argc, char **argv) {
 	ros::Subscriber joy_sub;
 
 	ros::Publisher pub_arm;
-  ros::Publisher pub_base;
+  	ros::Publisher pub_base;
 
 	//construction the action request
 	jaco_msgs::SetFingersPositionGoal goalFinger;
@@ -329,9 +319,9 @@ int main(int argc, char **argv) {
 	// joy is the name of the topic the joystick publishes to
 	joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, joy_cb);
   
-  pub_arm = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
-  pub_base = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
-  ros::ServiceClient speak_message_client = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");
+  	pub_arm = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+  	pub_base = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+  	ros::ServiceClient speak_message_client = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
@@ -346,16 +336,16 @@ int main(int argc, char **argv) {
 	ros::Rate r(pub_rate);
 	
 	while (ros::ok()) {
-    while (ros::ok() && (!fingers_changed) && (!homingArm) && (!mode_changed)) {
-      
-      ros::spinOnce();
-    	r.sleep();
+	    while (ros::ok() && (!fingers_changed) && (!homingArm) && (!mode_changed)) {
+	      
+	      ros::spinOnce();
+	    	r.sleep();
 
-      if (mode == ARM_MODE) 
-        publishArm(pub_arm);
- 	    if (mode == BASE_MODE)
-        publishBase(pub_base);
-    }
+	      if (mode == ARM_MODE) 
+	        publishArm(pub_arm);
+	 	    if (mode == BASE_MODE)
+	        publishBase(pub_base);
+	    }
 
 	  if (ros::ok() && mode == ARM_MODE) {
       if (mode_changed)
@@ -385,21 +375,21 @@ int main(int argc, char **argv) {
 	ROS_INFO("Ending");
 	geometry_msgs::TwistStamped arm_msg;
 	arm_msg.twist.linear.x = 0;
-  arm_msg.twist.linear.y = 0;
-  arm_msg.twist.linear.z = 0; 
-  arm_msg.twist.angular.x = 0;
-  arm_msg.twist.angular.y = 0;
+  	arm_msg.twist.linear.y = 0;
+  	arm_msg.twist.linear.z = 0; 
+  	arm_msg.twist.angular.x = 0;
+  	arm_msg.twist.angular.y = 0;
 	arm_msg.twist.angular.z = 0;
 	pub_arm.publish(arm_msg);
 
 	geometry_msgs::Twist base_msg;
-  base_msg.linear.x = 0;
-  base_msg.linear.y = 0;
-  base_msg.linear.z = 0;
-  base_msg.angular.x = 0;
-  base_msg.angular.y = 0;
-  base_msg.angular.z = 0;
-  pub_base.publish(base_msg);
+  	base_msg.linear.x = 0;
+  	base_msg.linear.y = 0;
+  	base_msg.linear.z = 0;
+  	base_msg.angular.x = 0;
+  	base_msg.angular.y = 0;
+  	base_msg.angular.z = 0;
+  	pub_base.publish(base_msg);
 
 	//the end
 	ros::shutdown();
