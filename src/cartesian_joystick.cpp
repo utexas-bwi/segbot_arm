@@ -73,10 +73,10 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	int slowly_open_button = joy->buttons[11]; // LEFT (4-Direction pad)
 	int slowly_close_button = joy->buttons[12]; // RIGHT (4-Direction pad)
 
-	int increase_speed_button = joy->buttons[13]; // UP (4-Direction pad)
-	int decrease_speed_button = joy->buttons[14]; // DOWN (4-Direction pad)
-	int increase_turn_button = joy->buttons[11]; // LEFT (4-Direction pad)
-	int decrease_turn_button = joy->buttons[12]; // RIGHT (4-Direction pad)
+	int increase_speed_button = joy->buttons[3]; // Y
+	int decrease_speed_button = joy->buttons[0]; // A
+	int increase_turn_button = joy->buttons[2]; // X
+	int decrease_turn_button = joy->buttons[1]; // B
 
 	// To switch between arm and base
 	int switch_mode_button1 = joy->buttons[6]; 
@@ -167,7 +167,7 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
     	ROS_INFO("Speed multiplier increased to %f", speed_multiplier);
     }
     else if (decrease_speed_button) {
-        if (speed_multiplier > 0)
+        if (speed_multiplier > 0.2)
     		speed_multiplier -= 0.2;
     	ROS_INFO("Speed multiplier decreased to %f", speed_multiplier);
     }
@@ -178,7 +178,7 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
     	ROS_INFO("Turn multiplier increased to %f", speed_multiplier);
     }
     else if (decrease_turn_button) {
-        if (turn_multiplier > 0)
+        if (turn_multiplier > 0.2)
     		turn_multiplier -= 0.2;
     	ROS_INFO("Turn multiplier decreased to %f", speed_multiplier);
     }
@@ -300,7 +300,7 @@ bool allZeros(geometry_msgs::Twist base_msg) {
 void publishBase(ros::Publisher pub_base) {
   geometry_msgs::Twist base_msg;
   base_msg.linear.x = speed_multiplier * linear_x;
-  base_msg.angular.z = turn_multiplier * angular_x;
+  base_msg.angular.z = turn_multiplier * angular_y;
 	
   if (allZeros(base_msg))
 	  return;
