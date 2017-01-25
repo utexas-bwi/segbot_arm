@@ -43,6 +43,8 @@ bool fingers_changed;
 bool homingArm;
 
 bool emergency_brake;
+float turn_multiplier = 0.8;
+float speed_multiplier = 0.8;
 
 bool mode_changed;
 
@@ -70,6 +72,11 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
 	int fully_close_button = joy->buttons[14]; // DOWN (4-Direction pad)
 	int slowly_open_button = joy->buttons[11]; // LEFT (4-Direction pad)
 	int slowly_close_button = joy->buttons[12]; // RIGHT (4-Direction pad)
+
+	int increase_speed_button = joy->buttons[13]; // UP (4-Direction pad)
+	int decrease_speed_button = joy->buttons[14]; // DOWN (4-Direction pad)
+	int increase_turn_button = joy->buttons[11]; // LEFT (4-Direction pad)
+	int decrease_turn_button = joy->buttons[12]; // RIGHT (4-Direction pad)
 
 	// To switch between arm and base
 	int switch_mode_button1 = joy->buttons[6]; 
@@ -153,6 +160,29 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
     	homingArm = false;
      	emergency_brake = false;
     }
+
+    if (increase_speed_button) {
+    	if (speed_multiplier < 3)
+    		speed_multiplier += 0.2;
+    	ROS_INFO("Speed multiplier increased to %f", speed_multiplier);
+    }
+    else if (decrease_speed_button) {
+        if (speed_multiplier > 0)
+    		speed_multiplier -= 0.2;
+    	ROS_INFO("Speed multiplier decreased to %f", speed_multiplier);
+    }
+
+    if (increase_turn_button) {
+    	if (turn_multiplier < 3)
+    		turn_multiplier += 0.2;
+    	ROS_INFO("Turn multiplier increased to %f", speed_multiplier);
+    }
+    else if (decrease_turn_button) {
+        if (turn_multiplier > 0)
+    		turn_multiplier -= 0.2;
+    	ROS_INFO("Turn multiplier decreased to %f", speed_multiplier);
+    }
+
     
 }
 
@@ -269,8 +299,8 @@ bool allZeros(geometry_msgs::Twist base_msg) {
 
 void publishBase(ros::Publisher pub_base) {
   geometry_msgs::Twist base_msg;
-  base_msg.linear.x = linear_y;
-  base_msg.angular.z = linear_x;
+  base_msg.linear.x = speed_multiplier * linear_x;
+  base_msg.angular.z = turn_multiplier * angular_x;
 	
   if (allZeros(base_msg))
 	  return;
@@ -285,13 +315,14 @@ void emergency_braking(ros::Publisher pub_base) {
   base_msg.angular.z = 0;
 
   pub_base.publish(base_msg);
+  emergency_brake = false;
 }
 
 void switchMode(ros::ServiceClient speak_message_client, ros::NodeHandle n) {
   bwi_services::SpeakMessage speak_srv;
   speak_srv.request.message = "Switching mode. ";
   if (mode == ARM_MODE) {
-  	
+
     bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
     if (!safe) {
     	ROS_INFO("Could not switch to base mode. Arm not safe for travel.");
@@ -357,12 +388,12 @@ int main(int argc, char **argv) {
 	    }
 
 	  	if (ros::ok()) {
-	  		if (mode_changed)
+	  		if (mode_changed) {
         		switchMode(speak_message_client, n);
-
-      		ros::spinOnce();
-    		r.sleep();
-			continue; 
+      			ros::spinOnce();
+    			r.sleep();
+				continue; 
+			}
 	  	}
 
 	  	if (ros::ok() && mode == ARM_MODE) {
