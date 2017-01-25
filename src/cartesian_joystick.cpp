@@ -175,12 +175,12 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
     if (increase_turn_button) {
     	if (turn_multiplier < 3)
     		turn_multiplier += 0.2;
-    	ROS_INFO("Turn multiplier increased to %f", speed_multiplier);
+    	ROS_INFO("Turn multiplier increased to %f", turn_multiplier);
     }
     else if (decrease_turn_button) {
         if (turn_multiplier > 0.2)
     		turn_multiplier -= 0.2;
-    	ROS_INFO("Turn multiplier decreased to %f", speed_multiplier);
+    	ROS_INFO("Turn multiplier decreased to %f", turn_multiplier);
     }
 
     
@@ -319,8 +319,11 @@ void emergency_braking(ros::Publisher pub_base) {
 }
 
 void switchMode(ros::ServiceClient speak_message_client, ros::NodeHandle n) {
-  bwi_services::SpeakMessage speak_srv;
-  speak_srv.request.message = "Switching mode. ";
+  bwi_services::SpeakMessage speak_srv1;
+  speak_srv1.request.message = "Switching mode.";
+  speak_message_client.call(speak_srv1);
+
+  bwi_services::SpeakMessage speak_srv2;
   if (mode == ARM_MODE) {
 
     bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
@@ -332,15 +335,16 @@ void switchMode(ros::ServiceClient speak_message_client, ros::NodeHandle n) {
 
     mode = BASE_MODE;
     ROS_INFO("Now in BASE Mode");
-    speak_srv.request.message += "Now in base mode.";
+    speak_srv2.request.message = "Now in base mode.";
   } else {
     mode = ARM_MODE;
     ROS_INFO("Now in ARM Mode");
     homeArm(n);
-    speak_srv.request.message += "Now in arm mode.";
+    speak_srv2.request.message = "Now in arm mode.";
   }
-  speak_message_client.call(speak_srv);
+
   mode_changed = false;
+  speak_message_client.call(speak_srv2);
 }
 
 int main(int argc, char **argv) {
