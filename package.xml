@@ -1,13 +1,14 @@
 <?xml version="1.0"?>
 <package>
-  <name>joystick_bwi</name>
+  <name>segbot_arm_joystick</name>
   <version>0.0.0</version>
-  <description>The joystick_bwi package</description>
+  <description>The segbot_arm_joystick package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="krishna@todo.todo">krishna</maintainer>
+  <maintainer email="benjamin.z.singer@utexas.edu">Benjamin Singer</maintainer>
+  <maintainer email="palak_hirpara@yahoo.com">Palak Hirpara</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
