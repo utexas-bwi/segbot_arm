@@ -145,14 +145,14 @@ include_directories(
 # add_dependencies(joystick_bwi ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(cartesian_joystick src/cartesian_joystick.cpp)
+add_executable(segbot_arm_joystick src/segbot_arm_joystick.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(joystick_bwi_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(cartesian_joystick
+target_link_libraries(segbot_arm_joystick
    ${catkin_LIBRARIES}
  )
 #############

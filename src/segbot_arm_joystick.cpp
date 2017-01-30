@@ -216,6 +216,8 @@ bool allZeros(geometry_msgs::TwistStamped velocityMsg) {
 }
 
 void publishArm(ros::Publisher pub_arm) {
+  ROS_INFO("PUBLISHING ARM");
+
   geometry_msgs::TwistStamped velocityMsg;
   //construct message
   velocityMsg.twist.linear.x = linear_x;
@@ -367,7 +369,7 @@ void modeRequested(ros::ServiceClient speak_message_client) {
 
 int main(int argc, char * *argv) {
   // Intialize ROS with this node name
-  ros::init(argc, argv, "cartesian_joystick");
+  ros::init(argc, argv, "segbot_arm_joystick");
 
   ros::NodeHandle n("~");
   n.param<bool>("base", base_allowed, true);
