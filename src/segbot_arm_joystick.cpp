@@ -43,8 +43,8 @@ bool fingers_changed;
 bool homingArm;
 
 bool emergency_brake;
-float turn_multiplier = 0.8;
-float speed_multiplier = 0.8;
+float turn_multiplier = 0.4;
+float speed_multiplier = 0.4;
 
 bool mode_changed;
 bool mode_requested;
@@ -67,6 +67,31 @@ void sig_handler(int sig) {
   ros::shutdown();
   exit(1);
 };
+
+void printArmControls() {
+  ROS_INFO("Arm controls:");
+  ROS_INFO("Linear velocity x - Left axis stick left/right");
+  ROS_INFO("Linear velocity y - Left axis stick up/down");
+  ROS_INFO("Linear velocity z - Left trigger/Right trigger");
+  ROS_INFO("Angular velocity x - Right axis stick left/right");
+  ROS_INFO("Angular velocity y - Right axis stick up/down");
+  ROS_INFO("Angular velocity z - Left back button/Right back button");
+  ROS_INFO("Fingers:");
+  ROS_INFO("Open slowly - 4-direction pad LEFT");
+  ROS_INFO("Close slowly - 4-direction pad RIGHT");
+  ROS_INFO("Open fully - 4-direction pad UP");
+  ROS_INFO("Close fully - 4-direction pad DOWN");
+  ROS_INFO("Home arm - Center button");
+  ROS_INFO("Switch modes - Back + Start buttons");
+}
+
+void printBaseControls() {
+  ROS_INFO("Base controls:");
+  ROS_INFO("Forward/Backward - Left axis stick up/down");
+  ROS_INFO("Turn - Right axis stick left/right");
+  ROS_INFO("Increase/Decrease speed - Y/A");
+  ROS_INFO("Increase/Decrease turn speed - X/B");
+}
 
 // Call back function when joy stick message recieved
 void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
@@ -168,7 +193,7 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
   }
 
   if (increase_speed_button) {
-    if (speed_multiplier < 3)
+    if (speed_multiplier < 1)
       speed_multiplier += 0.2;
     ROS_INFO("Speed multiplier increased to %f", speed_multiplier);
   }
@@ -179,7 +204,7 @@ void joy_cb(const sensor_msgs::Joy::ConstPtr& joy) {
   }
 
   if (increase_turn_button) {
-    if (turn_multiplier < 3)
+    if (turn_multiplier < 1)
       turn_multiplier += 0.2;
     ROS_INFO("Turn multiplier increased to %f", turn_multiplier);
   }
@@ -216,8 +241,6 @@ bool allZeros(geometry_msgs::TwistStamped velocityMsg) {
 }
 
 void publishArm(ros::Publisher pub_arm) {
-  ROS_INFO("PUBLISHING ARM");
-
   geometry_msgs::TwistStamped velocityMsg;
   //construct message
   velocityMsg.twist.linear.x = linear_x;
@@ -326,6 +349,10 @@ void emergency_braking(ros::Publisher pub_base) {
 }
 
 void switchMode(ros::ServiceClient speak_message_client, ros::NodeHandle n) {
+  if (!base_allowed) {
+    mode_changed = false;
+    return;
+  }
   bwi_services::SpeakMessage speak_srv1;
   speak_srv1.request.message = "Switching mode.";
   speak_message_client.call(speak_srv1);
@@ -338,29 +365,28 @@ void switchMode(ros::ServiceClient speak_message_client, ros::NodeHandle n) {
       mode_changed = false;
       return;
     }
-
     mode = BASE_MODE;
     ROS_INFO("Now in BASE Mode");
     speak_srv2.request.message = "Now in base mode.";
+    printBaseControls();
   } else {
     mode = ARM_MODE;
-    ROS_INFO("Now in ARM Mode");
     homeArm(n);
+    ROS_INFO("Now in ARM Mode");
     speak_srv2.request.message = "Now in arm mode.";
+    printArmControls();
   }
-
   mode_changed = false;
   speak_message_client.call(speak_srv2);
 }
 
 void modeRequested(ros::ServiceClient speak_message_client) {
   bwi_services::SpeakMessage speak_srv;
-  speak_srv.request.message = "Curently in ";
 
   if (mode == ARM_MODE) {
-    speak_srv.request.message += "arm mode.";
+    speak_srv.request.message = "Arm mode.";
   } else {
-    speak_srv.request.message += "base mode.";
+    speak_srv.request.message = "Base mode.";
   }
 
   mode_requested = false;
@@ -369,11 +395,12 @@ void modeRequested(ros::ServiceClient speak_message_client) {
 
 int main(int argc, char * *argv) {
   // Intialize ROS with this node name
-  ros::init(argc, argv, "segbot_arm_joystick");
+  ros::init(argc, argv, "segbot_arm_joystick_node");
 
-  ros::NodeHandle n("~");
-  n.param<bool>("base", base_allowed, true);
+  ros::NodeHandle nh("~");
+  nh.param<bool>("base", base_allowed, true);
 
+  ros::NodeHandle n;
   ros::Subscriber joy_sub;
 
   ros::Publisher pub_arm;
@@ -397,6 +424,8 @@ int main(int argc, char * *argv) {
   
   //close fingers and "home" the arm
   pressEnter("Press [Enter] to start");
+  
+  printArmControls();
 
   double pub_rate = 40.0; //we publish at 40 hz
   ros::Rate r(pub_rate);
@@ -405,7 +434,7 @@ int main(int argc, char * *argv) {
     while (ros::ok() && (!fingers_changed) && (!homingArm) && (!mode_changed) && (!mode_requested)) {
       ros::spinOnce();
       r.sleep();
-
+	
       if (mode == ARM_MODE) 
         publishArm(pub_arm);
       if (mode == BASE_MODE)
@@ -413,7 +442,7 @@ int main(int argc, char * *argv) {
     }
 
     if (ros::ok()) {
-      if (mode_changed && base_allowed) {
+      if (mode_changed) {
         switchMode(speak_message_client, n);
         ros::spinOnce();
         r.sleep();
