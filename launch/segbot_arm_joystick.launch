@@ -1,7 +1,7 @@
 <launch>
   <arg name="base" default="true" />  
 
-  <node name="joystick_bwi" pkg="joystick_bwi" type="cartesian_joystick" output="screen" >
+  <node name="joystick_bwi" pkg="segbot_arm_joystick" type="cartesian_joystick" output="screen" >
      <param name="base" value="$(arg base)" type="bool" />
   </node>
   <node name="joy" pkg="joy" type="joy_node" />
