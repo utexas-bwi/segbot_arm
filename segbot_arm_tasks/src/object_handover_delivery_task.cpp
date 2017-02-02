@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 	//retrieve params
 	ros::NodeHandle privateNode("~");
 	std::string delivery_door;
-	privateNode.param<std::string>("door",delivery_door,"d4_414a");
+	privateNode.param<std::string>("door",delivery_door,"d4_414a2");
   
 	ROS_INFO("Target location: %s",delivery_door.c_str());
 
