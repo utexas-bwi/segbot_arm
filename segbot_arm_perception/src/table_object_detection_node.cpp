@@ -337,7 +337,12 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	ROS_INFO("Planar coefficients: %f, %f, %f, %f",
 		plane_coefficients(0),plane_coefficients(1),plane_coefficients(2),	plane_coefficients(3));
 	
-	
+	//debug plane cloud 
+	//convert plane cloud to ROS
+	sensor_msgs::PointCloud2 ros_plane;
+	pcl::toROSMsg(*cloud_plane, ros_plane);
+	ros_plane.header.frame_id = cloud->header.frame_id;
+	table_cloud_pub.publish(ros_plane);
 	
 	//Step 3: Eucledian Cluster Extraction
 	computeClusters(cloud_blobs,cluster_extraction_tolerance);
@@ -432,6 +437,9 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	
 	//TO DO: this may not always be the case
 	res.is_plane_found = true;
+	if(cloud_plane->empty()){
+		res.is_plane_found = false;
+	}
 	
 	//for debugging purposes
 	//now, put the clouds in cluster_on_plane in one cloud and publish it
