@@ -27,34 +27,6 @@
 
 #define NUM_JOINTS 8 //6+2 for the arm
 
-//mico joint state safe
-//-2.3321322971114142, -1.6372086401627464, -0.28393691436045176, -2.164605083475533, 0.7496982226688764, 4.682638807847723
-
-/* tool pose side
-	position: 
-		x: 0.117240786552
-		y: -0.301719456911
-		z: 0.239926770329
-	  orientation: 
-		x: 0.51289595084
-		y: 0.484664185494
-		z: 0.517808228151
-		w: 0.483645541456
-
-	tool pose safe
-		
-	x: -0.157769784331
-    y: -0.136029005051
-    z: 0.376786500216
-  orientation: 
-    x: 0.994340247286
-    y: 0.0977247708014
-    z: 0.005313327657
-    w: 0.0413413878465
-
-
-*/
-
 //global variables for storing data
 sensor_msgs::JointState current_state;
 bool heardJoinstState;
@@ -107,6 +79,20 @@ void listenForArmData(){
 	}
 }
 
+int find_largest_obj(segbot_arm_perception::TabletopPerception::Response table_scene){
+	int largest_pc_index = -1;
+	int largest_num_points = -1;
+	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
+			
+		int num_points_i = table_scene.cloud_clusters[i].height* table_scene.cloud_clusters[i].width;
+		
+		if (num_points_i > largest_num_points){
+			largest_num_points = num_points_i;
+			largest_pc_index = i;
+		}
+	}
+	return largest_pc_index;
+}
 
 // Blocking call for user input
 void pressEnter(std::string message){
@@ -135,6 +121,19 @@ void lift(ros::NodeHandle n, double x){
 	segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 }
 
+void joint_side_view(ros::NodeHandle n, ArmPositionDB *positionDB){
+	if (positionDB->hasCarteseanPosition("side_view")){
+		ROS_INFO("Moving arm to side view...");
+		geometry_msgs::PoseStamped out_of_view_pose = positionDB->getToolPositionStamped("side_view","/mico_link_base");
+				
+		//now go to the pose
+		segbot_arm_manipulation::moveToPoseMoveIt(n,out_of_view_pose);
+	}
+	else {
+		ROS_ERROR("[object_to_office.cpp] Cannot move arm to side view!");
+	}
+}
+
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
@@ -153,8 +152,9 @@ int main(int argc, char **argv) {
 	std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
 	std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
 	
-	ArmPositionDB positionDB(j_pos_filename, c_pos_filename);
-	positionDB.print();
+	ArmPositionDB *positionDB;
+	positionDB = new ArmPositionDB(j_pos_filename, c_pos_filename);
+	positionDB->print();
 	
 	//Step 1: store out-of-view position here
 	sensor_msgs::JointState joint_state_outofview;
@@ -173,13 +173,15 @@ int main(int argc, char **argv) {
 	segbot_arm_manipulation::closeHand();
 	segbot_arm_manipulation::homeArm(n);
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
-	if (!safe)
+	if (!safe){
+		ROS_WARN("the robot and arm cannot be made safe for travel");
 		return 1;
+	}
 		
 	pressEnter("Press [ENTER] to proceed");
 	
 	//Step 3: issue a goal to move to the table in the pod -- for now, this is a hardcoded position in the map
-	actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac("move_base",true);
+	/*actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac("move_base",true);
 	ac.waitForServer();
 	
 	//create the goal - currently hardcoded until go to object bug is fixed
@@ -194,13 +196,41 @@ int main(int argc, char **argv) {
     goal.target_pose.pose.orientation.z = 0.71660551689;
     goal.target_pose.pose.orientation.w = 0.697478697282;
     
+   
+    
 	//send the goal and wait for result;
     ac.sendGoal(goal);
-    ac.waitForResult();
+    ac.waitForResult();*/
+    
+    std::string table = "o3_406_table";
+
+	bwi_kr_execution::ExecutePlanGoal table_goal;
+    bwi_kr_execution::AspRule table_rule;
+    bwi_kr_execution::AspFluent table_fluent;
+    
+    table_fluent.name = "not facing";
+    table_fluent.variables.push_back(table);
+    
+    table_rule.body.push_back(table_fluent);
+    
+    table_goal.aspGoal.push_back(table_rule);
+	
+	actionlib::SimpleActionClient<bwi_kr_execution::ExecutePlanAction> table_asp("/action_executor/execute_plan", true);
+	table_asp.waitForServer();
+	
+	ROS_INFO("finished waiting for server");
+	
+    ROS_INFO("sending goal");
+    table_asp.sendGoalAndWait(table_goal);
+    
+    //TO DO: test this, add check for aborted, preempted, etc 
+    if(table_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
+		ROS_WARN("could not reach destination");
+		return 1;
+	}
+    
     
     pressEnter("Press [ENTER] to approach table");
-
-	
 
 	//Step 4: approach the table using visual servoing
 	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopApproachAction> ac_approach("segbot_table_approach_as",true);
@@ -213,7 +243,18 @@ int main(int argc, char **argv) {
 	ac_approach.sendGoal(approach_goal);
 	ac_approach.waitForResult();
 	
+	//error check:
+	segbot_arm_manipulation::TabletopApproachResult approach_result = *ac_approach.getResult();
+	bool approach_success = approach_result.success; 
 	
+	//TO DO: does the approach action actually return when the approach failed?
+		//only returns false if the perception fails, no plane found, or can't make safe for travel
+	//TO DO: test this
+	if(!approach_success){
+		ROS_WARN("approach action failed");
+		ROS_INFO_STREAM(approach_result.error_msg);
+		return 1;
+	}
 	
 	pressEnter("Press [ENTER] to proceed");
 
@@ -234,17 +275,7 @@ int main(int argc, char **argv) {
 	}
 		
 	//select the object with most points as the target object
-	int largest_pc_index = -1;
-	int largest_num_points = -1;
-	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
-			
-		int num_points_i = table_scene.cloud_clusters[i].height* table_scene.cloud_clusters[i].width;
-		
-		if (num_points_i > largest_num_points){
-			largest_num_points = num_points_i;
-			largest_pc_index = i;
-		}
-	}
+	int largest_pc_index = find_largest_obj(table_scene);
 		
 	//Step 8: call the grasp action
 	
@@ -271,6 +302,9 @@ int main(int argc, char **argv) {
 	ac_grasp.sendGoal(grasp_goal);
 	ac_grasp.waitForResult();
 	ROS_INFO("Action Finished...");
+	
+	//TO DO: use this state to replace the object later 
+	sensor_msgs::JointState grasped_state = current_state; 
 
 	pressEnter("Press [ENTER] to proceed");
 
@@ -283,16 +317,27 @@ int main(int argc, char **argv) {
 
 	segbot_arm_manipulation::homeArm(n);
 	safe = segbot_arm_manipulation::makeSafeForTravel(n);
-	if (!safe)
-		return 1;
-		
 	
+	if (!safe){
+		ROS_WARN("the robot and arm cannot be made safe for travel");
+		return 1;
+	}
 	
 	//next, back out
 	segbot_arm_manipulation::TabletopApproachGoal back_out_goal;
 	back_out_goal.command = "back_out";
 	ac_approach.sendGoal(back_out_goal);
 	ac_approach.waitForResult();
+	
+	//TO DO: make sure this is returning a different value from the approaching
+	segbot_arm_manipulation::TabletopApproachResult back_out_result = *ac_approach.getResult();
+	bool back_out_success = back_out_result.success;
+	if(!back_out_success){
+		ROS_WARN("unable to back out");
+		ROS_INFO_STREAM(back_out_result.error_msg);
+		return 1;
+	}
+	
 	
 	//next go to an office - TO DO
 	std::string location = "d3_414b1";
@@ -312,11 +357,20 @@ int main(int argc, char **argv) {
     ROS_INFO("sending goal");
     client_asp.sendGoalAndWait(goal_asp);
 	
+	//TO DO: test this, maybe do something else other than just end immediately 
+   if(client_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
+		ROS_WARN("could not reach destination");
+		return 1;
+	}
+	
+	//TO DO: try to replace the object, then test the hand over after aylish has finished 
+	
 	//hand over object
 	pressEnter("Press [ENTER] to proceed");
-
 	
 	segbot_arm_manipulation::moveToPoseMoveIt(n,pose_outofview);
+	
+	//TO DO: before handing over, we want to ask questions about the object
 	
 	segbot_arm_manipulation::TabletopGraspGoal handover_goal;
 	handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
