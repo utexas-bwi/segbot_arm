@@ -20,7 +20,7 @@
 #include <segbot_arm_manipulation/arm_utils.h>
 
 #include <sensor_msgs/Joy.h>
-#include "bwi_services/SpeakMessage.h"
+#include <bwi_services/SpeakMessage.h>
 
 #include <iostream>
 using namespace std;
