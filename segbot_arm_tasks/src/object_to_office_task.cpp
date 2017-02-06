@@ -25,6 +25,9 @@
 
 #include <moveit_utils/MicoNavSafety.h>
 
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> PointCloudT;
+
 #define NUM_JOINTS 8 //6+2 for the arm
 
 //global variables for storing data
@@ -32,6 +35,7 @@ sensor_msgs::JointState current_state;
 bool heardJoinstState;
 
 geometry_msgs::PoseStamped current_pose;
+
 bool heardPose;
 
 //true if Ctrl-C is pressed
@@ -144,7 +148,7 @@ int main(int argc, char **argv) {
 	//create subscribers for arm topics
 	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
 	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
-
+	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 	
@@ -180,27 +184,6 @@ int main(int argc, char **argv) {
 		
 	pressEnter("Press [ENTER] to proceed");
 	
-	//Step 3: issue a goal to move to the table in the pod -- for now, this is a hardcoded position in the map
-	/*actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac("move_base",true);
-	ac.waitForServer();
-	
-	//create the goal - currently hardcoded until go to object bug is fixed
-	move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.stamp = ros::Time::now();
-    goal.target_pose.header.frame_id = "/map";
-    goal.target_pose.pose.position.x = -31.3875554082;
-    goal.target_pose.pose.position.y =  -3.73833188096;
-    goal.target_pose.pose.position.z = 0.0;
-    goal.target_pose.pose.orientation.x = 0.0;
-    goal.target_pose.pose.orientation.y = 0.0;
-    goal.target_pose.pose.orientation.z = 0.71660551689;
-    goal.target_pose.pose.orientation.w = 0.697478697282;
-    
-   
-    
-	//send the goal and wait for result;
-    ac.sendGoal(goal);
-    ac.waitForResult();*/
     
     std::string table = "o3_406_table";
 
@@ -272,7 +255,23 @@ int main(int argc, char **argv) {
 	if ((int)table_scene.cloud_clusters.size() == 0){
 		ROS_WARN("No objects found on table. The end...");
 		exit(1);
+	}else if (!table_scene.is_plane_found){
+		ROS_WARN("No plane found. Exiting...");
+		exit(1);
 	}
+	
+	//check the height of the plane
+	//TO DO: check that this is in the right transform space
+	PointCloudT::Ptr table_cloud;
+	pcl::fromROSMsg(table_scene.cloud_plane, *table_cloud);
+	Eigen::Vector4f plane_centroid;
+	pcl::compute3DCentroid(*table_cloud, plane_centroid); 
+	
+	//TO DO: check the value of this
+	ROS_INFO_STREAM("z value of the table center: ");
+	ROS_INFO_STREAM(plane_centroid[2]);
+	
+	
 		
 	//select the object with most points as the target object
 	int largest_pc_index = find_largest_obj(table_scene);
