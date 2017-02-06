@@ -22,6 +22,8 @@
 #include <sensor_msgs/Joy.h>
 #include "bwi_services/SpeakMessage.h"
 
+#include <iostream>
+using namespace std;
 
 #define NUM_JOINTS 8 //6+2 for the arm
 
@@ -69,28 +71,28 @@ void sig_handler(int sig) {
 };
 
 void printArmControls() {
-  ROS_INFO("Arm controls:");
-  ROS_INFO("Linear velocity x - Left axis stick left/right");
-  ROS_INFO("Linear velocity y - Left axis stick up/down");
-  ROS_INFO("Linear velocity z - Left trigger/Right trigger");
-  ROS_INFO("Angular velocity x - Right axis stick left/right");
-  ROS_INFO("Angular velocity y - Right axis stick up/down");
-  ROS_INFO("Angular velocity z - Left back button/Right back button");
-  ROS_INFO("Fingers:");
-  ROS_INFO("Open slowly - 4-direction pad LEFT");
-  ROS_INFO("Close slowly - 4-direction pad RIGHT");
-  ROS_INFO("Open fully - 4-direction pad UP");
-  ROS_INFO("Close fully - 4-direction pad DOWN");
-  ROS_INFO("Home arm - Center button");
-  ROS_INFO("Switch modes - Back + Start buttons");
+  cout << "Arm controls:\n";
+  cout << "Linear velocity x - Left axis stick left/right\n";
+  cout << "Linear velocity y - Left axis stick up/down\n";
+  cout << "Linear velocity z - Left trigger/Right trigger\n";
+  cout << "Angular velocity x - Right axis stick left/right\n";
+  cout << "Angular velocity y - Right axis stick up/down\n";
+  cout << "Angular velocity z - Left back button/Right back button\n";
+  cout << "Fingers:\n";
+  cout << "Open slowly - 4-direction pad LEFT\n";
+  cout << "Close slowly - 4-direction pad RIGHT\n";
+  cout << "Open fully - 4-direction pad UP\n";
+  cout << "Close fully - 4-direction pad DOWN\n";
+  cout << "Home arm - Center button\n";
+  cout << "Switch modes - Back + Start buttons\n";
 }
 
 void printBaseControls() {
-  ROS_INFO("Base controls:");
-  ROS_INFO("Forward/Backward - Left axis stick up/down");
-  ROS_INFO("Turn - Right axis stick left/right");
-  ROS_INFO("Increase/Decrease speed - Y/A");
-  ROS_INFO("Increase/Decrease turn speed - X/B");
+  cout << "Base controls:\n";
+  cout << "Forward/Backward - Left axis stick up/down\n";
+  cout << "Turn - Right axis stick left/right\n";
+  cout << "Increase/Decrease speed - Y/A\n";
+  cout << "Increase/Decrease turn speed - X/B\n";
 }
 
 // Call back function when joy stick message recieved
