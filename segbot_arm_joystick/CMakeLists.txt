@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-	CATKIN_DEPENDS actionlib_msgs
+  CATKIN_DEPENDS actionlib_msgs
   CATKIN_DEPENDS bwi_msgs
   CATKIN_DEPENDS jaco_msgs
   CATKIN_DEPENDS move_base_msgs
