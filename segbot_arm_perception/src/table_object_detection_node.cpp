@@ -435,11 +435,12 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 		res.cloud_clusters.push_back(cloud_ros);
 	}
 	
-	//TO DO: this may not always be the case
+	//TO DO: check height of the table
 	res.is_plane_found = true;
 	if(cloud_plane->empty()){
 		res.is_plane_found = false;
 	}
+	
 	
 	//for debugging purposes
 	//now, put the clouds in cluster_on_plane in one cloud and publish it
