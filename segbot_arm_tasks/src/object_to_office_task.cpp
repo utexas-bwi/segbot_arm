@@ -177,30 +177,9 @@ int main(int argc, char **argv) {
 		ROS_WARN("the robot and arm cannot be made safe for travel");
 		return 1;
 	}
+	ROS_INFO("safe for travel");
 		
 	pressEnter("Press [ENTER] to proceed");
-	
-	//Step 3: issue a goal to move to the table in the pod -- for now, this is a hardcoded position in the map
-	/*actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac("move_base",true);
-	ac.waitForServer();
-	
-	//create the goal - currently hardcoded until go to object bug is fixed
-	move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.stamp = ros::Time::now();
-    goal.target_pose.header.frame_id = "/map";
-    goal.target_pose.pose.position.x = -31.3875554082;
-    goal.target_pose.pose.position.y =  -3.73833188096;
-    goal.target_pose.pose.position.z = 0.0;
-    goal.target_pose.pose.orientation.x = 0.0;
-    goal.target_pose.pose.orientation.y = 0.0;
-    goal.target_pose.pose.orientation.z = 0.71660551689;
-    goal.target_pose.pose.orientation.w = 0.697478697282;
-    
-   
-    
-	//send the goal and wait for result;
-    ac.sendGoal(goal);
-    ac.waitForResult();*/
     
     std::string table = "o3_406_table";
 
@@ -222,6 +201,8 @@ int main(int argc, char **argv) {
 	
     ROS_INFO("sending goal");
     table_asp.sendGoalAndWait(table_goal);
+    
+    ROS_INFO("finished waiting for goal");
     
     //TO DO: test this, add check for aborted, preempted, etc 
     if(table_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
