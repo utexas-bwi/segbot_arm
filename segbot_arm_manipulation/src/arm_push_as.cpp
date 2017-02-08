@@ -60,7 +60,6 @@
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
 
-#define NUM_JOINTS_ARMONLY 6
 #define NUM_JOINTS 8 //6+2 for the arm
 
 typedef pcl::PointXYZRGB PointT;
@@ -226,21 +225,23 @@ public:
 		v.twist.angular.y = 0.0;
 		v.twist.angular.z = 0.0;
 		
-		float rate = 100;
+		float elapsed_time = 0.0;
+		
+		float rate = 40;
 		ros::Rate r(rate);
+		
 		listenForArmData(30.0);
-		for(int i = 0; i< (int) rate * duration; i++){
-			v.twist.linear.x = 0;
+		
+		while(ros::ok() && !as_.isPreemptRequested()){
 			v.twist.linear.y = 0.125;
-			v.twist.linear.z = 0.0;
-			
-			v.twist.angular.x = 0.0;
-			v.twist.angular.y = 0.0;
-			v.twist.angular.z = 0.0;
-			
+
 			arm_vel.publish(v);
 			r.sleep();
-			ros::spinOnce();
+						
+			elapsed_time += (1.0/rate);
+		
+			if (elapsed_time > duration)
+				break;
 		}
 		
 		v.twist.linear.y = 0.0;
@@ -298,7 +299,6 @@ public:
 		//step 2: transform into the arm's base
 		sensor_msgs::PointCloud2 tgt= goal -> tgt_cloud;
 		
-		//transform into the arm's base
 		std::string sensor_frame_id = tgt.header.frame_id;
 		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
 		
@@ -315,7 +315,7 @@ public:
 		ROS_INFO("made tgt_cloud into pcl cloud and transformed frame id");
 		
 		
-		//step 3: find the side of the object, set to slightly further right of object
+		//step 3: find the side of the object, set pose to slightly further right of object
 		geometry_msgs::Point right_side = find_right_side(pcl_cloud);
 		
 		geometry_msgs::PoseStamped goal_pose;
@@ -338,7 +338,7 @@ public:
 			return;
 		}
 		
-		//for now use the first possible orientation
+		//TO DO: for now use the first possible orientation
 		goal_pose.pose.orientation = ik_possible.at(0);
 		
 		debug_pub.publish(goal_pose);

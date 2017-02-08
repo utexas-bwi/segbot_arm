@@ -54,7 +54,6 @@
 #define FINGER_FULLY_OPENED 6
 #define FINGER_FULLY_CLOSED 7300
 
-#define NUM_JOINTS_ARMONLY 6
 #define NUM_JOINTS 8 //6+2 for the arm
 
 typedef pcl::PointXYZRGB PointT;
@@ -91,6 +90,7 @@ protected:
   bool heardPose;
   bool heardJoinstState;
   bool heardWrench;
+  bool heardEffort;
   
   int num_bins;
  
@@ -103,6 +103,7 @@ public:
 	heardPose = false;
 	heardJoinstState = false;
 	heardWrench = false;
+	heardEffort = false;
 
 	//create subscriber to joint angles
 	sub_angles = nh_.subscribe ("/joint_states", 1, &LiftVerifyActionServer::joint_state_cb, this);
@@ -139,6 +140,7 @@ public:
 	//Joint effort cb
 	void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
 	  current_effort = *input;
+	  heardEffort = true;
 	}
 
 	//tool position cb
@@ -176,7 +178,7 @@ public:
 	}	
 	
 	std::vector<double> get_color_hist(PointCloudT desired_cloud, int dim){ 
-		//get a color histogram and turn it into a one dimensional vector for comparison
+		//get a color histogram and save it as a one dimensional vector for comparison
 		std::vector<std::vector<std::vector<uint> > > hist3= segbot_arm_perception::computeRGBColorHistogram(desired_cloud, dim);
 		int i_offset = dim * dim;
         int j_offset = dim;
@@ -206,7 +208,7 @@ public:
 		if(orig_colorhist.size() != new_colorhist.size()){
 			ROS_ERROR("Error: Color histograms are not the same size. Aborting...");
 			as_.setAborted(result_);
-			return 0.0;
+			exit(1);
 		}
 		
 		double sum_xy = 0.0;
@@ -231,19 +233,21 @@ public:
 	}
 	
 	bool down_force(double goal_down_force){
-		
 		//compares the downward force after grabbing the object to the expected force without an object
 		 listenForArmData(30.0);
+		 
 		 bool greater_force = false;
 		 double threshold = 0.2;
+		 
 		 listenForArmData(30.0);
+		 
 		 double diff = current_wrench.wrench.force.z - goal_down_force; 
 		 
-		 if(diff>threshold){
+		 if(diff>threshold){ 
 			 ROS_INFO("force test succeeded");
 			 greater_force = true;
 		 }else{
-			 ROS_INFO("force test failed");
+			 ROS_WARN("force test failed");
 		 }
 		 return greater_force;
 	}
@@ -256,7 +260,7 @@ public:
 		 double finger2_diff = (double) abs(current_finger.finger2 - FINGER_FULLY_CLOSED);
 		 
 		 if(finger1_diff < tolerance && finger2_diff < tolerance){
-			 ROS_INFO("fingers test failed");
+			 ROS_WARN("fingers test failed");
 			 return false;
 		 }
 		 ROS_INFO("fingers test succeeded");
@@ -266,41 +270,34 @@ public:
 	bool not_on_table(Eigen::Vector4f center_vector, std::vector<double> orig_colorhist){
 		//check table for new objects
 		segbot_arm_perception::TabletopPerception::Response new_scene = segbot_arm_manipulation::getTabletopScene(nh_);
-		std::vector<PointCloudT::Ptr > new_objects;
-		
-		//get new objects
-		new_objects.clear();
-		for (unsigned int i = 0; i < new_scene.cloud_clusters.size(); i++){
-			PointCloudT::Ptr object_i (new PointCloudT);
-			pcl::PCLPointCloud2 pc_i;
-			pcl_conversions::toPCL(new_scene.cloud_clusters.at(i),pc_i);
-			pcl::fromPCLPointCloud2(pc_i,*object_i);
-			new_objects.push_back(object_i);
-		}
 		
 		double tolerance = 0.1; 
 		
 		//if center of an object is within some distance, compare color histograms
-		for(unsigned int i = 0; i< new_objects.size(); i++){
-			Eigen::Vector4f new_center;
-			pcl::compute3DCentroid(*new_objects.at(i), new_center);
-			ROS_INFO("The current object's center is %f, %f, %f",new_center(0),new_center(1),new_center(2));
+		for(unsigned int i = 0; i< new_scene.cloud_clusters.size(); i++){
+			PointCloudT::Ptr object_i (new PointCloudT);
+			pcl::fromROSMsg(new_scene.cloud_clusters[i], *object_i);
 			
-			double distance = euclidean_distance(center_vector, new_center);
+			Eigen::Vector4f obj_i_center;
+			pcl::compute3DCentroid(*object_i, obj_i_center);
+			ROS_INFO("The current object's center is %f, %f, %f",obj_i_center(0),obj_i_center(1),obj_i_center(2));
+			
+			double distance = euclidean_distance(center_vector, obj_i_center);
 			
 			if(distance < tolerance){ 
-				std::vector<double> new_colorhist = get_color_hist(*new_objects.at(i), num_bins);
+				std::vector<double> new_colorhist = get_color_hist(*object_i, num_bins);
 				ROS_INFO("found an object with a similar center...");
 				
 				double corr = correlation_coeff(orig_colorhist, new_colorhist);
-				ROS_INFO_STREAM(corr);
+				
 				if (corr >= 0.8){ 
-					ROS_INFO("object is the same, table test failed");
+					ROS_WARN("object is the same, table test failed");
 					return false; //this is the same object
 				}
 			}
 			
 		}
+		
 		ROS_INFO("table test succeeded");
 		return true; //checked all objets on table, none are the same as the target
 	}
@@ -318,7 +315,6 @@ public:
 			return;
         }
 		
-		//move arm to desired location outside view of camera
 		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
 		
 		//expected downward force, must be changed for new arm locations
@@ -327,7 +323,7 @@ public:
 		//set number of color bins for use in computing color histograms
 		num_bins = goal -> bins;
 		
-		//convert ros pointcloud to pcl 
+
 		PointCloudT pcl_pc;
 		pcl::fromROSMsg(goal -> tgt_cloud, pcl_pc);
 		
@@ -348,10 +344,10 @@ public:
 		//check to see if the object is still on the table
 		bool gone_from_table = not_on_table(center_vector, orig_colorhist);
 		
-		//all three conditions must be met for success
-		//result_.success = (greater_force && fingers_still_open && gone_from_table);
+		//return true if two of the three conditions are met
 		result_.success = ((greater_force && fingers_still_open) || (greater_force && gone_from_table) || 
 			(fingers_still_open && gone_from_table));
+			
 		as_.setSucceeded(result_);
 	}
 };

@@ -228,22 +228,25 @@ public:
 		v.twist.angular.y = 0.0;
 		v.twist.angular.z = 0.0;
 		
-		float rate = 100;
+		float elapsed_time = 0.0;
+		
+		float rate = 40;
 		ros::Rate r(rate);
+		
 		listenForArmData(30.0);
-		for(int i = 0; i< (int) rate * duration; i++){			
-			v.twist.linear.x = 0;
-			v.twist.linear.y = 0.0;
+		
+		while(ros::ok() && !as_.isPreemptRequested()){			
 			v.twist.linear.z = -0.125;
-			
-			v.twist.angular.x = 0.0;
-			v.twist.angular.y = 0.0;
-			v.twist.angular.z = 0.0;
-			
+
 			arm_vel.publish(v);
 			r.sleep();
-			ros::spinOnce();
+			
+			elapsed_time += (1.0/rate);
+			
+			if (elapsed_time > duration)
+				break;
 		}
+		
 		v.twist.linear.z = 0.0;
 		arm_vel.publish(v);
 	}
