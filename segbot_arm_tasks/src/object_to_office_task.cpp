@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
 		
 	pressEnter("Press [ENTER] to proceed");
     
-    std::string table = "o3_406_table";
+    std::string table = "o3_414a_table";
 
 	bwi_kr_execution::ExecutePlanGoal table_goal;
     bwi_kr_execution::AspRule table_rule;
@@ -227,6 +227,7 @@ int main(int argc, char **argv) {
 	//send the goal
 	ac_approach.sendGoal(approach_goal);
 	ac_approach.waitForResult();
+	ROS_INFO("finished approach");
 	
 	//error check:
 	segbot_arm_manipulation::TabletopApproachResult approach_result = *ac_approach.getResult();
