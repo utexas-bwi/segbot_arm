@@ -346,7 +346,6 @@ int main (int argc, char** argv){
 	push_goal.tgt_cloud = table_scene.cloud_clusters[index];
 	push_goal.cloud_plane = table_scene.cloud_plane; 
 	push_goal.arm_home = arm_home; 
-	push_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
 	
 	ROS_INFO("Sending goal to push action server...");
 	push_ac.sendGoal(push_goal);
