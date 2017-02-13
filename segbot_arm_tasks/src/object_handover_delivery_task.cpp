@@ -96,6 +96,40 @@ void pressEnter(std::string message){
 	}
 }
 
+// Asks the user if they want the robot to return to original position
+// If yes, sends robot to original position
+void returnToHome(){
+	std::string message = "Return to room 3.414a? Enter y or n)";  
+	std::cout << message; 
+	while (true) {
+		char c = std::cin.get(); 
+		if (c == 'y') {
+			break; 
+		}
+		else if (c == 'n') {
+			return; 
+		}
+		else {
+			std::cout << message; 
+		}
+	}
+	
+	bwi_kr_execution::ExecutePlanGoal goal_asp;
+    bwi_kr_execution::AspRule rule;
+    bwi_kr_execution::AspFluent fluent;
+    fluent.variables.push_back("l3_414a");
+    
+    actionlib::SimpleActionClient<bwi_kr_execution::ExecutePlanAction> client_asp("/action_executor/execute_plan", true);
+	client_asp.waitForServer();
+
+	rule.body.push_back(fluent);
+    goal_asp.aspGoal.push_back(rule);
+    
+    ROS_INFO("sending goal");
+    client_asp.sendGoalAndWait(goal_asp);
+	
+}
+
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
@@ -103,10 +137,10 @@ int main(int argc, char **argv) {
 	
 	ros::NodeHandle n;
 	
-	//retrieve params
+	//retrieve default door
 	ros::NodeHandle privateNode("~");
 	std::string delivery_door;
-	privateNode.param<std::string>("door",delivery_door,"d4_414a");
+	privateNode.param<std::string>("door",delivery_door,"d3_414b2");
   
 	ROS_INFO("Target location: %s",delivery_door.c_str());
 
@@ -127,37 +161,22 @@ int main(int argc, char **argv) {
 	
 	ArmPositionDB positionDB(j_pos_filename, c_pos_filename);
 	positionDB.print();
-
-	//store out of table view joint position -- this is the position in which the arm is not occluding objects on the table
+	
 	listenForArmData();
 	
 	//Open hand and move to home position
 	segbot_arm_manipulation::homeArm(n);
 	segbot_arm_manipulation::openHand();
 	
-	/*if (positionDB.hasJointPosition("handover_front")){
-		std::vector<float> handover_position = positionDB.getJointPosition("handover_front");
-		sensor_msgs::JointState handover_js = segbot_arm_manipulation::valuesToJointState(handover_position);
-		segbot_arm_manipulation::moveToJointState(n,handover_js);
-		pressEnter("Press [Enter]");
-	}
-	else {
-		ROS_ERROR("handover_front position does not exist! Aborting...");
-		return 1;
-	}*/
-	
-	if (positionDB.hasCarteseanPosition("handover_front")){
-		/*std::vector<float> handover_position = positionDB.getJointPosition("handover_front");
-		sensor_msgs::JointState handover_js = segbot_arm_manipulation::valuesToJointState(handover_position);
-		segbot_arm_manipulation::moveToJointState(n,handover_js);*/
-		
+	// Go to handover position 
+	if (positionDB.hasCarteseanPosition("handover_front")){		
 		geometry_msgs::PoseStamped handover_pose = positionDB.getToolPositionStamped("handover_front","mico_link_base");
 		
-		segbot_arm_manipulation::moveToPoseMoveIt(n,handover_pose);
-		segbot_arm_manipulation::moveToPoseMoveIt(n,handover_pose);
-
+		ROS_INFO("Moving to handover position"); 
 		
-		pressEnter("Press [Enter]");
+		segbot_arm_manipulation::moveToPoseMoveIt(n,handover_pose);
+		
+		pressEnter("Press [Enter] to proceed");
 	}
 	else {
 		ROS_ERROR("handover_front position does not exist! Aborting...");
@@ -166,6 +185,7 @@ int main(int argc, char **argv) {
 	
 
 	//now receive object
+	std::cout << "Please place an object in robot's hand\n"; 
 	segbot_arm_manipulation::TabletopGraspGoal receive_goal;
 	receive_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER_FROM_HUMAN;
 	receive_goal.timeout_seconds = -1.0;
@@ -173,12 +193,18 @@ int main(int argc, char **argv) {
 	ac_grasp.sendGoal(receive_goal);
 	ac_grasp.waitForResult();
 	
+	if(ac_grasp.getResult()->success == false) {
+		ROS_ERROR("HANDOVER_FROM_HUMAN grasp failed:"); 
+		return 1; 
+	}
+	
 	//now make safe
 	segbot_arm_manipulation::homeArm(n);
+	ROS_INFO("Making arm safe for travel"); 
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	pressEnter("Press [Enter] to proceed with navigation");
-	//now travel: to do
 	
+	//now travel to goal 
 	bwi_kr_execution::ExecutePlanGoal goal_asp;
     bwi_kr_execution::AspRule rule;
     bwi_kr_execution::AspFluent fluent;
@@ -192,12 +218,9 @@ int main(int argc, char **argv) {
     goal_asp.aspGoal.push_back(rule);
 
     ROS_INFO("sending goal");
-    client_asp.sendGoalAndWait(goal_asp);
+    client_asp.sendGoalAndWait(goal_asp);	
 	
-	
-	
-	
-	//no home and let go
+	//now home and let go of object 
 	segbot_arm_manipulation::homeArm(n);
 	
 	if (positionDB.hasJointPosition("handover_front")){
@@ -210,16 +233,24 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
+	std::cout << "Please take the object from the robot's hand\n"; 
+	
 	segbot_arm_manipulation::TabletopGraspGoal handover_goal;
 	handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
 	handover_goal.timeout_seconds = -1.0;
 	
 	ac_grasp.sendGoal(handover_goal);
 	ac_grasp.waitForResult();
-
 	
+	if(ac_grasp.getResult()->success == false) {
+		ROS_ERROR("HANDOVER grasp failed:"); 
+		return 1; 
+	}
+
+	// make ready for travel
 	segbot_arm_manipulation::homeArm(n);
 	segbot_arm_manipulation::closeHand();
 	segbot_arm_manipulation::makeSafeForTravel(n);
 	
+	returnToHome(); 
 }
