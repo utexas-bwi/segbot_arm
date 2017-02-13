@@ -1,5 +1,6 @@
 #goal definition
 sensor_msgs/PointCloud2 tgt_cloud
+sensor_msgs/JointState arm_home
 int8 bins
 ---
 #result definition

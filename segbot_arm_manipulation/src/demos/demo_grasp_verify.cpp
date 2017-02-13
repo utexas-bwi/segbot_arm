@@ -7,43 +7,13 @@
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_perception/TabletopPerception.h"
 
-//action for grasping
+//actions
 #include "segbot_arm_manipulation/TabletopGraspAction.h"
-
 #include "segbot_arm_manipulation/LiftVerifyAction.h"
-
-
 #include <segbot_arm_manipulation/arm_utils.h>
 
 #define NUM_JOINTS 8 //6+2 for the arm
-
-//mico joint state safe
-//-2.3321322971114142, -1.6372086401627464, -0.28393691436045176, -2.164605083475533, 0.7496982226688764, 4.682638807847723
-
-/* tool pose side
-	position: 
-		x: 0.117240786552
-		y: -0.301719456911
-		z: 0.239926770329
-	  orientation: 
-		x: 0.51289595084
-		y: 0.484664185494
-		z: 0.517808228151
-		w: 0.483645541456
-
-	tool pose safe
-		
-	x: -0.157769784331
-    y: -0.136029005051
-    z: 0.376786500216
-  orientation: 
-    x: 0.994340247286
-    y: 0.0977247708014
-    z: 0.005313327657
-    w: 0.0413413878465
-
-
-*/
+#define FINGER_FULLY_CLOSED 7300
 
 //global variables for storing data
 sensor_msgs::JointState current_state;
@@ -73,14 +43,26 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 	}
 }
 
-
 //Joint state cb
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
   current_pose = msg;
   heardPose = true;
 }
+sensor_msgs::JointState set_home_arm(){
+	//set arm "home" to a specific location, out of view of camera
+	sensor_msgs::JointState arm_home;
+	arm_home.position.push_back(-1.3417218624707292);
+	arm_home.position.push_back(-0.44756153173493096);
+	arm_home.position.push_back(-0.2887493796082798);
+	arm_home.position.push_back(-1.1031276625138604);
+	arm_home.position.push_back(1.1542971070664283);
+	arm_home.position.push_back(2.9511931472480804);
+	arm_home.position.push_back(FINGER_FULLY_CLOSED);
+	arm_home.position.push_back(FINGER_FULLY_CLOSED);
+	return arm_home;
+}
 
-//blocking call to listen for arm data (in this case, joint states)
+//blocking call to listen for arm data
 void listenForArmData(){
 	
 	heardJoinstState = false;
@@ -116,23 +98,6 @@ void pressEnter(std::string message){
 }
 
 
-void lift(ros::NodeHandle n, double x){
-	listenForArmData();
-	
-	geometry_msgs::PoseStamped p_target = current_pose;
-	
-	p_target.pose.position.z += x;
-	segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
-}
-
-void goToSafePose(ros::NodeHandle n){
-	geometry_msgs::PoseStamped pose_st;
-	pose_st.header.stamp = ros::Time(0);
-	pose_st.header.frame_id = "mico_link_base";
-	
-	
-}
-
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "demo_grasp_action_client");
@@ -161,9 +126,6 @@ int main(int argc, char **argv) {
 	
 
 	while (ros::ok()){
-	
-		//move the arm to side view
-	
 	
 		//get the table scene
 		segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
@@ -222,9 +184,12 @@ int main(int argc, char **argv) {
 		//action to lift and verify
 		actionlib::SimpleActionClient<segbot_arm_manipulation::LiftVerifyAction> lift_ac("arm_lift_verify_as", true);
 		lift_ac.waitForServer();
+		ROS_INFO("lift and verify action server made...");
+		
 		//make goals to send to action
 		segbot_arm_manipulation::LiftVerifyGoal lift_verify_goal;
 		lift_verify_goal.tgt_cloud = table_scene.cloud_clusters[largest_pc_index];
+		lift_verify_goal.arm_home = set_home_arm();
 		lift_verify_goal.bins = 8;
 		
 		ROS_INFO("sending goal to lift and verify action server...");
@@ -234,22 +199,16 @@ int main(int argc, char **argv) {
 		lift_ac.waitForResult();
 		
 		ROS_INFO("lift and verify action finished.");
-
-		if(lift_ac.getResult()){
+		segbot_arm_manipulation::LiftVerifyResult result = *lift_ac.getResult();
+		
+		//display success of action to user
+		bool verified = result.success;
+		if(verified){
 			ROS_INFO("Verification succeeded.");
 		}else{
 			ROS_WARN("Verification failed");
 		}
 		
-		//lift and lower the object a bit, let it go and move back
-		/*lift(n,0.07);
-		lift(n,-0.07);
-		segbot_arm_manipulation::openHand();
-		lift(n,0.07);
-		
-		segbot_arm_manipulation::homeArm(n);
-		segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
-	*/
 	
 		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");
 	}
