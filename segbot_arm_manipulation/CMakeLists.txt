@@ -106,6 +106,7 @@ add_dependencies(demo_grasp_verify segbot_arm_manipulation_gencpp)
 
 add_executable(demo_explore_object src/demos/demo_explore_object.cpp)
 target_link_libraries(demo_explore_object ${catkin_LIBRARIES} )
+add_dependencies(demo_explore_object jaco_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
 
 add_executable(test_table_approach_actions src/demos/test_table_approach_actions.cpp)
 target_link_libraries(test_table_approach_actions ${catkin_LIBRARIES} )
