@@ -25,6 +25,12 @@
 
 #include <moveit_utils/MicoNavSafety.h>
 
+#include <iostream>
+#include <string>
+
+//audio service
+#include "bwi_services/SpeakMessage.h"
+
 #define NUM_JOINTS 8 //6+2 for the arm
 
 
@@ -96,6 +102,35 @@ void pressEnter(std::string message){
 	}
 }
 
+// Asks the user what door the robot should deliver the object to 
+std::string getDoor(std::string default_door) {
+	std::cout << "Default door:" + default_door + "\n";
+	std::cout << "Change door (y or n)? "; 
+	while(true) {
+		char c = std::cin.get(); 
+		if (c == 'n') {
+			return default_door; 
+		}
+		else if (c == 'y') {
+			break;
+		}
+		else {
+			std::cout << "Change door (y or n)? "; 
+		}
+	}  
+	while (true) {
+		std::cout << "Please enter a door to deliver object to:"; 
+		std::string input; 
+		std::getline(std::cin, input);
+		if(input.at(0) != 'd' && input.at(2) != '_') {
+			std::cout << "Door must be in following form: d<floor number>_<room number/door number> (Ex. d3_414b2)"; 
+		} 
+		else {
+			return input; 
+		}
+	}
+}
+
 // Asks the user if they want the robot to return to original position
 // If yes, sends robot to original position
 void returnToHome(){
@@ -136,13 +171,6 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "object_handover_delivery_task");
 	
 	ros::NodeHandle n;
-	
-	//retrieve default door
-	ros::NodeHandle privateNode("~");
-	std::string delivery_door;
-	privateNode.param<std::string>("door",delivery_door,"d3_414b2");
-  
-	ROS_INFO("Target location: %s",delivery_door.c_str());
 
 	//create subscribers for arm topics
 	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
@@ -182,7 +210,6 @@ int main(int argc, char **argv) {
 		ROS_ERROR("handover_front position does not exist! Aborting...");
 		return 1;
 	}
-	
 
 	//now receive object
 	std::cout << "Please place an object in robot's hand\n"; 
@@ -203,6 +230,9 @@ int main(int argc, char **argv) {
 	ROS_INFO("Making arm safe for travel"); 
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	pressEnter("Press [Enter] to proceed with navigation");
+	
+	//give robot goal
+	std::string delivery_door = getDoor("d3_414b2"); 
 	
 	//now travel to goal 
 	bwi_kr_execution::ExecutePlanGoal goal_asp;
@@ -232,6 +262,12 @@ int main(int argc, char **argv) {
 		ROS_ERROR("handover_front position does not exist! Aborting...");
 		return 1;
 	}
+	
+	//play audio message 
+	ros::ServiceClient speakMessageClient = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");  
+	bwi_services::SpeakMessage speakSrv;
+	speakSrv.request.message = "Special delivery"; 
+	speakMessageClient.call(speakSrv); 
 	
 	std::cout << "Please take the object from the robot's hand\n"; 
 	
