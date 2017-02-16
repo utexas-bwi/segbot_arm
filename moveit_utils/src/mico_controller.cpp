@@ -69,6 +69,14 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
 	res.done = true;
 	return true;
 }
+
+bool check_end_pose(trajectory_msgs::JointTrajectory trajectory){
+	//get the last value of joints in the trajectory, should be the final goal's angles
+	trajectory_msgs::JointTrajectoryPoint goal_angles = trajectory.points.at(trajectory.points.size() - 1);
+	
+	
+}
+
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "mico_playback_server");
