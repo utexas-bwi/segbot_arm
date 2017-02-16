@@ -82,5 +82,4 @@ int main(int argc, char **argv) {
 	ArmPositionDB positionDB(j_pos_filename, c_pos_filename);
 	positionDB.print();
 	
-	listenForArmData();
 }

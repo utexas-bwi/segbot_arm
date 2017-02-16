@@ -119,14 +119,15 @@ std::string getDoor(std::string default_door) {
 		}
 	}  
 	while (true) {
-		std::cout << "Please enter a door to deliver object to:"; 
 		std::string input; 
+		std::getline(std::cin,input); 
+		std::cout << "Please enter a door to deliver object to: "; 
 		std::getline(std::cin, input);
-		if(input.at(0) != 'd' && input.at(2) != '_') {
-			std::cout << "Door must be in following form: d<floor number>_<room number/door number> (Ex. d3_414b2)"; 
+		if(input.size() < 6 || (input.at(0) != 'd' && input.at(2) != '_')) {
+			std::cout << "Door must be in following form: d<floor number>_<room number/door number> (Ex. d3_414b2)\n"; 
 		} 
 		else {
-			return input; 
+			return input;  
 		}
 	}
 }
@@ -231,6 +232,7 @@ int main(int argc, char **argv) {
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	pressEnter("Press [Enter] to proceed with navigation");
 	
+		
 	//give robot goal
 	std::string delivery_door = getDoor("d3_414b2"); 
 	
@@ -264,10 +266,10 @@ int main(int argc, char **argv) {
 	}
 	
 	//play audio message 
-	ros::ServiceClient speakMessageClient = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");  
-	bwi_services::SpeakMessage speakSrv;
-	speakSrv.request.message = "Special delivery"; 
-	speakMessageClient.call(speakSrv); 
+	//ros::ServiceClient speakMessageClient = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");  
+	//bwi_services::SpeakMessage speakSrv;
+	//speakSrv.request.message = "Special delivery"; 
+	//speakMessageClient.call(speakSrv); 
 	
 	std::cout << "Please take the object from the robot's hand\n"; 
 	
