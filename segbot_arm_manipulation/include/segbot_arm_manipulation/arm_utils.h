@@ -107,6 +107,7 @@ namespace segbot_arm_manipulation {
 		safety_client.waitForExistence();
 		moveit_utils::MicoNavSafety srv_safety;
 		srv_safety.request.getSafe = true;
+		
 		if (safety_client.call(srv_safety))
 		{
 			//ROS_INFO("Safety service called successfully");
