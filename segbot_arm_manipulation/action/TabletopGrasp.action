@@ -2,6 +2,7 @@
 string GRASP="grasp"     # used for grasping
 string HANDOVER="handover"	# used for handing over an object based on haptic feedback
 string HANDOVER_FROM_HUMAN="handover_from_human"	# used when robot listens for haptics feedback and grabs object from human
+string REPLACEMENT="replacement" # used when robot places an object back on a table after picking it up 
 
 # constants for which grasps should be filtered
 string SIDEWAY_GRASP_FILTER="side"
@@ -28,6 +29,8 @@ string grasp_filter_method
 
 # specific for "handover" action
 float32 timeout_seconds
+
+# specific for "replacement" action
 
 ---
 # Result

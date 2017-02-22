@@ -685,6 +685,8 @@ public:
 			}
 		
 		}
+		else if (goal->action_name == segbot_arm_manipulation::TabletopGraspGoal::REPLACEMENT) {
+		}
 	
 	
 	}
