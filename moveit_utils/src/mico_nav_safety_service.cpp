@@ -176,7 +176,6 @@ bool service_cb(moveit_utils::MicoNavSafety::Request &req, moveit_utils::MicoNav
 	
     if(movement_client.call(movement_srv)){
         ROS_INFO("Safety service call sent. Preparing to move arm to save location.");
-        //res.safe = movement_srv.response.completed;
 		if(req.getSafe){
 			enabled = true;
 		}

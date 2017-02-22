@@ -110,13 +110,12 @@ namespace segbot_arm_manipulation {
 		
 		if (safety_client.call(srv_safety))
 		{
-			//ROS_INFO("Safety service called successfully");
-			//TO DO: test this
+
 			return srv_safety.response.safe;
 		}
 		else
 		{
-			//ROS_ERROR("Failed to call safety service....aborting");
+			ROS_ERROR("Failed to call safety service....aborting");
 			return false;
 		}
 	}
