@@ -31,6 +31,7 @@ string grasp_filter_method
 float32 timeout_seconds
 
 # specific for "replacement" action
+sensor_msgs/JointState grasped_joint_state
 
 ---
 # Result
