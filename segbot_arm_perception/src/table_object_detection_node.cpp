@@ -1,5 +1,6 @@
 #include <signal.h>
 #include <vector>
+#include <Eigen/Dense>
 #include <string>
 #include <sys/stat.h>
 #include <ros/ros.h>
@@ -75,6 +76,8 @@ double plane_max_distance_tolerance = 0.03;
 double cluster_extraction_tolerance = 0.05;
 
 bool collecting_cloud = false;
+
+#define PI 3.14159265359
 
 // Check if a file exist or not
 bool file_exist(std::string& name) {
@@ -309,6 +312,11 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	seg.setMethodType (pcl::SAC_RANSAC);
 	seg.setMaxIterations (1000);
 	seg.setDistanceThreshold (0.025);
+	
+	//TO DO:test below
+	//Eigen::Vector3f axis = Eigen::Vector3f(0.0,1.0,0.0);
+	//seg.setAxis(axis);
+  	//seg.setEpsAngle(30.0f * (PI/180.0f) );
 
 	// Create the filtering object
 	pcl::ExtractIndices<PointT> extract;
