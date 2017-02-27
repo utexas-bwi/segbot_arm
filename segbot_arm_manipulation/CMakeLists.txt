@@ -116,6 +116,9 @@ add_executable(demo_hand_lead src/demos/demo_hand_lead.cpp)
 target_link_libraries(demo_hand_lead ${catkin_LIBRARIES} )
 add_dependencies(demo_hand_lead segbot_arm_manipulation_gencpp)
 
+add_executable(test_grasp_replacement src/demos/test_grasp_replacement.cpp)
+target_link_libraries(test_grasp_replacement ${catkin_LIBRARIES} )
+add_dependencies(test_grasp_replacement segbot_arm_manipulation_gencpp)
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
