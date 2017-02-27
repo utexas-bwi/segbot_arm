@@ -149,95 +149,94 @@ int main(int argc, char** argv){
 	
 	/*Test the action*/
 	
-	while(ros::ok()){
-		//get table scene
-		segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(nh);
-		
-		int largest_index = find_largest_cloud(table_scene);
-		
-		/*create action client for the grasping action*/ 
-		actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac("segbot_tabletop_grasp_as",true);
-		ac.waitForServer();
-		ROS_INFO("action server made...");
-		
-		//create and fill goal
-		segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
-		grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
-		
-		
-		//for that action, we have to specify the method used for picking the target grasp out of the candidates
-		grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
-		
-		//finally, we fill in the table scene
-		grasp_goal.cloud_plane = table_scene.cloud_plane;
-		grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
-		
-		for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
-			grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
-		}
-		grasp_goal.target_object_cluster_index = largest_index;
+	//get table scene
+	segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(nh);
 				
-		//send the goal
-		ROS_INFO("Sending goal to action server...");
-		ac.sendGoal(grasp_goal);
-		
-		//Wait for result
-		ROS_INFO("Waiting for result...");
-		ac.waitForResult();
-		ROS_INFO("Action Finished...");
-
-		listen_for_arm_data(10);
-		grasped_state = current_state;
-
-		/*Create action client for lift verification*/
-		actionlib::SimpleActionClient<segbot_arm_manipulation::LiftVerifyAction> lift_ac("arm_lift_verify_as", true);
-		lift_ac.waitForServer();
-		ROS_INFO("lift and verify action server made...");
-		
-		//make goals to send to action
-		segbot_arm_manipulation::LiftVerifyGoal lift_verify_goal;
-		lift_verify_goal.tgt_cloud = table_scene.cloud_clusters[largest_index];
-		lift_verify_goal.arm_home = set_home_arm();
-		lift_verify_goal.bins = 8;
-		
-		//wait for result
-		ROS_INFO("sending goal to lift and verify action server...");
-		lift_ac.sendGoal(lift_verify_goal);
-		ROS_INFO("waiting for lift and verify action server result....");
-		lift_ac.waitForResult();
-		
-		//get response from action
-		ROS_INFO("lift and verify action finished.");
-		segbot_arm_manipulation::LiftVerifyResult result = *lift_ac.getResult();
-		
-		//display success of action to user
-		bool verified = result.success;
-		if(verified){
-			ROS_INFO("Verification succeeded.");
-		}else{
-			ROS_WARN("Verification failed");
-		}
-		
-		/*create action for replacement*/
-		actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> replacement_ac("segbot_tabletop_grasp_as",true);
-		replacement_ac.waitForServer();
-		ROS_INFO("action server made...");
-		
-		//create goal for the replacement
-		segbot_arm_manipulation::TabletopGraspGoal replacement_goal;
-		replacement_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::REPLACEMENT;
-		replacement_goal.grasped_joint_state = grasped_state;
-		
-		ROS_INFO("Sending goal to action server...");
-		replacement_ac.sendGoal(replacement_goal);
-		
-		//Wait for result
-		ROS_INFO("Waiting for result...");
-		replacement_ac.waitForResult();
-		ROS_INFO("Action Finished...");
-		
-		
-		
+	int largest_index = find_largest_cloud(table_scene);
+				
+	/*create action client for the grasping action*/ 
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac("segbot_tabletop_grasp_as",true);
+	ac.waitForServer();
+	ROS_INFO("action server made...");
+				
+	//create and fill goal
+	segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
+	grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
+				
+				
+	//for that action, we have to specify the method used for picking the target grasp out of the candidates
+	grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
+				
+	//finally, we fill in the table scene
+	grasp_goal.cloud_plane = table_scene.cloud_plane;
+	grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
+				
+	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
+		grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
 	}
+	grasp_goal.target_object_cluster_index = largest_index;
+						
+	//send the goal
+	ROS_INFO("Sending goal to action server...");
+	ac.sendGoal(grasp_goal);
+				
+	//Wait for result
+	ROS_INFO("Waiting for result...");
+	ac.waitForResult();
+	ROS_INFO("Action Finished...");
+
+	listen_for_arm_data(10);
+	grasped_state = current_state;
+
+	/*Create action client for lift verification*/
+	actionlib::SimpleActionClient<segbot_arm_manipulation::LiftVerifyAction> lift_ac("arm_lift_verify_as", true);
+	lift_ac.waitForServer();
+	ROS_INFO("lift and verify action server made...");
+				
+	//make goals to send to action
+	segbot_arm_manipulation::LiftVerifyGoal lift_verify_goal;
+	lift_verify_goal.tgt_cloud = table_scene.cloud_clusters[largest_index];
+	lift_verify_goal.arm_home = set_home_arm();
+	lift_verify_goal.bins = 8;
+				
+	//wait for result
+	ROS_INFO("sending goal to lift and verify action server...");
+	lift_ac.sendGoal(lift_verify_goal);
+	ROS_INFO("waiting for lift and verify action server result....");
+	lift_ac.waitForResult();
+				
+	//get response from action
+	ROS_INFO("lift and verify action finished.");
+	segbot_arm_manipulation::LiftVerifyResult result = *lift_ac.getResult();
+				
+	//display success of action to user
+	bool verified = result.success;
+	if(verified){
+		ROS_INFO("Verification succeeded.");
+	}else{
+		ROS_WARN("Verification failed");
+	}
+				
+	segbot_arm_manipulation::homeArm(nh);
+				
+	/*create action for replacement*/
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> replacement_ac("segbot_tabletop_grasp_as",true);
+	replacement_ac.waitForServer();
+	ROS_INFO("action server made...");
+				
+	//create goal for the replacement
+	segbot_arm_manipulation::TabletopGraspGoal replacement_goal;
+	replacement_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::REPLACEMENT;
+	replacement_goal.grasped_joint_state = grasped_state;
+			
+	ROS_INFO("Sending goal to action server...");
+	ac.sendGoal(replacement_goal);
+				
+	//Wait for result
+	ROS_INFO("Waiting for result...");
+	ac.waitForResult();
+	ROS_INFO("Action Finished...");
+		
+		
 	
 }
