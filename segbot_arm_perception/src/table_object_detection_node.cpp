@@ -314,7 +314,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	seg.setDistanceThreshold (0.025);
 	
 	//TO DO:test below
-	//Eigen::Vector3f axis = Eigen::Vector3f(0.0,1.0,0.0);
+	//Eigen::Vector3f axis = Eigen::Vector3f(0.0,0.0,1.0);
 	//seg.setAxis(axis);
   	//seg.setEpsAngle(30.0f * (PI/180.0f) );
 
@@ -360,7 +360,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	clusters_on_plane.clear();
 	
 	//if true, clouds on the other side of the plane will be rejected
-	bool check_below_plane = false;
+	bool check_below_plane = false; //TO DO: test true
 	double plane_z = -1.0;
 	PointCloudT::Ptr cloud_plane_baselink (new PointCloudT);
 	Eigen::Vector4f plane_centroid;
