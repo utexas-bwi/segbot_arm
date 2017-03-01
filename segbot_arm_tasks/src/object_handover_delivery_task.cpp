@@ -135,6 +135,8 @@ std::string getDoor(std::string default_door) {
 // Asks the user if they want the robot to return to original position
 // If yes, sends robot to original position
 void returnToHome(){
+	std::string input;
+	std::getline(std::cin, input); 
 	std::string message = "Return to room 3.414a? Enter y or n)";  
 	std::cout << message; 
 	while (true) {
