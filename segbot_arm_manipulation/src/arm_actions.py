@@ -11,6 +11,22 @@ from sensor_msgs.msg import *
 from segbot_arm_manipulation.msg import *
 from segbot_arm_perception.srv import *
 
+heard_state = False
+current_state = None 
+
+def wait_for_state():
+	global heard_state
+	heard_state = False
+	while not heard_state :
+		if heard_state:
+			break
+
+def joint_cb (data):
+	global heard_state
+	global current_state
+	heard_state = True
+	current_state = data
+
 
 """function to set the goal side view for the lift action"""
 def set_home_arm():
@@ -19,7 +35,7 @@ def set_home_arm():
 	msg.position = []
 	msg.velocity = []
 	msg.effort = []
-	msg.header.frame_id = '/base_link'
+	msg.header.frame_id = '/mico_base_link'
 	
 	msg.position.append(-1.3417218624707292)
 	msg.position.append(-0.44756153173493096)
@@ -31,14 +47,13 @@ def set_home_arm():
 	msg.position.append(7300)
 	return msg
 
-
 """Function to call the perception service that gets objects off the table"""
 def get_table_scene():
 	rospy.wait_for_service('tabletop_object_detection_service')
 	try:
 		perception_client = rospy.ServiceProxy('tabletop_object_detection_service', TabletopPerception)
 	
-		table_scene_resp = perception_client(false, 0.0)
+		table_scene_resp = perception_client(False, 0.0)
 		return table_scene_resp
 	except rospy.ServiceException, e:
 		print "Service call failed: %s"%e
@@ -47,21 +62,23 @@ def get_table_scene():
 def get_largest_object(cloud_clusters):
 	largest_pc_index = -1;
 	largest_num_points = -1;
-	
-	for (ind, pc) in cloud_clusters.enumerate():
+	index = 0
+	for pc in cloud_clusters:
+		
 		num_points_i = pc.height* pc.width
 		
 		if (num_points_i > largest_num_points):
 			largest_num_points = num_points_i
-			largest_pc_index = ind
+			largest_pc_index = index
+		index+=1
 	return largest_pc_index;
 		
 	
 		
 		
 
-"""Function to grasp an object on the table"""
-def arm_grasp(table_scene):
+"""Function to grasp an object on the table, returns table scene"""
+def arm_grasp():
 	"""Send goal to grasp the largest object on the table"""
 	action_address = 'segbot_tabletop_grasp_as'
 	client = actionlib.SimpleActionClient(action_address, segbot_arm_manipulation.msg.TabletopGraspAction)
@@ -76,14 +93,14 @@ def arm_grasp(table_scene):
 	goal.cloud_plane = table_scene.cloud_plane
 	goal.cloud_plane_coef = table_scene.cloud_plane_coef
 	
-	
+	goal.cloud_clusters = table_scene.cloud_clusters
 	goal.target_object_cluster_index = get_largest_object(table_scene.cloud_clusters)
-	
+
 	client.send_goal(goal)
-	
+	print 'sent goal'
 	client.wait_for_result()
-	
-	return client.get_result()
+	print 'get result'
+	return table_scene
 	
 """function for lifting an object"""
 def arm_lift(table_scene):
@@ -95,7 +112,7 @@ def arm_lift(table_scene):
 	largest_index = get_largest_object(table_scene.cloud_clusters)
 	
 	goal.tgt_cloud = table_scene.cloud_clusters[largest_index]
-	goal.arm_home = set_arm_home()
+	goal.arm_home = set_home_arm()
 	goal.bins = 8
 	
 	lift_client.send_goal(goal)
@@ -137,9 +154,10 @@ def arm_handover ():
 """Function to open the fingers of the robot"""
 def open_finger():
 	action_address = '/mico_arm_driver/fingers/finger_positions'
-	finger_client = actionlib.SimpleActionClient(action_address, jaco_msgs.msg.SetFingerPositionAction)
+	finger_client = actionlib.SimpleActionClient(action_address, jaco_msgs.msg.SetFingersPositionAction)
+	finger_client.wait_for_server()
 	
-	goal = jaco_msg.msg.SetFingerPositionGoal()
+	goal = jaco_msgs.msg.SetFingersPositionGoal()
 	goal.fingers.finger1 = 100
 	goal.fingers.finger2 = 100
 	goal.fingers.finger3 = 0
@@ -148,7 +166,13 @@ def open_finger():
 	finger_client.wait_for_result()
 	
 	return finger_client.get_result()
+	
+	
+rospy.init_node('arm_action_tester', anonymous=True)
+rospy.Subscriber("/joint_states", JointState , joint_cb)
 
-
-state = set_home_arm()
-
+table_scene = arm_grasp()
+wait_for_state()
+new_state = current_state
+arm_lift(table_scene)
+arm_handover()
