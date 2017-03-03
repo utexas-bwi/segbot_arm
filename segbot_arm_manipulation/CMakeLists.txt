@@ -23,6 +23,8 @@ find_package(catkin REQUIRED COMPONENTS
   segbot_arm_perception
 )
 
+catkin_python_setup()
+
 find_package(PCL 1.7 REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS})
@@ -119,6 +121,9 @@ add_dependencies(demo_hand_lead segbot_arm_manipulation_gencpp)
 add_executable(test_grasp_replacement src/demos/test_grasp_replacement.cpp)
 target_link_libraries(test_grasp_replacement ${catkin_LIBRARIES} )
 add_dependencies(test_grasp_replacement segbot_arm_manipulation_gencpp)
+
+catkin_install_python(PROGRAMS src/arm_actions.py
+DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
