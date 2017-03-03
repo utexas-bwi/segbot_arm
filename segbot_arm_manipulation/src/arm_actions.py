@@ -167,12 +167,15 @@ def open_finger():
 	
 	return finger_client.get_result()
 	
-	
-rospy.init_node('arm_action_tester', anonymous=True)
-rospy.Subscriber("/joint_states", JointState , joint_cb)
+def arm_actions_init():
+    rospy.Subscriber("/joint_states", JointState , joint_cb)
 
-table_scene = arm_grasp()
-wait_for_state()
-new_state = current_state
-arm_lift(table_scene)
-arm_handover()
+def arm_node_init():
+    rospy.init_node('arm_action_tester', anonymous=True)
+    arm_actions_init()
+
+#table_scene = arm_grasp()
+#wait_for_state()
+#new_state = current_state
+#arm_lift(table_scene)
+#arm_handover()
