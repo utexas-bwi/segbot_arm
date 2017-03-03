@@ -122,11 +122,7 @@ add_executable(test_grasp_replacement src/demos/test_grasp_replacement.cpp)
 target_link_libraries(test_grasp_replacement ${catkin_LIBRARIES} )
 add_dependencies(test_grasp_replacement segbot_arm_manipulation_gencpp)
 
-catkin_install_python(PROGRAMS src/arm_actions.py
+install(PROGRAMS 
+	src/arm_actions.py
+	src/test_arm_actions.py
 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.h"
-  PATTERN ".svn" EXCLUDE)
-

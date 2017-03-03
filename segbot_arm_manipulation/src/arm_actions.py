@@ -9,7 +9,7 @@ import std_msgs.msg
 from jaco_msgs.msg import *
 from sensor_msgs.msg import *
 from segbot_arm_manipulation.msg import *
-from segbot_arm_perception.msg import *
+from segbot_arm_perception.srv import *
 
 
 """function to set the goal side view for the lift action"""
@@ -148,4 +148,7 @@ def open_finger():
 	finger_client.wait_for_result()
 	
 	return finger_client.get_result()
+
+
+state = set_home_arm()
 
