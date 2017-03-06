@@ -313,10 +313,21 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	seg.setMaxIterations (1000);
 	seg.setDistanceThreshold (0.025);
 	
-	//TO DO:test below
-	//Eigen::Vector3f axis = Eigen::Vector3f(0.0,0.0,1.0);
-	//seg.setAxis(axis);
-  	//seg.setEpsAngle(30.0f * (PI/180.0f) );
+	
+	geometry_msgs::Vector3Stamped ros_vec;
+	ros_vec.header.frame_id = "/base_link";
+	ros_vec.vector.x = 0.0;
+	ros_vec.vector.y = 0.0;
+	ros_vec.vector.z = 1.0;
+	
+	//transform the vector to the camera frame of reference 
+	tf_listener.waitForTransform("/base_link",cloud->header.frame_id, ros::Time(0), ros::Duration(3.0)); //todo: test
+
+	Eigen::Vector3f axis = Eigen::Vector3f(ros_vec.vector.x, ros_vec.vector.y , ros_vec.vector.z);
+	seg.setAxis(axis);
+	
+	//set an epsilon that the table can differ from the axis above by
+  	seg.setEpsAngle(30.0f * (PI/180.0f) );
 
 	// Create the filtering object
 	pcl::ExtractIndices<PointT> extract;
@@ -369,7 +380,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	if (check_below_plane){
 		
 		//wait for transform and perform it
-		tf_listener.waitForTransform(cloud->header.frame_id,"\base_link",ros::Time(0), ros::Duration(3.0)); 
+		tf_listener.waitForTransform(cloud->header.frame_id,"/base_link",ros::Time(0), ros::Duration(3.0)); 
 		
 		//convert plane cloud to ROS
 		sensor_msgs::PointCloud2 plane_cloud_ros;
@@ -377,7 +388,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 		plane_cloud_ros.header.frame_id = cloud->header.frame_id;
 		
 		//transform it to base link frame of reference
-		pcl_ros::transformPointCloud ("\base_link", plane_cloud_ros, plane_cloud_ros, tf_listener);
+		pcl_ros::transformPointCloud ("/base_link", plane_cloud_ros, plane_cloud_ros, tf_listener);
 					
 		//convert to PCL format and take centroid
 		pcl::fromROSMsg (plane_cloud_ros, *cloud_plane_baselink);
@@ -396,7 +407,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 				pcl::toROSMsg(*clusters.at(i),cloud_i_ros);
 				cloud_i_ros.header.frame_id = cloud->header.frame_id;
 				
-				pcl_ros::transformPointCloud ("\base_link", cloud_i_ros,cloud_i_ros, tf_listener);
+				pcl_ros::transformPointCloud ("/base_link", cloud_i_ros,cloud_i_ros, tf_listener);
 				
 				//convert to PCL format and take centroid
 				PointCloudT::Ptr cluster_i_baselink (new PointCloudT);
