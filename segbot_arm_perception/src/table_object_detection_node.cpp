@@ -7,6 +7,7 @@
 #include <ros/package.h>
 
 #include <sensor_msgs/PointCloud2.h>
+#include <geometry_msgs/Vector3Stamped.h>
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -308,7 +309,8 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	// Optional
 	seg.setOptimizeCoefficients (true);
 	// Mandatory
-	seg.setModelType (pcl::SACMODEL_PLANE);
+	//seg.setModelType (pcl::SACMODEL_PLANE);
+	seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE); //to do: ensure this is working
 	seg.setMethodType (pcl::SAC_RANSAC);
 	seg.setMaxIterations (1000);
 	seg.setDistanceThreshold (0.025);
@@ -320,15 +322,25 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	ros_vec.vector.y = 0.0;
 	ros_vec.vector.z = 1.0;
 	
+	ROS_INFO("Ros axis: %f, %f, %f",
+		ros_vec.vector.x,ros_vec.vector.y,ros_vec.vector.z);
+	
 	//transform the vector to the camera frame of reference 
-	tf_listener.waitForTransform("/base_link",cloud->header.frame_id, ros::Time(0), ros::Duration(3.0)); //todo: test
+	tf_listener.transformVector(cloud->header.frame_id, ros::Time(0), ros_vec, "/base_link", ros_vec); //todo: test
 
 	Eigen::Vector3f axis = Eigen::Vector3f(ros_vec.vector.x, ros_vec.vector.y , ros_vec.vector.z);
 	seg.setAxis(axis);
 	
+	ROS_INFO("sac axis value: %f, %f, %f", seg.getAxis()[0],seg.getAxis()[1], seg.getAxis()[2]); 
+
 	//set an epsilon that the table can differ from the axis above by
   	seg.setEpsAngle(30.0f * (PI/180.0f) );
-
+	
+	ROS_INFO("epsilon value: %f", seg.getEpsAngle()); 
+	
+	//TODO: it still will get the middle of an object as "perpendicular plane"
+	
+	
 	// Create the filtering object
 	pcl::ExtractIndices<PointT> extract;
 
@@ -515,7 +527,6 @@ int main (int argc, char** argv)
 
 	//publisher for cost map cloud
 	cloud_costmap_pub = nh.advertise<sensor_msgs::PointCloud2>("/xtion_obstacle_cloud", 1);
-
 
 	//services
 	ros::ServiceServer service = nh.advertiseService("tabletop_object_detection_service", seg_cb);
