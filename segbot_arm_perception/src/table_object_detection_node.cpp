@@ -32,6 +32,7 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/sample_consensus/method_types.h>
@@ -309,8 +310,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	// Optional
 	seg.setOptimizeCoefficients (true);
 	// Mandatory
-	//seg.setModelType (pcl::SACMODEL_PLANE);
-	seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE); //to do: ensure this is working
+	seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);
 	seg.setMethodType (pcl::SAC_RANSAC);
 	seg.setMaxIterations (1000);
 	seg.setDistanceThreshold (0.025);
@@ -326,7 +326,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 		ros_vec.vector.x,ros_vec.vector.y,ros_vec.vector.z);
 	
 	//transform the vector to the camera frame of reference 
-	tf_listener.transformVector(cloud->header.frame_id, ros::Time(0), ros_vec, "/base_link", ros_vec); //todo: test
+	tf_listener.transformVector(cloud->header.frame_id, ros::Time(0), ros_vec, "/base_link", ros_vec); 
 
 	Eigen::Vector3f axis = Eigen::Vector3f(ros_vec.vector.x, ros_vec.vector.y , ros_vec.vector.z);
 	seg.setAxis(axis);
@@ -334,12 +334,9 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	ROS_INFO("sac axis value: %f, %f, %f", seg.getAxis()[0],seg.getAxis()[1], seg.getAxis()[2]); 
 
 	//set an epsilon that the table can differ from the axis above by
-  	seg.setEpsAngle(30.0f * (PI/180.0f) );
+  	seg.setEpsAngle(0.09); //value in radians, corresponds to 5 degrees
 	
-	ROS_INFO("epsilon value: %f", seg.getEpsAngle()); 
-	
-	//TODO: it still will get the middle of an object as "perpendicular plane"
-	
+	ROS_INFO("epsilon value: %f", seg.getEpsAngle()); 	
 	
 	// Create the filtering object
 	pcl::ExtractIndices<PointT> extract;
@@ -353,7 +350,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	extract.setIndices (inliers);
 	extract.setNegative (false);
 	extract.filter (*cloud_plane);
-
+	
 	//extract everything else
 	extract.setNegative (true);
 	extract.filter (*cloud_blobs);
