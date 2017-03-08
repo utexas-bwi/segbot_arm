@@ -39,6 +39,7 @@ add_action_files(
    Press.action
    Push.action
    Shake.action
+   ObjReplacement.action
 )
 
 add_service_files(
@@ -121,6 +122,10 @@ add_dependencies(demo_hand_lead segbot_arm_manipulation_gencpp)
 add_executable(test_grasp_replacement src/demos/test_grasp_replacement.cpp)
 target_link_libraries(test_grasp_replacement ${catkin_LIBRARIES} )
 add_dependencies(test_grasp_replacement segbot_arm_manipulation_gencpp)
+
+add_executable(segbot_obj_replacement_as src/segbot_obj_replacement_as.cpp)
+add_dependencies(segbot_obj_replacement_as segbot_arm_manipulation_gencpp)
+target_link_libraries(segbot_obj_replacement_as ${catkin_LIBRARIES} )
 
 install(PROGRAMS 
 	src/arm_actions.py
