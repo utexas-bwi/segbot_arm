@@ -155,6 +155,61 @@ bool filter(PointCloudT::Ptr blob, PointCloudT::Ptr plane_cloud, Eigen::Vector4f
 	
 }
 
+/*Function for finding the largest plane from the segmented "table"
+ *Requires: check before call to this function that the in cloud is not empty*/
+PointCloudT::Ptr seg_largest_plane(PointCloudT::Ptr in, double tolerance){
+	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
+	tree->setInputCloud (in);
+
+	//use euclidean cluster extraction to eliminate noise and get largest plane
+	std::vector<pcl::PointIndices> cluster_indices;
+	pcl::EuclideanClusterExtraction<PointT> ec;
+	ec.setClusterTolerance (tolerance); // 2cm
+	ec.setMinClusterSize (200);
+	ec.setMaxClusterSize (25000);
+	ec.setSearchMethod (tree);
+	ec.setInputCloud (in);
+	ec.extract (cluster_indices);
+
+	std::vector<PointCloudT::Ptr> clusters_vec;
+
+	int j = 0;
+	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+	{
+		PointCloudT::Ptr cloud_cluster (new PointCloudT);
+		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+			cloud_cluster->points.push_back (in->points[*pit]); //*
+		cloud_cluster->width = cloud_cluster->points.size ();
+		cloud_cluster->height = 1;
+		cloud_cluster->is_dense = true;
+
+		clusters_vec.push_back(cloud_cluster);
+  }
+    
+    //find the largest point cloud 
+	int largest_pc_index = -1;
+	int largest_num_points = -1;
+	
+	for (unsigned int i = 0; i < clusters_vec.size(); i++){
+		int num_points_i = clusters_vec[i]->height* clusters_vec[i]->width;
+		if (num_points_i > largest_num_points){
+			largest_num_points = num_points_i;
+			largest_pc_index = i;
+		}
+	}
+	
+	if(largest_pc_index == -1){
+		//did not find any objects, an error has occurred
+		ROS_ERROR("There is no table. Should not reach this point");
+		exit(1); 
+	}
+	
+	return clusters_vec[largest_pc_index];
+
+} 
+
+
+
 void computeClusters(PointCloudT::Ptr in, double tolerance){
 	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 	tree->setInputCloud (in);
@@ -175,7 +230,7 @@ void computeClusters(PointCloudT::Ptr in, double tolerance){
 	{
 		PointCloudT::Ptr cloud_cluster (new PointCloudT);
 		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
-			cloud_cluster->points.push_back (in->points[*pit]); //*
+			cloud_cluster->points.push_back (in->points[*pit]); 
 		cloud_cluster->width = cloud_cluster->points.size ();
 		cloud_cluster->height = 1;
 		cloud_cluster->is_dense = true;
@@ -350,6 +405,10 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	extract.setIndices (inliers);
 	extract.setNegative (false);
 	extract.filter (*cloud_plane);
+	
+	//get the largest plane from the segmented cloud_plane, store in cloud_plane
+	//TODO: test this
+	PointCloudT::Ptr largest_plane = seg_largest_plane(cloud_plane, cluster_extraction_tolerance);
 	
 	//extract everything else
 	extract.setNegative (true);
