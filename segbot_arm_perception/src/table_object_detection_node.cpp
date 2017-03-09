@@ -79,8 +79,6 @@ double cluster_extraction_tolerance = 0.05;
 
 bool collecting_cloud = false;
 
-#define PI 3.14159265359
-
 // Check if a file exist or not
 bool file_exist(std::string& name) {
     struct stat buffer;
@@ -160,13 +158,14 @@ bool filter(PointCloudT::Ptr blob, PointCloudT::Ptr plane_cloud, Eigen::Vector4f
 PointCloudT::Ptr seg_largest_plane(PointCloudT::Ptr in, double tolerance){
 	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 	tree->setInputCloud (in);
+	ROS_INFO("point cloud size of 'plane cloud' : %ld", in->size());
 
 	//use euclidean cluster extraction to eliminate noise and get largest plane
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<PointT> ec;
 	ec.setClusterTolerance (tolerance); // 2cm
 	ec.setMinClusterSize (200);
-	ec.setMaxClusterSize (25000);
+	//ec.setMaxClusterSize (25000);
 	ec.setSearchMethod (tree);
 	ec.setInputCloud (in);
 	ec.extract (cluster_indices);
@@ -182,7 +181,7 @@ PointCloudT::Ptr seg_largest_plane(PointCloudT::Ptr in, double tolerance){
 		cloud_cluster->width = cloud_cluster->points.size ();
 		cloud_cluster->height = 1;
 		cloud_cluster->is_dense = true;
-
+		ROS_INFO("adding to list of vectors");
 		clusters_vec.push_back(cloud_cluster);
   }
     
@@ -197,6 +196,8 @@ PointCloudT::Ptr seg_largest_plane(PointCloudT::Ptr in, double tolerance){
 			largest_pc_index = i;
 		}
 	}
+	
+	ROS_INFO("number of 'plane clouds' : %ld", clusters_vec.size());
 	
 	if(largest_pc_index == -1){
 		//did not find any objects, an error has occurred
@@ -405,11 +406,8 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	extract.setIndices (inliers);
 	extract.setNegative (false);
 	extract.filter (*cloud_plane);
-	
-	//get the largest plane from the segmented cloud_plane, store in cloud_plane
-	//TODO: test this
-	PointCloudT::Ptr largest_plane = seg_largest_plane(cloud_plane, cluster_extraction_tolerance);
-	
+
+		
 	//extract everything else
 	extract.setNegative (true);
 	extract.filter (*cloud_blobs);
