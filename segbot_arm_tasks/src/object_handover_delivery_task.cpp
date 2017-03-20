@@ -31,6 +31,8 @@
 //audio service
 #include "bwi_services/SpeakMessage.h"
 
+#include <bwi_msgs/QuestionDialog.h>
+
 #define NUM_JOINTS 8 //6+2 for the arm
 
 
@@ -103,7 +105,7 @@ void pressEnter(std::string message){
 }
 
 // Asks the user what door the robot should deliver the object to 
-std::string getDoor(std::string default_door) {
+std::string askDoor(std::string default_door) {
 	std::cout << "Default door:" + default_door + "\n";
 	std::cout << "Change door (y or n)? "; 
 	while(true) {
@@ -168,12 +170,39 @@ void returnToHome(){
 	
 }
 
+std::vector<std::string> getRooms() {
+	std::vector<std::string> rooms;
+	rooms.push_back("Robot Arm Lab"); 
+	rooms.push_back("BWI Lab"); 
+	rooms.push_back("Conference Room"); 
+	rooms.push_back("Seminar Room"); 
+	rooms.push_back("Robo Soccer Lab"); 
+	rooms.push_back("Peter Stone's Office"); 
+	rooms.push_back("Jivko Sinapov's Office"); 
+	return rooms; 
+}
+
+std::vector<std::string> getDoors() {
+	std::vector<std::string> doors;
+	doors.push_back("d3_414a2"); 
+	doors.push_back("d3_414b2");
+	doors.push_back("d3_416"); 
+	doors.push_back("d3_516"); 
+	doors.push_back("d3_436");
+	doors.push_back("d3_508"); 
+	doors.push_back("d3_432"); 
+	return doors; 
+}
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "object_handover_delivery_task");
 	
 	ros::NodeHandle n;
+
+	//make vectors for rooms and doors
+	std::vector<std::string> rooms = getRooms();
+	std::vector<std::string> doors = getDoors(); 
 
 	//create subscribers for arm topics
 	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
@@ -236,7 +265,39 @@ int main(int argc, char **argv) {
 	
 		
 	//give robot goal
-	std::string delivery_door = getDoor("d3_414b2"); 
+	//std::string delivery_door = askDoor("d3_414b2"); 
+	int delivery_index = 0; 
+
+	ros::ServiceClient client_gui = n.serviceClient<bwi_msgs::QuestionDialog>("/question_dialog");
+
+	bwi_msgs::QuestionDialog question;
+	question.request.type = question.request.CHOICE_QUESTION;
+	
+	question.request.message = "Please select a location to deliver object to:";
+	for (unsigned int k = 0; k < rooms.size(); k++){
+		question.request.options.push_back(rooms.at(k));
+	}
+
+	question.request.timeout = 30.0;
+	
+	if (client_gui.call(question))
+    {
+		if (question.response.index >= 0){
+			delivery_index = question.response.index;
+		}
+		else {
+			ROS_INFO("No response detected, defaulting to Robot Arm Lab");
+			delivery_index = 0;
+		}
+	}
+	else
+	{
+		ROS_ERROR("Failed to call service /question_dialog");
+		return 1;
+	}
+
+	std::string delivery_door = doors.at(delivery_index); 
+	ROS_INFO_STREAM("Going to " << delivery_door);
 	
 	//now travel to goal 
 	bwi_kr_execution::ExecutePlanGoal goal_asp;
