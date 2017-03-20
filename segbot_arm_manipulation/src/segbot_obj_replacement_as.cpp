@@ -8,6 +8,19 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
 
+#include "jaco_msgs/SetFingersPositionAction.h"
+#include "jaco_msgs/ArmPoseAction.h"
+#include "jaco_msgs/ArmJointAnglesAction.h"
+
+#include <moveit_msgs/DisplayRobotState.h>
+// Kinematics
+#include <moveit_msgs/GetPositionFK.h>
+#include <moveit_msgs/GetPositionIK.h>
+
+#include <moveit_utils/AngularVelCtrl.h>
+#include <moveit_utils/MicoMoveitJointPose.h>
+#include <moveit_utils/MicoMoveitCartesianPose.h>
+
 #include <tf_conversions/tf_eigen.h>
 
 #include <sensor_msgs/PointCloud.h>
@@ -28,6 +41,7 @@
 #include "segbot_arm_perception/TabletopPerception.h"
 
 #include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/grasp_utils.h>
 #include <segbot_arm_manipulation/arm_positions_db.h>
 
 /* define what kind of point clouds we're using */
@@ -44,19 +58,48 @@ protected:
 	segbot_arm_manipulation::ObjReplacementFeedback feedback_; 
 	segbot_arm_manipulation::ObjReplacementResult result_; 
 
-	//holds set of predefined positions
-	ArmPositionDB *posDB;
+	sensor_msgs::JointState current_state;
+	sensor_msgs::JointState current_effort;
+	jaco_msgs::FingerPosition current_finger;
+	geometry_msgs::PoseStamped current_pose;
+	bool heardPose;
+	bool heardJoinstState; 
+
+	bool heardGrasps;
+	agile_grasp::Grasps current_grasps;
+
+	//used to compute transforms
+	tf::TransformListener listener;
+
+	ros::Subscriber sub_angles;
+	ros::Subscriber sub_torques;
+	ros::Subscriber sub_tool;
+	ros::Subscriber sub_finger;
+	ros::Subscriber sub_grasps;
 
 public:
 	ObjReplacementActionServer(std::string name) :
 		as_(nh_, name, boost::bind(&ObjReplacementActionServer::executeCB, this, _1), false),
     		action_name_(name)
     {
-    	//load database of joint- and tool-space positions
-		std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
-		std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
+    	heardPose = false;
+		heardJoinstState = false;
+		heardGrasps = false;
 
-    	posDB = new ArmPositionDB(j_pos_filename, c_pos_filename);
+		//create subscriber to joint angles
+		sub_angles = nh_.subscribe ("/joint_states", 1, &ObjReplacementActionServer::joint_state_cb, this);
+
+		//create subscriber to joint torques
+		sub_torques = nh_.subscribe ("/mico_arm_driver/out/joint_efforts", 1, &ObjReplacementActionServer::joint_effort_cb,this);
+
+		//create subscriber to tool position topic
+		sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_position", 1, &ObjReplacementActionServer::toolpos_cb, this);
+
+		//subscriber for fingers
+		sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &ObjReplacementActionServer::fingers_cb, this);
+	  
+		//subscriber for grasps
+		sub_grasps = nh_.subscribe("/find_grasps/grasps_handles",1, &ObjReplacementActionServer::grasps_cb,this);  
 
     	ROS_INFO("Starting replacement grasp action server..."); 
     	as_.start(); 
@@ -66,65 +109,66 @@ public:
 	{
 	}
 
-		void executeCB(const segbot_arm_manipulation::ObjReplacementGoalConstPtr  &goal)
-		{
-			posDB->print(); 
-			//home the arm
-			segbot_arm_manipulation::homeArm(nh_);
-			segbot_arm_manipulation::closeHand();
-
-			// Step 1: Get center point of table (assumes empty table)
-
-			// Move arm out of view of camera 
-			if (posDB->hasCarteseanPosition("side_view")){
-				ROS_INFO("Moving out of the way...");
-				geometry_msgs::PoseStamped out_of_view_pose = posDB->getToolPositionStamped("side_view","/mico_link_base");
-				
-				//now go to the pose
-				segbot_arm_manipulation::moveToPoseMoveIt(nh_,out_of_view_pose);
-			}
-			else {
-				ROS_ERROR("[segbot_table_approach_as.cpp] Cannot move arm out of view!");
-			}
-
-			// Get table scene 
-			ros::ServiceClient client_tabletop_perception = nh_.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
-			segbot_arm_perception::TabletopPerception srv;
-
-			srv.request.override_filter_z = false;
-
-			if (client_tabletop_perception.call(srv))
-			{
-				ROS_INFO("Received Response from tabletop_object_detection_service");
-			}
-			else
-			{
-				ROS_ERROR("Failed to call perception service");
-				result_.success = false;
-				result_.error_msg = "cannot_call_tabletop_perception";
-				as_.setSucceeded(result_);
-				return;
-			}
-
-			// Check for table 
-			if (srv.response.is_plane_found == false){
-				ROS_ERROR("[segbot_obj_replacement_as.cpp] Table not found. The end.");
-				result_.success = false;
-				result_.error_msg = "table_not_found";
-				as_.setAborted(result_);
-				return;
-			}
-
-			sensor_msgs::PointCloud2 table_cloud_ros = srv.response.cloud_plane;
-			PointCloudT::Ptr table_cloud (new PointCloudT); 
-			Eigen::Vector4f table_centroid;
-
-			//convert to PCL format and take centroid
-			pcl::fromROSMsg (table_cloud_ros, *table_cloud);
-			pcl::compute3DCentroid (*table_cloud, table_centroid);
-		
-ROS_INFO("[segbot_obj_replacement_as.cpp] Table xyz: %f, %f, %f",table_centroid(0),table_centroid(1),table_centroid(2));
+	//Joint state cb
+	void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
+		if (input->position.size() == NUM_JOINTS){
+			current_state = *input;
+			heardJoinstState = true;
 		}
+	}
+
+	//Joint effort cb
+	void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
+		current_effort = *input;
+	}
+
+	//tool position cb
+	void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
+		current_pose = msg;
+		heardPose = true;
+	}
+
+	//fingers state cb
+	void fingers_cb (const jaco_msgs::FingerPosition msg) {
+		current_finger = msg;
+	}
+
+	void grasps_cb(const agile_grasp::Grasps &msg){
+		ROS_INFO("Heard grasps!");
+		current_grasps = msg;
+		heardGrasps = true;
+	}
+		
+	void listenForArmData(float rate){
+		heardPose = false;
+		heardJoinstState = false;
+		ros::Rate r(rate);
+		
+		while (ros::ok()){
+			ros::spinOnce();
+			
+			if (heardPose && heardJoinstState)
+				return;
+			
+			r.sleep();
+		}
+	}	
+		
+	void listenForGrasps(float rate){
+		ros::Rate r(rate);
+		heardGrasps = false;
+		while (ros::ok()){
+			ros::spinOnce();
+			if (heardGrasps)
+				return;
+			r.sleep();
+		}
+	}
+
+	void executeCB(const segbot_arm_manipulation::ObjReplacementGoalConstPtr  &goal)
+	{
+	}
+
 };
 
 
