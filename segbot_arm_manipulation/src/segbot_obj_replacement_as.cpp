@@ -132,12 +132,6 @@ public:
 	void fingers_cb (const jaco_msgs::FingerPosition msg) {
 		current_finger = msg;
 	}
-
-	void grasps_cb(const agile_grasp::Grasps &msg){
-		ROS_INFO("Heard grasps!");
-		current_grasps = msg;
-		heardGrasps = true;
-	}
 		
 	void listenForArmData(float rate){
 		heardPose = false;
@@ -165,8 +159,49 @@ public:
 		}
 	}
 
-	void executeCB(const segbot_arm_manipulation::ObjReplacementGoalConstPtr  &goal)
-	{
+	//downsamples cloud using VoxelGrid filter
+	void downsample_clouds(PointCloudT::Ptr in_cloud, PointCloudT::Ptr out_cloud, float leaf_size){
+		pcl::VoxelGrid<PointT> grid; 
+		grid.setInputCloud(in_cloud);
+		grid.setLeafSize (leaf_size, leaf_size, leaf_size); 
+		grid.filter(*out_cloud);
+	}
+	
+	/*Assumptions: the robot has already approached the table, 
+	 * an object is in hand, the arm is currently still in safety mode*/
+	void executeCB(const segbot_arm_manipulation::ObjReplacementGoalConstPtr &goal){
+		//step1: get the table scene, check validity
+		segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
+		
+		if ((int)table_scene.cloud_clusters.size() == 0){
+			ROS_ERROR("[segbot_arm_replacement_as] a table must be present");
+			result_.success = false;
+			result_.error_msg = "a table must be present";
+			as_.setAborted(result_);
+			return;
+		}
+		
+		//(later) step2: get information about the object
+		
+		//step3: cropbox filter to reduce size of points to check
+		
+		
+		//step4: voxel grid filter with a distance size of 5cm
+		sensor_msgs::PointCloud2 scene_plane;
+		PointCloudT::Ptr pcl_scene_plane (new PointCloudT);
+		pcl::fromROSMsg(scene_plane, pcl_scene_plane);
+		
+		PointCloudT::Ptr plane_down_sam (new PointCloudT);
+		downsample_clouds(pcl_scene_plane, plane_down_sam, 0.05f);
+		
+		//step5: for each of these points, starting in the middle
+			//get a z value some height above the plane
+			//add some value to this to create a goal point 
+			//check the IK, if possible go to location
+			
+		//step6: ensure that the arm reached this location, release obj
+		//step7: home arm 
+		
 	}
 
 };
