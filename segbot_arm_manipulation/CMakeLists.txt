@@ -127,6 +127,10 @@ add_executable(segbot_obj_replacement_as src/segbot_obj_replacement_as.cpp)
 add_dependencies(segbot_obj_replacement_as segbot_arm_manipulation_gencpp)
 target_link_libraries(segbot_obj_replacement_as ${catkin_LIBRARIES} )
 
+add_executable(test_handover_replacement src/demos/test_handover_replacement.cpp)
+target_link_libraries(test_handover_replacement ${catkin_LIBRARIES} )
+add_dependencies(test_handover_replacement segbot_arm_manipulation_gencpp)
+
 install(PROGRAMS 
 	src/arm_actions.py
 	src/test_arm_actions.py
