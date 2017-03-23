@@ -407,9 +407,9 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	vg.setInputCloud (cloud_plane);
 	vg.setLeafSize (0.005f, 0.005f, 0.005f); //to do: test parameters
 	vg.filter (*cloud_plane);
-	
-	//find the largest cloud plane //TODO: test parameters
-	PointCloudT::Ptr seg_cloud_plane = seg_largest_plane(cloud_plane, cluster_extraction_tolerance);
+
+	//find the largest plane and segment out noise
+	cloud_plane = seg_largest_plane(cloud_plane, cluster_extraction_tolerance);
 		
 	//extract everything else
 	extract.setNegative (true);
@@ -430,7 +430,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	sensor_msgs::PointCloud2 ros_plane;
 	
 	//pcl::toROSMsg(*cloud_plane, ros_plane);
-	pcl::toROSMsg(*seg_cloud_plane, ros_plane);
+	pcl::toROSMsg(*cloud_plane, ros_plane);
 	
 	ros_plane.header.frame_id = cloud->header.frame_id;
 	table_cloud_pub.publish(ros_plane);
@@ -513,7 +513,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	//fill in response
 	
 	//plane cloud and coefficient
-	pcl::toROSMsg(*seg_cloud_plane,res.cloud_plane);
+	pcl::toROSMsg(*cloud_plane,res.cloud_plane);
 	res.cloud_plane.header.frame_id = cloud->header.frame_id;
 	for (int i = 0; i < 4; i ++){
 		res.cloud_plane_coef[i] = plane_coefficients(i);
@@ -528,7 +528,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	
 	//TO DO: check height of the table
 	res.is_plane_found = true;
-	if(seg_cloud_plane->empty()){
+	if(cloud_plane->empty()){
 		res.is_plane_found = false;
 	}
 	
@@ -546,7 +546,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	cloud_ros.header.frame_id = cloud->header.frame_id;
 	cloud_pub.publish(cloud_ros);
 	
-	pcl::toROSMsg(*seg_cloud_plane,cloud_ros);
+	pcl::toROSMsg(*cloud_plane,cloud_ros);
 	cloud_ros.header.frame_id = cloud->header.frame_id;
 	table_cloud_pub.publish(cloud_ros);
 	
