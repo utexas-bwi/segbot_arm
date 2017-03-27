@@ -48,6 +48,11 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
+#define NUM_JOINTS_ARMONLY 6
+#define NUM_JOINTS 8 //6+2 for the arm
+
+#define JOINT_RADIUS .195
+
 class ObjReplacementActionServer
 {
 protected:
@@ -97,9 +102,6 @@ public:
 
 		//subscriber for fingers
 		sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &ObjReplacementActionServer::fingers_cb, this);
-	  
-		//subscriber for grasps
-		//sub_grasps = nh_.subscribe("/find_grasps/grasps_handles",1, &ObjReplacementActionServer::grasps_cb,this);  
 
     	ROS_INFO("Starting replacement grasp action server..."); 
     	as_.start(); 
@@ -133,6 +135,7 @@ public:
 		current_finger = msg;
 	}
 		
+	//wait for updated arm information	
 	void listenForArmData(float rate){
 		heardPose = false;
 		heardJoinstState = false;
@@ -147,19 +150,19 @@ public:
 			r.sleep();
 		}
 	}	
-		
-	void listenForGrasps(float rate){
-		ros::Rate r(rate);
-		heardGrasps = false;
-		while (ros::ok()){
-			ros::spinOnce();
-			if (heardGrasps)
-				return;
-			r.sleep();
+	
+	/*Function to check the differences between the joint states*/
+	bool check_position(sensor_msgs::JointState goal_state, float threshold){
+		std::vector<double> joint_diffs = segbot_arm_manipulation::getJointAngleDifferences(current_state, goal_state);
+		for(int i = 0; i< joint_diffs.size(); i++){
+			if(joint_diffs[i] > threshold){
+				return false;
+			}
 		}
+		return true;
 	}
 
-	//downsamples cloud using VoxelGrid filter
+	/*Function to downsample an input cloud using VoxelGrid filter*/
 	void downsample_clouds(PointCloudT::Ptr in_cloud, PointCloudT::Ptr out_cloud, float leaf_size){
 		pcl::VoxelGrid<PointT> grid; 
 		grid.setInputCloud(in_cloud);
@@ -174,7 +177,7 @@ public:
 		//step1: get the table scene, check validity
 		segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(nh_);
 		
-		if ((int)table_scene.cloud_clusters.size() == 0){
+		if (!table_scene.is_plane_found){
 			ROS_ERROR("[segbot_arm_replacement_as] a table must be present");
 			result_.success = false;
 			result_.error_msg = "a table must be present";
@@ -205,15 +208,11 @@ public:
 		//step4: voxel grid filter with a distance size of 5cm
 		PointCloudT::Ptr plane_down_sam (new PointCloudT);
 		downsample_clouds(pcl_scene_plane, plane_down_sam, 0.05f);
-		
-		//step5: for each of these points, starting in the middle
-			//get a z value some height above the plane
-			//add some value to this to create a goal point 
-			//check the IK, if possible go to location
-		
+
+		//ensure a table is present
 		int num_points = (int) plane_down_sam->points.size();
 		if ((int)num_points == 0){
-			ROS_ERROR("[segbot_arm_replacement_as] the table contains no points");
+			ROS_ERROR("[segbot_arm_replacement_as] down sampled cloud has no points");
 			result_.success = false;
 			result_.error_msg = "down sampled cloud must still have points";
 			as_.setAborted(result_);
@@ -221,7 +220,7 @@ public:
 		}
 		
 		
-		//for now go through points like normal
+		//for now go through points iteratively
 		for(int ind = 0; ind < num_points; ind++){
 			//create the current goal for the arm to move to when resetting
 			geometry_msgs::PoseStamped current_goal;
@@ -229,14 +228,15 @@ public:
 			current_goal.pose.position.x = plane_down_sam->points[ind].x;
 			current_goal.pose.position.y = plane_down_sam->points[ind].y;
 			current_goal.pose.position.z = plane_down_sam->points[ind].z + 0.1; //want it to be slightly above the table still
-			//for now use 0,0,0; determine a better quaternion 
-			current_goal.pose.orientation =  tf::createQuaternionMsgFromRollPitchYaw(0 , 0 , 0);
+
+			//todo: determine better quaternion to use
+			current_goal.pose.orientation =  tf::createQuaternionMsgFromRollPitchYaw(3.14/2 , 0 , 0);
 			
+			//check the inverse kinematics, if possible, go to location
 			moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
 			if (ik_response_1.error_code.val == 1){
-				//go to the position and for now, break
 				segbot_arm_manipulation::moveToPoseMoveIt(nh_, current_goal);
-				//to do: determine if the position was reached, if not retry?
+				//to do: determine if the position was reached, if not retry
 				break;
 			}
 
