@@ -247,10 +247,10 @@ public:
 			moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
 			if (ik_response_1.error_code.val == 1){
 				segbot_arm_manipulation::moveToPoseMoveIt(nh_, current_goal);
-				//to do: determine if the position was reached, if not retry
+				//result_.success = check_position(ik_response_1.solution.joint_state, JOINT_RADIUS);
+				result_.success = true; //todo: only if on the table now
 				break;
 			}
-
 		}
 		
 		//drop the object
@@ -260,7 +260,8 @@ public:
 		segbot_arm_manipulation::homeArm(nh_);
 		
 		//todo: set results based on if the location was reached and if the object is on the table
-		
+		as_.setSucceeded(result_);
+
 	}
 
 };

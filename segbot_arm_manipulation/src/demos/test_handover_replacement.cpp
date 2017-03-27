@@ -146,13 +146,30 @@ int main(int argc, char** argv){
 		ROS_ERROR("HANDOVER_FROM_HUMAN grasp failed:"); 
 		return 1; 
 	}
+	
+	segbot_arm_manipulation::homeArm(nh);
+	if (positionDB.hasCarteseanPosition("side_view")){		
+		geometry_msgs::PoseStamped side_pose = positionDB.getToolPositionStamped("side_view","mico_link_base");
+		
+		ROS_INFO("Moving to side position"); 
+		
+		segbot_arm_manipulation::moveToPoseMoveIt(nh, side_pose);
+		
+		pressEnter("Press [Enter] to proceed");
+	}
+	else {
+		ROS_ERROR("side_view position does not exist! Aborting...");
+		return 1;
+	}
 
 	//test object replacement
 	segbot_arm_manipulation::ObjReplacementGoal replacement_goal; 
+	ROS_INFO("Sending goal to replacement...");
 	ac_replace.sendGoal(replacement_goal); 
 	ac_replace.waitForResult(); 
+	ROS_INFO("replacement action finished");
 
-	if(ac_replace.getResult()->success == false) {
+	if(!ac_replace.getResult()->success) {
 		ROS_ERROR("Object replacement failed:"); 
 		return 1; 
 	}
