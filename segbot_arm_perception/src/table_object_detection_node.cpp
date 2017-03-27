@@ -407,7 +407,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	vg.setInputCloud (cloud_plane);
 	vg.setLeafSize (0.005f, 0.005f, 0.005f); //to do: test parameters
 	vg.filter (*cloud_plane);
-
+	
 	//find the largest plane and segment out noise
 	cloud_plane = seg_largest_plane(cloud_plane, cluster_extraction_tolerance);
 		
@@ -443,12 +443,11 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	clusters_on_plane.clear();
 	
 	//if true, clouds on the other side of the plane will be rejected
-	bool check_below_plane = false; //TO DO: test true
+	bool check_below_plane = true; //TO DO: test true
 	double plane_z = -1.0;
 	PointCloudT::Ptr cloud_plane_baselink (new PointCloudT);
 	Eigen::Vector4f plane_centroid;
    
-	
 	if (check_below_plane){
 		
 		//wait for transform and perform it
