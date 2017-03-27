@@ -82,6 +82,8 @@ protected:
 	ros::Subscriber sub_finger;
 	ros::Subscriber sub_grasps;
 
+	ros::Publisher down_pub; 
+
 public:
 	ObjReplacementActionServer(std::string name) :
 		as_(nh_, name, boost::bind(&ObjReplacementActionServer::executeCB, this, _1), false),
@@ -102,6 +104,9 @@ public:
 
 		//subscriber for fingers
 		sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &ObjReplacementActionServer::fingers_cb, this);
+
+		//publisher for downsampled point cloud (used for debugging purposes)
+		down_pub = nh_.advertise<sensor_msgs::PointCloud2>("segbot_obj_replacement_as/down_cloud", 1);
 
     	ROS_INFO("Starting replacement grasp action server..."); 
     	as_.start(); 
@@ -208,6 +213,12 @@ public:
 		//step4: voxel grid filter with a distance size of 5cm
 		PointCloudT::Ptr plane_down_sam (new PointCloudT);
 		downsample_clouds(pcl_scene_plane, plane_down_sam, 0.05f);
+
+		//publish downsampled cloud
+		sensor_msgs::PointCloud2 plane_down_ros;
+		pcl::toROSMsg(*plane_down_sam,plane_down_ros);
+		plane_down_ros.header.frame_id = plane_down_sam->header.frame_id;
+		down_pub.publish(plane_down_ros);
 
 		//ensure a table is present
 		int num_points = (int) plane_down_sam->points.size();
