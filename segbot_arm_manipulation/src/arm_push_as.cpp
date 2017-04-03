@@ -358,9 +358,9 @@ public:
 		segbot_arm_manipulation::homeArm(nh_);
 		
 		//step 7: move arm to goal's arm home
-		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
+		segbot_arm_manipulation::arm_side_view(nh_);
 		listenForArmData(30.0);
-		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
+		segbot_arm_manipulation::arm_side_view(nh_);
 
 		//step 8: set result of action
 		result_.success = true;

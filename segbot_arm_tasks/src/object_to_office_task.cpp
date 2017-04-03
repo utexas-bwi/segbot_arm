@@ -13,7 +13,6 @@
 #include "segbot_arm_manipulation/TabletopApproachAction.h"
 
 #include <segbot_arm_manipulation/arm_utils.h>
-#include <segbot_arm_manipulation/arm_positions_db.h>
 
 #include <segbot_arm_perception/segbot_arm_perception.h>
 
@@ -125,19 +124,6 @@ void lift(ros::NodeHandle n, double x){
 	segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 }
 
-void joint_side_view(ros::NodeHandle n, ArmPositionDB *positionDB){
-	if (positionDB->hasCarteseanPosition("side_view")){
-		ROS_INFO("Moving arm to side view...");
-		geometry_msgs::PoseStamped out_of_view_pose = positionDB->getToolPositionStamped("side_view","/mico_link_base");
-				
-		//now go to the pose
-		segbot_arm_manipulation::moveToPoseMoveIt(n,out_of_view_pose);
-	}
-	else {
-		ROS_ERROR("[object_to_office.cpp] Cannot move arm to side view!");
-	}
-}
-
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
@@ -151,15 +137,7 @@ int main(int argc, char **argv) {
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
-	
-	//load database of joint- and tool-space positions
-	std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
-	std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
-	
-	ArmPositionDB *positionDB;
-	positionDB = new ArmPositionDB(j_pos_filename, c_pos_filename);
-	positionDB->print();
-	
+
 	//Step 1: store out-of-view position here
 	sensor_msgs::JointState joint_state_outofview;
 	geometry_msgs::PoseStamped pose_outofview;
@@ -175,7 +153,7 @@ int main(int argc, char **argv) {
 	//Step 2: call safety service to make the arm safe for base movement -- TO DO
 	//close fingers while moving
 	segbot_arm_manipulation::closeHand();
-	segbot_arm_manipulation::homeArm(n);
+	//segbot_arm_manipulation::homeArm(n);
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	if (!safe){
 		ROS_WARN("the robot and arm cannot be made safe for travel");
@@ -262,32 +240,18 @@ int main(int argc, char **argv) {
 		ROS_WARN("No plane found. Exiting...");
 		exit(1);
 	}
-	
-	//check the height of the plane
-	//TO DO: check that this is in the right transform space
-	PointCloudT::Ptr table_cloud;
-	pcl::fromROSMsg(table_scene.cloud_plane, *table_cloud);
-	Eigen::Vector4f plane_centroid;
-	pcl::compute3DCentroid(*table_cloud, plane_centroid); 
-	
-	//TO DO: check the value of this
-	ROS_INFO_STREAM("z value of the table center: ");
-	ROS_INFO_STREAM(plane_centroid[2]);
-	
-	
 		
 	//select the object with most points as the target object
 	int largest_pc_index = find_largest_obj(table_scene);
 		
 	//Step 8: call the grasp action
 	
-	//create the action client
+	//create the action client for grasping
 	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_tabletop_grasp_as",true);
 	ac_grasp.waitForServer();
 		
 	pressEnter("Press [ENTER] to proceed");
 
-	
 	//create and fill goal
 	segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
 	grasp_goal.cloud_plane = table_scene.cloud_plane;
