@@ -138,22 +138,18 @@ int main(int argc, char **argv) {
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 
-	//Step 1: store out-of-view position here
-	sensor_msgs::JointState joint_state_outofview;
-	geometry_msgs::PoseStamped pose_outofview;
 
 	pressEnter("Please move the arm to out of view position...");
 	
 	//store out of table view joint position -- this is the position in which the arm is not occluding objects on the table
 	listenForArmData();
 	ROS_INFO("Acquired arm data...");
-	joint_state_outofview = current_state;
-	pose_outofview = current_pose;
 	
-	//Step 2: call safety service to make the arm safe for base movement -- TO DO
-	//close fingers while moving
+	//Step 2: call safety service to make the arm safe for base movement
 	segbot_arm_manipulation::closeHand();
-	//segbot_arm_manipulation::homeArm(n);
+	segbot_arm_manipulation::homeArm(n);
+	
+	
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	if (!safe){
 		ROS_WARN("the robot and arm cannot be made safe for travel");
@@ -163,6 +159,7 @@ int main(int argc, char **argv) {
 		
 	pressEnter("Press [ENTER] to proceed");
     
+    //Step 3: Create and send goal to move the robot to the table
     std::string table = "o3_414a_table";
 
 	bwi_kr_execution::ExecutePlanGoal table_goal;
@@ -186,12 +183,11 @@ int main(int argc, char **argv) {
     
     ROS_INFO("finished waiting for goal");
     
-    //TO DO: test this, add check for aborted, preempted, etc 
+    //TO DO: is this okay
     if(table_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
 		ROS_WARN("could not reach destination");
 		return 1;
 	}
-    
     
     pressEnter("Press [ENTER] to approach table");
 
@@ -207,13 +203,10 @@ int main(int argc, char **argv) {
 	ac_approach.waitForResult();
 	ROS_INFO("finished approach");
 	
-	//error check:
 	segbot_arm_manipulation::TabletopApproachResult approach_result = *ac_approach.getResult();
 	bool approach_success = approach_result.success; 
 	
-	//TO DO: does the approach action actually return when the approach failed?
-		//only returns false if the perception fails, no plane found, or can't make safe for travel
-	//TO DO: test this
+	//check for success
 	if(!approach_success){
 		ROS_WARN("approach action failed");
 		ROS_INFO_STREAM(approach_result.error_msg);
@@ -225,7 +218,7 @@ int main(int argc, char **argv) {
 	
 	//Step 6: move the arm out of the way
 	segbot_arm_manipulation::homeArm(n);
-	segbot_arm_manipulation::moveToJointState(n,joint_state_outofview);
+	segbot_arm_manipulation::arm_side_view(n);
 	
 	pressEnter("Press [ENTER] to proceed");
 
@@ -244,15 +237,13 @@ int main(int argc, char **argv) {
 	//select the object with most points as the target object
 	int largest_pc_index = find_largest_obj(table_scene);
 		
-	//Step 8: call the grasp action
-	
-	//create the action client for grasping
+	//Step 8: create and call the grasp action
 	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_tabletop_grasp_as",true);
 	ac_grasp.waitForServer();
 		
 	pressEnter("Press [ENTER] to proceed");
 
-	//create and fill goal
+	//create and fill goal for grasping
 	segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
 	grasp_goal.cloud_plane = table_scene.cloud_plane;
 	grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
@@ -268,14 +259,10 @@ int main(int argc, char **argv) {
 	ac_grasp.sendGoal(grasp_goal);
 	ac_grasp.waitForResult();
 	ROS_INFO("Action Finished...");
-	
-	//TO DO: use this state to replace the object later 
-	sensor_msgs::JointState grasped_state = current_state; 
 
 	pressEnter("Press [ENTER] to proceed");
 
-
-	//next, lift and make arm safe again
+	//TO DO: call lift verification
 	lift(n,0.05);
 	
 	pressEnter("Press [ENTER] to proceed");
@@ -289,13 +276,12 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
-	//next, back out
+	//Step 9: back out from the table with the object
 	segbot_arm_manipulation::TabletopApproachGoal back_out_goal;
 	back_out_goal.command = "back_out";
 	ac_approach.sendGoal(back_out_goal);
 	ac_approach.waitForResult();
 	
-	//TO DO: make sure this is returning a different value from the approaching
 	segbot_arm_manipulation::TabletopApproachResult back_out_result = *ac_approach.getResult();
 	bool back_out_success = back_out_result.success;
 	if(!back_out_success){
@@ -305,7 +291,7 @@ int main(int argc, char **argv) {
 	}
 	
 	
-	//next go to an office - TO DO
+	//Step 10: bring the object to the office
 	std::string location = "d3_414b1";
 
 	bwi_kr_execution::ExecutePlanGoal goal_asp;
@@ -323,21 +309,19 @@ int main(int argc, char **argv) {
     ROS_INFO("sending goal");
     client_asp.sendGoalAndWait(goal_asp);
 	
-	//TO DO: test this, maybe do something else other than just end immediately 
-   if(client_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
+	//TO DO: test this 
+	if(client_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
 		ROS_WARN("could not reach destination");
 		return 1;
 	}
-	
-	//TO DO: try to replace the object, then test the hand over after aylish has finished 
-	
-	//hand over object
+		
 	pressEnter("Press [ENTER] to proceed");
 	
-	segbot_arm_manipulation::moveToPoseMoveIt(n,pose_outofview);
+	segbot_arm_manipulation::arm_side_view(n);
 	
 	//TO DO: before handing over, we want to ask questions about the object
 	
+	//Step 11: handover the object
 	segbot_arm_manipulation::TabletopGraspGoal handover_goal;
 	handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
 	handover_goal.timeout_seconds = 30.0;
