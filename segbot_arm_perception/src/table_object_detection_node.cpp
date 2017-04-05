@@ -79,6 +79,9 @@ double cluster_extraction_tolerance = 0.05;
 
 bool collecting_cloud = false;
 
+//epsilon angle for segmenting, value in radians
+#define EPS_ANGLE 0.09 
+
 // Check if a file exist or not
 bool file_exist(std::string& name) {
     struct stat buffer;
@@ -154,7 +157,7 @@ bool filter(PointCloudT::Ptr blob, PointCloudT::Ptr plane_cloud, Eigen::Vector4f
 }
 
 /*Function for finding the largest plane from the segmented "table"
- *Requires: check before call to this function that the in cloud is not empty*/
+ * removes noise*/
 PointCloudT::Ptr seg_largest_plane(PointCloudT::Ptr in, double tolerance){
 	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 	tree->setInputCloud (in);
@@ -163,9 +166,8 @@ PointCloudT::Ptr seg_largest_plane(PointCloudT::Ptr in, double tolerance){
 	//use euclidean cluster extraction to eliminate noise and get largest plane
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<PointT> ec;
-	ec.setClusterTolerance (tolerance); // 2cm
+	ec.setClusterTolerance (tolerance); 
 	ec.setMinClusterSize (200);
-	//ec.setMaxClusterSize (25000);
 	ec.setSearchMethod (tree);
 	ec.setInputCloud (in);
 	ec.extract (cluster_indices);
@@ -207,13 +209,14 @@ PointCloudT::Ptr seg_largest_plane(PointCloudT::Ptr in, double tolerance){
 	return clusters_vec[largest_pc_index];
 } 
 
+/*Function to compute clusters on the table*/
 void computeClusters(PointCloudT::Ptr in, double tolerance){
 	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 	tree->setInputCloud (in);
 
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<PointT> ec;
-	ec.setClusterTolerance (tolerance); // 2cm
+	ec.setClusterTolerance (tolerance); 
 	ec.setMinClusterSize (200);
 	ec.setMaxClusterSize (25000);
 	ec.setSearchMethod (tree);
@@ -362,12 +365,14 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	// Optional
 	seg.setOptimizeCoefficients (true);
 	// Mandatory
+	//look for a plane perpendicular to a given axis
 	seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);
 	seg.setMethodType (pcl::SAC_RANSAC);
 	seg.setMaxIterations (1000);
 	seg.setDistanceThreshold (0.025);
 	
 	
+	//create the axis to use
 	geometry_msgs::Vector3Stamped ros_vec;
 	ros_vec.header.frame_id = "/base_link";
 	ros_vec.vector.x = 0.0;
@@ -380,13 +385,14 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	//transform the vector to the camera frame of reference 
 	tf_listener.transformVector(cloud->header.frame_id, ros::Time(0), ros_vec, "/base_link", ros_vec); 
 
+	//set the axis to the transformed vector
 	Eigen::Vector3f axis = Eigen::Vector3f(ros_vec.vector.x, ros_vec.vector.y , ros_vec.vector.z);
 	seg.setAxis(axis);
 	
 	ROS_INFO("sac axis value: %f, %f, %f", seg.getAxis()[0],seg.getAxis()[1], seg.getAxis()[2]); 
 
 	//set an epsilon that the table can differ from the axis above by
-  	seg.setEpsAngle(0.09); //value in radians, corresponds to 5 degrees
+  	seg.setEpsAngle(EPS_ANGLE); //value in radians, corresponds to approximately 5 degrees
 	
 	ROS_INFO("epsilon value: %f", seg.getEpsAngle()); 	
 	
@@ -405,11 +411,18 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 
 	//downsample the plane cloud and segment out noise
 	vg.setInputCloud (cloud_plane);
-	vg.setLeafSize (0.005f, 0.005f, 0.005f); //to do: test parameters
+	vg.setLeafSize (0.005f, 0.005f, 0.005f);
 	vg.filter (*cloud_plane);
 	
 	//find the largest plane and segment out noise
 	cloud_plane = seg_largest_plane(cloud_plane, cluster_extraction_tolerance);
+	
+	//make sure the cloud plane exists still
+	res.is_plane_found = true;
+	if(cloud_plane->empty()){
+		res.is_plane_found = false;
+		return true;
+	}
 		
 	//extract everything else
 	extract.setNegative (true);
@@ -443,7 +456,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	clusters_on_plane.clear();
 	
 	//if true, clouds on the other side of the plane will be rejected
-	bool check_below_plane = true; //TO DO: test true
+	bool check_below_plane = true; 
 	double plane_z = -1.0;
 	PointCloudT::Ptr cloud_plane_baselink (new PointCloudT);
 	Eigen::Vector4f plane_centroid;
@@ -524,13 +537,6 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 		cloud_ros.header.frame_id = cloud->header.frame_id;
 		res.cloud_clusters.push_back(cloud_ros);
 	}
-	
-	//TO DO: check height of the table
-	res.is_plane_found = true;
-	if(cloud_plane->empty()){
-		res.is_plane_found = false;
-	}
-	
 	
 	//for debugging purposes
 	//now, put the clouds in cluster_on_plane in one cloud and publish it

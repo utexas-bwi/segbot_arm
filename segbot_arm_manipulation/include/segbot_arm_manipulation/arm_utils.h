@@ -142,7 +142,7 @@ namespace segbot_arm_manipulation {
 		}
 		else
 		{
-			ROS_ERROR("Failed to call service add_two_ints");
+			ROS_ERROR("Failed to call service tabletop_object_detection_service");
 			return srv.response;
 		}
 	}
