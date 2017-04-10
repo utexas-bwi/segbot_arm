@@ -522,8 +522,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	
 	ROS_INFO("Found %i clusters on the plane.",(int)clusters_on_plane.size());
 	
-	//fill in response
-	
+	//fill in responses
 	//plane cloud and coefficient
 	pcl::toROSMsg(*cloud_plane,res.cloud_plane);
 	res.cloud_plane.header.frame_id = cloud->header.frame_id;
@@ -613,29 +612,6 @@ int main (int argc, char** argv)
 	{
 		//collect messages
 		ros::spinOnce();
-		
-		//publish cloud for obstacle avoidance for the base
-		
-		//pass through filter
-		/*pcl::PassThrough<PointT> pass;
-		pass.setInputCloud (cloud);
-		pass.setFilterFieldName ("z");
-		pass.setFilterLimits (0.6, 1.45);
-		pass.filter (*cloud_costmap);
-		
-		//voxel grid filter
-		pcl::VoxelGrid<PointT> vg;
-		vg.setInputCloud (cloud_costmap);
-		vg.setLeafSize (0.05f, 0.05f, 0.05f);
-		vg.filter (*cloud_costmap);
-		
-		
-		
-		pcl::toROSMsg(*cloud_costmap,cloud_ros);
-		cloud_ros.header.frame_id = cloud->header.frame_id;
-		cloud_costmap_pub.publish(cloud_ros);*/
-
-		//sleep to maintain framerate
 		r.sleep();
 
 	}
