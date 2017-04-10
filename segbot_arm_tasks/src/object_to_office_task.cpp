@@ -282,7 +282,10 @@ int main(int argc, char **argv) {
 	if(verified){
 		ROS_INFO("Verification succeeded.");
 	}else{
+		//TO DO: if it fails, try again
 		ROS_WARN("Verification failed");
+		segbot_arm_manipulation::homeArm(n);
+		exit(1);
 	}
 	
 	pressEnter("Press [ENTER] to proceed");
@@ -309,10 +312,9 @@ int main(int argc, char **argv) {
 		ROS_INFO_STREAM(back_out_result.error_msg);
 		return 1;
 	}
-	
 
 	//Step 9: bring the object to the office
-	std::string location = "d3_414b1";
+	std::string location = "d3_516";
 
 	bwi_kr_execution::ExecutePlanGoal goal_asp;
     bwi_kr_execution::AspRule rule;
@@ -336,7 +338,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 		
-	pressEnter("Press [ENTER] to proceed");
+	pressEnter("Press [ENTER] to proceed to HANDOVER");
 	
 	segbot_arm_manipulation::arm_side_view(n);
 	
@@ -350,6 +352,8 @@ int main(int argc, char **argv) {
 	//send goal and wait for response
 	ac_grasp.sendGoal(handover_goal);
 	ac_grasp.waitForResult();
+	
+	segbot_arm_manipulation::homeArm(n);
 	
 	return 0;
 }
