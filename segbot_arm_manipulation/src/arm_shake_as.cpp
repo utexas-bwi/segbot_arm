@@ -313,9 +313,9 @@ public:
 			return;
 		}
 			
-		//step 4: move arm home		
-		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
-		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
+		//step 4: move arm home	
+		segbot_arm_manipulation::arm_side_view(nh_);
+		segbot_arm_manipulation::arm_side_view(nh_);
 
 		//step 5: set result of action
 		result_.success = true;

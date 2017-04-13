@@ -306,11 +306,9 @@ public:
 			v_i.linear.x = 0; v_i.linear.y = 0; v_i.linear.z = 0;
 			v_i.angular.x = 0; v_i.angular.y = 0;
 			
-			//for (int i = 0; i < (int)duration*pub_rate;i++){
 			while (ros::ok()){
 				v_i.angular.z = turn_velocity;
-				//ROS_INFO_STREAM(v_i);
-				
+								
 				pub_base_velocity.publish(v_i);
 				
 				ros::spinOnce();
@@ -403,12 +401,6 @@ public:
 			v_i.angular.x = 0; v_i.angular.y = 0;
 			
 			//create sound client and play sound
-			//sound_play::SoundClient sc;
-			//spinSleep(2.0);
-			//sc.start(sound_play::SoundRequest::BACKINGUP);
-			//sc.say("Hello world!");
-			
-			//ros::Publisher pub_sound 
 			
 			sound_play::SoundRequest sound_msg;
 			sound_msg.sound = 1; //back out sound
@@ -449,11 +441,7 @@ public:
 				
 			}
 			v_i.linear.x = 0;
-			pub_base_velocity.publish(v_i);
-			
-			
-			//sc.stop(sound_play::SoundRequest::BACKINGUP);
-			
+			pub_base_velocity.publish(v_i);			
 			
 			result_.success = true;
 			as_.setSucceeded(result_);
