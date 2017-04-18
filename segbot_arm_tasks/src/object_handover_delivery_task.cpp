@@ -329,10 +329,10 @@ int main(int argc, char **argv) {
 	}
 	
 	//play audio message 
-	//ros::ServiceClient speakMessageClient = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");  
-	//bwi_services::SpeakMessage speakSrv;
-	//speakSrv.request.message = "Special delivery"; 
-	//speakMessageClient.call(speakSrv); 
+	/*ros::ServiceClient speakMessageClient = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");  
+	bwi_services::SpeakMessage speakSrv;
+	speakSrv.request.message = "Special delivery"; 
+	speakMessageClient.call(speakSrv); */
 	
 	std::cout << "Please take the object from the robot's hand\n"; 
 	
