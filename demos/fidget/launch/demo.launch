@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find moveit_utils)/launch/segbot_v2_mico.launch" />
+    <include file="$(find jaco_driver)/launch/segbot_mico_arm.launch" />
+
+</launch>
