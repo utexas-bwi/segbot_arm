@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <signal.h>
 #include <iostream>
 #include <vector>
@@ -25,7 +26,7 @@
 
 #include "segbot_arm_perception/SetObstacles.h"
 #include "segbot_arm_perception/TabletopPerception.h"
-
+#include "segbot_arm_manipulation/arm_positions_db.h"
 
 const std::string finger_topic = "/mico_arm_driver/fingers/finger_positions";
 const std::string jaco_pose_topic = "/mico_arm_driver/arm_pose/arm_pose";
@@ -107,14 +108,15 @@ namespace segbot_arm_manipulation {
 		safety_client.waitForExistence();
 		moveit_utils::MicoNavSafety srv_safety;
 		srv_safety.request.getSafe = true;
+		
 		if (safety_client.call(srv_safety))
 		{
-			//ROS_INFO("Safety service called successfully");
-			return true;
+
+			return srv_safety.response.safe;
 		}
 		else
 		{
-			//ROS_ERROR("Failed to call safety service....aborting");
+			ROS_ERROR("Failed to call safety service....aborting");
 			return false;
 		}
 	}
@@ -140,7 +142,7 @@ namespace segbot_arm_manipulation {
 		}
 		else
 		{
-			ROS_ERROR("Failed to call service add_two_ints");
+			ROS_ERROR("Failed to call service tabletop_object_detection_service");
 			return srv.response;
 		}
 	}
@@ -286,5 +288,22 @@ namespace segbot_arm_manipulation {
 	
 	void closeHand(){
 		moveFingers(CLOSED_FINGER_VALUE);
+	}
+	
+	void arm_side_view(ros::NodeHandle n){
+		std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
+		std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
+	
+		ArmPositionDB *positionDB;
+		positionDB = new ArmPositionDB(j_pos_filename, c_pos_filename);
+		positionDB->print();
+		
+		if (positionDB->hasCarteseanPosition("side_view")){
+			ROS_INFO("Moving arm to side view...");
+			geometry_msgs::PoseStamped out_of_view_pose = positionDB->getToolPositionStamped("side_view","/mico_link_base");
+			segbot_arm_manipulation::moveToPoseMoveIt(n,out_of_view_pose);
+		}else {
+			ROS_ERROR("[arm_utils] Cannot move arm to side view!");
+		}
 	}
 }

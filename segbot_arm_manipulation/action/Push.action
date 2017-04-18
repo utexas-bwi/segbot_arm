@@ -1,7 +1,6 @@
 #goal definition
 sensor_msgs/PointCloud2 tgt_cloud
 sensor_msgs/PointCloud2 cloud_plane
-sensor_msgs/JointState arm_home
 ---
 #result definition
 bool success

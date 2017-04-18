@@ -1,11 +1,13 @@
 #include <signal.h>
 #include <vector>
+#include <Eigen/Dense>
 #include <string>
 #include <sys/stat.h>
 #include <ros/ros.h>
 #include <ros/package.h>
 
 #include <sensor_msgs/PointCloud2.h>
+#include <geometry_msgs/Vector3Stamped.h>
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -30,6 +32,7 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/sample_consensus/method_types.h>
@@ -75,6 +78,9 @@ double plane_max_distance_tolerance = 0.03;
 double cluster_extraction_tolerance = 0.05;
 
 bool collecting_cloud = false;
+
+//epsilon angle for segmenting, value in radians
+#define EPS_ANGLE 0.09 
 
 // Check if a file exist or not
 bool file_exist(std::string& name) {
@@ -150,13 +156,67 @@ bool filter(PointCloudT::Ptr blob, PointCloudT::Ptr plane_cloud, Eigen::Vector4f
 	
 }
 
+/*Function for finding the largest plane from the segmented "table"
+ * removes noise*/
+PointCloudT::Ptr seg_largest_plane(PointCloudT::Ptr in, double tolerance){
+	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
+	tree->setInputCloud (in);
+	ROS_INFO("point cloud size of 'plane cloud' : %ld", in->size());
+
+	//use euclidean cluster extraction to eliminate noise and get largest plane
+	std::vector<pcl::PointIndices> cluster_indices;
+	pcl::EuclideanClusterExtraction<PointT> ec;
+	ec.setClusterTolerance (tolerance); 
+	ec.setMinClusterSize (200);
+	ec.setSearchMethod (tree);
+	ec.setInputCloud (in);
+	ec.extract (cluster_indices);
+
+	std::vector<PointCloudT::Ptr> clusters_vec;
+
+	int j = 0;
+	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+	{
+		PointCloudT::Ptr cloud_cluster (new PointCloudT);
+		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+			cloud_cluster->points.push_back (in->points[*pit]); //*
+		cloud_cluster->width = cloud_cluster->points.size ();
+		cloud_cluster->height = 1;
+		cloud_cluster->is_dense = true;
+		
+		clusters_vec.push_back(cloud_cluster);
+  }
+    
+    //find the largest point cloud 
+	int largest_pc_index = -1;
+	int largest_num_points = -1;
+	
+	for (unsigned int i = 0; i < clusters_vec.size(); i++){
+		int num_points_i = clusters_vec[i]->height* clusters_vec[i]->width;
+		if (num_points_i > largest_num_points){
+			largest_num_points = num_points_i;
+			largest_pc_index = i;
+		}
+	}
+	
+	ROS_INFO("number of 'plane clouds' : %ld", clusters_vec.size());
+	
+	if(largest_pc_index == -1){
+		//did not find any objects, an error has occurred
+		ROS_ERROR("There is no table. Should not reach this point");
+		exit(1); 
+	}
+	return clusters_vec[largest_pc_index];
+} 
+
+/*Function to compute clusters on the table*/
 void computeClusters(PointCloudT::Ptr in, double tolerance){
 	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 	tree->setInputCloud (in);
 
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<PointT> ec;
-	ec.setClusterTolerance (tolerance); // 2cm
+	ec.setClusterTolerance (tolerance); 
 	ec.setMinClusterSize (200);
 	ec.setMaxClusterSize (25000);
 	ec.setSearchMethod (tree);
@@ -170,7 +230,7 @@ void computeClusters(PointCloudT::Ptr in, double tolerance){
 	{
 		PointCloudT::Ptr cloud_cluster (new PointCloudT);
 		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
-			cloud_cluster->points.push_back (in->points[*pit]); //*
+			cloud_cluster->points.push_back (in->points[*pit]); 
 		cloud_cluster->width = cloud_cluster->points.size ();
 		cloud_cluster->height = 1;
 		cloud_cluster->is_dense = true;
@@ -305,11 +365,37 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	// Optional
 	seg.setOptimizeCoefficients (true);
 	// Mandatory
-	seg.setModelType (pcl::SACMODEL_PLANE);
+	//look for a plane perpendicular to a given axis
+	seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);
 	seg.setMethodType (pcl::SAC_RANSAC);
 	seg.setMaxIterations (1000);
 	seg.setDistanceThreshold (0.025);
+	
+	
+	//create the axis to use
+	geometry_msgs::Vector3Stamped ros_vec;
+	ros_vec.header.frame_id = "/base_link";
+	ros_vec.vector.x = 0.0;
+	ros_vec.vector.y = 0.0;
+	ros_vec.vector.z = 1.0;
+	
+	ROS_INFO("Ros axis: %f, %f, %f",
+		ros_vec.vector.x,ros_vec.vector.y,ros_vec.vector.z);
+	
+	//transform the vector to the camera frame of reference 
+	tf_listener.transformVector(cloud->header.frame_id, ros::Time(0), ros_vec, "/base_link", ros_vec); 
 
+	//set the axis to the transformed vector
+	Eigen::Vector3f axis = Eigen::Vector3f(ros_vec.vector.x, ros_vec.vector.y , ros_vec.vector.z);
+	seg.setAxis(axis);
+	
+	ROS_INFO("sac axis value: %f, %f, %f", seg.getAxis()[0],seg.getAxis()[1], seg.getAxis()[2]); 
+
+	//set an epsilon that the table can differ from the axis above by
+  	seg.setEpsAngle(EPS_ANGLE); //value in radians, corresponds to approximately 5 degrees
+	
+	ROS_INFO("epsilon value: %f", seg.getEpsAngle()); 	
+	
 	// Create the filtering object
 	pcl::ExtractIndices<PointT> extract;
 
@@ -323,6 +409,21 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	extract.setNegative (false);
 	extract.filter (*cloud_plane);
 
+	//downsample the plane cloud and segment out noise
+	vg.setInputCloud (cloud_plane);
+	vg.setLeafSize (0.005f, 0.005f, 0.005f);
+	vg.filter (*cloud_plane);
+	
+	//find the largest plane and segment out noise
+	cloud_plane = seg_largest_plane(cloud_plane, cluster_extraction_tolerance);
+	
+	//make sure the cloud plane exists still
+	res.is_plane_found = true;
+	if(cloud_plane->empty()){
+		res.is_plane_found = false;
+		return true;
+	}
+		
 	//extract everything else
 	extract.setNegative (true);
 	extract.filter (*cloud_blobs);
@@ -337,7 +438,15 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	ROS_INFO("Planar coefficients: %f, %f, %f, %f",
 		plane_coefficients(0),plane_coefficients(1),plane_coefficients(2),	plane_coefficients(3));
 	
+	//debug plane cloud 
+	//convert plane cloud to ROS
+	sensor_msgs::PointCloud2 ros_plane;
 	
+	//pcl::toROSMsg(*cloud_plane, ros_plane);
+	pcl::toROSMsg(*cloud_plane, ros_plane);
+	
+	ros_plane.header.frame_id = cloud->header.frame_id;
+	table_cloud_pub.publish(ros_plane);
 	
 	//Step 3: Eucledian Cluster Extraction
 	computeClusters(cloud_blobs,cluster_extraction_tolerance);
@@ -347,16 +456,15 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	clusters_on_plane.clear();
 	
 	//if true, clouds on the other side of the plane will be rejected
-	bool check_below_plane = false;
+	bool check_below_plane = true; 
 	double plane_z = -1.0;
 	PointCloudT::Ptr cloud_plane_baselink (new PointCloudT);
 	Eigen::Vector4f plane_centroid;
    
-	
 	if (check_below_plane){
 		
 		//wait for transform and perform it
-		tf_listener.waitForTransform(cloud->header.frame_id,"\base_link",ros::Time(0), ros::Duration(3.0)); 
+		tf_listener.waitForTransform(cloud->header.frame_id,"/base_link",ros::Time(0), ros::Duration(3.0)); 
 		
 		//convert plane cloud to ROS
 		sensor_msgs::PointCloud2 plane_cloud_ros;
@@ -364,7 +472,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 		plane_cloud_ros.header.frame_id = cloud->header.frame_id;
 		
 		//transform it to base link frame of reference
-		pcl_ros::transformPointCloud ("\base_link", plane_cloud_ros, plane_cloud_ros, tf_listener);
+		pcl_ros::transformPointCloud ("/base_link", plane_cloud_ros, plane_cloud_ros, tf_listener);
 					
 		//convert to PCL format and take centroid
 		pcl::fromROSMsg (plane_cloud_ros, *cloud_plane_baselink);
@@ -383,7 +491,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 				pcl::toROSMsg(*clusters.at(i),cloud_i_ros);
 				cloud_i_ros.header.frame_id = cloud->header.frame_id;
 				
-				pcl_ros::transformPointCloud ("\base_link", cloud_i_ros,cloud_i_ros, tf_listener);
+				pcl_ros::transformPointCloud ("/base_link", cloud_i_ros,cloud_i_ros, tf_listener);
 				
 				//convert to PCL format and take centroid
 				PointCloudT::Ptr cluster_i_baselink (new PointCloudT);
@@ -414,8 +522,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	
 	ROS_INFO("Found %i clusters on the plane.",(int)clusters_on_plane.size());
 	
-	//fill in response
-	
+	//fill in responses
 	//plane cloud and coefficient
 	pcl::toROSMsg(*cloud_plane,res.cloud_plane);
 	res.cloud_plane.header.frame_id = cloud->header.frame_id;
@@ -429,9 +536,6 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 		cloud_ros.header.frame_id = cloud->header.frame_id;
 		res.cloud_clusters.push_back(cloud_ros);
 	}
-	
-	//TO DO: this may not always be the case
-	res.is_plane_found = true;
 	
 	//for debugging purposes
 	//now, put the clouds in cluster_on_plane in one cloud and publish it
@@ -488,7 +592,6 @@ int main (int argc, char** argv)
 	//publisher for cost map cloud
 	cloud_costmap_pub = nh.advertise<sensor_msgs::PointCloud2>("/xtion_obstacle_cloud", 1);
 
-
 	//services
 	ros::ServiceServer service = nh.advertiseService("tabletop_object_detection_service", seg_cb);
 	
@@ -509,29 +612,6 @@ int main (int argc, char** argv)
 	{
 		//collect messages
 		ros::spinOnce();
-		
-		//publish cloud for obstacle avoidance for the base
-		
-		//pass through filter
-		/*pcl::PassThrough<PointT> pass;
-		pass.setInputCloud (cloud);
-		pass.setFilterFieldName ("z");
-		pass.setFilterLimits (0.6, 1.45);
-		pass.filter (*cloud_costmap);
-		
-		//voxel grid filter
-		pcl::VoxelGrid<PointT> vg;
-		vg.setInputCloud (cloud_costmap);
-		vg.setLeafSize (0.05f, 0.05f, 0.05f);
-		vg.filter (*cloud_costmap);
-		
-		
-		
-		pcl::toROSMsg(*cloud_costmap,cloud_ros);
-		cloud_ros.header.frame_id = cloud->header.frame_id;
-		cloud_costmap_pub.publish(cloud_ros);*/
-
-		//sleep to maintain framerate
 		r.sleep();
 
 	}
