@@ -189,10 +189,31 @@ public:
 		
 		//TO DO: test this threshold
 		if(distance >= 0.25){
+			//further than threshold centimeters away from goal location
 			return false;
 		}
 		return true;
 	}
+	
+	PointCloudT::Ptr reorder_points(int num_points, PointCloudT::Ptr original){
+		PointCloudT result;
+		
+		int middle_index = num_points/2;
+		
+		for(int i = middle_index; i < num_points; i++){
+			int pair_index = num_points/i;
+			result.push_back(original->points[i]);
+			
+			if(i != pair_index){
+				result.push_back(original->points[pair_index]);
+			}
+			
+		}
+		
+		//TO DO: test this
+		return PointCloudT::Ptr(&result);
+	}
+	
 	
 	/*Assumptions: the robot has already approached the table, 
 	 * an object is in hand, the arm is currently still in safety mode,
@@ -249,6 +270,9 @@ public:
 			return;
 		}
 		
+		//TO DO: test this 
+		PointCloudT::Ptr reordered_plane = reorder_points(num_points, plane_down_sam);
+		
 		
 		//for now go through points iteratively
 		for(int ind = 0; ind < num_points; ind++){
@@ -260,19 +284,22 @@ public:
 			current_goal.pose.position.z = plane_down_sam->points[ind].z + ABOVE_TABLE; //want it to be slightly above the table still
 
 			//TO DO: for now use the current quaternion
-			current_goal.pose.orientation =  current_pose.pose.orientation;
+			current_goal.pose.orientation =  current_pose.pose.orientation; //TO DO: test
 			
 			//check the inverse kinematics, if possible, move to the pose and drop object
 			moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
 			if (ik_response_1.error_code.val == 1){
 				segbot_arm_manipulation::moveToPoseMoveIt(nh_, current_goal);
-				segbot_arm_manipulation::openHand();
-				result_.success = true; //TO DO: check if moving to location was successful
-				break;
+				if(check_if_reached(current_goal, current_pose)){
+					//reached location, success
+					segbot_arm_manipulation::openHand();
+					result_.success = true; //TO DO: check if moving to location was successful
+					break;
+				}
+				//did not reach location, continue trying 
+				result_.success = false; 
 			}
 		}
-		
-		
 		
 		//step7: home arm 
 		segbot_arm_manipulation::homeArm(nh_);
