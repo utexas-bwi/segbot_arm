@@ -197,15 +197,25 @@ public:
 	
 	PointCloudT::Ptr reorder_points(int num_points, PointCloudT::Ptr original){
 		PointCloudT result;
+		result.sensor_origin_ = original->sensor_origin_;
+		result.sensor_orientation_ = original->sensor_orientation_;
 		
 		int middle_index = num_points/2;
 		
 		for(int i = middle_index; i < num_points; i++){
 			int pair_index = num_points/i;
-			result.push_back(original->points[i]);
+			PointT new_point;
+			new_point.x = original->points[i].x;
+			new_point.y = original->points[i].y;
+			new_point.z = original->points[i].z;
+			result.push_back(new_point);
 			
 			if(i != pair_index){
-				result.push_back(original->points[pair_index]);
+				PointT new_pair;
+				new_pair.x = original->points[i].x;
+				new_pair.y = original->points[i].y;
+				new_pair.z = original->points[i].z;
+				result.push_back(new_pair);
 			}
 			
 		}
@@ -284,7 +294,8 @@ public:
 			current_goal.pose.position.z = plane_down_sam->points[ind].z + ABOVE_TABLE; //want it to be slightly above the table still
 
 			//TO DO: for now use the current quaternion
-			current_goal.pose.orientation =  current_pose.pose.orientation; //TO DO: test
+			current_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, 0, 0);
+			//current_goal.pose.orientation =  current_pose.pose.orientation; //TO DO: test
 			
 			//check the inverse kinematics, if possible, move to the pose and drop object
 			moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
