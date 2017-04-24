@@ -85,9 +85,6 @@ protected:
 
 	ros::Publisher down_pub; 
 
-	boost::mutex cloud_mutex; 
-
-	PointCloudT::Ptr cloud (new PointCloudT); 
 
 public:
 	ObjReplacementActionServer(std::string name) :
@@ -179,58 +176,6 @@ public:
 		grid.setLeafSize (leaf_size, leaf_size, leaf_size); 
 		grid.filter(*out_cloud);
 	}
-
-	// Point cloud cb 
-	void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input) {
-		cloud_mutex.lock(); 
-		
-		// convert to PCL format
-		pcl::fromROSMsg (*input, *cloud); 
-		
-		// state that a new cloud is available
-		new_cloud_available_flag = true; 
-		
-		cloud_mutex.unlock(); 
-	}
-	// Collects a cloud by aggregating k successive frames 
-	void waitForCloudK (int k) {
-		ros::Rate r(30); 
-		
-		cloud_aggregated->clear(); 
-		
-		int counter = 0; 
-		collecting_cloud = true; 
-		while (ros::ok()) {
-			ros::spinOnce(); 
-			r.sleep(); 
-			if (new_cloud_available_flag) {
-				*cloud_aggregated += *cloud; 
-				new_cloud_available_flag = false; 
-				counter++; 
-				if (counter >= k) {
-					cloud_aggregated->header = cloud->header; 
-					break;
-				}
-			}
-		}
-		collecting_cloud = false; 
-	}
-
-
-	//sets arm to optimal position for viewing object in hand 
-	sensor_msgs::JointState arm_in_view(){
-		sensor_msgs::JointState arm_values;
-		arm_values.position.push_back(-0.514936311520632);
-		arm_values.position.push_back(-0.7199483164477083);
-		arm_values.position.push_back(-0.4254240051736458);
-		arm_values.position.push_back(-0.39031928094865503);
-		arm_values.position.push_back(0.12256932600981492);
-		arm_values.position.push_back(0);
-		//next two values correspond to the finger positions
-		arm_values.position.push_back(FINGER_FULLY_CLOSED);
-		arm_values.position.push_back(FINGER_FULLY_CLOSED);
-		return arm_values; 
-    }
 	
 	float euclidean_distance(geometry_msgs::Point target , geometry_msgs::Point actual){
 		float x_diff = (float) target.x - actual.x;
@@ -258,22 +203,45 @@ public:
 		
 		int middle_index = num_points/2;
 		
-		for(int i = middle_index; i < num_points; i++){
-			int pair_index = num_points/i;
-			PointT new_point;
-			new_point.x = original->points[i].x;
-			new_point.y = original->points[i].y;
-			new_point.z = original->points[i].z;
+		// for(int i = middle_index; i < num_points; i++){
+		// 	int pair_index = num_points/i;
+		// 	PointT new_point;
+		// 	new_point.x = original->points[i].x;
+		// 	new_point.y = original->points[i].y;
+		// 	new_point.z = original->points[i].z;
+		// 	result.push_back(new_point);
+			
+		// 	if(i != pair_index){
+		// 		PointT new_pair;
+		// 		new_pair.x = original->points[i].x;
+		// 		new_pair.y = original->points[i].y;
+		// 		new_pair.z = original->points[i].z;
+		// 		result.push_back(new_pair);
+		// 	}
+			
+		// }
+        
+        if (num_points % 2 == 0) {
+        	num_points--; 
+        }
+
+        PointT new_point;
+		new_point.x = original->points[middle_index].x;
+		new_point.y = original->points[middle_index].y;
+		new_point.z = original->points[middle_index].z;
+		result.push_back(new_point);
+        
+		for (int i = 0; i < middle_index; i++) {
+			new_point.x = original->points[middle_index + i].x;
+			new_point.y = original->points[middle_index + i].y;
+			new_point.z = original->points[middle_index + i].z;
 			result.push_back(new_point);
-			
-			if(i != pair_index){
-				PointT new_pair;
-				new_pair.x = original->points[i].x;
-				new_pair.y = original->points[i].y;
-				new_pair.z = original->points[i].z;
-				result.push_back(new_pair);
-			}
-			
+
+			PointT new_point2;
+			new_point2.x = original->points[middle_index - i].x;
+			new_point2.y = original->points[middle_index - i].y;
+			new_point2.z = original->points[middle_index - i].z;
+			result.push_back(new_point2);
 		}
 		
 		//TO DO: test this
@@ -303,8 +271,6 @@ public:
 		//calculate z value
 		double z_value = 0; 
         //move object into view
-        sensor_msgs::JointState arm_in_cam_view = arm_in_view();
-        segbot_arm_manipulation::moveToJointState(nh_, arm_in_cam_view);
 
 
 		//step3: cropbox filter to reduce size of points to check
