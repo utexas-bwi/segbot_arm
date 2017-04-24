@@ -52,6 +52,7 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 #define NUM_JOINTS 8 //6+2 for the arm
 
 #define JOINT_RADIUS .195
+#define ABOVE_TABLE 0.1
 
 class ObjReplacementActionServer
 {
@@ -231,6 +232,55 @@ public:
 		return arm_values; 
     }
 	
+	float euclidean_distance(geometry_msgs::Point target , geometry_msgs::Point actual){
+		float x_diff = (float) target.x - actual.x;
+		float y_diff = (float) target.y - actual.y;
+		float z_diff = (float) target.z - actual.z;
+		return (float) sqrt(pow(x_diff, 2) + pow(y_diff, 2) + pow (z_diff, 2));
+		
+	}
+	
+	bool check_if_reached(geometry_msgs::PoseStamped target_pose, geometry_msgs::PoseStamped actual_pose){
+		float distance =  euclidean_distance(target_pose.pose.position, actual_pose.pose.position);
+		
+		//TO DO: test this threshold
+		if(distance >= 0.25){
+			//further than threshold centimeters away from goal location
+			return false;
+		}
+		return true;
+	}
+	
+	PointCloudT::Ptr reorder_points(int num_points, PointCloudT::Ptr original){
+		PointCloudT result;
+		result.sensor_origin_ = original->sensor_origin_;
+		result.sensor_orientation_ = original->sensor_orientation_;
+		
+		int middle_index = num_points/2;
+		
+		for(int i = middle_index; i < num_points; i++){
+			int pair_index = num_points/i;
+			PointT new_point;
+			new_point.x = original->points[i].x;
+			new_point.y = original->points[i].y;
+			new_point.z = original->points[i].z;
+			result.push_back(new_point);
+			
+			if(i != pair_index){
+				PointT new_pair;
+				new_pair.x = original->points[i].x;
+				new_pair.y = original->points[i].y;
+				new_pair.z = original->points[i].z;
+				result.push_back(new_pair);
+			}
+			
+		}
+		
+		//TO DO: test this
+		return PointCloudT::Ptr(&result);
+	}
+	
+	
 	/*Assumptions: the robot has already approached the table, 
 	 * an object is in hand, the arm is currently still in safety mode,
 	 * cloud is organized and dense*/
@@ -293,6 +343,9 @@ public:
 			return;
 		}
 		
+		//TO DO: test this 
+		PointCloudT::Ptr reordered_plane = reorder_points(num_points, plane_down_sam);
+		
 		
 		//for now go through points iteratively
 		for(int ind = 0; ind < num_points; ind++){
@@ -301,23 +354,26 @@ public:
 			current_goal.header.frame_id = current_pose.header.frame_id;
 			current_goal.pose.position.x = plane_down_sam->points[ind].x;
 			current_goal.pose.position.y = plane_down_sam->points[ind].y;
-			current_goal.pose.position.z = plane_down_sam->points[ind].z + 0.1; //want it to be slightly above the table still
+			current_goal.pose.position.z = plane_down_sam->points[ind].z + ABOVE_TABLE; //want it to be slightly above the table still
 
-			//todo: determine better quaternion to use
-			current_goal.pose.orientation =  tf::createQuaternionMsgFromRollPitchYaw(3.14/2 , 0 , 0);
+			//TO DO: for now use the current quaternion
+			current_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, 0, 0);
+			//current_goal.pose.orientation =  current_pose.pose.orientation; //TO DO: test
 			
-			//check the inverse kinematics, if possible, go to location
+			//check the inverse kinematics, if possible, move to the pose and drop object
 			moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
 			if (ik_response_1.error_code.val == 1){
 				segbot_arm_manipulation::moveToPoseMoveIt(nh_, current_goal);
-				//result_.success = check_position(ik_response_1.solution.joint_state, JOINT_RADIUS);
-				result_.success = true; //todo: only if on the table now
-				break;
+				if(check_if_reached(current_goal, current_pose)){
+					//reached location, success
+					segbot_arm_manipulation::openHand();
+					result_.success = true; //TO DO: check if moving to location was successful
+					break;
+				}
+				//did not reach location, continue trying 
+				result_.success = false; 
 			}
 		}
-		
-		//drop the object
-		segbot_arm_manipulation::openHand();
 		
 		//step7: home arm 
 		segbot_arm_manipulation::homeArm(nh_);

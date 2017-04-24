@@ -11,6 +11,7 @@
 //action for grasping
 #include "segbot_arm_manipulation/TabletopGraspAction.h"
 #include "segbot_arm_manipulation/TabletopApproachAction.h"
+#include "segbot_arm_manipulation/LiftVerifyAction.h"
 
 #include <segbot_arm_manipulation/arm_utils.h>
 #include <segbot_arm_manipulation/arm_positions_db.h>
@@ -90,6 +91,21 @@ void go_to_table(std::string table){
 	}
 }
 
+int find_largest_obj(segbot_arm_perception::TabletopPerception::Response table_scene){
+	int largest_pc_index = -1;
+	int largest_num_points = -1;
+	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
+			
+		int num_points_i = table_scene.cloud_clusters[i].height* table_scene.cloud_clusters[i].width;
+		
+		if (num_points_i > largest_num_points){
+			largest_num_points = num_points_i;
+			largest_pc_index = i;
+		}
+	}
+	return largest_pc_index;
+}
+
 void call_approach(){
 	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopApproachAction> ac_approach("segbot_table_approach_as",true);
 	ac_approach.waitForServer();
@@ -112,6 +128,62 @@ void call_approach(){
 	}
 }
 
+void grasp_largest_object(ros::NodeHandle n, segbot_arm_perception::TabletopPerception::Response table_scene, int largest_pc_index){
+
+	
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_tabletop_grasp_as",true);
+	ac_grasp.waitForServer();
+		
+	//create and fill goal for grasping
+	segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
+	grasp_goal.cloud_plane = table_scene.cloud_plane;
+	grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
+	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
+		grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
+	}
+	grasp_goal.target_object_cluster_index = largest_pc_index;
+	grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
+	grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
+			
+	//send the goal and wait
+	ROS_INFO("Sending goal to grasp action server...");
+	ac_grasp.sendGoal(grasp_goal);
+	ac_grasp.waitForResult();
+	ROS_INFO("Grasp action Finished...");
+}
+
+void lift_object(ros::NodeHandle n, segbot_arm_perception::TabletopPerception::Response table_scene, int largest_pc_index){
+	actionlib::SimpleActionClient<segbot_arm_manipulation::LiftVerifyAction> lift_ac("arm_lift_verify_as", true);
+	lift_ac.waitForServer();
+	ROS_INFO("lift and verify action server made...");
+	
+	//make goals to send to action
+	segbot_arm_manipulation::LiftVerifyGoal lift_verify_goal;
+	lift_verify_goal.tgt_cloud = table_scene.cloud_clusters[largest_pc_index];
+	lift_verify_goal.bins = 8;
+	
+	ROS_INFO("sending goal to lift and verify action server...");
+	lift_ac.sendGoal(lift_verify_goal);
+	
+	ROS_INFO("waiting for lift and verify action server result....");
+	lift_ac.waitForResult();
+	
+	ROS_INFO("lift and verify action finished.");
+	segbot_arm_manipulation::LiftVerifyResult result = *lift_ac.getResult();
+	
+	//check success of lift
+	bool verified = result.success;
+	if(verified){
+		ROS_INFO("Verification succeeded.");
+	}else{
+		//TO DO: if it fails, try again
+		ROS_WARN("Verification failed");
+		segbot_arm_manipulation::homeArm(n);
+		exit(1);
+	}
+	
+}
+
 int main(int argc, char **argv) {
 	ros::init(argc, argv, "object_table_delivery_task"); 
 	
@@ -123,35 +195,55 @@ int main(int argc, char **argv) {
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
-	
-	//action clients
-	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_tabletop_grasp_as",true);
-	ac_grasp.waitForServer();
-	
-	//load database of joint- and tool-space positions
-	std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
-	std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
-	
-	ArmPositionDB positionDB(j_pos_filename, c_pos_filename);
-	positionDB.print();
-	
 
-	//Step 1: go to table location
+	//Step 1: make arm safe and go to table location
+	segbot_arm_manipulation::closeHand();
+	segbot_arm_manipulation::homeArm(n);
+	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
+	if (!safe){
+		ROS_WARN("the robot and arm cannot be made safe for travel");
+		return 1;
+	}
 	go_to_table("o3_414a_table");
 
 	//Step 2: approach table
 	call_approach();
 
-	//Step 3: grasp object on table
+	//Step 3: get the table scene and target object
+	segbot_arm_manipulation::homeArm(n);
+	segbot_arm_manipulation::arm_side_view(n);
+	
+	segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
+		if (!table_scene.is_plane_found){
+		ROS_WARN("No plane found. Exiting...");
+		exit(1);
+	}else if ((int)table_scene.cloud_clusters.size() == 0){
+		ROS_WARN("No objects found on table. The end...");
+		exit(1);
+	}
+	int largest_pc_index = find_largest_obj(table_scene);
+	
+	
+	//Step 4: grasp the target object
+	grasp_largest_object(n, table_scene, largest_pc_index);
 
-	//Step 4: lift and verify object
-
-	//Step 5: go to safety position
+	//Step 5: lift and verify object
+	lift_object(n, table_scene, largest_pc_index);
 
 	//Step 6: go to goal table location
+	segbot_arm_manipulation::closeHand();
+	segbot_arm_manipulation::homeArm(n);
+	safe = segbot_arm_manipulation::makeSafeForTravel(n);
+	if (!safe){
+		ROS_WARN("the robot and arm cannot be made safe for travel");
+		return 1;
+	}
+	go_to_table("o3_406_table");
 
 	//Step 7: approach table
 	call_approach();
 
 	//Step 8: replace object on the new table
+
+	
 }

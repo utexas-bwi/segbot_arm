@@ -194,11 +194,9 @@ namespace segbot_arm_manipulation {
 		
 		ros::ServiceClient client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose> ("/mico_cartesianpose_service");
 		if(client.call(req, res)){
-			//ROS_INFO("Call successful. Response:");
-			//ROS_INFO_STREAM(res);
+			ROS_INFO("MoveToPoseMoveIt Call successful. Response:");
 		} else {
-			//ROS_ERROR("Call failed. Terminating.");
-			//ros::shutdown();
+			ROS_ERROR("MoveToPoseMoveIt Call failed. Terminating.");
 		}
 		
 		return res;
