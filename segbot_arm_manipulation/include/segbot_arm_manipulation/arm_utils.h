@@ -26,6 +26,11 @@
 #include "segbot_arm_perception/SetObstacles.h"
 #include "segbot_arm_perception/TabletopPerception.h"
 
+#include <moveit_utils/MicoMoveitCartesianPoseObstacle.h>
+#include <moveit_msgs/CollisionObject.h>
+#include <pcl_ros/impl/transforms.hpp>
+#include <pcl/common/common.h>
+
 
 const std::string finger_topic = "/mico_arm_driver/fingers/finger_positions";
 const std::string jaco_pose_topic = "/mico_arm_driver/arm_pose/arm_pose";
@@ -33,6 +38,7 @@ const std::string jaco_pose_topic = "/mico_arm_driver/arm_pose/arm_pose";
 #define OPEN_FINGER_VALUE 100
 #define CLOSED_FINGER_VALUE 7200
 #define NUM_JOINTS 8
+
 
 #define PI 3.14159265
 
@@ -42,6 +48,10 @@ std::string arm_joint_names [] = {"mico_joint_1","mico_joint_2", "mico_joint_3",
 
 
 namespace segbot_arm_manipulation {
+	using namespace pcl;
+	typedef pcl::PointXYZRGB PointT;
+	typedef pcl::PointCloud<PointT> PointCloudT;
+
 	
 	sensor_msgs::JointState valuesToJointState(std::vector<float> joint_values){
 		sensor_msgs::JointState js;
@@ -201,6 +211,104 @@ namespace segbot_arm_manipulation {
 		
 		return res;
 	}
+
+	// put the boxes around the collision objects
+	std::vector<moveit_msgs::CollisionObject>
+	get_collision_boxes(std::vector<sensor_msgs::PointCloud2> obstacles){
+	//wait for transform and perform it
+
+		std::vector<moveit_msgs::CollisionObject> collision_objects; 
+		for(int i = 0; i < obstacles.size(); i++){
+
+			// transform
+			tf::TransformListener tf_listener;
+			tf_listener.waitForTransform(obstacles[i].header.frame_id,"base_link",
+			ros::Time(0), ros::Duration(3.0)); 
+
+			sensor_msgs::PointCloud2 object_cloud;
+			pcl_ros::transformPointCloud ("base_link", obstacles[i], object_cloud, tf_listener);
+	
+				// convert to PCL 
+		    	PointCloudT::Ptr object_i (new PointCloudT);
+		    	pcl::PCLPointCloud2 pc_i;
+		    	pcl_conversions::toPCL(object_cloud,pc_i);
+		    	pcl::fromPCLPointCloud2(pc_i,*object_i);
+
+		    	// get the min and max
+		    	PointT min_pt;
+		    	PointT max_pt;
+	  
+		    	//3D Min/Max
+		   	pcl::getMinMax3D(*object_i, min_pt, max_pt); 
+		    	Eigen::Vector4f centroid;
+		    	pcl::compute3DCentroid(*object_i, centroid);
+
+			// create a bounding box
+		    	moveit_msgs::CollisionObject collision_object;
+		    	collision_object.header.frame_id = "base_link";
+
+		    	//Id of object used to identify it
+		    	collision_object.id = "box";
+
+		    	//Define a box to add to the world
+		    	shape_msgs::SolidPrimitive primitive;
+		    	primitive.type = primitive.BOX;
+		    	primitive.dimensions.resize(3);
+
+		    	primitive.dimensions[0] = max_pt.x - min_pt.x;
+		    	primitive.dimensions[1] = max_pt.y - min_pt.y;
+		    	primitive.dimensions[2] = max_pt.z - min_pt.z;
+
+		    	geometry_msgs::Pose box_pose;
+		    	box_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0,0.0,0.0);
+		    	box_pose.position.x = centroid[0];
+		    	box_pose.position.y = centroid[1];
+		    	box_pose.position.z = centroid[2];
+
+		    	collision_object.primitives.push_back(primitive);
+		    	collision_object.primitive_poses.push_back(box_pose);
+		    	collision_object.operation = collision_object.ADD;
+		    	collision_objects.push_back(collision_object);
+
+		}
+
+		return collision_objects;
+   }
+
+
+	moveit_utils::MicoMoveitCartesianPoseObstacle::Response moveToPoseMoveItObstacle(ros::NodeHandle n,
+															    std::vector<sensor_msgs::PointCloud2> obstacles, geometry_msgs::PoseStamped p_target){
+
+
+
+		ROS_INFO("[calling mico_moveit_cartesianpose_obastalce_service_obstacle]");
+		std::vector<moveit_msgs::CollisionObject> collision_objs = 
+		get_collision_boxes(obstacles);
+
+		moveit_utils::MicoMoveitCartesianPoseObstacle::Request 	req;
+		moveit_utils::MicoMoveitCartesianPoseObstacle::Response res;
+		
+		// add the collision objects
+		req.collision_objects = collision_objs;
+		req.target = p_target;
+		
+		ros::ServiceClient client = 
+		n.serviceClient<moveit_utils::MicoMoveitCartesianPoseObstacle> 
+		("/mico_cartesianpose_obstacle_service");
+
+		if(client.call(req, res)){
+			//ROS_INFO("Call successful. Response:");
+			//ROS_INFO_STREAM(res);
+		} else {
+			//ROS_ERROR("Call failed. Terminating.");
+			//ros::shutdown();
+		}
+		
+		return res;
+        }
+
+
+
 	
 	void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 		//check if this is specified just for the arm
