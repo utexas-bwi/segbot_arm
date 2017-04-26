@@ -1,5 +1,9 @@
 <launch>
-
+	
+	<!-- launch tabletop detection service -->
+	<node name="table_object_detection_node" pkg="segbot_arm_perception" type="table_object_detection_node" output="screen">
+	</node>
+	
 	<!-- launch tabletop detection service -->
 	<node name="segbot_table_approach_as" pkg="segbot_arm_manipulation" type="segbot_table_approach_as" output="screen">
 	</node>
@@ -8,12 +12,24 @@
 	<node name="segbot_tabletop_grasp_as" pkg="segbot_arm_manipulation" type="segbot_tabletop_grasp_as" output="screen">
 	</node>
 	
-	<!-- launch lift verification node -->
+	<!-- launch change detection service -->
+	<node name="arm_press_as" pkg="segbot_arm_manipulation" type="arm_press_as" output="screen">
+	</node>
+	
+	<!-- launch change detection service -->
+	<node name="arm_push_as" pkg="segbot_arm_manipulation" type="arm_push_as" output="screen">
+	</node>
+	
+	<!-- launch change detection service -->
 	<node name="arm_lift_verify_as" pkg="segbot_arm_manipulation" type="arm_lift_verify_as" output="screen">
 	</node>
 	
+	<!-- launch change detection service -->
+	<node name="arm_shake_as" pkg="segbot_arm_manipulation" type="arm_shake_as" output="screen">
+	</node>
 	
 	<!-- launch agile grasp -->
+	
 	<node name="find_grasps" pkg="agile_grasp" type="find_grasps" output="screen">
   	<param name="cloud_topic" value="/agile_grasp_demo/cloud" />
     <param name="cloud_frame" value="/xtion_camera_rgb_optical_frame" />

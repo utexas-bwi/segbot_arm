@@ -1,4 +1,4 @@
-# segbot_arm
+# segbot_arm [![Build Status](https://travis-ci.org/utexas-bwi/segbot_arm.svg?branch=master)](https://travis-ci.org/utexas-bwi/segbot_arm)
 
 This holds the all projects for use by the BWI segbot's arm manipulators.
 Currently this includes: Kinova Mico
@@ -30,4 +30,3 @@ $ sudo apt-get install liblapack-dev
 Install our fork of agile_grasp ROS indigo package by cloning from:
 
 https://github.com/jsinapov/agile_grasp
-
