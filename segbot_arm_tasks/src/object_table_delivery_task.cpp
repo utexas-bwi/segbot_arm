@@ -25,6 +25,8 @@
 
 #include <moveit_utils/MicoNavSafety.h>
 
+#include "segbot_arm_manipulation/ObjReplacementAction.h"
+
 #define NUM_JOINTS 8 //6+2 for the arm
 
 //global variables for storing data
@@ -244,6 +246,25 @@ int main(int argc, char **argv) {
 	call_approach();
 
 	//Step 8: replace object on the new table
+    actionlib::SimpleActionClient<segbot_arm_manipulation::ObjReplacementAction> replacement_ac("segbot_obj_replacement_as",true);
+	replacement_ac.waitForServer();
 
-	
+    segbot_arm_manipulation::ObjReplacementGoal replace_goal;
+
+    ROS_INFO("Sending replacement goal"); 
+    replacement_ac.sendGoal(replace_goal);
+	replacement_ac.waitForResult();
+	ROS_INFO("finished replacement");
+
+    segbot_arm_manipulation::ObjReplacementResult replace_result = *replacement_ac.getResult();
+	bool verified = replace_result.success;
+	if(verified){
+		ROS_INFO("Replacement succeeded.");
+	}else{
+		ROS_WARN("Replacement failed");
+		segbot_arm_manipulation::homeArm(n);
+		exit(1);
+	}
+
+	segbot_arm_manipulation::homeArm(n); 
 }
