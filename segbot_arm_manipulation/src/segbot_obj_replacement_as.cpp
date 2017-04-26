@@ -201,47 +201,36 @@ public:
 		result.sensor_origin_ = original->sensor_origin_;
 		result.sensor_orientation_ = original->sensor_orientation_;
 		
-		int middle_index = num_points/2;
+		if(num_points == 0){
+			ROS_WARN("cannot reorder an empty cloud");
+			return PointCloudT::Ptr(&result);
+		}
 		
-		// for(int i = middle_index; i < num_points; i++){
-		// 	int pair_index = num_points/i;
-		// 	PointT new_point;
-		// 	new_point.x = original->points[i].x;
-		// 	new_point.y = original->points[i].y;
-		// 	new_point.z = original->points[i].z;
-		// 	result.push_back(new_point);
+		int middle_index = num_points/2;
+		int j = middle_index;
+		int i = middle_index;
+		if(num_points %2 == 0){
+			j--;
+		}
+		        
+        while(j >= 0 && i< num_points){
+			PointT new_point;
+			new_point.x = original->points[i].x;
+			new_point.y = original->points[i].y;
+			new_point.z = original->points[i].z;
+			result.push_back(new_point); 
 			
-		// 	if(i != pair_index){
-		// 		PointT new_pair;
-		// 		new_pair.x = original->points[i].x;
-		// 		new_pair.y = original->points[i].y;
-		// 		new_pair.z = original->points[i].z;
-		// 		result.push_back(new_pair);
-		// 	}
+			if(i != j){
+				PointT new_point2;
+				new_point2.x = original->points[j].x;
+				new_point2.y = original->points[j].y;
+				new_point2.z = original->points[j].z;
+				result.push_back(new_point2);
+			}
 			
-		// }
-        
-        if (num_points % 2 == 0) {
-        	num_points--; 
-        }
-
-        PointT new_point;
-		new_point.x = original->points[middle_index].x;
-		new_point.y = original->points[middle_index].y;
-		new_point.z = original->points[middle_index].z;
-		result.push_back(new_point);
-        
-		for (int i = 0; i < middle_index; i++) {
-			new_point.x = original->points[middle_index + i].x;
-			new_point.y = original->points[middle_index + i].y;
-			new_point.z = original->points[middle_index + i].z;
-			result.push_back(new_point);
-
-			PointT new_point2;
-			new_point2.x = original->points[middle_index - i].x;
-			new_point2.y = original->points[middle_index - i].y;
-			new_point2.z = original->points[middle_index - i].z;
-			result.push_back(new_point2);
+			i++;
+			j--;
+			
 		}
 		
 		//TO DO: test this
