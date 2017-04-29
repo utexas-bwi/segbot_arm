@@ -47,12 +47,16 @@
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
+PointT sensor_origin;
 
 #define NUM_JOINTS_ARMONLY 6
 #define NUM_JOINTS 8 //6+2 for the arm
 
 #define JOINT_RADIUS .195
 #define ABOVE_TABLE 0.1
+
+
+
 
 class ObjReplacementActionServer
 {
@@ -117,7 +121,8 @@ public:
 	~ObjReplacementActionServer(void)
 	{
 	}
-
+	
+	
 	//Joint state cb
 	void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 		if (input->position.size() == NUM_JOINTS){
@@ -185,6 +190,24 @@ public:
 		
 	}
 	
+	/*helper function for sorting the points of a point cloud by the distance
+	 * to the camera sensor. Requires that you have set the sensor origin variable
+	 * prior to sorting the pointcloud*/
+	static bool sort_hlp(const pcl::PointXYZRGB& p1, const pcl::PointXYZRGB& p2){
+		//sort by distance to camera sensor
+		float x_diff = (float) p1.x - sensor_origin.x;
+		float y_diff = (float) p1.y - sensor_origin.y;
+		float z_diff = (float) p1.z - sensor_origin.z;
+		float p1_diff = (float) sqrt(pow(x_diff, 2) + pow(y_diff, 2) + pow (z_diff, 2));
+		
+		x_diff = (float) p2.x - sensor_origin.x;
+		y_diff = (float) p2.y - sensor_origin.y;
+		z_diff = (float) p2.z - sensor_origin.z;
+		float p2_diff = (float) sqrt(pow(x_diff, 2) + pow(y_diff, 2) + pow (z_diff, 2));
+		
+		return p1_diff < p2_diff;
+	}
+	
 	bool check_if_reached(geometry_msgs::PoseStamped target_pose, geometry_msgs::PoseStamped actual_pose){
 		float distance =  euclidean_distance(target_pose.pose.position, actual_pose.pose.position);
 		
@@ -194,47 +217,6 @@ public:
 			return false;
 		}
 		return true;
-	}
-	
-	PointCloudT::Ptr reorder_points(int num_points, PointCloudT::Ptr original){
-		PointCloudT result;
-		result.sensor_origin_ = original->sensor_origin_;
-		result.sensor_orientation_ = original->sensor_orientation_;
-		
-		if(num_points == 0){
-			ROS_WARN("cannot reorder an empty cloud");
-			return PointCloudT::Ptr(&result);
-		}
-		
-		int middle_index = num_points/2;
-		int j = middle_index;
-		int i = middle_index;
-		if(num_points %2 == 0){
-			j--;
-		}
-		        
-        while(j >= 0 && i< num_points){
-			PointT new_point;
-			new_point.x = original->points[i].x;
-			new_point.y = original->points[i].y;
-			new_point.z = original->points[i].z;
-			result.push_back(new_point); 
-			
-			if(i != j){
-				PointT new_point2;
-				new_point2.x = original->points[j].x;
-				new_point2.y = original->points[j].y;
-				new_point2.z = original->points[j].z;
-				result.push_back(new_point2);
-			}
-			
-			i++;
-			j--;
-			
-		}
-		
-		//TO DO: test this
-		return PointCloudT::Ptr(&result);
 	}
 	
 	
@@ -298,9 +280,14 @@ public:
 			return;
 		}
 		
-		//TO DO: test this 
-		PointCloudT::Ptr reordered_plane = reorder_points(num_points, plane_down_sam);
+		//TO DO: test this
+		//set the pointT of the camera's sensor
+		Eigen::Vector4f origin = plane_down_sam->sensor_origin_; 
+		sensor_origin.x = origin(0);
+		sensor_origin.y = origin(1);
+		sensor_origin.z = origin(2);
 		
+		std::sort(plane_down_sam->points.begin(), plane_down_sam->points.end(), sort_hlp);
 		
 		//for now go through points iteratively
 		for(int ind = 0; ind < num_points; ind++){
@@ -312,8 +299,8 @@ public:
 			current_goal.pose.position.z = plane_down_sam->points[ind].z + ABOVE_TABLE; //want it to be slightly above the table still
 
 			//TO DO: for now use the current quaternion
-			current_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, 0, 0);
-			//current_goal.pose.orientation =  current_pose.pose.orientation; //TO DO: test
+			//current_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, 0, 0);
+			current_goal.pose.orientation =  current_pose.pose.orientation; //TO DO: test
 			
 			//check the inverse kinematics, if possible, move to the pose and drop object
 			moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
