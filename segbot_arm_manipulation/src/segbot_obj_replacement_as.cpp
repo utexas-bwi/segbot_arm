@@ -294,8 +294,8 @@ public:
 			//set z value slightly above the table
 			current_goal.pose.position.z = plane_down_sam->points[ind].z + ABOVE_TABLE;
 
-			//current_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, 0, 0);
-			current_goal.pose.orientation =  current_pose.pose.orientation; //TO DO: test
+			current_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2, 0, 0);
+			//current_goal.pose.orientation =  current_pose.pose.orientation; //TO DO: test
 			
 			//check the inverse kinematics, if possible, move to the pose and drop object
 			moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
