@@ -89,6 +89,9 @@ protected:
 	ros::Subscriber sub_grasps;
 
 	ros::Publisher down_pub; 
+    
+    std::vector<geometry_msgs::Quaternion> orientations; 
+
 
 
 public:
@@ -222,6 +225,12 @@ public:
 		return true;
 	}
 	
+	void get_orientations(std::vector<geometry_msgs::Quaternion> orientations) {
+		orientations.push_back(current_pose.pose.orientation); 
+        orientations.push_back(tf::createQuaternionMsgFromRollPitchYaw(3.14/2, 0, 0)); 
+        orientations.push_back(tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, 0, 0));
+        orientations.push_back(tf::createQuaternionMsgFromRollPitchYaw(0, 0, 0));
+	}
 	
 	/*Assumptions: the robot has already approached the table, 
 	 * an object is in hand, the arm is currently still in safety mode,
@@ -281,6 +290,8 @@ public:
 		sensor_origin.z = origin(2);
 		
 		std::sort(plane_down_sam->points.begin(), plane_down_sam->points.end(), sort_hlp);
+        
+        get_orientations(orientations); 
 		
 		//step4: go through the points and find a place to set the object
 		for(int ind = 0; ind < num_points; ind++){
@@ -294,22 +305,29 @@ public:
 			//set z value slightly above the table
 			current_goal.pose.position.z = plane_down_sam->points[ind].z + ABOVE_TABLE;
 
-			current_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2, 0, 0);
+			//current_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2, 0, 0);
 			//current_goal.pose.orientation =  current_pose.pose.orientation; //TO DO: test
-			
-			//check the inverse kinematics, if possible, move to the pose and drop object
-			moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
-			
-			if (ik_response_1.error_code.val == 1){
-				segbot_arm_manipulation::moveToPoseMoveIt(nh_, current_goal);
-				if(check_if_reached(current_goal, current_pose)){
-					//reached location, success
-					segbot_arm_manipulation::openHand();
-					result_.success = true; 
-					break;
+
+			for(int j = 0; j < orientations.size(); j++){
+				current_goal.pose.orientation =  orientations.at(j); 
+				//check the inverse kinematics, if possible, move to the pose and drop object
+				moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
+				
+				if (ik_response_1.error_code.val == 1){
+					segbot_arm_manipulation::moveToPoseMoveIt(nh_, current_goal);
+					if(check_if_reached(current_goal, current_pose)){
+						//reached location, success
+						segbot_arm_manipulation::openHand();
+						result_.success = true; 
+						break;
+					}
+					//did not reach location, continue trying 
+					result_.success = false; 
 				}
-				//did not reach location, continue trying 
-				result_.success = false; 
+			}
+
+			if (result_.success == true){
+				break; 
 			}
 		}
 		
