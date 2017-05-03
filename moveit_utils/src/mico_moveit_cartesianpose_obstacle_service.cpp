@@ -7,11 +7,11 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
+
 //services
 #include "moveit_utils/MicoController.h"
 #include "ros/ros.h"
 #include "geometry_msgs/PoseStamped.h"
-//#include "moveit_utils/MicoMoveitCartesianPose.h"
 #include "moveit_utils/MicoMoveitCartesianPoseObstacle.h"
 
 bool g_caught_sigint = false;
@@ -23,10 +23,10 @@ void sig_handler(int sig){
     ROS_INFO("caugt sigint, init shutdown seq...");
     ros::shutdown();
     exit(1);
-};
+}
 
 bool service_cb(moveit_utils::MicoMoveitCartesianPoseObstacle::Request &req, moveit_utils::MicoMoveitCartesianPoseObstacle::Response &res){
-    ROS_INFO("[mico_moveit_cartesianpose_obstalce_service.cpp] Request received!");
+    ROS_INFO("[mico_moveit_cartesianpose_obstacle_service.cpp] Request received!");
     
     moveit_utils::MicoController srv_controller;
     moveit::planning_interface::MoveGroup group("arm");
@@ -53,7 +53,7 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPoseObstacle::Request &req, mov
     moveit_utils::MicoController srv;
     srv_controller.request.trajectory = my_plan.trajectory_;
     if(controller_client.call(srv_controller)){
-       ROS_INFO("Service call sentttttt. Prepare for movement.");
+       ROS_INFO("Service call sent. Prepare for movement.");
        res.completed = srv_controller.response.done;
     }
     else {
@@ -70,20 +70,12 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
     ros::AsyncSpinner spinner(1);
     spinner.start();
-    ROS_INFO("Inside Obstacle Service");
-    //make controller service
-    //TODO: as a rosparam, option to use different controllers
-    //ros::ServiceClient client = nh.serviceClient<moveit_utils::MicoMoveitJointPose>("mico_moveit_joint_pose");
+
     controller_client = nh.serviceClient<moveit_utils::MicoController>("mico_controller");
     ros::ServiceServer srv = nh.advertiseService("mico_cartesianpose_obstacle_service", service_cb);
 
     pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/mico_cartesianpose_obstacle_service/target_pose", 10);
     
-
-    //TODO: as a rosparam, option for planning time
     ros::spin();
     return 0;
 }
-
-
-
