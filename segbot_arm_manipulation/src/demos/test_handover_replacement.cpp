@@ -154,13 +154,14 @@ int main(int argc, char** argv){
 		ROS_INFO("Moving to side position"); 
 		
 		segbot_arm_manipulation::moveToPoseMoveIt(nh, side_pose);
-		
-		pressEnter("Press [Enter] to proceed");
 	}
 	else {
 		ROS_ERROR("side_view position does not exist! Aborting...");
 		return 1;
 	}
+	
+	pressEnter("Press [Enter] to proceed");
+
 
 	//test object replacement
 	segbot_arm_manipulation::ObjReplacementGoal replacement_goal; 
