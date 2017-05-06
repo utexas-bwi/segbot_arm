@@ -110,10 +110,30 @@ bool fidget_randomly(std::vector<double> mean_angles) {
 	std::vector<double> goal_angle(mean_angles);
 	for(int i = 0; i < 6; i++){
 		double noise = dist();
-		ROS_INFO("%f", noise);
 		goal_angle[i] += noise;
 	}
 	move_to(goal_angle, 3.0, 5.0);
+}
+
+void spin_effector(bool clockwise, double duration) {
+	jaco_msgs::JointVelocity msg;
+	double pub_rate = 40.0;
+	int velocity = 25;
+	double elapsed_time = 0;
+	msg.joint6 = velocity * (clockwise ? 1 : -1);
+	pub_angular_velocity.publish(msg);	
+	ros::Rate r(pub_rate);
+	while (ros::ok()) {
+		ros::spinOnce();
+		pub_angular_velocity.publish(msg);
+		r.sleep();
+		
+		elapsed_time += (1.0/pub_rate);
+		if (elapsed_time > duration) break;
+	}
+	msg.joint6 = 0;
+	pub_angular_velocity.publish(msg);
+
 }
 
 void load_and_execute_trajectory(std::string filename) {
@@ -183,43 +203,71 @@ int main(int argc, char **argv){
 	
 	ros::topic::waitForMessage<sensor_msgs::JointState>("/joint_state",ros::Duration(10));
 	start_angles = angles_current;
-	fidget_randomly(start_angles);
-	while(in != 'q'){
-		std::cout << "MAIN MENU: q for quit, 1 for no fidget, 2 for some fidget, 3 for full fidget, 4 for home" << std::endl;		
+	spin_effector(true, 1.0);
+	move_to(start_angles, 40, 40);
+	while(true){
+		std::cout << "MAIN MENU: q for quit, 1 for experiment, 2 for home" << std::endl;		
 		std::cin >> in;
 		if (in == 'q') break;
-		switch (in){
+		else if (in == '2') { 
+			move_to(start_angles, 40, 40);
+			continue;
+		}
+
+		std::cout << "- Motion: 1 for none, 2 for random path, 3 for turbulence, 4 for spin" << std::endl;
+		char motion;
+		char amount;
+		std::cin >> motion;
+		std::cout << "- Amount: 1 for 50%, 2 for 100%" << std::endl;	
+		std::cin >> amount;
+		double delay_time = 30;
+		if (amount == '2') delay_time = 0;
+		double idle_time = 60 - delay_time;
+		ros::Duration(delay_time).sleep();
+		switch (motion){
 			case '1':
 				ROS_INFO("Beggining dumb idle activity");
-				ros::Duration(60).sleep();
-				load_and_execute_trajectory("side_grasp_from_home");
+				ros::Duration(idle_time).sleep();
 				break;
 			case '2':{
-				ros::Duration(30).sleep();
-				ROS_INFO("Beggining some fidget activity");
-				time_t end = time(NULL) + 30;
+				ROS_INFO("Beggining fidget");
+				time_t end = time(NULL) + idle_time;
 				while (time(NULL) <= end){
 					fidget_randomly(start_angles);
 				}
-				load_and_execute_trajectory("side_grasp_from_home");
-				
+		
 				break;
 				}
 			case '3': {
-				ROS_INFO("Beggining full fidget activity");
-				time_t end = time(NULL) + 60;
+				ROS_INFO("Beggining random path");
+				time_t end = time(NULL) + idle_time;
 				while (time(NULL) <= end){
 					fidget_randomly(start_angles);
 				}
-				load_and_execute_trajectory("side_grasp_from_home");
+			
 				
 				break;
 				}
-			case '4':
-				ROS_INFO("Homing..");
-		  		move_to(start_angles, 40, 10);
+			case '4': {
+				ROS_INFO("Beggining spin");
+		  		time_t end = time(NULL) + idle_time;
+				boost::mt19937 *rng = new boost::mt19937();
+				
+				rng->seed(time(NULL));
+				boost::normal_distribution<> distribution(0,1);
+				boost::variate_generator< boost::mt19937, boost::normal_distribution<> > dist(*rng, distribution);
+				bool clockwise = true;
+				while (time(NULL) <= end){
+					clockwise = !clockwise;
+					spin_effector(clockwise, 5.0 + dist());
+				}
+				
+				
 				break;
+			}
 		}
+	move_to(start_angles, 40, 35);
+	load_and_execute_trajectory("side_grasp_from_home");
 			
 	}
 	ros::shutdown();
