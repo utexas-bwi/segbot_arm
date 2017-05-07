@@ -9,6 +9,7 @@
 #include <moveit_msgs/CollisionObject.h>
 #include <jaco_msgs/JointAngles.h>
 #include <jaco_msgs/JointVelocity.h>
+#include <jaco_msgs/SetFingersPositionAction.h>
 //used for assignment of vector
 #include <boost/assign/std/vector.hpp>
 //services
@@ -31,6 +32,12 @@
 
 #define foreach BOOST_FOREACH
 
+#define OPEN_FINGER_VALUE 100
+#define CLOSED_FINGER_VALUE 7200
+
+const std::string finger_topic = "/mico_arm_driver/fingers/finger_positions";
+const std::string jaco_pose_topic = "/mico_arm_driver/arm_pose/arm_pose";
+
 using namespace boost::assign;
 bool g_caught_sigint = false;
 
@@ -46,7 +53,7 @@ actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> *ac;
 std::vector<double> angles_current;
 std::vector<double> start_angles;
 boost::variate_generator< boost::mt19937, boost::normal_distribution<> > *dist;
-const char *trajectory_names[] = {"side_grasp_from_home", "side_grasp_from_home", "side_grasp_from_home"};
+const char *trajectory_names[] = {"object1_grasp", "object2_grasp", "side_grasp_from_home"};
 void sig_handler(int sig){
 	ac->cancelAllGoals();
 	delete ac;
@@ -62,7 +69,7 @@ void toolpos_cb(const geometry_msgs::PoseStamped &msg){
 
 void joint_state_cb(const sensor_msgs::JointState &input){
 	if (input.position.at(0) == input.position.at(1) && input.position.at(1) == input.position.at(2)) return;
-	angles_current.clear();
+	   angles_current.clear();
 	
 	for(int i = 0; i < 6; i++){
 		angles_current.push_back(input.position.at(i));
@@ -118,13 +125,19 @@ bool fidget_observantly(std::vector<double> mean_orientation) {
 
     //construct message
 	geometry_msgs::TwistStamped velocity_msg;
-	velocity_msg.twist.angular.x = (*dist)();
-	velocity_msg.twist.angular.y = (*dist)();
-	velocity_msg.twist.angular.z = (*dist)();
-    move_with_velocities(velocity_msg, 0.5);
+	velocity_msg.twist.angular.x = 2.0 * (*dist)();
+	velocity_msg.twist.angular.y = 2.0 * (*dist)();
+	velocity_msg.twist.angular.z = 2.0 * (*dist)();
+    move_with_velocities(velocity_msg, 1.0);
     
 }
 
+void lift() {
+    //construct message
+	geometry_msgs::TwistStamped velocity_msg;
+	velocity_msg.twist.linear.z = 2.0;
+    move_with_velocities(velocity_msg, 3.0);
+}
 
 void load_and_execute_trajectory(std::string filename) {
 	std::string path = ros::package::getPath("moveit_utils");
@@ -177,6 +190,20 @@ void spin_effector(bool clockwise, double duration) {
 
 }
 
+void moveFingers(int finger_value) {
+	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac(finger_topic, true);
+
+	jaco_msgs::SetFingersPositionGoal goalFinger;
+	goalFinger.fingers.finger1 = finger_value;
+	goalFinger.fingers.finger2 = finger_value;
+	// Not used for our arm
+	goalFinger.fingers.finger3 = 0;
+	
+	ac.waitForServer();
+	ac.sendGoal(goalFinger);
+	ac.waitForResult();
+}
+
 int main(int argc, char **argv){
 	ros::init(argc, argv, "move_group_interface");
 	ros::NodeHandle node_handle;
@@ -225,7 +252,7 @@ int main(int argc, char **argv){
 		char motion;
 		char amount;
 		std::cin >> motion;
-		double idle_time = 45;
+		double idle_time = 5.0;
         
         std::cout << " - Object: 1, 2, 3" << std::endl;
         char object;
@@ -248,8 +275,12 @@ int main(int argc, char **argv){
 		}
         move_to(start_angles, 40, 35);
 
-        
+        moveFingers(OPEN_FINGER_VALUE);
         load_and_execute_trajectory(trajectory_names[object_i]);
+        
+        moveFingers(CLOSED_FINGER_VALUE);
+        lift();
+        move_to(start_angles, 40, 35);
         
 			
 	}
