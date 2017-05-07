@@ -217,7 +217,6 @@ public:
 	bool check_if_reached(geometry_msgs::PoseStamped target_pose, geometry_msgs::PoseStamped actual_pose){
 		float distance =  euclidean_distance(target_pose.pose.position, actual_pose.pose.position);
 		
-		//TO DO: test this threshold
 		if(distance >= POSE_THRESHOLD){
 			//further than threshold centimeters away from goal location
 			return false;
@@ -284,7 +283,7 @@ public:
 		
 		//step3: sort the points in the point cloud by distance to camera
 		//set the pointT of the camera's sensor
-		Eigen::Vector4f origin = plane_down_sam->sensor_origin_; //TO DO test this, make sure origin is set 
+		Eigen::Vector4f origin = plane_down_sam->sensor_origin_; 
 		sensor_origin.x = origin(0);
 		sensor_origin.y = origin(1);
 		sensor_origin.z = origin(2);
@@ -304,6 +303,7 @@ public:
 			current_goal.pose.position.z = plane_down_sam->points[ind].z + ABOVE_TABLE;
 
 			current_goal.pose.orientation =  tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, 3.14, 0); 
+			
 			//check the inverse kinematics, if possible, move to the pose and drop object
 			moveit_msgs::GetPositionIK::Response ik_response_1 = segbot_arm_manipulation::computeIK(nh_,current_goal);
 

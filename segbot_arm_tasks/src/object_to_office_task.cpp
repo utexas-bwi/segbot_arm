@@ -83,6 +83,7 @@ void listenForArmData(){
 	}
 }
 
+/* Function to find the largest object on a table*/
 int find_largest_obj(segbot_arm_perception::TabletopPerception::Response table_scene){
 	int largest_pc_index = -1;
 	int largest_num_points = -1;
@@ -114,17 +115,6 @@ void pressEnter(std::string message){
 		}
 	}
 }
-
-
-void lift(ros::NodeHandle n, double x){
-	listenForArmData();
-	
-	geometry_msgs::PoseStamped p_target = current_pose;
-	
-	p_target.pose.position.z += x;
-	segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
-}
-
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
@@ -282,7 +272,6 @@ int main(int argc, char **argv) {
 	if(verified){
 		ROS_INFO("Verification succeeded.");
 	}else{
-		//TO DO: if it fails, try again
 		ROS_WARN("Verification failed");
 		segbot_arm_manipulation::homeArm(n);
 		exit(1);
@@ -341,9 +330,7 @@ int main(int argc, char **argv) {
 	pressEnter("Press [ENTER] to proceed to HANDOVER");
 	
 	segbot_arm_manipulation::arm_side_view(n);
-	
-	//TO DO: before handing over, we want to ask questions about the object
-	
+		
 	//Step 9: handover the object
 	segbot_arm_manipulation::TabletopGraspGoal handover_goal;
 	handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
