@@ -215,33 +215,8 @@ int main(int argc, char **argv) {
 	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_tabletop_grasp_as",true);
 	ac_grasp.waitForServer();
 	
-	//load database of joint- and tool-space positions
-	std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
-	std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
-	
-	ArmPositionDB positionDB(j_pos_filename, c_pos_filename);
-	positionDB.print();
-	
-	listenForArmData();
-	
-	//Open hand and move to home position
-	segbot_arm_manipulation::homeArm(n);
-	segbot_arm_manipulation::openHand();
-	
-	// Go to handover position 
-	if (positionDB.hasCarteseanPosition("handover_front")){		
-		geometry_msgs::PoseStamped handover_pose = positionDB.getToolPositionStamped("handover_front","mico_link_base");
-		
-		ROS_INFO("Moving to handover position"); 
-		
-		segbot_arm_manipulation::moveToPoseMoveIt(n,handover_pose);
-		
-		pressEnter("Press [Enter] to proceed");
-	}
-	else {
-		ROS_ERROR("handover_front position does not exist! Aborting...");
-		return 1;
-	}
+	//move arm into the handover view
+	segbot_arm_manipulation::arm_handover_view(n);
 
 	//now receive object
 	std::cout << "Please place an object in robot's hand\n"; 
@@ -318,15 +293,8 @@ int main(int argc, char **argv) {
 	//now home and let go of object 
 	segbot_arm_manipulation::homeArm(n);
 	
-	if (positionDB.hasJointPosition("handover_front")){
-		std::vector<float> handover_position = positionDB.getJointPosition("handover_front");
-		sensor_msgs::JointState handover_js = segbot_arm_manipulation::valuesToJointState(handover_position);
-		segbot_arm_manipulation::moveToJointState(n,handover_js);
-	}
-	else {
-		ROS_ERROR("handover_front position does not exist! Aborting...");
-		return 1;
-	}
+	//move arm to handover view
+	segbot_arm_manipulation::arm_handover_view(n);
 	
 	//play audio message 
 	/*ros::ServiceClient speakMessageClient = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");  

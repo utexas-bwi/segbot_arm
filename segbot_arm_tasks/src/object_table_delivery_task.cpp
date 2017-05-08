@@ -62,7 +62,7 @@ void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
   heardPose = true;
 }
 
-void go_to_table(std::string table){
+void go_to_place(std::string table){
 	bwi_kr_execution::ExecutePlanGoal table_goal;
     bwi_kr_execution::AspRule table_rule;
     bwi_kr_execution::AspFluent table_fluent;
@@ -88,8 +88,7 @@ void go_to_table(std::string table){
     //check for success
     if(table_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
 		ROS_WARN("could not reach destination");
-		//TO DO: potentially retry 
-		exit(-1);
+		exit(1);
 	}
 }
 
@@ -108,25 +107,25 @@ int find_largest_obj(segbot_arm_perception::TabletopPerception::Response table_s
 	return largest_pc_index;
 }
 
-void call_approach(){
+void call_approach(std::string command){
 	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopApproachAction> ac_approach("segbot_table_approach_as",true);
 	ac_approach.waitForServer();
 	
 	segbot_arm_manipulation::TabletopApproachGoal approach_goal;
-	approach_goal.command = "approach";
+	approach_goal.command = command;
 	
 	//send goal and wait
 	ac_approach.sendGoal(approach_goal);
 	ac_approach.waitForResult();
-	ROS_INFO("finished approach");
+	ROS_INFO("finished tabletop approach action");
 	
 	//get result and check for failure
 	segbot_arm_manipulation::TabletopApproachResult approach_result = *ac_approach.getResult();
 	bool approach_success = approach_result.success; 
 	if(!approach_success){
-		ROS_WARN("approach action failed");
+		ROS_WARN("tabletop approach action failed");
 		ROS_INFO_STREAM(approach_result.error_msg);
-		exit(-1);
+		exit(1);
 	}
 }
 
@@ -178,13 +177,13 @@ void lift_object(ros::NodeHandle n, segbot_arm_perception::TabletopPerception::R
 	if(verified){
 		ROS_INFO("Verification succeeded.");
 	}else{
-		//TO DO: if it fails, try again
 		ROS_WARN("Verification failed");
 		segbot_arm_manipulation::homeArm(n);
 		exit(1);
 	}
 	
 }
+
 
 int main(int argc, char **argv) {
 	ros::init(argc, argv, "object_table_delivery_task"); 
@@ -204,19 +203,21 @@ int main(int argc, char **argv) {
 	bool safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	if (!safe){
 		ROS_WARN("the robot and arm cannot be made safe for travel");
-		return 1;
+		exit(1);
 	}
-	go_to_table("o3_414a_table");
+	
+	//move to the starting table with desired object
+	go_to_place("o3_414a_table");
 
 	//Step 2: approach table
-	call_approach();
+	call_approach("approach");
 
 	//Step 3: get the table scene and target object
 	segbot_arm_manipulation::homeArm(n);
 	segbot_arm_manipulation::arm_side_view(n);
 	
 	segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
-		if (!table_scene.is_plane_found){
+	if (!table_scene.is_plane_found){
 		ROS_WARN("No plane found. Exiting...");
 		exit(1);
 	}else if ((int)table_scene.cloud_clusters.size() == 0){
@@ -232,18 +233,20 @@ int main(int argc, char **argv) {
 	//Step 5: lift and verify object
 	lift_object(n, table_scene, largest_pc_index);
 
-	//Step 6: go to goal table location
+	//Step 6: make arm safe and go to goal table location
 	segbot_arm_manipulation::closeHand();
 	segbot_arm_manipulation::homeArm(n);
 	safe = segbot_arm_manipulation::makeSafeForTravel(n);
 	if (!safe){
 		ROS_WARN("the robot and arm cannot be made safe for travel");
-		return 1;
+		exit(1);
 	}
-	go_to_table("o3_406_table");
+	
+	call_approach("back_out");
+	go_to_place("o3_406_table");
 
 	//Step 7: approach table
-	call_approach();
+	call_approach("approach");
 
 	//Step 8: replace object on the new table
     actionlib::SimpleActionClient<segbot_arm_manipulation::ObjReplacementAction> replacement_ac("segbot_obj_replacement_as",true);

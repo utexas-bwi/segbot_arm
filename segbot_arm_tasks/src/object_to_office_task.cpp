@@ -116,6 +116,128 @@ void pressEnter(std::string message){
 	}
 }
 
+void go_to_place(std::string table){
+	bwi_kr_execution::ExecutePlanGoal table_goal;
+    bwi_kr_execution::AspRule table_rule;
+    bwi_kr_execution::AspFluent table_fluent;
+    
+    table_fluent.name = "not facing";
+    table_fluent.variables.push_back(table);
+    
+    table_rule.body.push_back(table_fluent);
+    
+    table_goal.aspGoal.push_back(table_rule);
+	
+	actionlib::SimpleActionClient<bwi_kr_execution::ExecutePlanAction> table_asp("/action_executor/execute_plan", true);
+	table_asp.waitForServer();
+	
+	ROS_INFO("finished waiting for server");
+	
+	//send the goal and wait
+    ROS_INFO("sending goal");
+    table_asp.sendGoalAndWait(table_goal);
+    
+    ROS_INFO("finished waiting for goal");
+    
+    //check for success
+    if(table_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
+		ROS_WARN("could not reach destination");
+		exit(-1);
+	}
+}
+
+void call_approach(std::string command){
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopApproachAction> ac_approach("segbot_table_approach_as",true);
+	ac_approach.waitForServer();
+	
+	segbot_arm_manipulation::TabletopApproachGoal approach_goal;
+	approach_goal.command = command;
+	
+	//send goal and wait
+	ac_approach.sendGoal(approach_goal);
+	ac_approach.waitForResult();
+	ROS_INFO("finished tabletop approach action");
+	
+	//get result and check for failure
+	segbot_arm_manipulation::TabletopApproachResult approach_result = *ac_approach.getResult();
+	bool approach_success = approach_result.success; 
+	if(!approach_success){
+		ROS_WARN("tabletop approach action failed");
+		ROS_INFO_STREAM(approach_result.error_msg);
+		exit(1);
+	}
+}
+
+
+void grasp_largest_object(ros::NodeHandle n, segbot_arm_perception::TabletopPerception::Response table_scene, int largest_pc_index){
+
+	
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_tabletop_grasp_as",true);
+	ac_grasp.waitForServer();
+		
+	//create and fill goal for grasping
+	segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
+	grasp_goal.cloud_plane = table_scene.cloud_plane;
+	grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
+	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
+		grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
+	}
+	grasp_goal.target_object_cluster_index = largest_pc_index;
+	grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
+	grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
+			
+	//send the goal and wait
+	ROS_INFO("Sending goal to grasp action server...");
+	ac_grasp.sendGoal(grasp_goal);
+	ac_grasp.waitForResult();
+	ROS_INFO("Grasp action Finished...");
+}
+
+void handover_object(){
+	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_tabletop_grasp_as",true);
+	ac_grasp.waitForServer();
+	ROS_INFO("handing the object over");
+	
+	segbot_arm_manipulation::TabletopGraspGoal handover_goal;
+	handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
+	handover_goal.timeout_seconds = 30.0;
+	
+	//send goal and wait for response
+	ac_grasp.sendGoal(handover_goal);
+	ac_grasp.waitForResult();
+}
+
+void lift_object(ros::NodeHandle n, segbot_arm_perception::TabletopPerception::Response table_scene, int largest_pc_index){
+	actionlib::SimpleActionClient<segbot_arm_manipulation::LiftVerifyAction> lift_ac("arm_lift_verify_as", true);
+	lift_ac.waitForServer();
+	ROS_INFO("lift and verify action server made...");
+	
+	//make goals to send to action
+	segbot_arm_manipulation::LiftVerifyGoal lift_verify_goal;
+	lift_verify_goal.tgt_cloud = table_scene.cloud_clusters[largest_pc_index];
+	lift_verify_goal.bins = 8;
+	
+	ROS_INFO("sending goal to lift and verify action server...");
+	lift_ac.sendGoal(lift_verify_goal);
+	
+	ROS_INFO("waiting for lift and verify action server result....");
+	lift_ac.waitForResult();
+	
+	ROS_INFO("lift and verify action finished.");
+	segbot_arm_manipulation::LiftVerifyResult result = *lift_ac.getResult();
+	
+	//check success of lift
+	bool verified = result.success;
+	if(verified){
+		ROS_INFO("Verification succeeded.");
+	}else{
+		ROS_WARN("Verification failed");
+		segbot_arm_manipulation::homeArm(n);
+		exit(1);
+	}
+	
+}
+
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
 	ros::init(argc, argv, "object_to_office_task");
@@ -148,58 +270,13 @@ int main(int argc, char **argv) {
     
     //Step 2: Create and send goal to move the robot to the table
     std::string table = "o3_414a_table";
-
-	bwi_kr_execution::ExecutePlanGoal table_goal;
-    bwi_kr_execution::AspRule table_rule;
-    bwi_kr_execution::AspFluent table_fluent;
-    
-    table_fluent.name = "not facing";
-    table_fluent.variables.push_back(table);
-    
-    table_rule.body.push_back(table_fluent);
-    
-    table_goal.aspGoal.push_back(table_rule);
+	go_to_place(table);
 	
-	actionlib::SimpleActionClient<bwi_kr_execution::ExecutePlanAction> table_asp("/action_executor/execute_plan", true);
-	table_asp.waitForServer();
-	
-	ROS_INFO("finished waiting for server");
-	
-	//send the goal and wait
-    ROS_INFO("sending goal");
-    table_asp.sendGoalAndWait(table_goal);
-    
-    ROS_INFO("finished waiting for goal");
-    
-    //check for success
-    if(table_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
-		ROS_WARN("could not reach destination");
-		return 1;
-	}
-    
     pressEnter("Press [ENTER] to approach table");
 
 	//Step 3: approach the table using visual servoing
-	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopApproachAction> ac_approach("segbot_table_approach_as",true);
-	ac_approach.waitForServer();
-	
-	segbot_arm_manipulation::TabletopApproachGoal approach_goal;
-	approach_goal.command = "approach";
-	
-	//send goal and wait
-	ac_approach.sendGoal(approach_goal);
-	ac_approach.waitForResult();
-	ROS_INFO("finished approach");
-	
-	//get result and check for failure
-	segbot_arm_manipulation::TabletopApproachResult approach_result = *ac_approach.getResult();
-	bool approach_success = approach_result.success; 
-	if(!approach_success){
-		ROS_WARN("approach action failed");
-		ROS_INFO_STREAM(approach_result.error_msg);
-		return 1;
-	}
-	
+	call_approach("approach");
+
 	pressEnter("Press [ENTER] to proceed");
 
 	//Step 4: move the arm out of the way
@@ -224,58 +301,12 @@ int main(int argc, char **argv) {
 	int largest_pc_index = find_largest_obj(table_scene);
 		
 	//Step 6: create and call the grasp action
-	actionlib::SimpleActionClient<segbot_arm_manipulation::TabletopGraspAction> ac_grasp("segbot_tabletop_grasp_as",true);
-	ac_grasp.waitForServer();
-		
-	pressEnter("Press [ENTER] to proceed");
-
-	//create and fill goal for grasping
-	segbot_arm_manipulation::TabletopGraspGoal grasp_goal;
-	grasp_goal.cloud_plane = table_scene.cloud_plane;
-	grasp_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
-	for (unsigned int i = 0; i < table_scene.cloud_clusters.size(); i++){
-		grasp_goal.cloud_clusters.push_back(table_scene.cloud_clusters[i]);
-	}
-	grasp_goal.target_object_cluster_index = largest_pc_index;
-	grasp_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::GRASP;
-	grasp_goal.grasp_selection_method=segbot_arm_manipulation::TabletopGraspGoal::CLOSEST_ORIENTATION_SELECTION;
-			
-	//send the goal and wait
-	ROS_INFO("Sending goal to action server...");
-	ac_grasp.sendGoal(grasp_goal);
-	ac_grasp.waitForResult();
-	ROS_INFO("Action Finished...");
+	grasp_largest_object(n, table_scene, largest_pc_index);
 
 	pressEnter("Press [ENTER] to proceed");
 
 	//step 7: create and call action to lift and verify
-	actionlib::SimpleActionClient<segbot_arm_manipulation::LiftVerifyAction> lift_ac("arm_lift_verify_as", true);
-	lift_ac.waitForServer();
-	ROS_INFO("lift and verify action server made...");
-	
-	//make goals to send to action
-	segbot_arm_manipulation::LiftVerifyGoal lift_verify_goal;
-	lift_verify_goal.tgt_cloud = table_scene.cloud_clusters[largest_pc_index];
-	lift_verify_goal.bins = 8;
-	
-	ROS_INFO("sending goal to lift and verify action server...");
-	lift_ac.sendGoal(lift_verify_goal);
-	
-	ROS_INFO("waiting for lift and verify action server result....");
-	lift_ac.waitForResult();
-	
-	ROS_INFO("lift and verify action finished.");
-	segbot_arm_manipulation::LiftVerifyResult result = *lift_ac.getResult();
-	
-	//check success of lift
-	bool verified = result.success;
-	if(verified){
-		ROS_INFO("Verification succeeded.");
-	}else{
-		ROS_WARN("Verification failed");
-		segbot_arm_manipulation::homeArm(n);
-		exit(1);
-	}
+	lift_object(n,table_scene, largest_pc_index);
 	
 	pressEnter("Press [ENTER] to proceed");
 
@@ -288,57 +319,20 @@ int main(int argc, char **argv) {
 	}
 	
 	//Step 8: back out from the table with the object
-	segbot_arm_manipulation::TabletopApproachGoal back_out_goal;
-	back_out_goal.command = "back_out";
-	ac_approach.sendGoal(back_out_goal);
-	ac_approach.waitForResult();
-	
-	//get results from action and check for failure
-	segbot_arm_manipulation::TabletopApproachResult back_out_result = *ac_approach.getResult();
-	bool back_out_success = back_out_result.success;
-	if(!back_out_success){
-		ROS_WARN("unable to back out");
-		ROS_INFO_STREAM(back_out_result.error_msg);
-		return 1;
-	}
+	call_approach("back_out");
+
 
 	//Step 9: bring the object to the office
 	std::string location = "d3_516";
+	
+	go_to_place(location);
 
-	bwi_kr_execution::ExecutePlanGoal goal_asp;
-    bwi_kr_execution::AspRule rule;
-    bwi_kr_execution::AspFluent fluent;
-    fluent.name = "not facing";
-    fluent.variables.push_back(location);
-	
-	actionlib::SimpleActionClient<bwi_kr_execution::ExecutePlanAction> client_asp("/action_executor/execute_plan", true);
-	client_asp.waitForServer();
-
-	rule.body.push_back(fluent);
-    goal_asp.aspGoal.push_back(rule);
-	
-	//send the goal and wait
-    ROS_INFO("sending goal");
-    client_asp.sendGoalAndWait(goal_asp);
-	
-	//check for success
-	if(client_asp.getState() != actionlib::SimpleClientGoalState::SUCCEEDED){
-		ROS_WARN("could not reach destination");
-		return 1;
-	}
-		
 	pressEnter("Press [ENTER] to proceed to HANDOVER");
 	
 	segbot_arm_manipulation::arm_side_view(n);
 		
 	//Step 9: handover the object
-	segbot_arm_manipulation::TabletopGraspGoal handover_goal;
-	handover_goal.action_name = segbot_arm_manipulation::TabletopGraspGoal::HANDOVER;
-	handover_goal.timeout_seconds = 30.0;
-	
-	//send goal and wait for response
-	ac_grasp.sendGoal(handover_goal);
-	ac_grasp.waitForResult();
+	handover_object();
 	
 	segbot_arm_manipulation::homeArm(n);
 	

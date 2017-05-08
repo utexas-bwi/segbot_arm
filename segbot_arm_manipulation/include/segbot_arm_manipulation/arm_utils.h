@@ -304,4 +304,24 @@ namespace segbot_arm_manipulation {
 			ROS_ERROR("[arm_utils] Cannot move arm to side view!");
 		}
 	}
+	
+	void arm_handover_view(ros::NodeHandle n){
+		std::string j_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/jointspace_position_db.txt";
+		std::string c_pos_filename = ros::package::getPath("segbot_arm_manipulation")+"/data/toolspace_position_db.txt";
+	
+		ArmPositionDB *positionDB;
+		positionDB = new ArmPositionDB(j_pos_filename, c_pos_filename);
+		positionDB->print();
+		
+		if (positionDB->hasCarteseanPosition("handover_front")){		
+			geometry_msgs::PoseStamped handover_pose = positionDB->getToolPositionStamped("handover_front","mico_link_base");
+			
+			ROS_INFO("Moving to handover position"); 
+			
+			segbot_arm_manipulation::moveToPoseMoveIt(n,handover_pose);
+		}else {
+			ROS_ERROR("[arm_utils] cannot move to the handover position!");
+		}
+		
+	}
 }
