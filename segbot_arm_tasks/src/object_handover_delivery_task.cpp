@@ -240,7 +240,11 @@ int main(int argc, char **argv) {
 	
 		
 	//give robot goal
-	//std::string delivery_door = askDoor("d3_414b2"); 
+
+	//get goal from text input
+	//std::string delivery_door = askDoor("d3_414b2");
+
+	//get goal from gui input 
 	int delivery_index = 0; 
 
 	ros::ServiceClient client_gui = n.serviceClient<bwi_msgs::QuestionDialog>("/question_dialog");
@@ -297,10 +301,10 @@ int main(int argc, char **argv) {
 	segbot_arm_manipulation::arm_handover_view(n);
 	
 	//play audio message 
-	/*ros::ServiceClient speakMessageClient = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");  
+	ros::ServiceClient speakMessageClient = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");  
 	bwi_services::SpeakMessage speakSrv;
 	speakSrv.request.message = "Special delivery"; 
-	speakMessageClient.call(speakSrv); */
+	speakMessageClient.call(speakSrv);
 	
 	std::cout << "Please take the object from the robot's hand\n"; 
 	
