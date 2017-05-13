@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
 	}
 	
 	//move to the starting table with desired object
-	go_to_place("o3_414a_table");
+	go_to_place("o3_514_tablea");
 
 	//Step 2: approach table
 	call_approach("approach");
@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
 	}
 	
 	call_approach("back_out");
-	go_to_place("o3_406_table");
+	go_to_place("o3_514_tableb");
 
 	//Step 7: approach table
 	call_approach("approach");
@@ -269,5 +269,12 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	segbot_arm_manipulation::homeArm(n); 
+	segbot_arm_manipulation::homeArm(n);
+	safe = segbot_arm_manipulation::makeSafeForTravel(n);
+	if (!safe){
+		ROS_WARN("the robot and arm cannot be made safe for travel");
+		exit(1);
+	}
+	call_approach("back_out");
+	 
 }
