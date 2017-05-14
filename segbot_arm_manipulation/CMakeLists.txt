@@ -134,5 +134,4 @@ add_dependencies(test_handover_replacement segbot_arm_manipulation_gencpp)
 
 install(PROGRAMS 
 	src/arm_actions.py
-	src/test_arm_actions.py
 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
