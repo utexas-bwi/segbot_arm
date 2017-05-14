@@ -55,6 +55,7 @@ generate_messages(
   actionlib_msgs
   geometry_msgs
   std_msgs
+  jaco_msgs
 )
 
 catkin_package(

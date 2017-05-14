@@ -28,24 +28,6 @@ def joint_cb (data):
 	current_state = data
 
 
-"""function to set the goal side view for the lift action"""
-def set_home_arm():
-	msg = JointState()
-	msg.name = []
-	msg.position = []
-	msg.velocity = []
-	msg.effort = []
-	msg.header.frame_id = '/mico_base_link'
-	
-	msg.position.append(-1.3417218624707292)
-	msg.position.append(-0.44756153173493096)
-	msg.position.append(-0.2887493796082798)
-	msg.position.append(-1.1031276625138604)
-	msg.position.append(1.1542971070664283)
-	msg.position.append(1.1542971070664283)
-	msg.position.append(7300)
-	msg.position.append(7300)
-	return msg
 
 """Function to call the perception service that gets objects off the table"""
 def get_table_scene():
@@ -112,7 +94,6 @@ def arm_lift(table_scene):
 	largest_index = get_largest_object(table_scene.cloud_clusters)
 	
 	goal.tgt_cloud = table_scene.cloud_clusters[largest_index]
-	goal.arm_home = set_home_arm()
 	goal.bins = 8
 	
 	lift_client.send_goal(goal)
