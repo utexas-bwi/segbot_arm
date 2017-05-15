@@ -86,12 +86,14 @@ const float home_position_approach [] = {-1.9480954131742567, -0.902822794813499
 
 
 /* define what kind of point clouds we're using */
+/* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
 //where we store results from calling the perception service
 std::vector<PointCloudT::Ptr > detected_objects;
 PointCloudT::Ptr cloud_plane (new PointCloudT);
+
 
 using namespace std;
 
