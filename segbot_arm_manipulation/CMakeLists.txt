@@ -23,13 +23,19 @@ find_package(catkin REQUIRED COMPONENTS
   segbot_arm_perception
 )
 
-catkin_python_setup()
 
 find_package(PCL 1.7 REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
+catkin_python_setup()
 
 add_action_files(
    FILES
@@ -48,7 +54,6 @@ add_service_files(
    iSpyDetectTouch.srv
 )
 
-
 generate_messages(
   DEPENDENCIES
   sensor_msgs
@@ -62,10 +67,6 @@ catkin_package(
   DEPENDS message_runtime segbot_arm_perception actionlib_msgs geometry_msgs std_msgs
 )
 
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
 
 add_executable(segbot_tabletop_grasp_as src/segbot_tabletop_grasp_as.cpp)
 add_dependencies(segbot_tabletop_grasp_as jaco_msgs_gencpp agile_grasp_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
@@ -134,3 +135,8 @@ add_dependencies(test_handover_replacement segbot_arm_manipulation_gencpp)
 install(PROGRAMS 
 	src/arm_actions.py
 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+PATTERN ".svn" EXCLUDE)
