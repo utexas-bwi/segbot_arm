@@ -118,6 +118,11 @@ target_link_libraries(demo_hand_lead ${catkin_LIBRARIES} )
 add_dependencies(demo_hand_lead segbot_arm_manipulation_gencpp)
 
 
+add_executable(test_ispy src/demos/test_ispy.cpp)
+target_link_libraries(test_ispy ${catkin_LIBRARIES} )
+add_dependencies(test_ispy segbot_arm_manipulation_gencpp)
+
+
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"

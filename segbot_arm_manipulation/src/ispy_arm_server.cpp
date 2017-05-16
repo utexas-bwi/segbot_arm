@@ -709,39 +709,30 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 	ROS_INFO("Received touch object request for object %i",req.touch_index);
 	
 	//for each object, compute the touch pose; also, extract the highest point from the table
-		std::vector<geometry_msgs::PoseStamped> touch_poses;
-		double highest_z = 0.0;
-		for (int i = 0; i < detected_objects.size(); i++){
-			//generate touch pose for the object
-			geometry_msgs::PoseStamped touch_pose_i = createTouchPose(detected_objects.at(i),plane_coef_vector,
-													req.objects.at(i).header.frame_id,true);
+	std::vector<geometry_msgs::PoseStamped> touch_poses;
+	double highest_z = 0.0;
+	
+	for (int i = 0; i < detected_objects.size(); i++){
+		//generate touch pose for the object
+		geometry_msgs::PoseStamped touch_pose_i = createTouchPose(detected_objects.at(i),plane_coef_vector,req.objects.at(i).header.frame_id,true);
 			
-			//if (touch_pose_i.pose.position.z > 0.05)
-			//	touch_poses.push_back(touch_pose_i);
-			
-			if (touch_pose_i.pose.position.z > highest_z){
-				highest_z = touch_pose_i.pose.position.z ;
-			}
-			
-			touch_poses.push_back(touch_pose_i);
+		if (touch_pose_i.pose.position.z > highest_z){
+			highest_z = touch_pose_i.pose.position.z ;
 		}
+			
+		touch_poses.push_back(touch_pose_i);
+	}
 	
 	if (req.touch_index != -1){
 		
 		ROS_INFO("Computing touch poses for all objects...");
-		
-		
-		
 		ROS_INFO("...done!");
-		
 		ROS_INFO("Waiting for arm data...");
 		
 		//store current pose
 		/*listenForArmData(10.0);
 		geometry_msgs::PoseStamped start_pose = current_pose;
 		ROS_INFO("...done");*/
-		
-		
 		
 		geometry_msgs::PoseStamped touch_pose_i = touch_poses.at(req.touch_index);
 			
