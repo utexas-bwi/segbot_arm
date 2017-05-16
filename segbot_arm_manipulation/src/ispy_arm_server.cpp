@@ -32,6 +32,7 @@
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_manipulation/iSpyTouch.h"
 #include "segbot_arm_manipulation/iSpyDetectTouch.h"
+#include "segbot_arm_manipulation/iSpyFaceTable.h"
 
 // PCL specific includes
 //#include <pcl/conversions.h>
@@ -73,6 +74,8 @@
 #include <moveit_utils/MicoMoveitCartesianPose.h>
 
 #include <geometry_msgs/TwistStamped.h>
+#include <nav_msgs/Odometry.h>
+
 
 #define NUM_JOINTS 8 //6+2 for the arm
 #define FINGER_FULLY_OPENED 6
@@ -101,6 +104,10 @@ bool heardPose = false;
 bool heardJoinstState = false;
 geometry_msgs::PoseStamped home_pose;
 
+
+nav_msgs::Odometry current_odom;
+bool heard_odom;
+
 //global variables about the joint efforts
 sensor_msgs::JointState current_efforts;
 sensor_msgs::JointState last_efforts;
@@ -126,6 +133,7 @@ ros::ServiceClient client_joint_command;
 
 //publishers
 ros::Publisher pub_velocity;
+ros::Publisher pub_base_velocity;
 ros::Publisher change_cloud_debug_pub; //publishes the filtered change cloud 
 ros::Publisher detected_change_cloud_pub; //publishes the cluster detected to be close to the object
 sensor_msgs::PointCloud2 cloud_ros;
@@ -136,6 +144,10 @@ pcl::PCLPointCloud2 pc_target;
 const float home_position [] = {-1.9461704803383473, -0.39558648095261406, -0.6342860089305954, -1.7290658598495474, 1.4053863262257316, 3.039252699220428};
 const float home_position_approach [] = {-1.9480954131742567, -0.9028227948134995, -0.6467984718381701, -1.4125267937404524, 0.8651278801122975, 3.73659131064558};
 
+
+//which table we currently face (from  1 to 3)
+int current_table = 2;
+
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
 {
@@ -145,7 +157,24 @@ void sig_handler(int sig)
   exit(1);
 };
 
+double getYaw(geometry_msgs::Pose pose){
+	tf::Quaternion q(pose.orientation.x, 
+					pose.orientation.y, 
+					pose.orientation.z, 
+					pose.orientation.w);
+	tf::Matrix3x3 m(q);
+		
+	double r, p, y;
+	m.getRPY(r, p, y);
+	return y;
+}
 
+
+//odom state cb
+void odom_cb(const nav_msgs::OdometryConstPtr& input){
+	current_odom = *input;
+	heard_odom = true;
+}
 
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
@@ -657,6 +686,7 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 }
 
 
+
 bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req, 
 					segbot_arm_manipulation::iSpyTouch::Response &res)
 {
@@ -750,6 +780,71 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 	return true;
 }
 
+
+bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
+					segbot_arm_manipulation::iSpyFaceTable::Response &res){
+	
+	ROS_INFO("[ispy_arm_server.cpp] Service callback to turn towards table %i",req.table_index);
+	
+	//get target table and check if we're there anyway
+	int target_table = req.table_index;
+	if (target_table == current_table){
+		res.success = true;
+		return true;
+	}
+	
+	//compute the target amount to turn: 90% to get to the neighboring table
+	int table_diff = -1*(current_table - target_table);
+	double target_turn_angle = (PI / 2.0) * table_diff;
+	
+	ROS_INFO("[ispy_arm_server.cpp] Target turn angle: %f",target_turn_angle);
+	
+	//wait for odometry
+	ros::Rate r(100.0);
+	heard_odom = false;
+	while (!heard_odom){
+		r.sleep();
+		ros::spinOnce();
+	}
+	
+	//compute the initial and target yaws according to odom
+	double initial_yaw = getYaw(current_odom.pose.pose);
+	double target_yaw = initial_yaw + target_turn_angle;
+	double current_yaw  = initial_yaw;
+	
+	ROS_INFO("[ispy_arm_server.cpp] Initial and target yaws: %f, %f",initial_yaw,target_yaw);
+	
+	//angular turn velocity
+	double turn_velocity = 0.25;
+	
+	//message
+	geometry_msgs::Twist v_i;
+	v_i.linear.x = 0; v_i.linear.y = 0; v_i.linear.z = 0;
+	v_i.angular.x = 0; v_i.angular.y = 0;
+	
+
+	while (ros::ok()){
+		
+		//move
+		v_i.angular.z = turn_velocity;	
+		pub_base_velocity.publish(v_i);
+				
+		//check for odom messages
+		ros::spinOnce();	
+		r.sleep();
+		
+		//update current yaw
+		double current_yaw = getYaw(current_odom.pose.pose);
+				
+		//decide whether to stop turning
+		if (fabs(current_yaw - target_yaw) < 0.025)
+			break;
+	}
+	
+	res.success = true;
+	return true;
+}
+
 int main (int argc, char** argv)
 {
 	// Initialize ROS
@@ -771,6 +866,11 @@ int main (int argc, char** argv)
 	//subscriber for change cloud
 	ros::Subscriber sub_change_cloud = n.subscribe("/segbot_arm_table_change_detector/cloud",1,change_cloud_cb);  
 	 
+	//subscriber for odmetry
+	ros::Subscriber sub_odom = n.subscribe("/odom", 1,odom_cb);
+ 
+	 
+	 
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
@@ -779,19 +879,24 @@ int main (int argc, char** argv)
 	detected_change_cloud_pub = n.advertise<sensor_msgs::PointCloud2>("ispy_arm_server/detected_touch_cloud", 10);
 	
 	
+	//velocity publisher
+	pub_base_velocity = n.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+	
+	
 	//declare service for touching objects
 	ros::ServiceServer service_touch = n.advertiseService("ispy/touch_object_service", touch_object_cb);
 	
 	//service for detecting when a human touches an object
 	ros::ServiceServer service_detect = n.advertiseService("ispy/human_detect_touch_object_service", detect_touch_cb);
 	
+	//service for moving robot to different tables
+	ros::ServiceServer service_face_table_one = n.advertiseService("ispy/face_table", face_table_cb);
+	
+	
 	//clients
 	client_start_change = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/start");
 	client_stop_change = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/stop");
 	client_joint_command = n.serviceClient<moveit_utils::MicoMoveitJointPose> ("/mico_jointpose_service");
-	
-	
-	
 	
 	//store the home arm pose
 	listenForArmData(10.0);
@@ -804,19 +909,7 @@ int main (int argc, char** argv)
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 
-	//refresh rate
-	double ros_rate = 10.0;
-	ros::Rate r(ros_rate);
-
+	//spin forever
 	ros::spin();
 
-	// Main loop:
-	/*while (!g_caught_sigint && ros::ok())
-	{
-		//collect messages
-		ros::spinOnce();
-
-		r.sleep();
-
-	}*/
 };

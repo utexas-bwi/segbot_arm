@@ -43,6 +43,7 @@ add_service_files(
    FILES
    iSpyTouch.srv
    iSpyDetectTouch.srv
+   iSpyFaceTable.srv
 )
 
 
