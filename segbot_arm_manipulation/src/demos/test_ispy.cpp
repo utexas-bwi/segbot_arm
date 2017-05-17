@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
 		//test pointing to all objects on the table
 		for (int i = 0; i < (int)table_scene.cloud_clusters.size(); i++){
 			
-			pressEnter("Press 'Enter' to touch next object.");
+			//pressEnter("Press 'Enter' to touch next object.");
 			
 			//create srv with scene and target object
 			segbot_arm_manipulation::iSpyTouch srv;
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
 			srv.request.cloud_plane = table_scene.cloud_plane;
 			
 			//target object
-			srv.request.touch_index = 0;
+			srv.request.touch_index = i;
 			
 			//touch object
 			if (client_touch_object.call(srv))
@@ -169,19 +169,29 @@ int main(int argc, char **argv) {
 			}
 			
 			//retract
-			srv.request.touch_index = -1;
-			if (client_touch_object.call(srv))
-			{
-				ROS_INFO("Retract completed.");
-			}
-			else
-			{
-				ROS_ERROR("Failed to call service ");
-				return 0;
-			}
+			/*	return 0;
+			}*/
+		}
+		
+		
+		//create srv with scene and target object
+		segbot_arm_manipulation::iSpyTouch srv;
+		srv.request.objects = table_scene.cloud_clusters;
+		srv.request.cloud_plane_coef = table_scene.cloud_plane_coef;
+		srv.request.cloud_plane = table_scene.cloud_plane;
+		srv.request.touch_index = -1;
+		if (client_touch_object.call(srv))
+		{
+			ROS_INFO("Retract completed.");
+		}
+		else
+		{
+			ROS_ERROR("Failed to call service ");
 		}
 		
 		
 		pressEnter("Press 'Enter' to grasp again or 'q' to quit.");
 	}
+	
+	
 }

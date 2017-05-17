@@ -141,9 +141,15 @@ pcl::PCLPointCloud2 pc_target;
 
 
 //const float home_position [] = { -1.84799570991366, -0.9422852495301872, -0.23388692957209883, -1.690986384686938, 1.37682658669572, 3.2439323416434624};
-const float home_position [] = {-1.9461704803383473, -0.39558648095261406, -0.6342860089305954, -1.7290658598495474, 1.4053863262257316, 3.039252699220428};
-const float home_position_approach [] = {-1.9480954131742567, -0.9028227948134995, -0.6467984718381701, -1.4125267937404524, 0.8651278801122975, 3.73659131064558};
 
+//original studey
+//const float home_position [] = {-1.9461704803383473, -0.39558648095261406, -0.6342860089305954, -1.7290658598495474, 1.4053863262257316, 3.039252699220428};
+
+//closer to laptop so robot can turn
+const float home_position [] = {-2.104982765623053, -0.45429879666061385, -0.04619985280042514, -1.5303365182500774, 1.1245469345291512, 2.8024433498261305};
+
+const float home_position_approach [] = {-1.9480954131742567, -0.9028227948134995, -0.6467984718381701, -1.4125267937404524, 0.8651278801122975, 3.73659131064558};
+const float safe_position [] = {-2.0905452367215145, -1.6631960323958503, 0.14437462322511263, -2.626324245881435, 1.3756366863206724, 4.141190461359241};
 
 //which table we currently face (from  1 to 3)
 int current_table = 2;
@@ -317,6 +323,8 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob,
 	tf::TransformListener listener;
 	listener.waitForTransform(pose_st.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
 	listener.transformPose("mico_api_origin", pose_st, pose_st);
+		
+	pose_st.pose.position.x = pose_st.pose.position.x - 0.075;	
 			
 	//decide on orientation (horizontal palm)
 	pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(PI/2,0,PI/2);
@@ -379,7 +387,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 	
 	ros::Rate r(rateHertz);
 	
-	float theta = 0.075;
+	float theta = 0.095;
 	
 	float constant_m = 3.0;
 	
@@ -784,8 +792,11 @@ bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 		return true;
 	}
 	
+	//else turn but first make arm safe
+	moveToJointState(home_position);
+	
 	//compute the target amount to turn: 90% to get to the neighboring table
-	int table_diff = -1*(current_table - target_table);
+	int table_diff = (current_table - target_table);
 	double target_turn_angle = (PI / 2.0) * table_diff;
 	
 	ROS_INFO("[ispy_arm_server.cpp] Target turn angle: %f",target_turn_angle);
@@ -806,7 +817,16 @@ bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 	ROS_INFO("[ispy_arm_server.cpp] Initial and target yaws: %f, %f",initial_yaw,target_yaw);
 	
 	//angular turn velocity
-	double turn_velocity = 0.25;
+	double max_turn_velocity = 0.25;
+	double min_turn_velocity = 0.05;
+	double velocity_threshold = PI/6;
+	
+	double turn_velocity = max_turn_velocity;
+	double turn_direction = -1.0; //-1 is right
+	if (current_table > target_table)
+		turn_direction = 1.0; //left
+	
+	ROS_INFO("Current: %i, Target %i, direction: %f",current_table,target_table,turn_direction);
 	
 	//message
 	geometry_msgs::Twist v_i;
@@ -817,7 +837,7 @@ bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 	while (ros::ok()){
 		
 		//move
-		v_i.angular.z = turn_velocity;	
+		v_i.angular.z = turn_velocity*turn_direction;	
 		pub_base_velocity.publish(v_i);
 				
 		//check for odom messages
@@ -828,10 +848,28 @@ bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 		double current_yaw = getYaw(current_odom.pose.pose);
 				
 		//decide whether to stop turning
-		if (fabs(current_yaw - target_yaw) < 0.025)
+		double error = fabs(current_yaw - target_yaw);
+		//ROS_INFO("current: %f, target: %f, ERROR: %f",current_yaw, target_yaw, error);
+		if ( error < 0.025)
 			break;
+			
+		//update turn velocity based on error
+		if (error > velocity_threshold){
+			turn_velocity = max_turn_velocity;
+		}
+		else {
+			turn_velocity = min_turn_velocity + (max_turn_velocity-min_turn_velocity)*error/velocity_threshold;
+		}
 	}
 	
+	v_i.angular.z = 0.0;	
+	pub_base_velocity.publish(v_i);
+	
+	//else turn but first make arm safe
+	moveToJointState(home_position);
+	
+	
+	current_table = target_table;
 	res.success = true;
 	return true;
 }
@@ -895,7 +933,7 @@ int main (int argc, char** argv)
 	
 	
 	//test moving to home
-	moveToJointState(home_position);
+	//moveToJointState(home_position);
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
