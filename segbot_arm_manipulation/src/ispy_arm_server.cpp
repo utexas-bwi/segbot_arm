@@ -378,7 +378,7 @@ void moveToJointState(const float* js){
  	}
 }
 
-void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts){
+void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts, double timeout){
 	listenForArmData(30.0);
 	
 	int rateHertz = 40;
@@ -398,6 +398,8 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 	float last_dz = -1;
 	
 	int timeout_counter = 0;
+	
+	double elapsed_time = 0;
 	
 	while (ros::ok()){
 		
@@ -441,6 +443,9 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 		//ROS_INFO("Published cartesian vel. command");
 		r.sleep();
 		
+		//crude approximation of how much time has passed
+		elapsed_time += 1.0/rateHertz;
+		
 		if (check_efforts){
 			if (heardEfforts){
 				if (total_delta > 0.8){
@@ -449,6 +454,11 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 					break;
 				}
 			}
+		}
+		
+		if (timeout > 0 && elapsed_time > timeout){
+			ROS_WARN("Timeout when performing cart. vel. move...moving on.");
+			break;
 		}
 	}
 	
@@ -752,11 +762,11 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 		
 		ROS_INFO("Moving to approach pose...");	
 		//first approach the object from the top
-		moveToPoseCarteseanVelocity(touch_approach,false);
+		moveToPoseCarteseanVelocity(touch_approach,false,7.0);
 			
 		//now touch it
 		ROS_INFO("Moving to touch pose...");	
-		moveToPoseCarteseanVelocity(touch_pose_i,true);
+		moveToPoseCarteseanVelocity(touch_pose_i,true,4.0);
 	}
 	else { //retract
 		//store current pose
@@ -766,7 +776,7 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 		touch_approach.pose.position.z = highest_z+0.2;
 		//touch_approach.pose.position.x -= 0.2;
 		
-		moveToPoseCarteseanVelocity(touch_approach,false);
+		moveToPoseCarteseanVelocity(touch_approach,false,5.0);
 		//moveToPoseCarteseanVelocity(home_pose,false);
 		//finally call move it to get into the precise joint configuration as the start
 		moveToJointState(home_position_approach);
