@@ -136,7 +136,28 @@ int main(int argc, char **argv) {
 	while (ros::ok()){
 	
 		//get the table scene
-		segbot_arm_perception::TabletopPerception::Response table_scene = segbot_arm_manipulation::getTabletopScene(n);
+		ros::ServiceClient client_tabletop_perception = n.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
+		
+		segbot_arm_perception::TabletopPerception::Response table_scene;
+		
+		segbot_arm_perception::TabletopPerception srv_perception; 
+		
+		//to make sure we only see objects on the table in front of us
+		srv_perception.request.apply_x_box_filter = true;
+		srv_perception.request.x_min = -0.2;
+		srv_perception.request.x_max = 0.8;
+		
+		if (client_tabletop_perception.call(srv_perception))
+		{
+			table_scene = srv_perception.response;
+		}
+		else
+		{
+			ROS_ERROR("Failed to call service tabletop_object_detection_service");
+			exit(1);
+		}
+		
+		
 		
 		if ((int)table_scene.cloud_clusters.size() == 0){
 			ROS_WARN("No objects found on table. The end...");
