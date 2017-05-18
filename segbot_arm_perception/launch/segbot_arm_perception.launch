@@ -6,7 +6,8 @@
 	
 	
 	<!-- launch change detection service -->
-	<node name="table_change_detection_node" pkg="segbot_arm_perception" type="table_change_detection_node" output="screen">
+	<!-- <node name="table_change_detection_node" pkg="segbot_arm_perception" type="table_change_detection_node" output="screen"> -->
+    <node name="table_change_detection_node" pkg="segbot_arm_perception" type="table_change_detection_node" output="screen" launch-prefix="valgrind --tool=memcheck --leak-check=yes --log-file=/home/justin/valgrind.log" >
 	</node>
 	
 	<!-- launch node for computing features from point clouds -->
