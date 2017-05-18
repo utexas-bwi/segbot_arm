@@ -351,6 +351,14 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	pass.setFilterLimits (0.0, filter_z);
 	pass.filter (*cloud);
 	
+	// Apply x filter 
+	if (req.apply_x_box_filter){
+		pass.setInputCloud (cloud);
+		pass.setFilterFieldName ("x");
+		pass.setFilterLimits (req.x_min, req.x_max);
+		pass.filter (*cloud);
+	}
+	
 	// Create the filtering object: downsample the dataset using a leaf size of 1cm
 	pcl::VoxelGrid<PointT> vg;
 	pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>);
