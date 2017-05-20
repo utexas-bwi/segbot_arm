@@ -154,6 +154,9 @@ const float safe_position [] = {-2.0905452367215145, -1.6631960323958503, 0.1443
 //which table we currently face (from  1 to 3)
 int current_table = 2;
 
+//count how many times we have turned
+int num_turns_taken = 0;
+
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
 {
@@ -186,7 +189,7 @@ void odom_cb(const nav_msgs::OdometryConstPtr& input){
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 	
 	if (input->position.size() == NUM_JOINTS){
-		//ROS_INFO("Heard arm joint states!");
+		ROS_INFO("Heard arm joint states!");
 		current_state = *input;
 		heardJoinstState = true;
 	}
@@ -223,7 +226,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
 
 //Joint state cb
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
- // ROS_INFO("Heard arm tool pose!");
+  ROS_INFO("Heard arm tool pose!");
   current_pose = msg;
   heardPose = true;
   //  ROS_INFO_STREAM(current_pose);
@@ -455,7 +458,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 				}
 			}
 		}
-		
+		ROS_INFO("Elapsed time: %f",elapsed_time);
 		if (timeout > 0 && elapsed_time > timeout){
 			ROS_WARN("Timeout when performing cart. vel. move...moving on.");
 			break;
@@ -802,6 +805,8 @@ bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 		return true;
 	}
 	
+	num_turns_taken ++;
+	
 	//else turn but first make arm safe
 	moveToJointState(home_position);
 	
@@ -880,6 +885,37 @@ bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 	
 	
 	current_table = target_table;
+	
+	//check if we need to move forward
+	if (num_turns_taken > 2 && current_table == 2){
+		double start_odom_x = current_odom.pose.pose.position.x;
+		double start_odom_y = current_odom.pose.pose.position.y;
+			
+		
+		v_i.linear.x = 0.1; v_i.linear.y = 0; v_i.linear.z = 0;
+		v_i.angular.x = 0; v_i.angular.y = 0; v_i.angular.z = 0;
+		
+		while (ros::ok()){
+			
+			//move
+			pub_base_velocity.publish(v_i);
+					
+			//check for odom messages
+			ros::spinOnce();	
+			r.sleep();
+			
+			double distance_traveled = sqrt(  pow(current_odom.pose.pose.position.x - start_odom_x,2) +
+												pow(current_odom.pose.pose.position.y - start_odom_y,2));
+			ROS_INFO("Distance traveled = %f",distance_traveled);
+			if (distance_traveled > 0.06){
+					break;
+			}
+			
+		}
+		num_turns_taken = 0;
+	}
+	
+	
 	res.success = true;
 	return true;
 }
