@@ -43,6 +43,7 @@ add_service_files(
    FILES
    iSpyTouch.srv
    iSpyDetectTouch.srv
+   iSpyFaceTable.srv
 )
 
 
@@ -115,6 +116,11 @@ add_dependencies(test_table_approach_actions segbot_arm_manipulation_gencpp)
 add_executable(demo_hand_lead src/demos/demo_hand_lead.cpp)
 target_link_libraries(demo_hand_lead ${catkin_LIBRARIES} )
 add_dependencies(demo_hand_lead segbot_arm_manipulation_gencpp)
+
+
+add_executable(test_ispy src/demos/test_ispy.cpp)
+target_link_libraries(test_ispy ${catkin_LIBRARIES} )
+add_dependencies(test_ispy segbot_arm_manipulation_gencpp)
 
 
 install(DIRECTORY include/${PROJECT_NAME}/
