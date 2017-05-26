@@ -189,7 +189,7 @@ void odom_cb(const nav_msgs::OdometryConstPtr& input){
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 	
 	if (input->position.size() == NUM_JOINTS){
-		ROS_INFO("Heard arm joint states!");
+		//ROS_INFO("Heard arm joint states!");
 		current_state = *input;
 		heardJoinstState = true;
 	}
@@ -226,7 +226,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
 
 //Joint state cb
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
-  ROS_INFO("Heard arm tool pose!");
+  //ROS_INFO("Heard arm tool pose!");
   current_pose = msg;
   heardPose = true;
   //  ROS_INFO_STREAM(current_pose);
@@ -238,10 +238,12 @@ void fingers_cb (const jaco_msgs::FingerPosition msg) {
 }
 
 
-void listenForArmData(float rate){
+void listenForArmData(float rate, double timeout){
 	heardPose = false;
 	heardJoinstState = false;
 	ros::Rate r(rate);
+	
+	double elapsed_time = 0.0;
 	
 	while (ros::ok()){
 		ROS_INFO("Listening for arm data...");
@@ -252,6 +254,12 @@ void listenForArmData(float rate){
 			return;
 		
 		r.sleep();
+		elapsed_time += 1.0/rate;
+		
+		if (timeout > 0 && elapsed_time > timeout){
+			ROS_WARN("Listening for arm data failed...this shouldn't happen!");
+			return;
+		}
 	}
 }
 
@@ -382,7 +390,7 @@ void moveToJointState(const float* js){
 }
 
 void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts, double timeout){
-	listenForArmData(30.0);
+	listenForArmData(30.0, 2.0);
 	
 	int rateHertz = 40;
 	geometry_msgs::TwistStamped velocityMsg;
@@ -773,7 +781,7 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 	}
 	else { //retract
 		//store current pose
-		listenForArmData(10.0);
+		listenForArmData(30.0,2.0);
 		
 		geometry_msgs::PoseStamped touch_approach = current_pose;
 		touch_approach.pose.position.z = highest_z+0.2;
@@ -974,7 +982,7 @@ int main (int argc, char** argv)
 	client_joint_command = n.serviceClient<moveit_utils::MicoMoveitJointPose> ("/mico_jointpose_service");
 	
 	//store the home arm pose
-	listenForArmData(10.0);
+	listenForArmData(40.0,2.0);
 	home_pose = current_pose;
 	
 	
