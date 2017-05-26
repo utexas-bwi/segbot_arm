@@ -243,7 +243,7 @@ void listenForArmData(float rate, double timeout){
 	heardJoinstState = false;
 	ros::Rate r(rate);
 	
-	double elapsed_time;
+	double elapsed_time = 0.0;
 	
 	while (ros::ok()){
 		ROS_INFO("Listening for arm data...");
