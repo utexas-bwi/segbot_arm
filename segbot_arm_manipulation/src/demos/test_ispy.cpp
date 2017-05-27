@@ -16,6 +16,8 @@
 
 #define NUM_JOINTS 8 //6+2 for the arm
 
+#define NUM_TABLE_OBJECTS 4
+
 //global variables for storing data
 sensor_msgs::JointState current_state;
 bool heardJoinstState;
@@ -126,9 +128,9 @@ int main(int argc, char **argv) {
 	pressEnter("Demo starting...move the arm to a position where it is not occluding the table.");
 	
 	//store out of table joint position
-	listenForArmData();
-	joint_state_outofview = current_state;
-	pose_outofview = current_pose;
+	//listenForArmData();
+	//joint_state_outofview = current_state;
+	//pose_outofview = current_pose;
 	
 	//create clients
 	ros::ServiceClient client_touch_object = n.serviceClient<segbot_arm_manipulation::iSpyTouch>("ispy/touch_object_service");
@@ -136,32 +138,51 @@ int main(int argc, char **argv) {
 	while (ros::ok()){
 	
 		//get the table scene
-		ros::ServiceClient client_tabletop_perception = n.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
-		
 		segbot_arm_perception::TabletopPerception::Response table_scene;
-		
-		segbot_arm_perception::TabletopPerception srv_perception; 
-		
-		//to make sure we only see objects on the table in front of us
-		srv_perception.request.apply_x_box_filter = true;
-		srv_perception.request.x_min = -0.3;
-		srv_perception.request.x_max = 0.8;
-		
-		if (client_tabletop_perception.call(srv_perception))
-		{
-			table_scene = srv_perception.response;
-		}
-		else
-		{
-			ROS_ERROR("Failed to call service tabletop_object_detection_service");
-			exit(1);
-		}
+		bool perception_success = false;
 		
 		
+		while (!perception_success){
 		
-		if ((int)table_scene.cloud_clusters.size() == 0){
-			ROS_WARN("No objects found on table. The end...");
-			exit(1);
+			ROS_INFO("Waiting for service...");
+			ros::service::waitForService("tabletop_object_detection_service");
+			ROS_INFO("...done!");
+			ROS_INFO("Waiting for service existg...");
+			bool result = ros::service::exists("tabletop_object_detection_service",true);
+			ROS_INFO("...done!");
+			std::cout << result << "\n";
+		
+			ros::ServiceClient client_tabletop_perception = n.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
+			
+			
+			segbot_arm_perception::TabletopPerception srv_perception; 
+			
+			//to make sure we only see objects on the table in front of us
+			srv_perception.request.apply_x_box_filter = true;
+			srv_perception.request.x_min = -0.3;
+			srv_perception.request.x_max = 0.8;
+			
+			ROS_INFO("Calling perception!");
+			if (client_tabletop_perception.call(srv_perception))
+			{
+				table_scene = srv_perception.response;
+			}
+			else
+			{
+				ROS_ERROR("Failed to call service tabletop_object_detection_service");
+				exit(1);
+			}
+			
+			
+			
+			if ((int)table_scene.cloud_clusters.size() == 0){
+				ROS_WARN("No objects found on table. The end...");
+				exit(1);
+			}
+			else if ((int)table_scene.cloud_clusters.size() == NUM_TABLE_OBJECTS){
+				ROS_INFO("Correct number of objects seen!");
+				perception_success = true;
+			}
 		}
 		
 		//test pointing to all objects on the table
