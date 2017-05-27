@@ -46,6 +46,12 @@
 #include "segbot_arm_perception/TabletopReorder.h"
 #include "segbot_arm_perception/GetCloud.h"
 
+//how many frames to stitch into a single cloud
+#define WAIT_CLOUD_K 25
+
+//default Z filter
+#define Z_FILTER_DEFAULT 1.15
+
 /* define what kind of point clouds we're using */
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
@@ -73,9 +79,14 @@ PointCloudT::Ptr cloud_costmap (new PointCloudT);
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
 
-double plane_distance_tolerance = 0.08;
-double plane_max_distance_tolerance = 0.03;
-double cluster_extraction_tolerance = 0.05;
+//an object whose closest point to the plane is further than this is rejected
+double plane_distance_tolerance = 0.09;
+
+//an object whose furthers point to the plane is smaller than this is rejected
+double plane_max_distance_tolerance = 0.02;
+
+//how close to points outside the plane must go into the same object cluster
+double cluster_extraction_tolerance = 0.075;
 
 bool collecting_cloud = false;
 
@@ -101,18 +112,15 @@ void sig_handler(int sig)
 void
 cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 {
-
-	
-		cloud_mutex.lock ();
+		/*if (collecting_cloud){
+			ROS_INFO("Cloud received while collecting.");
+		}*/
 
 		//convert to PCL format
 		pcl::fromROSMsg (*input, *cloud);
 
 		//state that a new cloud is available
 		new_cloud_available_flag = true;
-
-		cloud_mutex.unlock ();
-	
 }
 
 
@@ -144,7 +152,7 @@ bool filter(PointCloudT::Ptr blob, PointCloudT::Ptr plane_cloud, Eigen::Vector4f
 	
 	if (min_distance > tolerance_min)
 		return false;
-	else if (max_distance < 0.8*tolerance_max)
+	else if (max_distance < tolerance_max)
 		return false;	
 	
 	
@@ -279,6 +287,8 @@ void waitForCloudK(int k){
 			
 			counter ++;
 			
+			ROS_INFO("Adding cloud %i",counter);
+			
 			if (counter >= k){
 				cloud_aggregated->header = cloud->header;
 				break;
@@ -332,14 +342,20 @@ bool cluster_reorder_cb(segbot_arm_perception::TabletopReorder::Request &req, se
 
 bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_perception::TabletopPerception::Response &res)
 {
+	ROS_INFO("Request received...starting pipeline.");
+	
 	//create listener for transforms
 	tf::TransformListener tf_listener;
 	
 	//get the point cloud by aggregating k successive input clouds
-	waitForCloudK(15);
+	new_cloud_available_flag = false;
+	ROS_INFO("waiting for cloud...");
+	waitForCloudK(WAIT_CLOUD_K);
 	cloud = cloud_aggregated;
+	
+	ROS_INFO("collected cloud success");
 
-	double filter_z = 1.15;
+	double filter_z = Z_FILTER_DEFAULT;
 	if (req.override_filter_z){
 		filter_z = req.filter_z_value;
 	}
@@ -591,7 +607,7 @@ int main (int argc, char** argv)
 
 	// Create a ROS subscriber for the input point cloud
 	std::string param_topic = "/xtion_camera/depth_registered/points";
-	ros::Subscriber sub = nh.subscribe (param_topic, 1, cloud_cb);
+	ros::Subscriber sub = nh.subscribe (param_topic, 100, cloud_cb);
 
 	//debugging publisher
 	cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("table_object_detection_node/cloud", 1);
@@ -621,6 +637,5 @@ int main (int argc, char** argv)
 		//collect messages
 		ros::spinOnce();
 		r.sleep();
-
 	}
 };
