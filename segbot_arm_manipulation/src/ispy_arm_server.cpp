@@ -825,7 +825,8 @@ bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 	ROS_INFO("[ispy_arm_server.cpp] Target turn angle: %f",target_turn_angle);
 	
 	//wait for odometry
-	ros::Rate r(100.0);
+	double rate_hz = 100.0;
+	ros::Rate r(rate_hz);
 	heard_odom = false;
 	while (!heard_odom){
 		r.sleep();
@@ -895,13 +896,15 @@ bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 	current_table = target_table;
 	
 	//check if we need to move forward
-	if (num_turns_taken > 2 && current_table == 2){
+	if (num_turns_taken > 10 && current_table == 2){
 		double start_odom_x = current_odom.pose.pose.position.x;
 		double start_odom_y = current_odom.pose.pose.position.y;
 			
 		
 		v_i.linear.x = 0.1; v_i.linear.y = 0; v_i.linear.z = 0;
 		v_i.angular.x = 0; v_i.angular.y = 0; v_i.angular.z = 0;
+		
+		double elapsed_time = 0.0;
 		
 		while (ros::ok()){
 			
@@ -912,10 +915,12 @@ bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 			ros::spinOnce();	
 			r.sleep();
 			
+			elapsed_time += rate_hz;
+			
 			double distance_traveled = sqrt(  pow(current_odom.pose.pose.position.x - start_odom_x,2) +
 												pow(current_odom.pose.pose.position.y - start_odom_y,2));
 			ROS_INFO("Distance traveled = %f",distance_traveled);
-			if (distance_traveled > 0.06){
+			if (distance_traveled > 0.05 || elapsed_time > 1.0){
 					break;
 			}
 			

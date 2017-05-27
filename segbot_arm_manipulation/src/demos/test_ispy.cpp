@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
 		
 		
 		while (!perception_success){
-		
+			
 			ROS_INFO("Waiting for service...");
 			ros::service::waitForService("tabletop_object_detection_service");
 			ROS_INFO("...done!");
@@ -151,17 +151,17 @@ int main(int argc, char **argv) {
 			bool result = ros::service::exists("tabletop_object_detection_service",true);
 			ROS_INFO("...done!");
 			std::cout << result << "\n";
-		
+			
 			ros::ServiceClient client_tabletop_perception = n.serviceClient<segbot_arm_perception::TabletopPerception>("tabletop_object_detection_service");
-			
-			
+				
+				
 			segbot_arm_perception::TabletopPerception srv_perception; 
-			
+				
 			//to make sure we only see objects on the table in front of us
 			srv_perception.request.apply_x_box_filter = true;
 			srv_perception.request.x_min = -0.3;
 			srv_perception.request.x_max = 0.8;
-			
+				
 			ROS_INFO("Calling perception!");
 			if (client_tabletop_perception.call(srv_perception))
 			{
@@ -172,9 +172,9 @@ int main(int argc, char **argv) {
 				ROS_ERROR("Failed to call service tabletop_object_detection_service");
 				exit(1);
 			}
-			
-			
-			
+				
+				
+				
 			if ((int)table_scene.cloud_clusters.size() == 0){
 				ROS_WARN("No objects found on table. The end...");
 				exit(1);
@@ -183,7 +183,8 @@ int main(int argc, char **argv) {
 				ROS_INFO("Correct number of objects seen!");
 				perception_success = true;
 			}
-		}
+		}	
+	
 		
 		//test pointing to all objects on the table
 		for (int i = 0; i < (int)table_scene.cloud_clusters.size(); i++){
