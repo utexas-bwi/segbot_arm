@@ -157,6 +157,12 @@ int current_table = 2;
 //count how many times we have turned
 int num_turns_taken = 0;
 
+//some global variables related to "fidgeting" while the robot is listening for voice
+double theta_angle = 0.0;
+double z_vel_magnitude = 0.2;
+double cycle_length = 4.0;
+bool is_listening = false;
+
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
 {
@@ -800,6 +806,20 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 	return true;
 }
 
+bool listen_mode_cb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
+	ROS_INFO("[ispy_arm_server.cpp] Service callback for toggle listening mode.");
+	
+	if (is_listening){
+		ROS_INFO("Stopping movement...");
+		is_listening = false;
+	}
+	else {
+		ROS_INFO("Starting movement...");
+		is_listening = true;
+	}
+	
+	return true;
+}
 
 bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
 					segbot_arm_manipulation::iSpyFaceTable::Response &res){
@@ -940,22 +960,22 @@ int main (int argc, char** argv)
 	ros::NodeHandle n;
 	
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 10, joint_state_cb);
 
 	//create subscriber to joint torques
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
+	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 10, joint_effort_cb);
 
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 10, toolpos_cb);
 
 	//subscriber for fingers
-	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 10, fingers_cb);
 	 
 	//subscriber for change cloud
-	ros::Subscriber sub_change_cloud = n.subscribe("/segbot_arm_table_change_detector/cloud",1,change_cloud_cb);  
+	ros::Subscriber sub_change_cloud = n.subscribe("/segbot_arm_table_change_detector/cloud",10,change_cloud_cb);  
 	 
 	//subscriber for odmetry
-	ros::Subscriber sub_odom = n.subscribe("/odom", 1,odom_cb);
+	ros::Subscriber sub_odom = n.subscribe("/odom", 10,odom_cb);
  
 	 
 	 
@@ -980,6 +1000,9 @@ int main (int argc, char** argv)
 	//service for moving robot to different tables
 	ros::ServiceServer service_face_table_one = n.advertiseService("ispy/face_table", face_table_cb);
 	
+	//service to toggle listening mode
+	ros::ServiceServer service_listening = n.advertiseService("ispy/listening_mode_toggle", listen_mode_cb);
+	
 	
 	//clients
 	client_start_change = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/start");
@@ -992,12 +1015,42 @@ int main (int argc, char** argv)
 	
 	
 	//test moving to home
-	//moveToJointState(home_position);
+	moveToJointState(home_position);
 	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 
-	//spin forever
-	ros::spin();
+	//listen for messages, srvs, etc.
+	
+	//refresh rate
+	double ros_rate = 40.0;
+	ros::Rate r(ros_rate);
 
+	//msg for publishing velocity commands
+	geometry_msgs::TwistStamped v_msg;
+	
+
+	// Main loop:
+	while (!g_caught_sigint && ros::ok())
+	{
+		//collect messages
+		ros::spinOnce();
+		
+		//check if we're supposed to be moving as an indicator that the robot is listening
+		if (is_listening){
+			//update angle
+			theta_angle += (2*PI)/(cycle_length * ros_rate);
+
+			//compute z velocity and publish
+			v_msg.twist.linear.z = z_vel_magnitude * cos(theta_angle);
+			pub_velocity.publish(v_msg);
+			
+			
+		}
+		
+		//sleep to maintain framerate
+		r.sleep();
+	}
+
+	exit(1);
 };
