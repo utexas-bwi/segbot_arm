@@ -1055,6 +1055,11 @@ int main (int argc, char** argv)
 	
 	//msg for joint velocity command
 	jaco_msgs::JointVelocity jv_msg;
+	jv_msg.joint1 = 0.0;
+	jv_msg.joint2 = 0.0;
+	jv_msg.joint3 = 0.0;
+	jv_msg.joint4 = 0.0;
+	jv_msg.joint5 = 0.0;
 	jv_msg.joint6 = 45; 
 
 	// Main loop:
