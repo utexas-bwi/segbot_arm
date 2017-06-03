@@ -160,7 +160,7 @@ int num_turns_taken = 0;
 //some global variables related to "fidgeting" while the robot is listening for voice
 double theta_angle = 0.0;
 double z_vel_magnitude = 0.2;
-double cycle_length = 4.0;
+double cycle_length = 2.0;
 bool is_listening = false;
 
 /* what happens when ctr-c is pressed */
