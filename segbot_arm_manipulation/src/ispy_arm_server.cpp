@@ -29,6 +29,7 @@
 #include "jaco_msgs/ArmPoseAction.h"
 #include "jaco_msgs/ArmJointAnglesAction.h"
 
+
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_manipulation/iSpyTouch.h"
 #include "segbot_arm_manipulation/iSpyDetectTouch.h"
@@ -73,9 +74,10 @@
 #include <moveit_utils/MicoMoveitJointPose.h>
 #include <moveit_utils/MicoMoveitCartesianPose.h>
 
+//some message used for publishing or in the callbacks
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
-
+#include <jaco_msgs/JointVelocity.h>
 
 #define NUM_JOINTS 8 //6+2 for the arm
 #define FINGER_FULLY_OPENED 6
@@ -162,6 +164,9 @@ double theta_angle = 0.0;
 double z_vel_magnitude = 0.2;
 double cycle_length = 2.0;
 bool is_listening = false;
+
+//some global variables related to fidgeting when waiting for touch
+bool is_waiting_for_touch = false;
 
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
@@ -806,6 +811,18 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 	return true;
 }
 
+bool touch_wait_mode_cb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
+	ROS_INFO("[ispy_arm_server.cpp] Service callback for toggle waiting for touch mode.");
+	
+	if (is_waiting_for_touch){
+		is_waiting_for_touch = false;
+	}
+	else 
+		is_waiting_for_touch = true;
+		
+	return true;
+}
+
 bool listen_mode_cb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
 	ROS_INFO("[ispy_arm_server.cpp] Service callback for toggle listening mode.");
 	
@@ -982,6 +999,10 @@ int main (int argc, char** argv)
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
+	//publish angular tool velocities
+	ros::Publisher pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+
+	
 	//cloud publisher
 	change_cloud_debug_pub = n.advertise<sensor_msgs::PointCloud2>("ispy_arm_server/change_cloud_filtered", 10);
 	detected_change_cloud_pub = n.advertise<sensor_msgs::PointCloud2>("ispy_arm_server/detected_touch_cloud", 10);
@@ -1002,6 +1023,9 @@ int main (int argc, char** argv)
 	
 	//service to toggle listening mode
 	ros::ServiceServer service_listening = n.advertiseService("ispy/listening_mode_toggle", listen_mode_cb);
+	
+	//service to toggle waiting for touch mode
+	ros::ServiceServer service_wait_touch = n.advertiseService("ispy/touch_waiting_mode_toggle", touch_wait_mode_cb);
 	
 	
 	//clients
@@ -1029,6 +1053,14 @@ int main (int argc, char** argv)
 	//msg for publishing velocity commands
 	geometry_msgs::TwistStamped v_msg;
 	
+	//msg for joint velocity command
+	jaco_msgs::JointVelocity jv_msg;
+	jv_msg.joint1 = 0.0;
+	jv_msg.joint2 = 0.0;
+	jv_msg.joint3 = 0.0;
+	jv_msg.joint4 = 0.0;
+	jv_msg.joint5 = 0.0;
+	jv_msg.joint6 = 45; 
 
 	// Main loop:
 	while (!g_caught_sigint && ros::ok())
@@ -1045,7 +1077,10 @@ int main (int argc, char** argv)
 			v_msg.twist.linear.z = z_vel_magnitude * cos(theta_angle);
 			pub_velocity.publish(v_msg);
 			
-			
+		}
+		else if (is_waiting_for_touch){ //spin the end effector
+			jv_msg.joint6 = 45; 
+			pub_angular_velocity.publish(jv_msg);
 		}
 		
 		//sleep to maintain framerate
