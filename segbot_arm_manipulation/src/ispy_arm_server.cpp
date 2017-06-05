@@ -140,7 +140,7 @@ ros::Publisher change_cloud_debug_pub; //publishes the filtered change cloud
 ros::Publisher detected_change_cloud_pub; //publishes the cluster detected to be close to the object
 sensor_msgs::PointCloud2 cloud_ros;
 pcl::PCLPointCloud2 pc_target;
-
+ros::Publisher pub_angular_velocity;
 
 //const float home_position [] = { -1.84799570991366, -0.9422852495301872, -0.23388692957209883, -1.690986384686938, 1.37682658669572, 3.2439323416434624};
 
@@ -591,10 +591,32 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 	
 	double elapsed_time = 0.0;
 	
+	//msg for joint velocity command
+	jaco_msgs::JointVelocity jv_msg;
+	double turn_direction = 1.0;
+	jv_msg.joint1 = 0.0;
+	jv_msg.joint2 = 0.0;
+	jv_msg.joint3 = 0.0;
+	jv_msg.joint4 = 0.0;
+	jv_msg.joint5 = 0.0;
+	jv_msg.joint6 = turn_direction*45;
+	double turn_elapsed_time = 0.0;
+	 
+	
 	while (ros::ok()){
 		ros::spinOnce();
 		
 		elapsed_time += 1.0/rate;
+		
+		//move hand as indicator behavior
+		jv_msg.joint6 = turn_direction*45; 
+		pub_angular_velocity.publish(jv_msg);
+		turn_elapsed_time += 1.0/rate;
+		if (turn_elapsed_time > 0.5){ //switch directions every so often
+			turn_elapsed_time = 0;
+			turn_direction = turn_direction * (-1.0);
+		}
+		
 		
 		if (new_change_cloud_detected){
 			
@@ -718,6 +740,8 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 				res.success = false;
 				return true;
 		}
+		
+		
 		
 		r.sleep();
 	}
@@ -999,8 +1023,8 @@ int main (int argc, char** argv)
 	//publish velocities
 	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
-	//publish angular tool velocities
-	ros::Publisher pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+	//publish angular velocities
+	pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
 
 	
 	//cloud publisher
@@ -1053,14 +1077,7 @@ int main (int argc, char** argv)
 	//msg for publishing velocity commands
 	geometry_msgs::TwistStamped v_msg;
 	
-	//msg for joint velocity command
-	jaco_msgs::JointVelocity jv_msg;
-	jv_msg.joint1 = 0.0;
-	jv_msg.joint2 = 0.0;
-	jv_msg.joint3 = 0.0;
-	jv_msg.joint4 = 0.0;
-	jv_msg.joint5 = 0.0;
-	jv_msg.joint6 = 45; 
+	
 
 	// Main loop:
 	while (!g_caught_sigint && ros::ok())
@@ -1078,10 +1095,7 @@ int main (int argc, char** argv)
 			pub_velocity.publish(v_msg);
 			
 		}
-		else if (is_waiting_for_touch){ //spin the end effector
-			jv_msg.joint6 = 45; 
-			pub_angular_velocity.publish(jv_msg);
-		}
+		
 		
 		//sleep to maintain framerate
 		r.sleep();
