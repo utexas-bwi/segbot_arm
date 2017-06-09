@@ -601,7 +601,7 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 	jv_msg.joint5 = 0.0;
 	jv_msg.joint6 = turn_direction*45;
 	double turn_elapsed_time = 0.0;
-	 
+	double direction_switch_duration = 5.0;
 	
 	while (ros::ok()){
 		ros::spinOnce();
@@ -612,7 +612,7 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 		jv_msg.joint6 = turn_direction*45; 
 		pub_angular_velocity.publish(jv_msg);
 		turn_elapsed_time += 1.0/rate;
-		if (turn_elapsed_time > 0.5){ //switch directions every so often
+		if (turn_elapsed_time > direction_switch_duration){ //switch directions every so often
 			turn_elapsed_time = 0;
 			turn_direction = turn_direction * (-1.0);
 		}
