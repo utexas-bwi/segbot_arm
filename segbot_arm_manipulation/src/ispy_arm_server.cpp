@@ -612,7 +612,7 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 		jv_msg.joint6 = turn_direction*45; 
 		pub_angular_velocity.publish(jv_msg);
 		turn_elapsed_time += 1.0/rate;
-		if (turn_elapsed_time > 0.5){ //switch directions every so often
+		if (turn_elapsed_time > 2.5){ //switch directions every so often
 			turn_elapsed_time = 0;
 			turn_direction = turn_direction * (-1.0);
 		}
