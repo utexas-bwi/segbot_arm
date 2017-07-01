@@ -382,6 +382,7 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	vg.setLeafSize (0.0025f, 0.0025f, 0.0025f);
 	vg.filter (*cloud_filtered);
 	
+	//find the plane
 	pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
 	pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
 	// Create the segmentation object
@@ -462,83 +463,29 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	ROS_INFO("Planar coefficients: %f, %f, %f, %f",
 		plane_coefficients(0),plane_coefficients(1),plane_coefficients(2),	plane_coefficients(3));
 	
-	//debug plane cloud 
-	//convert plane cloud to ROS
-	sensor_msgs::PointCloud2 ros_plane;
-	
-	//pcl::toROSMsg(*cloud_plane, ros_plane);
-	pcl::toROSMsg(*cloud_plane, ros_plane);
-	
-	ros_plane.header.frame_id = cloud->header.frame_id;
-	table_cloud_pub.publish(ros_plane);
-	
 	//Step 3: Eucledian Cluster Extraction
 	computeClusters(cloud_blobs,cluster_extraction_tolerance);
 	
 	ROS_INFO("Found %i clusters.",(int)clusters.size());
 
 	clusters_on_plane.clear();
-	
-	//if true, clouds on the other side of the plane will be rejected
-	bool check_below_plane = true; 
-	double plane_z = -1.0;
-	PointCloudT::Ptr cloud_plane_baselink (new PointCloudT);
-	Eigen::Vector4f plane_centroid;
-   
-	if (check_below_plane){
-		
-		//wait for transform and perform it
-		tf_listener.waitForTransform(cloud->header.frame_id,"/base_link",ros::Time(0), ros::Duration(3.0)); 
-		
-		//convert plane cloud to ROS
-		sensor_msgs::PointCloud2 plane_cloud_ros;
-		pcl::toROSMsg(*cloud_plane,plane_cloud_ros);
-		plane_cloud_ros.header.frame_id = cloud->header.frame_id;
-		
-		//transform it to base link frame of reference
-		pcl_ros::transformPointCloud ("/base_link", plane_cloud_ros, plane_cloud_ros, tf_listener);
-					
-		//convert to PCL format and take centroid
-		pcl::fromROSMsg (plane_cloud_ros, *cloud_plane_baselink);
-		pcl::compute3DCentroid (*cloud_plane_baselink, plane_centroid);
-		
-		ROS_INFO("[table_object_detection_node.cpp] Plane xyz: %f, %f, %f",plane_centroid(0),plane_centroid(1),plane_centroid(2));
-	}
-
 	for (unsigned int i = 0; i < clusters.size(); i++){
 		
 		if (filter(clusters.at(i),cloud_plane,plane_coefficients,plane_distance_tolerance,plane_max_distance_tolerance)){
 			
-			//next check which clusters are below and which are aboe the plane
-			if (check_below_plane){
-				sensor_msgs::PointCloud2 cloud_i_ros;
-				pcl::toROSMsg(*clusters.at(i),cloud_i_ros);
-				cloud_i_ros.header.frame_id = cloud->header.frame_id;
-				
-				pcl_ros::transformPointCloud ("/base_link", cloud_i_ros,cloud_i_ros, tf_listener);
-				
-				//convert to PCL format and take centroid
-				PointCloudT::Ptr cluster_i_baselink (new PointCloudT);
-				pcl::fromROSMsg (cloud_i_ros, *cluster_i_baselink);
-				
-				Eigen::Vector4f centroid_i;
-				pcl::compute3DCentroid (*cluster_i_baselink, centroid_i);
-				
-				ROS_INFO("[table_object_detection_node.cpp] cluster %i xyz: %f, %f, %f",i,centroid_i(0),centroid_i(1),centroid_i(2));
-				
-				//check z's
-				if (centroid_i(2) < plane_centroid(2)){
-					//below the table (maybe the edge of the table, etc)
-					ROS_INFO("[table_object_detection_node.cpp] Rejected as below the table...");
-				}
-				else {
-					//above the table
-					clusters_on_plane.push_back(clusters.at(i));
-				}
-				
-				//TO DO: check if cloud_i_ros has larger z than plane_cloud_ros
+			//check which side of plane cloud is on
+			Eigen::Vector4f centroid_i;
+			pcl::compute3DCentroid (*clusters.at(i), centroid_i);
+			
+			double s_i = 0;
+			for (unsigned int d = 0; d < 3; d++){
+				s_i += plane_coefficients(d)*centroid_i(d);
 			}
-			else {
+			s_i += plane_coefficients(3);
+			ROS_INFO("Sign for cluster %i:\t%f",i,s_i);
+			
+			//if positive, the cloud is on the side facing the camera, i.e., on top of the table
+			if (s_i > 0.0){
 				clusters_on_plane.push_back(clusters.at(i));
 			}
 		}
