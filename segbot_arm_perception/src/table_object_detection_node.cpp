@@ -468,6 +468,14 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 	
 	ROS_INFO("Found %i clusters.",(int)clusters.size());
 
+	//Step 4: check which clusters are accepted by the filtering function and also which ones are above the table, as opposed to bellow like drapes covering tables
+	
+	//find out which side of the plane the origin lies on
+	double sign_origin = 1.0;
+	if (plane_coefficients(3) < 0)
+		sign_origin = -1.0;
+	
+	
 	clusters_on_plane.clear();
 	for (unsigned int i = 0; i < clusters.size(); i++){
 		
@@ -484,8 +492,12 @@ bool seg_cb(segbot_arm_perception::TabletopPerception::Request &req, segbot_arm_
 			s_i += plane_coefficients(3);
 			ROS_INFO("Sign for cluster %i:\t%f",i,s_i);
 			
+			if (s_i > 0)
+				s_i = 1.0;
+			else s_i = -1.0;
+			
 			//if positive, the cloud is on the side facing the camera, i.e., on top of the table
-			if (s_i > 0.0){
+			if (s_i == sign_origin){
 				clusters_on_plane.push_back(clusters.at(i));
 			}
 		}
