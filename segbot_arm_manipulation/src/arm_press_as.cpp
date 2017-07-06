@@ -217,7 +217,76 @@ public:
 	}
 
 	//method using cartesian velocities to press down on the object
-	void press_down(float duration){
+	void pushButton() {
+	double timeoutSeconds = 2.0;
+	int rateHertz = 40;
+	geometry_msgs::TwistStamped velocityMsg;
+	ros::Rate r(rateHertz);
+	
+	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
+		velocityMsg.twist.linear.x = 0;
+		velocityMsg.twist.linear.y = 0.0;
+		velocityMsg.twist.linear.z = -0.125;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		ros::spinOnce();
+		arm_vel.publish(velocityMsg);
+		
+		r.sleep();
+	}
+	
+
+	for(int i = 0; i < (int)3.0 * rateHertz; i++) {
+		velocityMsg.twist.linear.x = 0.0;
+		velocityMsg.twist.linear.y = -0.125;
+		velocityMsg.twist.linear.z = 0.2;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		
+		arm_vel.publish(velocityMsg);
+		
+		r.sleep();
+	}
+}
+
+//create stamped pose from point cloud
+geometry_msgs::PoseStamped pclToPoseStamped(sensor_msgs::PointCloud2 pc2){
+	//transform to PCL
+	pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+	pcl::fromROSMsg(pc2, pcl_cloud);
+		
+	//create a pose with x y z set to the center of point cloud
+	Eigen::Vector4f centroid;
+	pcl::compute3DCentroid(pcl_cloud, centroid);
+	
+	//pcl::PointXYZ min;
+	//pcl::PointXYZ max;
+	//pcl::getMinMax3D(pcl_cloud, min, max);
+	
+	geometry_msgs::Pose pose_i;
+	pose_i.position.x=centroid(0);
+	pose_i.position.y=centroid(1);
+	pose_i.position.z=centroid(2);
+	pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,3.14/2,3,14/2);
+
+	geometry_msgs::PoseStamped stampedPose;
+
+	stampedPose.header.frame_id = pc2.header.frame_id;
+	stampedPose.header.stamp = ros::Time(0);
+	stampedPose.pose = pose_i;
+	
+	//adjust z and y positions
+	stampedPose.pose.position.z += 0.1;
+	stampedPose.pose.position.y += 0.07;
+	return stampedPose;
+}
+	/*void press_down(float duration){
 		geometry_msgs::TwistStamped v;
 		 
 		v.twist.linear.x = 0;
@@ -249,11 +318,11 @@ public:
 		
 		v.twist.linear.z = 0.0;
 		arm_vel.publish(v);
-	}
+	}*/
 	
 
 	//method to find possible hand orientations
-	std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
+	/*std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
 		float change = 0.0;
 		float semi_circle = 3.14/4;
 		
@@ -285,7 +354,7 @@ public:
 		
 		return possible_quats;
 		
-	}
+	}*/
 
 	void executeCB(const segbot_arm_manipulation::PressGoalConstPtr  &goal){
 		listenForArmData(30.0);
@@ -309,8 +378,33 @@ public:
 		ROS_INFO("checked that the goal is not preempted and tgt cloud is valid");
 		//step 1: close fingers
 		segbot_arm_manipulation::closeHand();
-	
-		//step 2: transform into the arm's base, transform cloud
+		
+		//wait for transform and perform it
+		listener.waitForTransform(goal->tgt_cloud.header.frame_id,"mico_link_base",ros::Time(0), ros::Duration(3.0)); 
+		
+	    sensor_msgs::PointCloud2 obj_cloud = goal->tgt_cloud;
+		
+		//transform to base link frame of reference
+		pcl_ros::transformPointCloud ("mico_link_base", obj_cloud, obj_cloud, listener);
+		
+		//create and publish pose
+		geometry_msgs::PoseStamped stampedPose = pclToPoseStamped(obj_cloud);
+		debug_pub.publish(stampedPose);
+		ros::spinOnce();
+		ROS_INFO("Here");
+		//move to pose
+		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
+		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
+		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
+		pushButton();
+		//home arm
+		segbot_arm_manipulation::homeArm(nh_);
+		
+		//set result of action
+		result_.success = true;
+		as_.setSucceeded(result_);
+		
+		/*//step 2: transform into the arm's base, transform cloud
 		sensor_msgs::PointCloud2 tgt= goal -> tgt_cloud;
 		
 		std::string sensor_frame_id = tgt.header.frame_id;
@@ -375,10 +469,8 @@ public:
 		segbot_arm_manipulation::arm_side_view(nh_);
 		listenForArmData(30.0);
 		segbot_arm_manipulation::arm_side_view(nh_);
+*/
 
-		//step 8: set result of action
-		result_.success = true;
-		as_.setSucceeded(result_);
 	}
 };
 

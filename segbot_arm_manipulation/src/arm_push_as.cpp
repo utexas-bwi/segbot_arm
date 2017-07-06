@@ -40,6 +40,8 @@
 #include "segbot_arm_manipulation/PushAction.h"
 
 //tf stuff
+#include <tf/transform_listener.h>
+#include <tf/tf.h>
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
 #include <tf/transform_broadcaster.h>
@@ -95,6 +97,7 @@ protected:
 	agile_grasp::Grasps current_grasps;
 
 	ros::Publisher pub_velocity;
+	ros::Publisher debug_pub;
 	ros::Publisher cloud_pub;
 	ros::Publisher cloud_grasp_pub;
 	ros::Publisher pose_array_pub;
@@ -139,17 +142,15 @@ public:
 	//store out-of-view position here
 	//sensor_msgs::JointState joint_state_outofview;
 	//geometry_msgs::PoseStamped pose_outofview;
-	
-	//create listener for transforms
-	tf::TransformListener tf_listener;
+
 	
 	//publisher for velocities
 	pub_velocity = nh_.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 
-	//create publisher for pose
-	ros::Publisher pose_pub = nh_.advertise<geometry_msgs::PoseStamped>("/arm_debug/pose", 10);;
+	//advertise the goal pose for debugging
+	debug_pub = nh_.advertise<geometry_msgs::PoseStamped>("/mico_arm_driver/in/debug_pose", 2);
 	
-	pressEnter("Demo starting...move the arm to a position where it is not occluding the table.");
+
 	
 	//store out of table joint position
 	//listenForArmData();
@@ -424,25 +425,32 @@ int orientation_input(){
 				as_.setAborted(result_);
 				return;
 			}
-		
-			//get the data out of the goal
-			Eigen::Vector4f plane_coef_vector;
-			for (int i = 0; i < 4; i ++)
-				plane_coef_vector(i)=goal->cloud_plane_coef[i];
-			ROS_INFO("[push_as.cpp] Received action request...proceeding.");
-			listenForArmData(40.0);
 			
-			//the result
-			segbot_arm_manipulation::PushResult result;
-
+			if (as_.isPreemptRequested() || !ros::ok()){
+				ROS_INFO("Press action: Preempted");
+				// set the action state to preempted
+				as_.setPreempted();
+				result_.success = false;
+				as_.setSucceeded(result_);
+				return;
+			}
+		
+		segbot_arm_manipulation::closeHand();
+		
+		//get the data out of the goal
+	    Eigen::Vector4f plane_coef_vector;
+		for (int i = 0; i < 4; i ++)
+			plane_coef_vector(i)=goal->cloud_plane_coef[i];
+		ROS_INFO("[push_as.cpp] Received action request...proceeding.");
+		listenForArmData(40.0);
 		
 		//wait for transform and perform it
-		tf_listener.waitForTransform(goal->tgt_cloud.header.frame_id,"mico_link_base",ros::Time::now(), ros::Duration(3.0)); 
+		listener.waitForTransform(goal->tgt_cloud.header.frame_id,"mico_link_base",ros::Time::now(), ros::Duration(3.0)); 
 		
 	    sensor_msgs::PointCloud2 obj_cloud = goal->tgt_cloud;
 		
 		//transform to base link frame of reference
-		pcl_ros::transformPointCloud ("mico_link_base", obj_cloud, obj_cloud, tf_listener);
+		pcl_ros::transformPointCloud ("mico_link_base", obj_cloud, obj_cloud, listener);
 		
 		//create and publish pose
 		std::vector<int> indices;
@@ -451,7 +459,7 @@ int orientation_input(){
 		int result_i;
 		stampedPose.header.frame_id = obj_cloud.header.frame_id;
 		stampedPose.header.stamp = ros::Time(0);
-		int dir_i;
+		/*int dir_i;
 		int or_i;
 		
 		std::cout << "Choose a direction (1 = right, 2 = left, 3 = front)";
@@ -492,10 +500,10 @@ int orientation_input(){
 				indices.push_back(4);
 				indices.push_back(5);
 				indices.push_back(6);
-		}
+		}*/
 		
-		for(int i = 0; i < indices.size(); i++){
-			if(acceptPose(app_pos.at(indices.at(i)), plane_coef_vector)){
+		for(int i = 0; i < app_pos.size(); i++){
+			if(acceptPose(app_pos.at(i), plane_coef_vector)){
 				stampedPose.pose = app_pos.at(i);
 				result_i = i;
 				moveit_msgs::GetPositionIK::Response ik_response = computeIK(nh_,stampedPose);
@@ -505,7 +513,7 @@ int orientation_input(){
 			}
 		}
 		
-		pose_pub.publish(stampedPose);
+		debug_pub.publish(stampedPose);
 		ros::spinOnce();
 		ROS_INFO("planning");
 		//move to pose
@@ -513,7 +521,12 @@ int orientation_input(){
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		push(result_i);
+		//home arm
 		segbot_arm_manipulation::homeArm(nh_);
+		
+		//set result of action
+		result_.success = true;
+		as_.setSucceeded(result_);
 		
 	}
 			
@@ -522,8 +535,8 @@ int orientation_input(){
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "push_as");
-
+  ROS_INFO("before init (in as)");
+  ros::init(argc, argv, "arm_push_as");
   PushActionServer as(ros::this_node::getName());
   ros::spin();
 

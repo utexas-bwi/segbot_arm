@@ -318,6 +318,7 @@ int main (int argc, char** argv){
 	
 	//create the action client to push an object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::PushAction> push_ac("arm_push_as",true);
+	ROS_INFO("before wait for server");
 	push_ac.waitForServer();
 	ROS_INFO("push action server made...");
 
@@ -326,6 +327,7 @@ int main (int argc, char** argv){
 	segbot_arm_manipulation::PushGoal push_goal;
 	push_goal.tgt_cloud = table_scene.cloud_clusters[index];
 	push_goal.cloud_plane = table_scene.cloud_plane; 
+	push_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
 	
 	ROS_INFO("Sending goal to push action server...");
 	push_ac.sendGoal(push_goal);
