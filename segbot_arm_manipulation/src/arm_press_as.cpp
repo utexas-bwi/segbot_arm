@@ -54,8 +54,12 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 
+//tf stuff
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
+#include <tf/transform_broadcaster.h>
 
 #include <moveit_msgs/GetPositionIK.h>
 //defines
@@ -65,9 +69,7 @@
 #define NUM_JOINTS_ARMONLY 6
 #define NUM_JOINTS 8 //6+2 for the arm
 
-typedef pcl::PointXYZRGB PointT;
-typedef pcl::PointCloud<PointT> PointCloudT;
-
+#define MIN_DISTANCE_TO_PLANE 0.075
 
 class PressActionServer
 {
@@ -195,134 +197,143 @@ public:
 			r.sleep();
 		}
 	}
-
 	
-	//method to find the middle top of the point cloud to be pressed
-	geometry_msgs::Point find_top_center(PointCloudT pcl_curr){
-		//find max of all points
-		PointT max;
-		PointT min; 
-		pcl::getMinMax3D(pcl_curr, min, max);
-
-		//find average of all points
-		Eigen::Vector4f centroid_pts;
-		pcl::compute3DCentroid(pcl_curr, centroid_pts);
-		
-		//make a point using the center and max points
-		geometry_msgs::Point top_center;
-		top_center.x = centroid_pts(0);
-		top_center.y = centroid_pts(1);
-		top_center.z = max.z;
-		return top_center;
+	bool plane_distance(geometry_msgs::Pose start, Eigen::Vector4f plane_c){
+		//filter 1: if too close to the plane
+		pcl::PointXYZ p_a;
+		p_a.x=start.position.x;
+		p_a.y=start.position.y;
+		p_a.z=start.position.z;
+	
+		return pcl::pointToPlaneDistance(p_a, plane_c);
 	}
 
+	moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs::PoseStamped p){
+		ros::ServiceClient ikine_client = n.serviceClient<moveit_msgs::GetPositionIK> ("/compute_ik");
+	
+		moveit_msgs::GetPositionIK::Request ikine_request;
+		moveit_msgs::GetPositionIK::Response ikine_response;
+		ikine_request.ik_request.group_name = "arm";
+		ikine_request.ik_request.pose_stamped = p;
+	
+		/* Call the service */
+		if(ikine_client.call(ikine_request, ikine_response)){
+			ROS_INFO("IK service call success:");
+			//ROS_INFO_STREAM(ikine_response);
+		} else {
+			ROS_INFO("IK service call FAILED. Exiting");
+		}
+	
+		return ikine_response;
+	}
+	
 	//method using cartesian velocities to press down on the object
 	void pushButton() {
-	double timeoutSeconds = 2.0;
-	int rateHertz = 40;
-	geometry_msgs::TwistStamped velocityMsg;
-	ros::Rate r(rateHertz);
-	
-	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
-		velocityMsg.twist.linear.x = 0;
-		velocityMsg.twist.linear.y = 0.0;
-		velocityMsg.twist.linear.z = -0.125;
+		double timeoutSeconds = 2.0;
+		int rateHertz = 40;
+		geometry_msgs::TwistStamped velocityMsg;
+		ros::Rate r(rateHertz);
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		//push down
+		for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
+			velocityMsg.twist.linear.x = 0;
+			velocityMsg.twist.linear.y = 0.0;
+			velocityMsg.twist.linear.z = -0.125;
 		
-		ros::spinOnce();
-		arm_vel.publish(velocityMsg);
+			velocityMsg.twist.angular.x = 0.0;
+			velocityMsg.twist.angular.y = 0.0;
+			velocityMsg.twist.angular.z = 0.0;
 		
-		r.sleep();
-	}
-	
-
-	for(int i = 0; i < (int)3.0 * rateHertz; i++) {
-		velocityMsg.twist.linear.x = 0.0;
-		velocityMsg.twist.linear.y = -0.125;
-		velocityMsg.twist.linear.z = 0.2;
+			ros::spinOnce();
+			arm_vel.publish(velocityMsg);
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
-		
-		
-		arm_vel.publish(velocityMsg);
-		
-		r.sleep();
-	}
-}
-
-//create stamped pose from point cloud
-geometry_msgs::PoseStamped pclToPoseStamped(sensor_msgs::PointCloud2 pc2){
-	//transform to PCL
-	pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
-	pcl::fromROSMsg(pc2, pcl_cloud);
-		
-	//create a pose with x y z set to the center of point cloud
-	Eigen::Vector4f centroid;
-	pcl::compute3DCentroid(pcl_cloud, centroid);
-	
-	//pcl::PointXYZ min;
-	//pcl::PointXYZ max;
-	//pcl::getMinMax3D(pcl_cloud, min, max);
-	
-	geometry_msgs::Pose pose_i;
-	pose_i.position.x=centroid(0);
-	pose_i.position.y=centroid(1);
-	pose_i.position.z=centroid(2);
-	pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,3.14/2,3,14/2);
-
-	geometry_msgs::PoseStamped stampedPose;
-
-	stampedPose.header.frame_id = pc2.header.frame_id;
-	stampedPose.header.stamp = ros::Time(0);
-	stampedPose.pose = pose_i;
-	
-	//adjust z and y positions
-	stampedPose.pose.position.z += 0.1;
-	stampedPose.pose.position.y += 0.07;
-	return stampedPose;
-}
-	/*void press_down(float duration){
-		geometry_msgs::TwistStamped v;
-		 
-		v.twist.linear.x = 0;
-		v.twist.linear.y = 0.0;
-		v.twist.linear.z = -0.125;
-		
-		v.twist.angular.x = 0.0;
-		v.twist.angular.y = 0.0;
-		v.twist.angular.z = 0.0;
-		
-		float elapsed_time = 0.0;
-		
-		float rate = 40;
-		ros::Rate r(rate);
-		
-		listenForArmData(30.0);
-		
-		while(ros::ok() && !as_.isPreemptRequested()){			
-			v.twist.linear.z = -0.125;
-
-			arm_vel.publish(v);
 			r.sleep();
-			
-			elapsed_time += (1.0/rate);
-			
-			if (elapsed_time > duration)
-				break;
 		}
+	
+		//release
+		for(int i = 0; i < (int)3.0 * rateHertz; i++) {
+			velocityMsg.twist.linear.x = 0.0;
+			velocityMsg.twist.linear.y = -0.125;
+			velocityMsg.twist.linear.z = 0.2;
 		
-		v.twist.linear.z = 0.0;
-		arm_vel.publish(v);
-	}*/
+			velocityMsg.twist.angular.x = 0.0;
+			velocityMsg.twist.angular.y = 0.0;
+			velocityMsg.twist.angular.z = 0.0;
+		
+		
+			arm_vel.publish(velocityMsg);
+		
+			r.sleep();
+		}
+	}
+	
+	//generates stamedPose over center of object
+	geometry_msgs::PoseStamped pclToPoseStamped(sensor_msgs::PointCloud2 pc2){
+		//transform to PCL
+		pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+		pcl::fromROSMsg(pc2, pcl_cloud);
+		
+		//find center of point cloud
+		Eigen::Vector4f centroid;
+		pcl::compute3DCentroid(pcl_cloud, centroid);
+		
+		//find min and max of point cloud
+		pcl::PointXYZ min;
+		pcl::PointXYZ max;
+		pcl::getMinMax3D(pcl_cloud, min, max);
+		
+		geometry_msgs::PoseStamped pose_i;
+		pose_i.header.frame_id = pc2.header.frame_id;
+		pose_i.header.stamp = ros::Time(0);
+		pose_i.pose.position.x=centroid(0);
+		pose_i.pose.position.y=centroid(1) + 0.07;
+		pose_i.pose.position.z=max.z;
+		pose_i.pose.orientation=tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
+		return pose_i;
+	}
+
+	//create stamped pose from point cloud
+	std::vector<geometry_msgs::Pose> generate_poses(sensor_msgs::PointCloud2 pc2){
+		//transform to PCL
+		pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+		pcl::fromROSMsg(pc2, pcl_cloud);
+		
+		//create a pose with x y z set to the center of point cloud
+		Eigen::Vector4f centroid;
+		pcl::compute3DCentroid(pcl_cloud, centroid);
+	
+		//pcl::PointXYZ min;
+		//pcl::PointXYZ max;
+		//pcl::getMinMax3D(pcl_cloud, min, max);
+		std::vector<geometry_msgs::Pose> start_poses;
+		geometry_msgs::Pose pose_i;
+		pose_i.position.x=centroid(0);
+		pose_i.position.y=centroid(1) + 0.07;
+		pose_i.position.z=centroid(2) + 0.1;
+		//orientation 1 
+		pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,3.14/2,3.14/2);
+		start_poses.push_back(pose_i);
+		//orientation 2 
+		pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,3.14/2);
+		start_poses.push_back(pose_i);
+		//orientation 3
+		pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,3.14/2,0);
+		start_poses.push_back(pose_i);
+		/*geometry_msgs::PoseStamped stampedPose;
+
+		stampedPose.header.frame_id = pc2.header.frame_id;
+		stampedPose.header.stamp = ros::Time(0);
+		stampedPose.pose = pose_i;
+	
+		//adjust z and y positions
+		stampedPose.pose.position.z += 0.1;
+		stampedPose.pose.position.y += 0.07;*/
+		return start_poses;
+	}
 	
 
 	//method to find possible hand orientations
-	/*std::vector<geometry_msgs::Quaternion> find_quat(geometry_msgs::PoseStamped goal_pose){
+	geometry_msgs::PoseStamped find_quat(geometry_msgs::PoseStamped goal_pose){
 		float change = 0.0;
 		float semi_circle = 3.14/4;
 		
@@ -339,22 +350,23 @@ geometry_msgs::PoseStamped pclToPoseStamped(sensor_msgs::PointCloud2 pc2){
 			moveit_msgs::GetPositionIK::Response  ik_response_1 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
 			
 			if (ik_response_1.error_code.val == 1){
-				possible_quats.push_back(goal_pose.pose.orientation);
+				//possible_quats.push_back(goal_pose.pose.orientation);
+				return goal_pose;
 			}
 			
 			goal_pose.pose.orientation = quat2; 
 			moveit_msgs::GetPositionIK::Response  ik_response_2 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
 			
 			if (ik_response_2.error_code.val == 1){
-				possible_quats.push_back(goal_pose.pose.orientation);
+				return goal_pose;
 			}
 			
 			change += 3.14/16;
 		}
 		
-		return possible_quats;
+		return goal_pose;
 		
-	}*/
+	}
 
 	void executeCB(const segbot_arm_manipulation::PressGoalConstPtr  &goal){
 		listenForArmData(30.0);
@@ -375,102 +387,63 @@ geometry_msgs::PoseStamped pclToPoseStamped(sensor_msgs::PointCloud2 pc2){
 			return;
         }
         
-		ROS_INFO("checked that the goal is not preempted and tgt cloud is valid");
-		//step 1: close fingers
+		Eigen::Vector4f plane_coef_vector;
+		for (int i = 0; i < 4; i ++)
+			plane_coef_vector(i)=goal->cloud_plane_coef[i];
+		ROS_INFO("[push_as.cpp] Received action request...proceeding.");
+		listenForArmData(40.0);
+		
 		segbot_arm_manipulation::closeHand();
 		
 		//wait for transform and perform it
 		listener.waitForTransform(goal->tgt_cloud.header.frame_id,"mico_link_base",ros::Time(0), ros::Duration(3.0)); 
 		
-	    sensor_msgs::PointCloud2 obj_cloud = goal->tgt_cloud;
-		
 		//transform to base link frame of reference
+	    sensor_msgs::PointCloud2 obj_cloud = goal->tgt_cloud;
 		pcl_ros::transformPointCloud ("mico_link_base", obj_cloud, obj_cloud, listener);
 		
 		//create and publish pose
-		geometry_msgs::PoseStamped stampedPose = pclToPoseStamped(obj_cloud);
+		//std::vector<geometry_msgs::Pose> app_pos = generate_poses(obj_cloud);
+		/*geometry_msgs::PoseStamped stampedPose = pclToPoseStamped(obj_cloud); 
+		stampedPose = find_quat(stampedPose);
+		if(acceptPose(stampedPose, plane_coef_vector))
+			debug_pub.publish(stampedPose);
+		//else error*/
+		std::vector<geometry_msgs::Pose> app_pos = generate_poses(obj_cloud);
+		
+		geometry_msgs::PoseStamped stampedPose;
+		stampedPose.header.frame_id = obj_cloud.header.frame_id;
+		stampedPose.header.stamp = ros::Time(0);
+		
+		//determine which poses can be reached
+		for(int i = 0; i < app_pos.size(); i++){
+			int dist = plane_distance(app_pos.at(i), plane_coef_vector);
+			if(dist < MIN_DISTANCE_TO_PLANE){
+				int threshold = MIN_DISTANCE_TO_PLANE - dist;
+				app_pos.at(i).position.z += threshold;
+			}
+				stampedPose.pose = app_pos.at(i);
+				moveit_msgs::GetPositionIK::Response ik_response = computeIK(nh_,stampedPose);
+				if (ik_response.error_code.val == 1){
+					break;
+				}
+		}
+		
 		debug_pub.publish(stampedPose);
 		ros::spinOnce();
-		ROS_INFO("Here");
+
 		//move to pose
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		pushButton();
+		
 		//home arm
 		segbot_arm_manipulation::homeArm(nh_);
 		
 		//set result of action
 		result_.success = true;
 		as_.setSucceeded(result_);
-		
-		/*//step 2: transform into the arm's base, transform cloud
-		sensor_msgs::PointCloud2 tgt= goal -> tgt_cloud;
-		
-		std::string sensor_frame_id = tgt.header.frame_id;
-			
-	
-		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
-		
-		sensor_msgs::PointCloud transformed_pc;
-		sensor_msgs::convertPointCloud2ToPointCloud(tgt,transformed_pc);
-		
-		listener.transformPointCloud("mico_link_base", transformed_pc ,transformed_pc); 
-		sensor_msgs::convertPointCloudToPointCloud2(transformed_pc, tgt);
-		
-		PointCloudT pcl_cloud;
-		pcl::fromROSMsg(tgt, pcl_cloud);
-		
-		
-		
-		//step 3: find the top of the object, set goal to slightly above object
-		geometry_msgs::Point top = find_top_center(pcl_cloud);
-		geometry_msgs::PoseStamped goal_pose;
-		
-		goal_pose.header.frame_id = tgt.header.frame_id;
-		goal_pose.pose.position = top; 
-		goal_pose.pose.position.z += 0.125; 
-		
-		//step 4: find the hand orientation
-		std::vector<geometry_msgs::Quaternion> possible_quats = find_quat(goal_pose);
-
-		if(possible_quats.size() == 0 ){
-			result_.success = false;
-			ROS_INFO("[arm_press_as.cpp] No possible poses...");
-			as_.setAborted(result_);
-			return;
-		}
-		
-		//for now go to first possible pose
-		goal_pose.pose.orientation = possible_quats.at(0);
-		
-		listenForArmData(30.0);
-		
-		//publish pose to rviz for debugging
-		debug_pub.publish(goal_pose);
-		
-		listenForArmData(30.0); 
-		
-		//step 5: move to goal position
-		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
-		listenForArmData(30.0);
-		segbot_arm_manipulation::moveToPoseMoveIt(nh_,goal_pose);
-		
-		listenForArmData(30.0);
-		
-		//step 6: press down on the object
-		press_down(5);
-		
-		listenForArmData(30.0);
-		
-		segbot_arm_manipulation::homeArm(nh_);
-		
-		//step 7: move arm home		
-		segbot_arm_manipulation::arm_side_view(nh_);
-		listenForArmData(30.0);
-		segbot_arm_manipulation::arm_side_view(nh_);
-*/
-
 	}
 };
 

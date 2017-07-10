@@ -305,7 +305,7 @@ int main (int argc, char** argv){
 	//fill in goals for press action, send to action
 	segbot_arm_manipulation::PressGoal press_goal;
 	press_goal.tgt_cloud = table_scene.cloud_clusters[index];
-	
+	press_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
 	ROS_INFO("Sending goal to press action server...");
 	press_ac.sendGoal(press_goal);
 		
