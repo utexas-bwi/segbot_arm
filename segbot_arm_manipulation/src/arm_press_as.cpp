@@ -286,7 +286,7 @@ public:
 		pose_i.header.frame_id = pc2.header.frame_id;
 		pose_i.header.stamp = ros::Time(0);
 		pose_i.pose.position.x=centroid(0);
-		pose_i.pose.position.y=centroid(1) + 0.07;
+		pose_i.pose.position.y=centroid(1)+0.1;
 		pose_i.pose.position.z=max.z;
 		pose_i.pose.orientation=tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
 		return pose_i;
@@ -302,14 +302,15 @@ public:
 		Eigen::Vector4f centroid;
 		pcl::compute3DCentroid(pcl_cloud, centroid);
 	
-		//pcl::PointXYZ min;
-		//pcl::PointXYZ max;
-		//pcl::getMinMax3D(pcl_cloud, min, max);
+		pcl::PointXYZ min;
+		pcl::PointXYZ max;
+		pcl::getMinMax3D(pcl_cloud, min, max);
+		
 		std::vector<geometry_msgs::Pose> start_poses;
 		geometry_msgs::Pose pose_i;
 		pose_i.position.x=centroid(0);
-		pose_i.position.y=centroid(1) + 0.07;
-		pose_i.position.z=centroid(2) + 0.1;
+		pose_i.position.y=centroid(1);
+		pose_i.position.z=max.z;
 		//orientation 1 
 		pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,3.14/2,3.14/2);
 		start_poses.push_back(pose_i);

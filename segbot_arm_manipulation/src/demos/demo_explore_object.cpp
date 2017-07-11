@@ -337,6 +337,7 @@ int main (int argc, char** argv){
 	push_ac.waitForResult();
 	ROS_INFO("push action Finished...");
 	
+	pressEnter("press enter to recheck table");
 	//the object has moved from the above actions, recheck table	
 	sensor_msgs::PointCloud2 tgt = table_scene.cloud_clusters[index];
 	table_scene = segbot_arm_manipulation::getTabletopScene(n);
