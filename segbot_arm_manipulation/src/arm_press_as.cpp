@@ -431,9 +431,9 @@ public:
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		pushButton();
 		
-		//segbot_arm_manipulation::arm_side_view(nh_);
+		segbot_arm_manipulation::arm_side_view(nh_);
 		//home arm
-		segbot_arm_manipulation::homeArm(nh_);
+		//segbot_arm_manipulation::homeArm(nh_);
 		
 		/*ROS_INFO("before refind pose");
 		geometry_msgs::PoseStamped refindPose;
