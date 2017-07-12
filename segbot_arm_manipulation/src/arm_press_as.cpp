@@ -320,15 +320,7 @@ public:
 		//orientation 3
 		pose_i.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,3.14/2,0);
 		start_poses.push_back(pose_i);
-		/*geometry_msgs::PoseStamped stampedPose;
-
-		stampedPose.header.frame_id = pc2.header.frame_id;
-		stampedPose.header.stamp = ros::Time(0);
-		stampedPose.pose = pose_i;
-	
-		//adjust z and y positions
-		stampedPose.pose.position.z += 0.1;
-		stampedPose.pose.position.y += 0.07;*/
+		
 		return start_poses;
 	}
 	
@@ -439,9 +431,22 @@ public:
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		pushButton();
 		
+		//segbot_arm_manipulation::arm_side_view(nh_);
 		//home arm
 		segbot_arm_manipulation::homeArm(nh_);
 		
+		/*ROS_INFO("before refind pose");
+		geometry_msgs::PoseStamped refindPose;
+		refindPose.pose.position.x = 0.17;
+		refindPose.pose.position.y = -0.39;
+		refindPose.pose.position.z = 0.28;
+		//refindPose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
+		debug_pub.publish(refindPose);
+		ros::spinOnce();
+		segbot_arm_manipulation::moveToPoseMoveIt(nh_, refindPose);
+		segbot_arm_manipulation::moveToPoseMoveIt(nh_, refindPose);
+		segbot_arm_manipulation::moveToPoseMoveIt(nh_, refindPose);
+		ROS_INFO("after refindPose");*/
 		//set result of action
 		result_.success = true;
 		as_.setSucceeded(result_);
