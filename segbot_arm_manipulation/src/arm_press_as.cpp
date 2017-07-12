@@ -431,6 +431,7 @@ public:
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		pushButton();
 		
+		segbot_arm_manipulation::homeArm(nh_);
 		segbot_arm_manipulation::arm_side_view(nh_);
 		//home arm
 		//segbot_arm_manipulation::homeArm(nh_);
