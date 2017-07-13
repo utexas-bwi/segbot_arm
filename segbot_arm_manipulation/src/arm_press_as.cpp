@@ -69,7 +69,7 @@
 #define NUM_JOINTS_ARMONLY 6
 #define NUM_JOINTS 8 //6+2 for the arm
 
-#define MIN_DISTANCE_TO_PLANE 0.075
+#define MIN_DISTANCE_TO_PLANE 0.05
 
 class PressActionServer
 {
@@ -323,43 +323,7 @@ public:
 		
 		return start_poses;
 	}
-	
 
-	//method to find possible hand orientations
-	geometry_msgs::PoseStamped find_quat(geometry_msgs::PoseStamped goal_pose){
-		float change = 0.0;
-		float semi_circle = 3.14/4;
-		
-		listener.waitForTransform(goal_pose.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
-		
-		std::vector<geometry_msgs::Quaternion> possible_quats;	
-		
-		//creates hand orientations in a certain range, checks IK, if possible add to vector of possible quaternions
-		while(change < semi_circle){
-			geometry_msgs::Quaternion quat1= tf::createQuaternionMsgFromRollPitchYaw(3.14/2, - change ,0);
-			geometry_msgs::Quaternion quat2 = tf::createQuaternionMsgFromRollPitchYaw(-3.14/2, - change ,0);
-			
-			goal_pose.pose.orientation = quat1;
-			moveit_msgs::GetPositionIK::Response  ik_response_1 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
-			
-			if (ik_response_1.error_code.val == 1){
-				//possible_quats.push_back(goal_pose.pose.orientation);
-				return goal_pose;
-			}
-			
-			goal_pose.pose.orientation = quat2; 
-			moveit_msgs::GetPositionIK::Response  ik_response_2 = segbot_arm_manipulation::computeIK(nh_,goal_pose);
-			
-			if (ik_response_2.error_code.val == 1){
-				return goal_pose;
-			}
-			
-			change += 3.14/16;
-		}
-		
-		return goal_pose;
-		
-	}
 
 	void executeCB(const segbot_arm_manipulation::PressGoalConstPtr  &goal){
 		listenForArmData(30.0);
@@ -395,20 +359,14 @@ public:
 	    sensor_msgs::PointCloud2 obj_cloud = goal->tgt_cloud;
 		pcl_ros::transformPointCloud ("mico_link_base", obj_cloud, obj_cloud, listener);
 		
-		//create and publish pose
-		//std::vector<geometry_msgs::Pose> app_pos = generate_poses(obj_cloud);
-		/*geometry_msgs::PoseStamped stampedPose = pclToPoseStamped(obj_cloud); 
-		stampedPose = find_quat(stampedPose);
-		if(acceptPose(stampedPose, plane_coef_vector))
-			debug_pub.publish(stampedPose);
-		//else error*/
+		//generate array of poses
 		std::vector<geometry_msgs::Pose> app_pos = generate_poses(obj_cloud);
 		
 		geometry_msgs::PoseStamped stampedPose;
 		stampedPose.header.frame_id = obj_cloud.header.frame_id;
 		stampedPose.header.stamp = ros::Time(0);
 		
-		//determine which poses can be reached
+		//determine which pose can be reached
 		for(int i = 0; i < app_pos.size(); i++){
 			int dist = plane_distance(app_pos.at(i), plane_coef_vector);
 			if(dist < MIN_DISTANCE_TO_PLANE){
@@ -422,6 +380,7 @@ public:
 				}
 		}
 		
+		//publish pose
 		debug_pub.publish(stampedPose);
 		ros::spinOnce();
 
@@ -431,23 +390,10 @@ public:
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		pushButton();
 		
-		segbot_arm_manipulation::homeArm(nh_);
-		segbot_arm_manipulation::arm_side_view(nh_);
+		//segbot_arm_manipulation::arm_side_view(nh_);
 		//home arm
-		//segbot_arm_manipulation::homeArm(nh_);
+		segbot_arm_manipulation::homeArm(nh_);
 		
-		/*ROS_INFO("before refind pose");
-		geometry_msgs::PoseStamped refindPose;
-		refindPose.pose.position.x = 0.17;
-		refindPose.pose.position.y = -0.39;
-		refindPose.pose.position.z = 0.28;
-		//refindPose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
-		debug_pub.publish(refindPose);
-		ros::spinOnce();
-		segbot_arm_manipulation::moveToPoseMoveIt(nh_, refindPose);
-		segbot_arm_manipulation::moveToPoseMoveIt(nh_, refindPose);
-		segbot_arm_manipulation::moveToPoseMoveIt(nh_, refindPose);
-		ROS_INFO("after refindPose");*/
 		//set result of action
 		result_.success = true;
 		as_.setSucceeded(result_);

@@ -52,7 +52,7 @@
 #define NUM_JOINTS_ARMONLY 6
 #define NUM_JOINTS 8 //6+2 for the arm
 
-#define MIN_DISTANCE_TO_PLANE 0.075
+#define MIN_DISTANCE_TO_PLANE 0.05
 
 class PushActionServer
 {
@@ -417,6 +417,8 @@ public:
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		push(result_i);
 		
+		
+		//segbot_arm_manipulation::arm_side_view(nh_);
 		//home arm
 		segbot_arm_manipulation::homeArm(nh_);
 		
@@ -431,8 +433,8 @@ public:
 
 int main(int argc, char** argv)
 {
-  ROS_INFO("before init (in as)");
   ros::init(argc, argv, "arm_push_as");
+  
   PushActionServer as(ros::this_node::getName());
   ros::spin();
 
