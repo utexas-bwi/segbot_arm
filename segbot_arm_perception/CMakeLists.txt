@@ -24,6 +24,7 @@ add_service_files(
    TabletopReorder.srv
    SetObstacles.srv
    GetCloud.srv
+   ProcessVision.srv
 )
 
 generate_messages(
@@ -49,6 +50,14 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE)
+  
+add_executable(image_logging_server src/image_logging_server.cpp)
+add_dependencies(image_logging_server segbot_arm_perception_gencpp)
+target_link_libraries(image_logging_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(explore_client src/explore_client.cpp)
+add_dependencies(explore_client segbot_arm_perception_gencpp)
+target_link_libraries(explore_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(obstacle_cloud_manager src/obstacle_cloud_manager.cpp)
 add_dependencies(obstacle_cloud_manager segbot_arm_perception_gencpp)
