@@ -6,7 +6,6 @@
 #include <signal.h> 
 #include "sensor_msgs/PointCloud2.h"
 #include <sensor_msgs/image_encodings.h>
-#include "grounded_logging/ProcessVision.h"
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <cv_bridge/cv_bridge.h>
@@ -138,8 +137,8 @@ void collect_vision_rgb_data(const sensor_msgs::ImageConstPtr& msg){
 }
 
 //callback funtion, if recording samples is true then make a call to store the visual feed 
-bool vision_service_callback(grounded_logging::ProcessVision::Request &req, 
-							grounded_logging::ProcessVision::Response &res){
+bool vision_service_callback(segbot_arm_perception::ProcessVision::Request &req, 
+							segbot_arm_perception::ProcessVision::Response &res){
 	if (req.start == 1){
 		//start recording
 		recording_samples = true;
@@ -157,7 +156,7 @@ bool vision_service_callback(grounded_logging::ProcessVision::Request &req,
 	
 	res.success = true;
 	return true;
-}
+};
 							
 int main (int argc, char** argv)
 {
