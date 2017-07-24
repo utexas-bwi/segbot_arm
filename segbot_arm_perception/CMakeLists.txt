@@ -15,7 +15,6 @@ find_package(catkin REQUIRED
  	message_generation
  	actionlib_msgs
 	cv_bridge
-	#segbot_arm_manipulation
 )
 
 add_service_files(
@@ -28,6 +27,7 @@ add_service_files(
    TabletopReorder.srv
    SetObstacles.srv
    GetCloud.srv
+   GetPCD.srv
    ProcessVision.srv
 )
 
