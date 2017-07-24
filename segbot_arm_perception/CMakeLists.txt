@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(segbot_arm_perception)
 
+find_package( OpenCV REQUIRED)
+
 find_package(catkin REQUIRED
 	pcl_ros
 	pcl_conversions
@@ -12,6 +14,8 @@ find_package(catkin REQUIRED
 	rospy
  	message_generation
  	actionlib_msgs
+	cv_bridge
+	#segbot_arm_manipulation
 )
 
 add_service_files(
@@ -44,7 +48,10 @@ catkin_package(
 include_directories(
 	include
 	${catkin_INCLUDE_DIRS}
+	${OpenCV_INCLUDE_DIRS}
 )
+
+#link_directories(${PCL_LIBRARY_DIRS})
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}

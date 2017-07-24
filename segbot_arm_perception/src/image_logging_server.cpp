@@ -6,6 +6,7 @@
 #include <signal.h> 
 #include "sensor_msgs/PointCloud2.h"
 #include <sensor_msgs/image_encodings.h>
+#include "segbot_arm_perception/ProcessVision.h"
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <cv_bridge/cv_bridge.h>
@@ -57,7 +58,7 @@ void sig_handler(int sig)
 };
 
 //callback funtion to store depth images
-/*void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
+void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
 	if(recording_samples == true){
 		 if ((msg->width * msg->height) == 0)
 			return;
@@ -65,7 +66,7 @@ void sig_handler(int sig)
 		//convert the msg to PCL format
 		pcl::fromROSMsg (*msg, *image_cloud);
 		
-		//get the start time of recording
+		/*//get the start time of recording
 		double begin = ros::Time::now().toSec();
 		string startTime = boost::lexical_cast<std::string>(begin);
 		
@@ -103,9 +104,9 @@ void sig_handler(int sig)
 		delete (PointCloudEncoder);
 		delete (PointCloudDecoder);
 		
-		pcd_count++;
+		pcd_count++;*/
 	}
-}*/
+}
 
 //callback funtion to store rgb images
 void collect_vision_rgb_data(const sensor_msgs::ImageConstPtr& msg){
@@ -171,7 +172,7 @@ int main (int argc, char** argv)
 	ros::ServiceServer service = nh.advertiseService("vision_logger_service", vision_service_callback);
 	
 	//subscribe to the vision depth topic
-	//ros::Subscriber sub_depth = nh.subscribe ("/xtion_camera/depth_registered/points", 1, collect_vision_depth_data);
+	ros::Subscriber sub_depth = nh.subscribe ("/xtion_camera/depth_registered/points", 1, collect_vision_depth_data);
 
 	//get the topic from the launch file
 	nh.param<std::string>("rgb_topic", rgb_topic_, "/xtion_camera/rgb/image_rect_color");
