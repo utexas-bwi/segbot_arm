@@ -91,6 +91,7 @@ double cluster_extraction_tolerance = 0.075;
 
 bool collecting_cloud = false;
 
+
 //epsilon angle for segmenting, value in radians
 #define EPS_ANGLE 0.09 
 
@@ -130,7 +131,7 @@ bool get_pcd_cb(segbot_arm_perception::GetPCD::Request &req, segbot_arm_percepti
 	std::string startTime = boost::lexical_cast<std::string>(begin);
 		
 	//save file
-	std::string filename = "pcd_"+startTime+".pcd";
+	std::string filename = req.generalImageFilePath +"/"+ startTime+".pcd";
 	pcl::io::savePCDFileASCII(filename, *cloud);
 	ROS_INFO("Saved pcd file %s", filename.c_str());
 	

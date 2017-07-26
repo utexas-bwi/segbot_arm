@@ -59,9 +59,9 @@ install(DIRECTORY include/${PROJECT_NAME}/
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE)
 
-add_executable(audio_logging_server src/audio_logging_server.cpp)
-add_dependencies(audio_logging_server segbot_arm_perception_gencpp)
-target_link_libraries(audio_logging_server ${catkin_LIBRARIES} ${ALSA_LIBRARIES} ${FFTW_LIBRARIES} ${SNDFILE_LIBRARIES} ${Boost_LIBRARIES})
+#add_executable(audio_logging_server src/audio_logging_server.cpp)
+#add_dependencies(audio_logging_server segbot_arm_perception_gencpp)
+#target_link_libraries(audio_logging_server ${catkin_LIBRARIES} ${ALSA_LIBRARIES} ${FFTW_LIBRARIES} ${SNDFILE_LIBRARIES} ${Boost_LIBRARIES})
 
 
 add_executable(image_logging_server src/image_logging_server.cpp)
