@@ -45,7 +45,7 @@ cv_bridge::CvImagePtr cv_image;
 // should start recording or not				
 bool recording_samples;
 string generalImageFileName;
-//string generalDepthImageName;    
+string generalDepthImageName;    
 
 int image_count = 0;
 int pcd_count = 0;
@@ -57,6 +57,56 @@ void sig_handler(int sig)
 	exit (0);
 };
 
+//callback funtion to store depth images
+void collect_vision_depth_data(const sensor_msgs::PointCloud2ConstPtr& msg){
+	if(recording_samples == true){
+		 if ((msg->width * msg->height) == 0)
+			return;
+		
+		//convert the msg to PCL format
+		pcl::fromROSMsg (*msg, *image_cloud);
+		
+		//get the start time of recording
+		double begin = ros::Time::now().toSec();
+		string startTime = boost::lexical_cast<std::string>(begin);
+		
+		// append start timestamp with filenames
+		std::stringstream convert;
+		convert << pcd_count;
+		std::string filename = generalDepthImageName+convert.str()+"_"+startTime+".pcd";
+		
+		//Before saving, do a z-filter	
+		pass.setInputCloud (image_cloud);
+		pass.setFilterFieldName ("z");
+		pass.setFilterLimits (0.0, 2.15);
+		pass.filter (*image_cloud);
+		
+		// stringstream to store compressed point cloud
+		std::stringstream compressedData;
+		// instantiate point cloud compression for encoding and decoding
+		PointCloudEncoder = new pcl::io::OctreePointCloudCompression<PointT> (compressionProfile, true);
+		PointCloudDecoder = new pcl::io::OctreePointCloudCompression<PointT> ();
+    
+		//ROS_INFO("Starting compression");
+		
+		// compress point cloud
+		PointCloudEncoder->encodePointCloud (image_cloud, compressedData);
+		// decompress point cloud
+		PointCloudDecoder->decodePointCloud (compressedData, image_cloud_compressed);	
+		
+		//ROS_INFO("Saving compressed cloud to file");
+		
+		//Save the cloud to a .pcd file
+		pcl::io::savePCDFileASCII(filename, *image_cloud);
+		ROS_INFO("Saved pcd file %s", filename.c_str());
+		
+		// delete point cloud compression instances
+		delete (PointCloudEncoder);
+		delete (PointCloudDecoder);
+		
+		pcd_count++;
+	}
+}
 
 //callback funtion to store rgb images
 void collect_vision_rgb_data(const sensor_msgs::ImageConstPtr& msg){
@@ -98,7 +148,7 @@ bool vision_service_callback(segbot_arm_perception::ProcessVision::Request &req,
 		
 		//also store the filenames that are in the request
 		generalImageFileName = req.generalImageFilePath;
-		//generalDepthImageName = req.generalDepthImagePath;       
+		generalDepthImageName = req.generalDepthImagePath;       
 	}
 	else{
 		//set a flag to stop recording
@@ -124,14 +174,14 @@ int main (int argc, char** argv)
 	ros::ServiceServer service = nh.advertiseService("image_logger_service", vision_service_callback);
 	
 	//subscribe to the vision depth topic
-	//ros::Subscriber sub_depth = nh.subscribe ("/xtion_camera/depth_registered/points", 1, collect_vision_depth_data);
+	ros::Subscriber sub_depth = nh.subscribe ("/xtion_camera/depth_registered/points", 1, collect_vision_depth_data);
 
 	//get the topic from the launch file
 	nh.param<std::string>("rgb_topic", rgb_topic_, "/xtion_camera/rgb/image_rect_color");
 	
 	//subsribe to the vision rgb topic
 	ros::Subscriber sub_rgb = nh.subscribe (rgb_topic_, 1, collect_vision_rgb_data);
-		
+	
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 	
