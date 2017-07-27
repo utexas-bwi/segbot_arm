@@ -417,10 +417,9 @@ public:
 		segbot_arm_manipulation::moveToPoseMoveIt(nh_, stampedPose);
 		push(result_i);
 		
+		//move arm out of view for redetection of object
+		segbot_arm_manipulation::arm_side_view(nh_);
 		
-		//segbot_arm_manipulation::arm_side_view(nh_);
-		//home arm
-		segbot_arm_manipulation::homeArm(nh_);
 		
 		//set result of action
 		result_.success = true;
