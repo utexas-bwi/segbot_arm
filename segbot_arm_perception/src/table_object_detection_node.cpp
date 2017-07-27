@@ -126,6 +126,7 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 }
 
 bool get_pcd_cb(segbot_arm_perception::GetPCD::Request &req, segbot_arm_perception::GetPCD::Response &res){
+	
 	//get the start time of recording
 	double begin = ros::Time::now().toSec();
 	std::string startTime = boost::lexical_cast<std::string>(begin);
@@ -637,8 +638,7 @@ int main (int argc, char** argv)
 	
 	ros::ServiceServer reorder_service = nh.advertiseService("tabletop_object_reorder_service", cluster_reorder_cb);
 	
-	ros::ServiceServer getcloud_service = 
-	nh.advertiseService("tabletop_get_cloud_service", get_cloud_cb);
+	ros::ServiceServer getcloud_service = nh.advertiseService("tabletop_get_cloud_service", get_cloud_cb);
 	
 	ros::ServiceServer get_pcd_service = nh.advertiseService("tabletop_get_pcd_service", get_pcd_cb);
 
