@@ -23,6 +23,7 @@
   <run_depend>std_msgs</run_depend>
   <run_depend>jaco_msgs</run_depend>
   <run_depend>segbot_arm_perception</run_depend>
+  <run_depend>segbot_arm_manipulation</run_depend>
 
   <export></export>
 </package>

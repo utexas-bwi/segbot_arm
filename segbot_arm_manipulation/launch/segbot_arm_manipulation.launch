@@ -12,6 +12,10 @@
 	<node name="arm_lift_verify_as" pkg="segbot_arm_manipulation" type="arm_lift_verify_as" output="screen">
 	</node>
 	
+	<!-- launch replacement node -->
+	<node name="segbot_obj_replacement_as" pkg="segbot_arm_manipulation" type="segbot_obj_replacement_as" output="screen">
+	</node>
+	
 	
 	<!-- launch agile grasp -->
 	<node name="find_grasps" pkg="agile_grasp" type="find_grasps" output="screen">
