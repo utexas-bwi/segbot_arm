@@ -685,6 +685,25 @@ public:
 			}
 		
 		}
+		else if (goal->action_name == segbot_arm_manipulation::TabletopGraspGoal::REPLACEMENT) {
+			//step 1: move to side position
+			
+			//TO DO: smarter way to select placement, in this case, need to move arm out of the way
+			//and percieve the table, find a bounding area to place obj and create a pose/state
+			
+			
+			//step 2: move to goal pose
+			segbot_arm_manipulation::moveToJointState(nh_, goal -> grasped_joint_state); //need to make sure it can go to this
+			
+			//step 3: open fingers
+			segbot_arm_manipulation::openHand();
+			
+			//step 4: move to home
+			segbot_arm_manipulation::homeArm(nh_);
+			
+			
+			
+		}
 	
 	
 	}
