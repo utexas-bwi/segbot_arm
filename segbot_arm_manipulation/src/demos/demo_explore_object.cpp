@@ -305,7 +305,7 @@ int main (int argc, char** argv){
 	//fill in goals for press action, send to action
 	segbot_arm_manipulation::PressGoal press_goal;
 	press_goal.tgt_cloud = table_scene.cloud_clusters[index];
-	
+	press_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
 	ROS_INFO("Sending goal to press action server...");
 	press_ac.sendGoal(press_goal);
 		
@@ -318,6 +318,7 @@ int main (int argc, char** argv){
 	
 	//create the action client to push an object
 	actionlib::SimpleActionClient<segbot_arm_manipulation::PushAction> push_ac("arm_push_as",true);
+	ROS_INFO("before wait for server");
 	push_ac.waitForServer();
 	ROS_INFO("push action server made...");
 
@@ -326,6 +327,7 @@ int main (int argc, char** argv){
 	segbot_arm_manipulation::PushGoal push_goal;
 	push_goal.tgt_cloud = table_scene.cloud_clusters[index];
 	push_goal.cloud_plane = table_scene.cloud_plane; 
+	push_goal.cloud_plane_coef = table_scene.cloud_plane_coef;
 	
 	ROS_INFO("Sending goal to push action server...");
 	push_ac.sendGoal(push_goal);
@@ -335,6 +337,7 @@ int main (int argc, char** argv){
 	push_ac.waitForResult();
 	ROS_INFO("push action Finished...");
 	
+	pressEnter("Press enter to recheck table");
 	//the object has moved from the above actions, recheck table	
 	sensor_msgs::PointCloud2 tgt = table_scene.cloud_clusters[index];
 	table_scene = segbot_arm_manipulation::getTabletopScene(n);
