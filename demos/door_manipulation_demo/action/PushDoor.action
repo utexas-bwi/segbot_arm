@@ -1,0 +1,8 @@
+#goal definition
+bool pushDoor
+---
+#result definition
+bool success
+---
+#feedback
+bool success

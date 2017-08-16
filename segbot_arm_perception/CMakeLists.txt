@@ -2,16 +2,16 @@ cmake_minimum_required(VERSION 2.8.3)
 project(segbot_arm_perception)
 
 find_package(catkin REQUIRED
-	pcl_ros
-	pcl_conversions
-	sensor_msgs
-	geometry_msgs
-	std_msgs
-	std_srvs
-	roscpp
-	rospy
- 	message_generation
- 	actionlib_msgs
+    pcl_ros
+    pcl_conversions
+    sensor_msgs
+    geometry_msgs
+    std_msgs
+    std_srvs
+    roscpp
+    rospy
+    message_generation
+    actionlib_msgs
 )
 
 add_service_files(
@@ -41,8 +41,8 @@ catkin_package(
 )
 
 include_directories(
-	include
-	${catkin_INCLUDE_DIRS}
+    include
+    ${catkin_INCLUDE_DIRS}
 )
 
 install(DIRECTORY include/${PROJECT_NAME}/

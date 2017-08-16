@@ -1,0 +1,10 @@
+<launch>
+	
+	<node name="door_handle_detection" pkg="door_manipulation_demo" type="door_handle_detection"></node>
+	
+	<node name="door_open_as" pkg="door_manipulation_demo" type="door_open_as" output="screen"></node>
+
+	<node name="door_open_client" pkg="door_manipulation_demo" type="door_open_client" output="screen"></node>
+
+
+</launch>
