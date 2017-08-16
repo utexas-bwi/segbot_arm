@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(segbot_arm_perception)
 
+find_package( OpenCV REQUIRED)
+
 find_package(catkin REQUIRED
 	pcl_ros
 	pcl_conversions
@@ -12,6 +14,7 @@ find_package(catkin REQUIRED
 	rospy
  	message_generation
  	actionlib_msgs
+	cv_bridge
 )
 
 add_service_files(
@@ -24,6 +27,8 @@ add_service_files(
    TabletopReorder.srv
    SetObstacles.srv
    GetCloud.srv
+   GetPCD.srv
+   ProcessVision.srv
 )
 
 generate_messages(
@@ -43,12 +48,18 @@ catkin_package(
 include_directories(
 	include
 	${catkin_INCLUDE_DIRS}
+	${OpenCV_INCLUDE_DIRS}
 )
+
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE)
+
+add_executable(image_logging_server src/image_logging_server.cpp)
+add_dependencies(image_logging_server segbot_arm_perception_gencpp)
+target_link_libraries(image_logging_server ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(obstacle_cloud_manager src/obstacle_cloud_manager.cpp)
 add_dependencies(obstacle_cloud_manager segbot_arm_perception_gencpp)

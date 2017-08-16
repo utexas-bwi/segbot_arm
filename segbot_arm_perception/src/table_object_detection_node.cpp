@@ -45,6 +45,7 @@
 #include "segbot_arm_perception/TabletopPerception.h"
 #include "segbot_arm_perception/TabletopReorder.h"
 #include "segbot_arm_perception/GetCloud.h"
+#include "segbot_arm_perception/GetPCD.h"
 
 //how many frames to stitch into a single cloud
 #define WAIT_CLOUD_K 25
@@ -90,6 +91,7 @@ double cluster_extraction_tolerance = 0.075;
 
 bool collecting_cloud = false;
 
+
 //epsilon angle for segmenting, value in radians
 #define EPS_ANGLE 0.09 
 
@@ -118,9 +120,24 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 
 		//convert to PCL format
 		pcl::fromROSMsg (*input, *cloud);
-
+		
 		//state that a new cloud is available
 		new_cloud_available_flag = true;
+}
+
+bool get_pcd_cb(segbot_arm_perception::GetPCD::Request &req, segbot_arm_perception::GetPCD::Response &res){
+	
+	//get the start time of recording
+	double begin = ros::Time::now().toSec();
+	std::string startTime = boost::lexical_cast<std::string>(begin);
+		
+	//save file
+	std::string filename = req.generalImageFilePath +"/"+ startTime+".pcd";
+	pcl::io::savePCDFileASCII(filename, *cloud);
+	ROS_INFO("Saved pcd file %s", filename.c_str());
+	
+	res.success = true;
+	return true;
 }
 
 
@@ -621,8 +638,9 @@ int main (int argc, char** argv)
 	
 	ros::ServiceServer reorder_service = nh.advertiseService("tabletop_object_reorder_service", cluster_reorder_cb);
 	
-	ros::ServiceServer getcloud_service = 
-	nh.advertiseService("tabletop_get_cloud_service", get_cloud_cb);
+	ros::ServiceServer getcloud_service = nh.advertiseService("tabletop_get_cloud_service", get_cloud_cb);
+	
+	ros::ServiceServer get_pcd_service = nh.advertiseService("tabletop_get_pcd_service", get_pcd_cb);
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);

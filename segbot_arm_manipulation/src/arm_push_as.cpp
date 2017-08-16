@@ -33,6 +33,7 @@
 #include <moveit_utils/MicoMoveitJointPose.h>
 #include <moveit_utils/MicoMoveitCartesianPose.h>
 
+
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseArray.h>
 
@@ -217,13 +218,13 @@ public:
 
 	moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs::PoseStamped p){
 		ros::ServiceClient ikine_client = n.serviceClient<moveit_msgs::GetPositionIK> ("/compute_ik");
-	
-	
+
 		moveit_msgs::GetPositionIK::Request ikine_request;
 		moveit_msgs::GetPositionIK::Response ikine_response;
 		ikine_request.ik_request.group_name = "arm";
 		ikine_request.ik_request.pose_stamped = p;
 	
+
 		/* Call the service */
 		if(ikine_client.call(ikine_request, ikine_response)){
 			ROS_INFO("IK service call success:");
@@ -380,7 +381,7 @@ public:
 		
 		//wait for transform and perform it
 		listener.waitForTransform(goal->tgt_cloud.header.frame_id,"mico_link_base",ros::Time::now(), ros::Duration(3.0)); 
-		
+
 		//transform to base link frame of reference
 		sensor_msgs::PointCloud2 obj_cloud = goal->tgt_cloud;
 		pcl_ros::transformPointCloud ("mico_link_base", obj_cloud, obj_cloud, listener);
@@ -391,7 +392,7 @@ public:
 		geometry_msgs::PoseStamped stampedPose;
 		stampedPose.header.frame_id = obj_cloud.header.frame_id;
 		stampedPose.header.stamp = ros::Time(0);
-		
+	
 		//determine which poses can be reached
 		int result_i; 
 		for(int i = 0; i < app_pos.size(); i++){
