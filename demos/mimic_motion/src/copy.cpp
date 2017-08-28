@@ -12,9 +12,9 @@
 
 //actions
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
-#include "jaco_msgs/JointVelocity.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
+#include "kinova_msgs/JointVelocity.h"
 
 #define PI 3.14159265
 
@@ -26,7 +26,7 @@ using namespace std;
 
 sensor_msgs::JointState current_state;
 sensor_msgs::JointState current_effort;
-jaco_msgs::FingerPosition current_finger;
+kinova_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 
 ros::Publisher pub_velocity;
@@ -53,15 +53,15 @@ void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 }
 
 //Joint state cb
-void fingers_cb (const jaco_msgs::FingerPosition msg) {
+void fingers_cb (const kinova_msgs::FingerPosition msg) {
   current_finger = msg;
 }
 
 
 void movePose(float d_z) {
-  actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 
-  jaco_msgs::ArmPoseGoal goalPose;
+  kinova_msgs::ArmPoseGoal goalPose;
 
   // Set goal pose coordinates
 
@@ -92,9 +92,9 @@ void movePose(float d_z) {
 
 // Range = [6, 7300] ([open, close])
 void moveFinger(int finger_value) {
-    actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
 
-    jaco_msgs::SetFingersPositionGoal goalFinger;
+    kinova_msgs::SetFingersPositionGoal goalFinger;
 
     goalFinger.fingers.finger1 = finger_value;
     goalFinger.fingers.finger2 = finger_value;
@@ -152,7 +152,7 @@ void moveArmAngularVelocity(double j6) {
 	ros::Rate r(rateHertz);
 	for(int i = 0; i < (int)1 * rateHertz; i++) {
 		
-		jaco_msgs::JointVelocity msg;
+		kinova_msgs::JointVelocity msg;
 		msg.joint1 = 0.0;
 		msg.joint2 = 0.0;
 		msg.joint3 = 0.0;
@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
   //publish velocities
   pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	 
-  pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+  pub_angular_velocity = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
 
 
 

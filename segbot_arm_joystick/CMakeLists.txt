@@ -6,7 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   bwi_msgs
   bwi_services
-  jaco_msgs
+  kinova_msgs
   move_base_msgs
   moveit_msgs
   moveit_ros_planning_interface
@@ -25,7 +25,7 @@ catkin_package(
   CATKIN_DEPENDS actionlib_msgs
   CATKIN_DEPENDS bwi_msgs
   CATKIN_DEPENDS bwi_services
-  CATKIN_DEPENDS jaco_msgs
+  CATKIN_DEPENDS kinova_msgs
   CATKIN_DEPENDS move_base_msgs
   CATKIN_DEPENDS moveit_msgs
   CATKIN_DEPENDS std_msgs

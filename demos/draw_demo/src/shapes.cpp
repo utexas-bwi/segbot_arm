@@ -6,8 +6,8 @@
 #include <vector>
 #include <sensor_msgs/JointState.h>
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/JointAngles.h"
-#include "jaco_msgs/ArmPoseAction.h"
+#include "kinova_msgs/JointAngles.h"
+#include "kinova_msgs/ArmPoseAction.h"
 #include <math.h> 
 
 
@@ -142,10 +142,10 @@ void playback(){
 
      """Send a cartesian goal to the action server."""
     action_address = '/' + str(sys.argv[1]) + '_arm_driver/arm_pose/arm_pose'
-    client = actionlib.SimpleActionClient(action_address, jaco_msgs.msg.ArmPoseAction)
+    client = actionlib.SimpleActionClient(action_address, kinova_msgs.msg.ArmPoseAction)
     client.wait_for_server()
 
-    goal = jaco_msgs.msg.ArmPoseGoal()
+    goal = kinova_msgs.msg.ArmPoseGoal()
     goal.pose.header = std_msgs.msg.Header(frame_id=(str(sys.argv[1]) + '_api_origin'))
     goal.pose.pose.position = geometry_msgs.msg.Point(
         x=position[0], y=position[1], z=position[2])
@@ -159,11 +159,11 @@ void playback(){
 }
 
 void drawFile(){
-		actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 		
 
 		
-		jaco_msgs::ArmPoseGoal goalPose;
+		kinova_msgs::ArmPoseGoal goalPose;
 		geometry_msgs::PoseStamped curPosition = armPoses.back(); //reasonably assumes that the last pose is the current position of the arm.
 
 		ROS_INFO("Current pose in x y z, x y z w : %f %f %f %f %f %f %f", curPosition.pose.position.x, curPosition.pose.position.y, curPosition.pose.position.z, 
@@ -198,11 +198,11 @@ void drawFile(){
 //draws a circle using cartesian action
 //maybe could specify the board size, and a scale factor
 void drawCircle(){
-		actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 		
 
 		
-		jaco_msgs::ArmPoseGoal goalPose;
+		kinova_msgs::ArmPoseGoal goalPose;
 		geometry_msgs::PoseStamped curPosition = armPoses.back(); //reasonably assumes that the last pose is the current position of the arm.
 
 		ROS_INFO("Current pose in x y z, x y z w : %f %f %f %f %f %f %f", curPosition.pose.position.x, curPosition.pose.position.y, curPosition.pose.position.z, 

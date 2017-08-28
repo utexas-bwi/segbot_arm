@@ -25,9 +25,9 @@
 
 //actions
 #include <actionlib/server/simple_action_server.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
-#include "jaco_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
+#include "kinova_msgs/ArmJointAnglesAction.h"
 #include <segbot_arm_manipulation/arm_utils.h>
 
 #include <segbot_arm_manipulation/PressAction.h>

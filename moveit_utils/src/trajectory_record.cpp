@@ -7,7 +7,7 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
-#include <jaco_msgs/JointAngles.h>
+#include <kinova_msgs/JointAngles.h>
 //used for assignment of vector
 #include <boost/assign/std/vector.hpp>
 //services

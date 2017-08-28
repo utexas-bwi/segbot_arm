@@ -5,7 +5,7 @@ project(segbot_arm_tutorials)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  jaco_msgs
+  kinova_msgs
   moveit_msgs
   roscpp
   rospy
@@ -37,7 +37,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES segbot_arm_tasks
-#  CATKIN_DEPENDS jaco_msgs moveit_msgs roscpp rospy std_msgs
+#  CATKIN_DEPENDS kinova_msgs moveit_msgs roscpp rospy std_msgs
 #  DEPENDS system_lib
    CATKIN_DEPENDS actionlib_msgs
 )

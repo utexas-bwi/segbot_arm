@@ -8,10 +8,10 @@
 
 //actions
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
-#include "jaco_msgs/ArmJointAnglesAction.h"
-#include "jaco_msgs/HomeArm.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
+#include "kinova_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/HomeArm.h"
 
 #include <moveit_msgs/GetPositionIK.h>
 
@@ -120,9 +120,9 @@ namespace segbot_arm_manipulation {
 	}
 	
 	void homeArm(ros::NodeHandle n){
-		ros::ServiceClient home_client = n.serviceClient<jaco_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
+		ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
 	
-		jaco_msgs::HomeArm srv;
+		kinova_msgs::HomeArm srv;
 		if(home_client.call(srv))
 			ROS_INFO("Homing arm");
 		else
@@ -240,9 +240,9 @@ namespace segbot_arm_manipulation {
 	}
 	
 	void moveToPoseJaco(geometry_msgs::PoseStamped g){
-		actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac(jaco_pose_topic, true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac(jaco_pose_topic, true);
 
-		jaco_msgs::ArmPoseGoal goalPose;
+		kinova_msgs::ArmPoseGoal goalPose;
 		goalPose.pose = g;
 
 		ac.waitForServer();
@@ -253,9 +253,9 @@ namespace segbot_arm_manipulation {
 	}
 	
 	void moveFingers(int finger_value1, int finger_value2){
-		actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac(finger_topic, true);
+		actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac(finger_topic, true);
 
-		jaco_msgs::SetFingersPositionGoal goalFinger;
+		kinova_msgs::SetFingersPositionGoal goalFinger;
 		goalFinger.fingers.finger1 = finger_value1;
 		goalFinger.fingers.finger2 = finger_value2;
 		// Not used for our arm
@@ -267,9 +267,9 @@ namespace segbot_arm_manipulation {
 	}
 	
 	void moveFingers(int finger_value) {
-		actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac(finger_topic, true);
+		actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac(finger_topic, true);
 
-		jaco_msgs::SetFingersPositionGoal goalFinger;
+		kinova_msgs::SetFingersPositionGoal goalFinger;
 		goalFinger.fingers.finger1 = finger_value;
 		goalFinger.fingers.finger2 = finger_value;
 		// Not used for our arm

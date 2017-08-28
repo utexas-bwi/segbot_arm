@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   control_msgs
   actionlib_msgs
   moveit_ros_planning_interface
-  jaco_msgs
+  kinova_msgs
   sensor_msgs
   std_msgs
   std_srvs
@@ -43,7 +43,7 @@ add_action_files(
 generate_messages(
   DEPENDENCIES
   moveit_msgs
-  jaco_msgs
+  kinova_msgs
   actionlib_msgs
 )
 

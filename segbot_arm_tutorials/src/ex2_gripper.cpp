@@ -12,8 +12,8 @@
 #include <actionlib/client/simple_action_client.h>
 
 //JACO messages and actions
-#include <jaco_msgs/FingerPosition.h>
-#include <jaco_msgs/SetFingersPositionAction.h>
+#include <kinova_msgs/FingerPosition.h>
+#include <kinova_msgs/SetFingersPositionAction.h>
 
 //our own arm library 
 #include <segbot_arm_manipulation/arm_utils.h>
@@ -24,7 +24,7 @@
 sensor_msgs::JointState current_state;
 geometry_msgs::PoseStamped current_pose;
 sensor_msgs::JointState current_efforts;
-jaco_msgs::FingerPosition current_finger;
+kinova_msgs::FingerPosition current_finger;
 
 
 bool heardJoinstState;
@@ -66,7 +66,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
 }
 
 //fingers state cb
-void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
+void fingers_cb (const kinova_msgs::FingerPositionConstPtr& msg) {
 	current_finger = *msg;
 	heardFingers = true;
 }
@@ -138,11 +138,11 @@ int main(int argc, char **argv) {
 	
 	//open the hand using an action call
 	
-	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
 	ac.waitForServer();
 
 	//construction the action request
-	jaco_msgs::SetFingersPositionGoal goalFinger;
+	kinova_msgs::SetFingersPositionGoal goalFinger;
 	goalFinger.fingers.finger1 = 100; //100 is open, 7500 is close
 	goalFinger.fingers.finger2 = 100;
 		

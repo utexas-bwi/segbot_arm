@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   geometry_msgs
   message_generation
-  jaco_msgs
+  kinova_msgs
   actionlib
   pcl_ros
   pcl_conversions
@@ -37,23 +37,23 @@ include_directories(
 
 add_executable(copy src/copy.cpp)
 target_link_libraries(copy ${catkin_LIBRARIES} )
-add_dependencies(copy jaco_msgs_gencpp)
+add_dependencies(copy kinova_msgs_gencpp)
 
 add_executable(push_button_demo src/push_button_demo.cpp)
 target_link_libraries(push_button_demo ${catkin_LIBRARIES} )
-add_dependencies(push_button_demo jaco_msgs_gencpp)
+add_dependencies(push_button_demo kinova_msgs_gencpp)
 
 add_executable(angular_vel_control_test src/angular_vel_control_test.cpp)
 target_link_libraries(angular_vel_control_test ${catkin_LIBRARIES} )
-add_dependencies(angular_vel_control_test jaco_msgs_gencpp)
+add_dependencies(angular_vel_control_test kinova_msgs_gencpp)
 
 add_executable(agile_grasp_demo src/agile_grasp_demo.cpp)
 target_link_libraries(agile_grasp_demo ${catkin_LIBRARIES} )
-add_dependencies(agile_grasp_demo jaco_msgs_gencpp agile_grasp_gencpp)
+add_dependencies(agile_grasp_demo kinova_msgs_gencpp agile_grasp_gencpp)
 
 add_executable(candy_demo src/candy_demo.cpp)
 target_link_libraries(candy_demo ${catkin_LIBRARIES} )
-add_dependencies(candy_demo jaco_msgs_gencpp)
+add_dependencies(candy_demo kinova_msgs_gencpp)
 
 add_executable(approach_table_demo src/approach_table_demo.cpp)
 target_link_libraries(approach_table_demo ${catkin_LIBRARIES} )
@@ -61,15 +61,15 @@ target_link_libraries(approach_table_demo ${catkin_LIBRARIES} )
 
 add_executable(touch_tabletop_object_demo src/touch_tabletop_object_demo.cpp)
 target_link_libraries(touch_tabletop_object_demo ${catkin_LIBRARIES} )
-add_dependencies(touch_tabletop_object_demo jaco_msgs_gencpp)
+add_dependencies(touch_tabletop_object_demo kinova_msgs_gencpp)
 
 add_executable(touch_detect_tabletop_demo src/touch_detect_tabletop_demo.cpp)
 target_link_libraries(touch_detect_tabletop_demo ${catkin_LIBRARIES} )
-add_dependencies(touch_detect_tabletop_demo jaco_msgs_gencpp)
+add_dependencies(touch_detect_tabletop_demo kinova_msgs_gencpp)
 
 add_executable(grasp_and_verify src/grasp_and_verify.cpp)
 target_link_libraries(grasp_and_verify ${catkin_LIBRARIES})
-add_dependencies(grasp_and_verify jaco_msgs_gencpp agile_grasp_gencpp)
+add_dependencies(grasp_and_verify kinova_msgs_gencpp agile_grasp_gencpp)
 
 
 ## Declare a cpp executable

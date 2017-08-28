@@ -6,8 +6,8 @@
 #include <vector>
 #include <sensor_msgs/JointState.h>
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/JointAngles.h"
-#include "jaco_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/JointAngles.h"
+#include "kinova_msgs/ArmJointAnglesAction.h"
 
 //file manip
 #include <cstdlib>
@@ -74,9 +74,9 @@ void callBack(const sensor_msgs::JointStateConstPtr &msg)
 }
 
 void playback(){
-		actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
 		
-		jaco_msgs::ArmJointAnglesGoal goal;
+		kinova_msgs::ArmJointAnglesGoal goal;
 		std::vector<float> last = trajectory.at(0);
 		
 		ROS_INFO("Target position: %f, %f, %f, %f, %f, %f",last[0],last[1],last[2],last[3],last[4],last[5]);

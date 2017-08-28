@@ -4,8 +4,8 @@
 #include <vector>
 
 //messages and types
-#include "jaco_msgs/JointAngles.h"
-#include "jaco_msgs/JointVelocity.h"
+#include "kinova_msgs/JointAngles.h"
+#include "kinova_msgs/JointVelocity.h"
 #include <sensor_msgs/JointState.h>
 #include "moveit_utils/MicoController.h" //depending on needs, may need to create new srv
 
@@ -36,8 +36,8 @@ float update_velocity(float p_cur, float p_goal, double time_remaining){
 //update joint velocity based on target and cur position of the actuator.
 //required: tolerance set, goal set, time tracked correctly
 //returns: updated JointVelocity message for publishing
-jaco_msgs::JointVelocity check_state(jaco_msgs::JointVelocity jv_cur, double time_remaining){
-	jaco_msgs::JointVelocity jv_update;
+kinova_msgs::JointVelocity check_state(kinova_msgs::JointVelocity jv_cur, double time_remaining){
+	kinova_msgs::JointVelocity jv_update;
 	for(int i = 1; i <= 6; i++){
 		if((js_cur.position.at(i-1) + tol) >= js_goal.at(i-1) && (js_cur.position.at(i-1) - tol <= js_goal.at(i-1))){
 			switch(i) {
@@ -71,8 +71,8 @@ void fill_goal(trajectory_msgs::JointTrajectory jt, int length){
 }
 
 
-jaco_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<double> goal_vector){
-	jaco_msgs::JointVelocity jv_goal;
+kinova_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<double> goal_vector){
+	kinova_msgs::JointVelocity jv_goal;
 	
 	jv_goal.joint1 = -RAD_TO_DEG*goal_vector[0];
 	jv_goal.joint2 = RAD_TO_DEG*goal_vector[1];
@@ -101,7 +101,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 	
 	
 	trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
-    jaco_msgs::JointVelocity jv_goal;
+    kinova_msgs::JointVelocity jv_goal;
 	bool next_point = false;
 	
 	ros::Rate r(40);
@@ -316,7 +316,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 						ROS_INFO("Expecting pos: %f, %f, %f, %f, %f, %f", trajectory.points.at(i).positions.at(0), trajectory.points.at(i).positions.at(1), trajectory.points.at(i).positions.at(2), trajectory.points.at(i).positions.at(3), trajectory.points.at(i).positions.at(4), trajectory.points.at(i).positions.at(5));
 						ROS_INFO("At pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
 						ROS_INFO("Errors: %f, %f, %f, %f, %f, %f",errors[0],errors[1],errors[2],errors[3],errors[4],errors[5]);
-						jaco_msgs::JointVelocity empty_goal;
+						kinova_msgs::JointVelocity empty_goal;
 						j_vel_pub.publish(empty_goal);
 						next_point = true;
 					}*/
@@ -325,7 +325,7 @@ bool service_cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoCo
 						ROS_INFO("Expecting pos: %f, %f, %f, %f, %f, %f", trajectory.points.at(i).positions.at(0), trajectory.points.at(i).positions.at(1), trajectory.points.at(i).positions.at(2), trajectory.points.at(i).positions.at(3), trajectory.points.at(i).positions.at(4), trajectory.points.at(i).positions.at(5));
 						ROS_INFO("At pos: %f, %f, %f, %f, %f, %f", js_cur.position.at(0), js_cur.position.at(1), js_cur.position.at(2), js_cur.position.at(3), js_cur.position.at(4), js_cur.position.at(5));
 						ROS_INFO("Errors: %f, %f, %f, %f, %f, %f",errors[0],errors[1],errors[2],errors[3],errors[4],errors[5]);
-						jaco_msgs::JointVelocity empty_goal;
+						kinova_msgs::JointVelocity empty_goal;
 						j_vel_pub.publish(empty_goal);
 						next_point = true;
 					}
@@ -368,7 +368,7 @@ int main(int argc, char **argv)
     //subscriber for position check
     ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
     //publisher for velocity commands
-    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 1);
+    j_vel_pub = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 1);
     
     ros::ServiceServer srv = n.advertiseService("mico_controller", service_cb);
     ROS_INFO("Mico joint velocity controller server started.");

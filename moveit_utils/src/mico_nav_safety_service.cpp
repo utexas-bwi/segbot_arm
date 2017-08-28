@@ -18,7 +18,7 @@
 #include <bwi_msgs/StopBase.h>
 
 
-#include "jaco_msgs/JointAngles.h"
+#include "kinova_msgs/JointAngles.h"
 #include <sensor_msgs/JointState.h>
 
 
@@ -163,7 +163,7 @@ void joint_state_cb(const sensor_msgs::JointStateConstPtr& js){
 
 bool service_cb(moveit_utils::MicoNavSafety::Request &req, moveit_utils::MicoNavSafety::Response &res){
     moveit_utils::MicoMoveitJointPose movement_srv;
-    jaco_msgs::JointAngles target;
+    kinova_msgs::JointAngles target;
     target.joint1 = q_safe.at(0);
     target.joint2 = q_safe.at(1);
     target.joint3 = q_safe.at(2);

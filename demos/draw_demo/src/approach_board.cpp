@@ -22,8 +22,8 @@
 
 //actions
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
 
 //moveit interface service
 #include "moveit_utils/MicoMoveitCartesianPose.h"
@@ -67,8 +67,8 @@ void sig_handler(int sig)
   exit(1);
 };
 
-void approach_jaco(jaco_msgs::ArmPoseGoal goalPose){
-	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+void approach_jaco(kinova_msgs::ArmPoseGoal goalPose){
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	ac.waitForServer();
 	ac.sendGoal(goalPose);
 	ac.waitForResult();
@@ -196,7 +196,7 @@ int main (int argc, char** argv)
 						std::cout << pose_out.pose.position.x << " " << pose_out.pose.position.y << " " << pose_out.pose.position.z << " ";
 						std::cout << pose_out.pose.orientation.x << " " << pose_out.pose.orientation.y   << " " << pose_out.pose.orientation.z << " " << pose_out.pose.orientation.w << std::endl;
 						
-						jaco_msgs::ArmPoseGoal goalPose;
+						kinova_msgs::ArmPoseGoal goalPose;
 						goalPose.pose.header.frame_id = "mico_api_origin";
 						goalPose.pose.pose.position.x = pose_out.pose.position.x;	
 						goalPose.pose.pose.position.y = pose_out.pose.position.y;				

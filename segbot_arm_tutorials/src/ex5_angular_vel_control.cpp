@@ -13,8 +13,8 @@
 #include <actionlib/client/simple_action_client.h>
 
 //JACO messages and actions
-#include <jaco_msgs/FingerPosition.h>
-#include <jaco_msgs/JointVelocity.h>
+#include <kinova_msgs/FingerPosition.h>
+#include <kinova_msgs/JointVelocity.h>
 
 //our own arm library 
 #include <segbot_arm_manipulation/arm_utils.h>
@@ -25,7 +25,7 @@
 sensor_msgs::JointState current_state;
 geometry_msgs::PoseStamped current_pose;
 sensor_msgs::JointState current_efforts;
-jaco_msgs::FingerPosition current_finger;
+kinova_msgs::FingerPosition current_finger;
 
 
 bool heardJoinstState;
@@ -67,7 +67,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
 }
 
 //fingers state cb
-void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
+void fingers_cb (const kinova_msgs::FingerPositionConstPtr& msg) {
 	current_finger = *msg;
 	heardFingers = true;
 }
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
 	 */  
 	 
 	//publish cartesian tool velocities
-	ros::Publisher pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+	ros::Publisher pub_angular_velocity = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
 	//close fingers and "home" the arm
 	pressEnter("Press [Enter] to start");
 	
-	jaco_msgs::JointVelocity msg;
+	kinova_msgs::JointVelocity msg;
 	msg.joint1 = 0.0;
 	msg.joint2 = 0.0;
 	msg.joint3 = 0.0;

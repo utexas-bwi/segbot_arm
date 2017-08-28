@@ -22,9 +22,9 @@
 
 //actions
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
-#include "jaco_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
+#include "kinova_msgs/ArmJointAnglesAction.h"
 
 
 
@@ -100,7 +100,7 @@ bool g_caught_sigint=false;
 
 sensor_msgs::JointState current_state;
 
-jaco_msgs::FingerPosition current_finger;
+kinova_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 bool heardPose = false;
 bool heardJoinstState = false;
@@ -184,7 +184,7 @@ void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 }
 
 //Joint state cb
-void fingers_cb (const jaco_msgs::FingerPosition msg) {
+void fingers_cb (const kinova_msgs::FingerPosition msg) {
   current_finger = msg;
   heardFingers = true;
 }
@@ -211,9 +211,9 @@ void listenForArmData(float rate){
 
 
 void moveToCurrentAngles(){
-	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
 	
-	jaco_msgs::ArmJointAnglesGoal goalJoints;
+	kinova_msgs::ArmJointAnglesGoal goalJoints;
 	
 	listenForArmData(30.0);
 	
@@ -233,9 +233,9 @@ void moveToCurrentAngles(){
 
 // Range = [6, 7300] ([open, close])
 void moveFinger(int finger_value) {
-    actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
 
-    jaco_msgs::SetFingersPositionGoal goalFinger;
+    kinova_msgs::SetFingersPositionGoal goalFinger;
 
     goalFinger.fingers.finger1 = finger_value;
     goalFinger.fingers.finger2 = finger_value;
@@ -457,9 +457,9 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, float effor
 
 
 bool moveToPoseMico(geometry_msgs::PoseStamped g){
-	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 
-	jaco_msgs::ArmPoseGoal goalPose;
+	kinova_msgs::ArmPoseGoal goalPose;
   
  
 

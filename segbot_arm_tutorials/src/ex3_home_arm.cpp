@@ -12,8 +12,8 @@
 #include <actionlib/client/simple_action_client.h>
 
 //JACO messages and actions
-#include <jaco_msgs/FingerPosition.h>
-#include <jaco_msgs/HomeArm.h>
+#include <kinova_msgs/FingerPosition.h>
+#include <kinova_msgs/HomeArm.h>
 
 //our own arm library 
 #include <segbot_arm_manipulation/arm_utils.h>
@@ -26,7 +26,7 @@
 sensor_msgs::JointState current_state;
 geometry_msgs::PoseStamped current_pose;
 sensor_msgs::JointState current_efforts;
-jaco_msgs::FingerPosition current_finger;
+kinova_msgs::FingerPosition current_finger;
 
 
 bool heardJoinstState;
@@ -68,7 +68,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
 }
 
 //fingers state cb
-void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
+void fingers_cb (const kinova_msgs::FingerPositionConstPtr& msg) {
 	current_finger = *msg;
 	heardFingers = true;
 }
@@ -145,9 +145,9 @@ int main(int argc, char **argv) {
 	segbot_arm_manipulation::closeHand();
 	
 	//home arm using service call to arm driver
-	ros::ServiceClient home_client = n.serviceClient<jaco_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
+	ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
 	
-	jaco_msgs::HomeArm srv;
+	kinova_msgs::HomeArm srv;
 	if(home_client.call(srv))
 		ROS_INFO("Homing arm");
 	else

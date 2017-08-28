@@ -1,3 +1,3 @@
-jaco_msgs/JointAngles target
+kinova_msgs/JointAngles target
 ---
 bool completed

@@ -25,9 +25,9 @@
 
 //actions
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
-#include "jaco_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
+#include "kinova_msgs/ArmJointAnglesAction.h"
 
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_manipulation/iSpyTouch.h"
@@ -95,7 +95,7 @@ bool g_caught_sigint=false;
 
 // robot state information
 sensor_msgs::JointState current_state;
-jaco_msgs::FingerPosition current_finger;
+kinova_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 bool heardPose = false;
 bool heardJoinstState = false;
@@ -195,7 +195,7 @@ void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 }
 
 //Joint state cb
-void fingers_cb (const jaco_msgs::FingerPosition msg) {
+void fingers_cb (const kinova_msgs::FingerPosition msg) {
   current_finger = msg;
 }
 

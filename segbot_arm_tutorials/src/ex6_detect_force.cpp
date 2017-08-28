@@ -7,7 +7,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 
-#include <jaco_msgs/FingerPosition.h>
+#include <kinova_msgs/FingerPosition.h>
 
 
 //our own arm library 
@@ -20,7 +20,7 @@
 sensor_msgs::JointState current_state;
 geometry_msgs::PoseStamped current_pose;
 sensor_msgs::JointState current_efforts;
-jaco_msgs::FingerPosition current_finger;
+kinova_msgs::FingerPosition current_finger;
 
 
 bool heardJoinstState;
@@ -62,7 +62,7 @@ void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
 }
 
 //fingers state cb
-void fingers_cb (const jaco_msgs::FingerPositionConstPtr& msg) {
+void fingers_cb (const kinova_msgs::FingerPositionConstPtr& msg) {
 	current_finger = *msg;
 	heardFingers = true;
 }

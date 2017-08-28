@@ -17,9 +17,9 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
 
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
-#include "jaco_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
+#include "kinova_msgs/ArmJointAnglesAction.h"
 
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_perception/TabletopPerception.h"
@@ -91,7 +91,7 @@ protected:
 	
 	sensor_msgs::JointState current_state;
 	sensor_msgs::JointState current_effort;
-	jaco_msgs::FingerPosition current_finger;
+	kinova_msgs::FingerPosition current_finger;
 	geometry_msgs::PoseStamped current_pose;
 	bool heardPose;
 	bool heardJoinstState; 
@@ -211,7 +211,7 @@ public:
 	}
 
 	//fingers state cb
-	void fingers_cb (const jaco_msgs::FingerPosition msg) {
+	void fingers_cb (const kinova_msgs::FingerPosition msg) {
 	  current_finger = msg;
 	}
 
@@ -249,9 +249,9 @@ public:
 	
 	// Range = [6, 7300] ([open, close])
 	void moveFingers(int finger_value) {
-		actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+		actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
 
-		jaco_msgs::SetFingersPositionGoal goalFinger;
+		kinova_msgs::SetFingersPositionGoal goalFinger;
 		goalFinger.fingers.finger1 = finger_value;
 		goalFinger.fingers.finger2 = finger_value;
 		// Not used for our arm

@@ -6,9 +6,9 @@
 #include <vector>
 #include <sensor_msgs/JointState.h>
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/JointAngles.h"
-#include "jaco_msgs/ArmJointAnglesAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
+#include "kinova_msgs/JointAngles.h"
+#include "kinova_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
 
 
 #include <iostream>
@@ -76,9 +76,9 @@ void sig_handler(int sig)
 }*/
 
 void playback(){
-		actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
 		
-		jaco_msgs::ArmJointAnglesGoal goal;
+		kinova_msgs::ArmJointAnglesGoal goal;
 		std::vector<float> last = trajectory.at(0);
 		
 		ROS_INFO("Target position: %f, %f, %f, %f, %f, %f",last[0],last[1],last[2],last[3],last[4],last[5]);
@@ -90,10 +90,10 @@ void playback(){
 
      """Send a cartesian goal to the action server."""
     action_address = '/' + str(sys.argv[1]) + '_arm_driver/arm_pose/arm_pose'
-    client = actionlib.SimpleActionClient(action_address, jaco_msgs.msg.ArmPoseAction)
+    client = actionlib.SimpleActionClient(action_address, kinova_msgs.msg.ArmPoseAction)
     client.wait_for_server()
 
-    goal = jaco_msgs.msg.ArmPoseGoal()
+    goal = kinova_msgs.msg.ArmPoseGoal()
     goal.pose.header = std_msgs.msg.Header(frame_id=(str(sys.argv[1]) + '_api_origin'))
     goal.pose.pose.position = geometry_msgs.msg.Point(
         x=position[0], y=position[1], z=position[2])
@@ -127,7 +127,7 @@ void threadCallback(){
 void je_callBack(const sensor_msgs::JointStateConstPtr &msg){
 		std::cout << "Efforts: " << msg->effort[0] << std::endl;//<< msg->effort[1] << msg->effort[2] << msg->effort[3] << msg->effort[4] << msg->effort[5] << std::endl;
 }
-/*void js_callBack(const jaco_msgs::JointAnglesPtr &msg){
+/*void js_callBack(const kinova_msgs::JointAnglesPtr &msg){
 		std::string data;
 		for (int i = 0; i < 6; i ++){
 			data += msg->velocity[i];
@@ -135,7 +135,7 @@ void je_callBack(const sensor_msgs::JointStateConstPtr &msg){
 		}		
 		js << data;
 }*/
-void ja_callBack(const jaco_msgs::JointAnglesPtr &msg){
+void ja_callBack(const kinova_msgs::JointAnglesPtr &msg){
 		//std::cout << "Angles: " << msg->joint1 << std::endl; //<< msg->joint2 << msg->joint3 << msg->joint4 << msg->joint5 << msg->joint6 << std::endl;
 }
 //quick function to send a jointstate goal and note the efforts
@@ -151,9 +151,9 @@ void recordEfforts(){
 		std::ofstream ja(ja_path); //open in constructor
 
 
-		actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	
-		jaco_msgs::ArmPoseGoal goalPose;
+		kinova_msgs::ArmPoseGoal goalPose;
 		ros::spinOnce();
 		//Only moving in 2d space, orientation stays
 		goalPose.pose.header.frame_id = "mico_api_origin";

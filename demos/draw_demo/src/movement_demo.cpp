@@ -4,10 +4,10 @@
 #include <iostream>
 #include <vector>
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
 #include <sensor_msgs/JointState.h>
-#include "jaco_msgs/JointAngles.h"
-#include "jaco_msgs/JointVelocity.h"
+#include "kinova_msgs/JointAngles.h"
+#include "kinova_msgs/JointVelocity.h"
 //subscriber msgs
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
@@ -15,8 +15,8 @@
 
 //actions
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
 
 ros::Publisher j_vel_pub;
 ros::Publisher joint_state_pub;
@@ -52,7 +52,7 @@ void clearMsgs(){
 }
 
 //checks fingers position - used for object holding assurance
-void fingers_cb(const jaco_msgs::FingerPosition input){
+void fingers_cb(const kinova_msgs::FingerPosition input){
 	f1 = input.finger1;
 	f2 = input.finger2;
 }
@@ -91,8 +91,8 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input)
 }
 
 int openFull(){
-	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
-	jaco_msgs::SetFingersPositionGoal goal;
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	kinova_msgs::SetFingersPositionGoal goal;
 	goal.fingers.finger1 = 6;
 	goal.fingers.finger2 = 6;
 	goal.fingers.finger3 = 0;
@@ -101,8 +101,8 @@ int openFull(){
 	ac.waitForResult();
 }
 int closeComplt(){
-	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
-	jaco_msgs::SetFingersPositionGoal goal;
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	kinova_msgs::SetFingersPositionGoal goal;
  	goal.fingers.finger1 = 7000;
 	goal.fingers.finger2 = 7000;
 	goal.fingers.finger3 = 0;
@@ -166,7 +166,7 @@ void sendCartVelocity(double xin, double yin, double zin){
 }
 
 void sendJointVelocity(double xin){
-	jaco_msgs::JointVelocity goal;
+	kinova_msgs::JointVelocity goal;
 	goal.joint1 = -xin;
 	goal.joint2 = xin;
 	goal.joint3 = -xin;
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 	signal(SIGINT, sig_handler);
 
 	//publisher for joint velocity
-    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 1);
+    j_vel_pub = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 1);
 
 	//publisher for cartesian velocity
 	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);

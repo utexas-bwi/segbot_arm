@@ -12,10 +12,10 @@
 
 //actions
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
-#include "jaco_msgs/JointAngles.h"
-#include "jaco_msgs/JointVelocity.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
+#include "kinova_msgs/JointAngles.h"
+#include "kinova_msgs/JointVelocity.h"
 
 #include "moveit_utils/AngularVelCtrl.h"
 
@@ -57,8 +57,8 @@ void waitForJointAngles(){
 }
 
 
-jaco_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<float> goal_vector){
-	jaco_msgs::JointVelocity jv_goal;
+kinova_msgs::JointVelocity toJacoJointVelocityMsg(std::vector<float> goal_vector){
+	kinova_msgs::JointVelocity jv_goal;
 	
 	/*jv_goal.joint1 = -180/PI*goal_vector[0];
 	jv_goal.joint2 = 180/PI*goal_vector[1];
@@ -217,7 +217,7 @@ bool service_cb(moveit_utils::AngularVelCtrl::Request &req, moveit_utils::Angula
 				j_vel_goal[3],j_vel_goal[4],j_vel_goal[5]);
 	
 	
-	jaco_msgs::JointVelocity jv_goal;
+	kinova_msgs::JointVelocity jv_goal;
 	double sum = 0.0;
 	
 	double t_start_sec =ros::Time::now().toSec();
@@ -325,7 +325,7 @@ int main(int argc, char **argv) {
 	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
 	
 	//publisher for velocity commands
-    j_vel_pub = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+    j_vel_pub = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 8);
     
     ros::ServiceServer srv = n.advertiseService("angular_vel_control", service_cb);
 

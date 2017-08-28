@@ -13,8 +13,8 @@
 #include <actionlib/client/simple_action_client.h>
 
 //JACO messages and actions
-#include <jaco_msgs/FingerPosition.h>
-#include <jaco_msgs/HomeArm.h>
+#include <kinova_msgs/FingerPosition.h>
+#include <kinova_msgs/HomeArm.h>
 
 //our own arm library 
 #include <segbot_arm_manipulation/arm_utils.h>
@@ -409,7 +409,7 @@ int main(int argc, char * *argv) {
   ros::Publisher pub_base;
 
   //construction the action request
-  jaco_msgs::SetFingersPositionGoal goalFinger;
+  kinova_msgs::SetFingersPositionGoal goalFinger;
 
   // joy is the name of the topic the joystick publishes to
   joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, joy_cb);

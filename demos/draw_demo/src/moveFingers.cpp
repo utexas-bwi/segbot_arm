@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
 #include <sensor_msgs/JointState.h>
 
 
@@ -35,8 +35,8 @@ void sig_handler(int sig)
 
 
 int openFull(){
-	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
-	jaco_msgs::SetFingersPositionGoal goal;
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	kinova_msgs::SetFingersPositionGoal goal;
 	goal.fingers.finger1 = 6;
 	goal.fingers.finger2 = 6;
 	goal.fingers.finger3 = 0;
@@ -47,8 +47,8 @@ int openFull(){
 }
 
 int closeComplt(){
-	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
-	jaco_msgs::SetFingersPositionGoal goal;
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	kinova_msgs::SetFingersPositionGoal goal;
  	goal.fingers.finger1 = 7000;
 	goal.fingers.finger2 = 7000;
 	goal.fingers.finger3 = 0;

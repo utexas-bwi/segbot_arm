@@ -18,8 +18,8 @@
 
 //actions
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
 
 
 //file manipulation
@@ -139,7 +139,7 @@ void toolpos_cb(const geometry_msgs::PoseStamped &msg){
 }
 
 //checks fingers position - used for object holding assurance
-void fingers_cb(const jaco_msgs::FingerPosition input){
+void fingers_cb(const kinova_msgs::FingerPosition input){
 	f1 = input.finger1;
 	f2 = input.finger2;
 }
@@ -185,9 +185,9 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input)
 //Several predefined poses - "grab" for obtaining an object from human
 //"horizontal" to orient the joints in the horizontal writing position
 void getWriteReady(string position){
-	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	
-	jaco_msgs::ArmPoseGoal goalPose;
+	kinova_msgs::ArmPoseGoal goalPose;
 	
 	if(position.compare("start") == 0){
 		//Only moving in 2d space, orientation stays
@@ -278,8 +278,8 @@ void writeToFile(vector<double> gravFree, vector<double> deltas){
 //helper function for openAndClose
 //opens fingers compeltely
 int openFull(){
-	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
-	jaco_msgs::SetFingersPositionGoal goal;
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	kinova_msgs::SetFingersPositionGoal goal;
 	goal.fingers.finger1 = 6;
 	goal.fingers.finger2 = 6;
 	goal.fingers.finger3 = 0;
@@ -314,8 +314,8 @@ void lift(){
 //helper function for openAndCloseFingers.
 //closes the fingers completely
 int closeComplt(){
-	actionlib::SimpleActionClient<jaco_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
-	jaco_msgs::SetFingersPositionGoal goal;
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	kinova_msgs::SetFingersPositionGoal goal;
  	goal.fingers.finger1 = 7000;
 	goal.fingers.finger2 = 7000;
 	goal.fingers.finger3 = 0;
@@ -331,9 +331,9 @@ int moveAndPause(){
 	ros::Time start = ros::Time::now();
 	ros::Duration timeout = ros::Duration(60.0);
 	ros::Rate r(20);
-	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	
-	jaco_msgs::ArmPoseGoal goalPose;
+	kinova_msgs::ArmPoseGoal goalPose;
 	
 	//Only moving in 2d space, orientation stays
 	goalPose.pose.header.frame_id = "mico_api_origin";
@@ -966,9 +966,9 @@ void gotoPoint(double x_coord, double y_coord){
 //Hardcoded for a demo in the lab with the arm attached to table.
 //Used in 'Final Demo'
 void establish_bounds(){
-	actionlib::SimpleActionClient<jaco_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
 	
-	jaco_msgs::ArmPoseGoal goalPose;
+	kinova_msgs::ArmPoseGoal goalPose;
 	ros::Rate r(30);
 	//Only moving in 2d space, orientation stays
 	//first point should be the origin

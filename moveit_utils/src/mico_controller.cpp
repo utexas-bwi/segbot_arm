@@ -4,9 +4,9 @@
 #include <vector>
 #include <sensor_msgs/JointState.h>
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/JointAngles.h"
-#include "jaco_msgs/ArmJointAnglesAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
+#include "kinova_msgs/JointAngles.h"
+#include "kinova_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
 //moveit
 #include <moveit_msgs/DisplayTrajectory.h>
 #include "trajectory_msgs/JointTrajectory.h"
@@ -35,10 +35,10 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input)
 };
 bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
 	
-	actionlib::SimpleActionClient<jaco_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
 	trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
 	double q1,q2,q3,q4,q5,q6;
-	jaco_msgs::ArmJointAnglesGoal goal;
+	kinova_msgs::ArmJointAnglesGoal goal;
 	char dumb;
 	for(int i = 0; i < trajectory.points.size(); i++){
 		//set this goal's qvals
