@@ -40,7 +40,9 @@
   </include>
   
   <!-- the ARM -->
-  <include file="$(find jaco_driver)/launch/segbot_mico_arm.launch">
+  <include file="$(find kinova_bringup)/launch/kinova_robot.launch">
+      <arg name="kinova_robotType" value="m1n6s200" />
+      <arg name="kinova_robotName" value="mico_arm"/>
   </include>
   
    <!-- Diagnostics and battery monitor -->

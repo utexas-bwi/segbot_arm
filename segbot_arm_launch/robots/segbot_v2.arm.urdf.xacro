@@ -12,7 +12,7 @@
   <xacro:include filename="$(find segbot_description)/urdf/v2/segbot_chassis.urdf.arm.xacro" />
   <xacro:include filename="$(find segbot_description)/urdf/mounts/hokuyo_mount.urdf.xacro" />
   <xacro:include filename="$(find segbot_description)/urdf/mounts/kinect_mount.urdf.xacro" />
-  <xacro:include filename="$(find jaco_model)/urdf/mico_arm.xacro" />
+  <xacro:include filename="$(find kinova_description)/urdf/m1n6s200.xacro" />
 
   <!-- Add the segbot base -->
   <xacro:segbot />
