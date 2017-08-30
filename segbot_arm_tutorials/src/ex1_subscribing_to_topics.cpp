@@ -14,13 +14,11 @@
 //global variables for storing sensory data
 sensor_msgs::JointState current_state;
 geometry_msgs::PoseStamped current_pose;
-sensor_msgs::JointState current_efforts;
 kinova_msgs::FingerPosition current_finger;
 
 
 bool heardJoinstState;
 bool heardPose;
-bool heardEfforts;
 bool heardFingers;
 
 //true if Ctrl-C is pressed
@@ -47,19 +45,14 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& msg) {
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 	current_pose = msg;
 	heardPose = true;
-}
-
-//joint effort cb
-void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
-	current_efforts = *msg;
-	heardEfforts = true;
-  //ROS_INFO_STREAM(current_effort);
+        ROS_INFO("current_pose");
 }
 
 //fingers state cb
 void fingers_cb (const kinova_msgs::FingerPositionConstPtr& msg) {
 	current_finger = *msg;
 	heardFingers = true;
+	ROS_INFO("FINGER");
 }
 
 //blocking call to listen for arm data (in this case, joint states)
@@ -68,14 +61,13 @@ void listenForArmData(){
 	heardJoinstState = false;
 	heardPose = false;
 	heardFingers = false;
-	heardEfforts = false;
 	
 	ros::Rate r(40.0);
 	
 	while (ros::ok()){
 		ros::spinOnce();	
 		
-		if (heardJoinstState && heardPose && heardFingers && heardEfforts)
+		if (heardJoinstState && heardPose && heardFingers)
 			return;
 		
 		r.sleep();
@@ -109,14 +101,11 @@ int main(int argc, char **argv) {
 	
 	//create subscribers for arm topics
 	
-	//joint positions
-	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
+	//joint positions and efforts (AKA haptics)
+	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 	
 	//cartesean tool position and orientation
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
-
-	//joint efforts (aka haptics)
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
 
 	//finger positions
 	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
@@ -127,11 +116,8 @@ int main(int argc, char **argv) {
 	//listen for arm data
 	listenForArmData();
 	
-	ROS_INFO("Current joint positions:");
+	ROS_INFO("Current joint positions and efforts:");
 	ROS_INFO_STREAM(current_state);
-	
-	ROS_INFO("Current joint efforts:");
-	ROS_INFO_STREAM(current_efforts);
 	
 	ROS_INFO("Current finger positions:");
 	ROS_INFO_STREAM(current_finger);
