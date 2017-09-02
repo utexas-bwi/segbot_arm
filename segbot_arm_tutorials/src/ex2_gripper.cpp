@@ -15,7 +15,7 @@
 #include <kinova_msgs/FingerPosition.h>
 #include <kinova_msgs/SetFingersPositionAction.h>
 
-//our own arm library 
+//our own arm library
 #include <segbot_arm_manipulation/arm_utils.h>
 
 #define NUM_JOINTS 8 //6+2 for the arm
@@ -58,13 +58,6 @@ void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 	heardPose = true;
 }
 
-//joint effort cb
-void joint_effort_cb (const sensor_msgs::JointStateConstPtr& msg) {
-	current_efforts = *msg;
-	heardEfforts = true;
-	//ROS_INFO_STREAM(current_effort);
-}
-
 //fingers state cb
 void fingers_cb (const kinova_msgs::FingerPositionConstPtr& msg) {
 	current_finger = *msg;
@@ -77,14 +70,13 @@ void listenForArmData(){
 	heardJoinstState = false;
 	heardPose = false;
 	heardFingers = false;
-	heardEfforts = false;
 	
 	ros::Rate r(40.0);
 	
 	while (ros::ok()){
 		ros::spinOnce();	
 		
-		if (heardJoinstState && heardPose && heardFingers && heardEfforts)
+		if (heardJoinstState && heardPose && heardFingers)
 			return;
 		
 		r.sleep();
@@ -119,26 +111,22 @@ int main(int argc, char **argv) {
 	//create subscribers for arm topics
 	
 	//joint positions
-	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 	
 	//cartesean tool position and orientation
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
-
-	//joint efforts (aka haptics)
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
 
 	//finger positions
 	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
 	 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
-	
-	//listen for arm data
+
 	listenForArmData();
 	
 	//open the hand using an action call
 	
-	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers_action/finger_positions", true);
 	ac.waitForServer();
 
 	//construction the action request
@@ -169,3 +157,4 @@ int main(int argc, char **argv) {
 	
 	ros::shutdown();
 }
+

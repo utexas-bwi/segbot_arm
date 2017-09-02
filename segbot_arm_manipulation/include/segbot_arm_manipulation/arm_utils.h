@@ -27,8 +27,8 @@
 #include "segbot_arm_perception/TabletopPerception.h"
 
 
-const std::string finger_topic = "/mico_arm_driver/fingers/finger_positions";
-const std::string jaco_pose_topic = "/mico_arm_driver/arm_pose/arm_pose";
+const std::string finger_topic = "/mico_arm_driver/fingers_action/finger_positions";
+const std::string jaco_pose_topic = "/mico_arm_driver/pose_action/tool_pose";
 
 #define OPEN_FINGER_VALUE 100
 #define CLOSED_FINGER_VALUE 7200
