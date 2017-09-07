@@ -457,7 +457,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, float effor
 
 
 bool moveToPoseMico(geometry_msgs::PoseStamped g){
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 
 	kinova_msgs::ArmPoseGoal goalPose;
   

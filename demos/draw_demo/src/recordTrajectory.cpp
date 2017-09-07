@@ -151,7 +151,7 @@ void recordEfforts(){
 		std::ofstream ja(ja_path); //open in constructor
 
 
-		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 	
 		kinova_msgs::ArmPoseGoal goalPose;
 		ros::spinOnce();

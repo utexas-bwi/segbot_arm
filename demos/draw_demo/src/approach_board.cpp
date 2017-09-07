@@ -68,7 +68,7 @@ void sig_handler(int sig)
 };
 
 void approach_jaco(kinova_msgs::ArmPoseGoal goalPose){
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 	ac.waitForServer();
 	ac.sendGoal(goalPose);
 	ac.waitForResult();

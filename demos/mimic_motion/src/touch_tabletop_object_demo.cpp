@@ -168,7 +168,7 @@ void listenForArmData(float rate){
 }
 
 void movePose(float d_z) {
-  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 
   kinova_msgs::ArmPoseGoal goalPose;
 
@@ -250,7 +250,7 @@ double angular_difference(geometry_msgs::Quaternion c,geometry_msgs::Quaternion 
 
 
 bool moveToPose(geometry_msgs::PoseStamped g){
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 
 	kinova_msgs::ArmPoseGoal goalPose;
   

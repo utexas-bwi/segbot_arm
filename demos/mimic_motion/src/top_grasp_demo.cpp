@@ -63,7 +63,7 @@ void fingers_cb (const kinova_msgs::FingerPosition msg) {
 
 
 void movePose(float d_z) {
-  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 
   kinova_msgs::ArmPoseGoal goalPose;
 
@@ -220,7 +220,7 @@ void goBackToRestPosition(){
 
 void moveToTopOfObject(){
 	// Specific object position: (0.263455903, -0.365234429, -0.043787225)
-	//actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	//actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 	geometry_msgs::PoseStamped goalPose;
 	
 	// Set goal pose coordinates

@@ -159,7 +159,7 @@ void playback(){
 }
 
 void drawFile(){
-		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 		
 
 		
@@ -198,7 +198,7 @@ void drawFile(){
 //draws a circle using cartesian action
 //maybe could specify the board size, and a scale factor
 void drawCircle(){
-		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 		
 
 		

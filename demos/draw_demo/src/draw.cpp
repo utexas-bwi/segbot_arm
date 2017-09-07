@@ -185,7 +185,7 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input)
 //Several predefined poses - "grab" for obtaining an object from human
 //"horizontal" to orient the joints in the horizontal writing position
 void getWriteReady(string position){
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 	
 	kinova_msgs::ArmPoseGoal goalPose;
 	
@@ -331,7 +331,7 @@ int moveAndPause(){
 	ros::Time start = ros::Time::now();
 	ros::Duration timeout = ros::Duration(60.0);
 	ros::Rate r(20);
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 	
 	kinova_msgs::ArmPoseGoal goalPose;
 	
@@ -966,7 +966,7 @@ void gotoPoint(double x_coord, double y_coord){
 //Hardcoded for a demo in the lab with the arm attached to table.
 //Used in 'Final Demo'
 void establish_bounds(){
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/arm_pose/arm_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
 	
 	kinova_msgs::ArmPoseGoal goalPose;
 	ros::Rate r(30);
