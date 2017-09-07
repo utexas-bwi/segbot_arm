@@ -123,7 +123,7 @@ public:
 	arm_vel= nh_.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
 
 	//create subscriber to joint angles
-	sub_angles = nh_.subscribe ("/joint_states", 1, &PressActionServer::joint_state_cb, this);
+	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &PressActionServer::joint_state_cb, this);
 
 	//create subscriber to joint torques
 	sub_torques = nh_.subscribe ("/mico_arm_driver/out/joint_efforts", 1, &PressActionServer::joint_effort_cb,this);

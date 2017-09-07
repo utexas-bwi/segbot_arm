@@ -197,7 +197,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "mico_nav_safety_node");
     ros::NodeHandle nh;
     movement_client = nh.serviceClient<moveit_utils::MicoMoveitJointPose>("mico_jointpose_service");
-    ros::Subscriber sub_angles = nh.subscribe ("/joint_states", 10, joint_state_cb);
+    ros::Subscriber sub_angles = nh.subscribe ("/mico_arm_driver/out/joint_state", 10, joint_state_cb);
     pub = nh.advertise<std_msgs::Bool>("mico_nav_safe", 10);
     ros::ServiceServer srv = nh.advertiseService("mico_nav_safety", service_cb);
     fkine_client = nh.serviceClient<moveit_msgs::GetPositionFK>("compute_fk");

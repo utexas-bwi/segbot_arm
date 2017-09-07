@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 
 	//create subscribers for arm topics
-	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
 
 	//register ctrl-c

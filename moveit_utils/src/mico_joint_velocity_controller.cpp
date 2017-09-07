@@ -366,7 +366,7 @@ int main(int argc, char **argv)
     ros::NodeHandle n;
 
     //subscriber for position check
-    ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
+    ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
     //publisher for velocity commands
     j_vel_pub = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 1);
     

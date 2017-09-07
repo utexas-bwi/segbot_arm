@@ -106,7 +106,7 @@ public:
 	heardEffort = false;
 
 	//create subscriber to joint angles
-	sub_angles = nh_.subscribe ("/joint_states", 1, &LiftVerifyActionServer::joint_state_cb, this);
+	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &LiftVerifyActionServer::joint_state_cb, this);
 
 	//create subscriber to joint torques
 	sub_torques = nh_.subscribe ("/mico_arm_driver/out/joint_efforts", 1, &LiftVerifyActionServer::joint_effort_cb,this);

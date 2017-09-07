@@ -136,7 +136,7 @@ public:
 	heardGrasps = false;
 
 	//create subscriber to joint angles
-	sub_angles = nh_.subscribe ("/joint_states", 1, &TabletopGraspActionServer::joint_state_cb, this);
+	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &TabletopGraspActionServer::joint_state_cb, this);
 
 
 	//create subscriber to joint torques
