@@ -249,7 +249,7 @@ public:
 	
 	// Range = [6, 7300] ([open, close])
 	void moveFingers(int finger_value) {
-		actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+		actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers_action/finger_positions", true);
 
 		kinova_msgs::SetFingersPositionGoal goalFinger;
 		goalFinger.fingers.finger1 = finger_value;

@@ -95,7 +95,7 @@ void movePose(float d_z) {
 // Range = [6, 7300] ([open, close])
 void moveFinger(int finger_value) {
     ROS_INFO("In moveFinger: %d", finger_value);
-    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers_action/finger_positions", true);
 
     kinova_msgs::SetFingersPositionGoal goalFinger;
 
@@ -116,7 +116,7 @@ void moveFinger(int finger_value) {
 }
 
 /*void graspObject(){
-	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions", true);
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers_action/finger_positions", true);
 	kinova_msgs::SetFingersPositionGoal goalFinger;
 	float before_finger1 = 0;
 	float before_finger2 = 0;	
