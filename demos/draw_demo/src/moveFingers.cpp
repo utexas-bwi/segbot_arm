@@ -100,7 +100,7 @@ int openAndClose(){
 }
 
 //joint effort callback function
-void joint_effort_cb(const sensor_msgs::JointStateConstPtr& input){
+void joint_state_cb(const sensor_msgs::JointStateConstPtr& input){
 	
 	//compute the change in efforts if we had already heard the last one
 	if (heard_efforts){
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
 	char input;
 	
 	//create subscriber to joint torques
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
+	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);	

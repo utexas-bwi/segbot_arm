@@ -106,12 +106,9 @@ bool heardPose = false;
 bool heardJoinstState = false;
 bool heardFingers = false;
 
-sensor_msgs::JointState current_efforts;
-sensor_msgs::JointState last_efforts;
 double total_grav_free_effort = 0;
 double total_delta;
 double delta_effort[6];
-bool heardEfforts = false;
 
 geometry_msgs::PoseStamped current_moveit_pose;
 
@@ -146,34 +143,26 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 		current_state = *input;
 		heardJoinstState = true;
 	}
-  //ROS_INFO_STREAM(current_state);
-}
-
-//Joint state cb
-void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
 	
 	//compute the change in efforts if we had already heard the last one
-	if (heardEfforts){
+	if (heardJoinstState){
 		for (int i = 0; i < 6; i ++){
-			delta_effort[i] = fabs(input->effort[i]-current_efforts.effort[i]);
+			delta_effort[i] = fabs(input->effort[i]-current_state.effort[i]);
 		}
 	}
 	
-	//store the current effort
-	current_efforts = *input;
-	
 	total_grav_free_effort = 0.0;
 	for (int i = 0; i < 6; i ++){
-		if (current_efforts.effort[i] < 0.0)
-			total_grav_free_effort -= (current_efforts.effort[i]);
+		if (current_state.effort[i] < 0.0)
+			total_grav_free_effort -= (current_state.effort[i]);
 		else 
-			total_grav_free_effort += (current_efforts.effort[i]);
+			total_grav_free_effort += (current_state.effort[i]);
 	}
 	
 	//calc total change in efforts
 	total_delta = delta_effort[0]+delta_effort[1]+delta_effort[2]+delta_effort[3]+delta_effort[4]+delta_effort[5];
 	
-	heardEfforts=true;
+	heardJoinstState=true;
 }
 
 //Joint state cb
@@ -436,7 +425,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, float effor
 		
 		if (effort_theta > 0){
 			ROS_INFO("total_delta = %f",total_delta);
-			if (heardEfforts){
+			if (heardJoinstState){
 				if (total_delta > effort_theta){
 					//we hit something, break;
 					ROS_WARN("[ispy_arm_server.cpp] contact detecting during cartesean velocity movement.");
@@ -551,9 +540,6 @@ int main(int argc, char **argv) {
 
 	//create subscriber to joint angles
 	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
-
-	//create subscriber to joint torques
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
 
 	//create subscriber to tool position topic
 	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);

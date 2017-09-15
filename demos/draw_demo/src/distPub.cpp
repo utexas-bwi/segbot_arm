@@ -86,9 +86,6 @@ int main(int argc, char **argv)
 	//create subscriber to joint angles
 	//ros::Subscriber sub = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 	
-	//create subscriber to joint torques
-	//ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
-
 
     return 0;
 }

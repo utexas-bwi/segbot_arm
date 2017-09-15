@@ -190,9 +190,8 @@ int main(int argc, char** argv)
 	ros::NodeHandle n;
 	
 	//subscribers	
-	//ros::Subscriber sub = n.subscribe("/mico_arm_driver/out/joint_state", 10, callBack);
-	ros::Subscriber je_sub = n.subscribe("mico_arm_driver/out/joint_efforts", 10, je_callBack);
-	//ros::Subscriber js_sub = n.subscribe("mico_arm_driver/out/joint_state", 10, js_callBack);
+	ros::Subscriber je_sub = n.subscribe("mico_arm_driver/out/joint_state", 10, je_callBack);
+
 	ros::Subscriber ja_sub = n.subscribe("mico_arm_driver/out/joint_angles", 10, ja_callBack);
 	
 	/*cout << endl << "1 - Record Tracjectories" << endl;

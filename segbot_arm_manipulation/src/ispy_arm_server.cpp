@@ -102,12 +102,9 @@ bool heardJoinstState = false;
 geometry_msgs::PoseStamped home_pose;
 
 //global variables about the joint efforts
-sensor_msgs::JointState current_efforts;
-sensor_msgs::JointState last_efforts;
 double total_grav_free_effort = 0;
 double total_delta;
 double delta_effort[6];
-bool heardEfforts = false;
 
 
 /* define what kind of point clouds we're using */
@@ -153,38 +150,33 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 	if (input->position.size() == NUM_JOINTS){
 		//ROS_INFO("Heard arm joint states!");
 		current_state = *input;
-		heardJoinstState = true;
+		
 	}
-  //ROS_INFO_STREAM(current_state);
-}
-
-//Joint state cb
-void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
-
-	//compute the change in efforts if we had already heard the last one
-	if (heardEfforts){
+    	//compute the change in efforts if we had already heard the last one
+	if (heardJoinstState){
 		for (int i = 0; i < 6; i ++){
-			delta_effort[i] = input->effort[i]-current_efforts.effort[i];
+			delta_effort[i] = input->effort[i]-current_state.effort[i];
 		}
 	}
 	
 	//store the current effort
-	current_efforts = *input;
+	current_state = *input;
 	
 	total_grav_free_effort = 0.0;
 	for (int i = 0; i < 6; i ++){
-		if (current_efforts.effort[i] < 0.0)
-			total_grav_free_effort -= (current_efforts.effort[i]);
+		if (current_state.effort[i] < 0.0)
+			total_grav_free_effort -= (current_state.effort[i]);
 		else 
-			total_grav_free_effort += (current_efforts.effort[i]);
+			total_grav_free_effort += (current_state.effort[i]);
 	}
 	
 	//calc total change in efforts
 	total_delta = delta_effort[0]+delta_effort[1]+delta_effort[2]+delta_effort[3]+delta_effort[4]+delta_effort[5];
 	
-	heardEfforts=true;
-
+	heardJoinstState = true;
+  //ROS_INFO_STREAM(current_state);
 }
+
 
 //Joint state cb
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
@@ -405,7 +397,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 		r.sleep();
 		
 		if (check_efforts){
-			if (heardEfforts){
+			if (heardJoinstState){
 				if (total_delta > 0.8){
 					//we hit something, break;
 					ROS_WARN("[ispy_arm_server.cpp] contact detecting during cartesean velocity movement.");
@@ -758,9 +750,6 @@ int main (int argc, char** argv)
 	
 	//create subscriber to joint angles
 	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
-
-	//create subscriber to joint torques
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
 
 	//create subscriber to tool position topic
 	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);

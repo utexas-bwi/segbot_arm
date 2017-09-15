@@ -94,7 +94,6 @@ bool g_caught_sigint=false;
 
 
 sensor_msgs::JointState current_state;
-sensor_msgs::JointState current_effort;
 kinova_msgs::FingerPosition current_finger;
 geometry_msgs::PoseStamped current_pose;
 bool heardPose = false;
@@ -131,12 +130,6 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 		heardJoinstState = true;
 	}
   //ROS_INFO_STREAM(current_state);
-}
-
-//Joint state cb
-void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
-  current_effort = *input;
-  //ROS_INFO_STREAM(current_effort);
 }
 
 //Joint state cb
@@ -553,9 +546,6 @@ int main(int argc, char **argv) {
 
 	//create subscriber to joint angles
 	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
-
-	//create subscriber to joint torques
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
 
 	//create subscriber to tool position topic
 	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);

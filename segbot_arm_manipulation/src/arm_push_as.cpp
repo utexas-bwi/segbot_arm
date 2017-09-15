@@ -91,7 +91,6 @@ protected:
   ros::Publisher debug_pub;
   
   sensor_msgs::JointState current_state;
-  sensor_msgs::JointState current_effort;
   
   sensor_msgs::JointState home_state;
   
@@ -124,9 +123,6 @@ public:
 	//create subscriber to joint angles
 	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &PushActionServer::joint_state_cb, this);
 
-	//create subscriber to joint torques
-	sub_torques = nh_.subscribe ("/mico_arm_driver/out/joint_efforts", 1, &PushActionServer::joint_effort_cb,this);
-
 	//create subscriber to tool position topic
 	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_position", 1, &PushActionServer::toolpos_cb, this);
 
@@ -153,11 +149,6 @@ public:
 			current_state = *input;
 			heardJoinstState = true;
 		}
-	}
-	
-	//Joint effort cb
-	void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
-	  current_effort = *input;
 	}
 
 	//tool position cb

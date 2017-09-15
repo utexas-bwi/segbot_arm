@@ -57,8 +57,11 @@ void fingers_cb(const kinova_msgs::FingerPosition input){
 	f2 = input.finger2;
 }
 
-//joint effort callback 
-void joint_effort_cb(const sensor_msgs::JointStateConstPtr& input){
+
+//Joint state cb
+void joint_state_cb (const sensor_msgs::JointStateConstPtr& input)
+{
+	current_jpos = *input;
 	
 	//compute the change in efforts if we had already heard the last one
 	if (heard_efforts){
@@ -82,12 +85,6 @@ void joint_effort_cb(const sensor_msgs::JointStateConstPtr& input){
 	total_delta = delta_effort[0]+delta_effort[1]+delta_effort[2]+delta_effort[3]+delta_effort[4]+delta_effort[5];
 	
 	heard_efforts=true;
-}
-
-//Joint state cb
-void joint_state_cb (const sensor_msgs::JointStateConstPtr& input)
-{
-	current_jpos = *input;
 }
 
 int openFull(){
@@ -201,9 +198,6 @@ int main(int argc, char **argv)
 	//create subscriber to joint angles
 	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 	
-	//create subscriber to joint torques
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_efforts", 1, joint_effort_cb);
-
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
   	

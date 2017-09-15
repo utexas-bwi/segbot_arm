@@ -90,7 +90,6 @@ protected:
   
 	
 	sensor_msgs::JointState current_state;
-	sensor_msgs::JointState current_effort;
 	kinova_msgs::FingerPosition current_finger;
 	geometry_msgs::PoseStamped current_pose;
 	bool heardPose;
@@ -139,9 +138,6 @@ public:
 	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &TabletopGraspActionServer::joint_state_cb, this);
 
 
-	//create subscriber to joint torques
-	sub_torques = nh_.subscribe ("/mico_arm_driver/out/joint_efforts", 1, &TabletopGraspActionServer::joint_effort_cb,this);
-
 	//create subscriber to tool position topic
 	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_position", 1, &TabletopGraspActionServer::toolpos_cb, this);
 
@@ -187,11 +183,6 @@ public:
 		}
 	}
 	
-	//Joint effort cb
-	void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
-	  current_effort = *input;
-	  //ROS_INFO_STREAM(current_effort);
-	}
 
 	//tool position cb
 	void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
@@ -376,7 +367,7 @@ public:
 		double delta_effort[6];
 
 		listenForArmData(rate);
-		sensor_msgs::JointState prev_effort_state = current_effort;
+		sensor_msgs::JointState prev_effort_state = current_state;
 
 		double elapsed_time = 0;
 
@@ -386,7 +377,7 @@ public:
 				
 			total_delta=0.0;
 			for (int i = 0; i < 6; i ++){
-				delta_effort[i] = fabs(current_effort.effort[i]-prev_effort_state.effort[i]);
+				delta_effort[i] = fabs(current_state.effort[i]-prev_effort_state.effort[i]);
 				total_delta+=delta_effort[i];
 				//ROS_INFO("Total delta=%f",total_delta);
 			}
@@ -618,7 +609,7 @@ public:
 			double delta_effort[6];
 
 			listenForArmData(40.0);
-			sensor_msgs::JointState prev_effort_state = current_effort;
+			sensor_msgs::JointState prev_effort_state = current_state;
 
 
 			double elapsed_time = 0;
@@ -629,7 +620,7 @@ public:
 				
 				total_delta=0.0;
 				for (int i = 0; i < 6; i ++){
-					delta_effort[i] = fabs(current_effort.effort[i]-prev_effort_state.effort[i]);
+					delta_effort[i] = fabs(current_state.effort[i]-prev_effort_state.effort[i]);
 					total_delta+=delta_effort[i];
 					ROS_INFO("Total delta=%f",total_delta);
 				}

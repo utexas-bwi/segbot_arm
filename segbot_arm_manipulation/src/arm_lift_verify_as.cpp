@@ -82,7 +82,6 @@ protected:
   ros::Subscriber sub_wrench;
   
   sensor_msgs::JointState current_state;
-  sensor_msgs::JointState current_effort;
   kinova_msgs::FingerPosition current_finger;
   geometry_msgs::PoseStamped current_pose;
   geometry_msgs::WrenchStamped current_wrench;
@@ -107,9 +106,6 @@ public:
 
 	//create subscriber to joint angles
 	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &LiftVerifyActionServer::joint_state_cb, this);
-
-	//create subscriber to joint torques
-	sub_torques = nh_.subscribe ("/mico_arm_driver/out/joint_efforts", 1, &LiftVerifyActionServer::joint_effort_cb,this);
 
 	//create subscriber to tool position topic
 	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_position", 1, &LiftVerifyActionServer::toolpos_cb, this);
@@ -137,12 +133,6 @@ public:
 		}
 	}
 	
-	//Joint effort cb
-	void joint_effort_cb (const sensor_msgs::JointStateConstPtr& input) {
-	  current_effort = *input;
-	  heardEffort = true;
-	}
-
 	//tool position cb
 	void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 	  current_pose = msg;
