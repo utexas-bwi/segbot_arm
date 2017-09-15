@@ -10,7 +10,7 @@
 #include <eigen_conversions/eigen_msg.h>
 
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 #include <geometry_msgs/PoseArray.h>
 #include <std_msgs/Float32.h>
 
@@ -610,19 +610,19 @@ void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
 
 void cartesianVelocityMove(double dx, double dy, double dz, double duration){
 	int rateHertz = 40;
-	geometry_msgs::TwistStamped velocityMsg;
+	kinova_msgs::PoseVelocity velocityMsg;
 	
 	ros::Rate r(rateHertz);
 	for(int i = 0; i < (int)duration * rateHertz; i++) {
 		
 		
-		velocityMsg.twist.linear.x = dx;
-		velocityMsg.twist.linear.y = dy;
-		velocityMsg.twist.linear.z = dz;
+		velocityMsg.twist_linear_x = dx;
+		velocityMsg.twist_linear_y = dy;
+		velocityMsg.twist_linear_z = dz;
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		velocityMsg.twist_angular_x = 0.0;
+		velocityMsg.twist_angular_y = 0.0;
+		velocityMsg.twist_angular_z = 0.0;
 		
 		
 		pub_velocity.publish(velocityMsg);
@@ -637,23 +637,23 @@ void lift_velocity(double vel, double distance){
 	ros::Rate r(4);
 	ros::spinOnce();
 	double distance_init = .2;
-	geometry_msgs::TwistStamped T;
-	T.twist.linear.x= 0.0;
-	T.twist.linear.y= 0.0;
-	T.twist.angular.x= 0.0;
-	T.twist.angular.y= 0.0;
-	T.twist.angular.z= 0.0;
+	kinova_msgs::PoseVelocity T;
+	T.twist_linear_x= 0.0;
+	T.twist_linear_y= 0.0;
+	T.twist_angular_x= 0.0;
+	T.twist_angular_y= 0.0;
+	T.twist_angular_z= 0.0;
 
 	for(int i = 0; i < std::abs(distance/vel/.25); i++){
 		ros::spinOnce();
 		if(distance > 0)
-			T.twist.linear.z = vel;
+			T.twist_linear_z = vel;
 		else
-			T.twist.linear.z= -vel;
+			T.twist_linear_z= -vel;
 		pub_velocity.publish(T);
 		r.sleep();
 	}
-	T.twist.linear.z= 0.0;
+	T.twist_linear_z= 0.0;
 	pub_velocity.publish(T);
 	
 	
@@ -687,7 +687,7 @@ int main(int argc, char **argv) {
 	ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps_handles",1, grasps_cb);  
 	  
 	//publish velocities
-	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
 	//publish pose array
 	pose_array_pub = n.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo/pose_array", 10);

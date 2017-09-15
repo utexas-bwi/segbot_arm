@@ -33,7 +33,7 @@
 #include <moveit_utils/MicoMoveitJointPose.h>
 #include <moveit_utils/MicoMoveitCartesianPose.h>
 
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 #include <geometry_msgs/PoseArray.h>
 
 //the action definition
@@ -148,7 +148,7 @@ public:
 	sub_grasps = nh_.subscribe("/find_grasps/grasps_handles",1, &TabletopGraspActionServer::grasps_cb,this);  
 	  
 	//publish velocities
-	pub_velocity = nh_.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = nh_.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
 	//publish pose array
 	pose_array_pub = nh_.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo/pose_array", 10);

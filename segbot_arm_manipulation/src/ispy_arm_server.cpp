@@ -10,7 +10,7 @@
 #include <eigen_conversions/eigen_msg.h>
 
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 #include <geometry_msgs/PoseArray.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/String.h>
@@ -337,7 +337,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 	listenForArmData(30.0);
 	
 	int rateHertz = 40;
-	geometry_msgs::TwistStamped velocityMsg;
+	kinova_msgs::PoseVelocity velocityMsg;
 	
 	
 	ros::Rate r(rateHertz);
@@ -382,13 +382,13 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 			break;
 		}
 		
-		velocityMsg.twist.linear.x = dx;
-		velocityMsg.twist.linear.y = dy;
-		velocityMsg.twist.linear.z = dz;
+		velocityMsg.twist_linear_x = dx;
+		velocityMsg.twist_linear_y = dy;
+		velocityMsg.twist_linear_z = dz;
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		velocityMsg.twist_angular_x = 0.0;
+		velocityMsg.twist_angular_y = 0.0;
+		velocityMsg.twist_angular_z = 0.0;
 		
 		
 		pub_velocity.publish(velocityMsg);
@@ -761,7 +761,7 @@ int main (int argc, char** argv)
 	ros::Subscriber sub_change_cloud = n.subscribe("/segbot_arm_table_change_detector/cloud",1,change_cloud_cb);  
 	 
 	//publish velocities
-	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
 	//cloud publisher
 	change_cloud_debug_pub = n.advertise<sensor_msgs::PointCloud2>("ispy_arm_server/change_cloud_filtered", 10);

@@ -7,7 +7,7 @@
 #include <std_msgs/String.h>
 
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 #include <std_msgs/Float32.h>
 
 //actions
@@ -149,7 +149,7 @@ void liftObject() {
 	ROS_INFO("In liftObject");
 	double timeoutSeconds = 2.00;
 	int rateHertz = 100;
-	geometry_msgs::TwistStamped velocityMsg;
+	kinova_msgs::PoseVelocity velocityMsg;
 	
 	double linearAngleX = 0;
 	double linearVelX;
@@ -159,13 +159,13 @@ void liftObject() {
 	
 	ros::Rate r(rateHertz);
 	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
-		velocityMsg.twist.linear.x = 0;
-		velocityMsg.twist.linear.y = 0.0;
-		velocityMsg.twist.linear.z = 0.125;
+		velocityMsg.twist_linear_x = 0;
+		velocityMsg.twist_linear_y = 0.0;
+		velocityMsg.twist_linear_z = 0.125;
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		velocityMsg.twist_angular_x = 0.0;
+		velocityMsg.twist_angular_y = 0.0;
+		velocityMsg.twist_angular_z = 0.0;
 		
 		pub_velocity.publish(velocityMsg);
 		
@@ -174,13 +174,13 @@ void liftObject() {
 	
 
 	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
-		velocityMsg.twist.linear.x = 0.0;
-		velocityMsg.twist.linear.y = 0.0;
-		velocityMsg.twist.linear.z = -0.125;
+		velocityMsg.twist_linear_x = 0.0;
+		velocityMsg.twist_linear_y = 0.0;
+		velocityMsg.twist_linear_z = -0.125;
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		velocityMsg.twist_angular_x = 0.0;
+		velocityMsg.twist_angular_y = 0.0;
+		velocityMsg.twist_angular_z = 0.0;
 		
 		pub_velocity.publish(velocityMsg);
 		
@@ -287,7 +287,7 @@ int main(int argc, char **argv) {
   ros::Subscriber sub_button = n.subscribe("/top_grasp_node/pose", 1, button_pose_cb);
 
   //publish velocities
-  pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+  pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
   moveit_client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose>("mico_cartesianpose_service");
   //Step 1: listen to the button pose

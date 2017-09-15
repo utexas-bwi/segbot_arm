@@ -7,7 +7,7 @@
 #include <std_msgs/String.h>
 
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 #include <std_msgs/Float32.h>
 
 //actions
@@ -103,7 +103,7 @@ void moveFinger(int finger_value) {
 void moveArmVelocity() {
 	double timeoutSeconds = 8.0;
 	int rateHertz = 100;
-	geometry_msgs::TwistStamped velocityMsg;
+	kinova_msgs::PoseVelocity velocityMsg;
 	
 	double linearAngleX = 0;
 	double linearVelX;
@@ -119,13 +119,13 @@ void moveArmVelocity() {
 		linearAngleZ += (2*PI)/(timeoutSeconds * rateHertz);
 		linearVelZ = magnitude * cos(linearAngleZ);
 		
-		velocityMsg.twist.linear.x = -linearVelX;
-		velocityMsg.twist.linear.y = 0.0;
-		velocityMsg.twist.linear.z = linearVelZ;
+		velocityMsg.twist_linear_x = -linearVelX;
+		velocityMsg.twist_linear_y = 0.0;
+		velocityMsg.twist_linear_z = linearVelZ;
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		velocityMsg.twist_angular_x = 0.0;
+		velocityMsg.twist_angular_y = 0.0;
+		velocityMsg.twist_angular_z = 0.0;
 		
 		ROS_INFO("linearVelZ = %f", linearVelZ);
 		ROS_INFO("linearVelX = %f", linearVelX);
@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
   ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
   
   //publish velocities
-  pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+  pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
 	 
   pub_angular_velocity = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
 

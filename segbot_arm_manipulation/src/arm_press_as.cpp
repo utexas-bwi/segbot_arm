@@ -14,7 +14,7 @@
 #include <sensor_msgs/point_cloud_conversion.h>
 
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/WrenchStamped.h>
 
@@ -119,7 +119,7 @@ public:
 	heardWrench = false;
 	
 	//publisher to move arm down
-	arm_vel= nh_.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
+	arm_vel= nh_.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 2);
 
 	//create subscriber to joint angles
 	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &PressActionServer::joint_state_cb, this);
@@ -209,15 +209,15 @@ public:
 
 	//method using cartesian velocities to press down on the object
 	void press_down(float duration){
-		geometry_msgs::TwistStamped v;
+		kinova_msgs::PoseVelocity v;
 		 
-		v.twist.linear.x = 0;
-		v.twist.linear.y = 0.0;
-		v.twist.linear.z = -0.125;
+		v.twist_linear_x = 0;
+		v.twist_linear_y = 0.0;
+		v.twist_linear_z = -0.125;
 		
-		v.twist.angular.x = 0.0;
-		v.twist.angular.y = 0.0;
-		v.twist.angular.z = 0.0;
+		v.twist_angular_x = 0.0;
+		v.twist_angular_y = 0.0;
+		v.twist_angular_z = 0.0;
 		
 		float elapsed_time = 0.0;
 		
@@ -227,7 +227,7 @@ public:
 		listenForArmData(30.0);
 		
 		while(ros::ok() && !as_.isPreemptRequested()){			
-			v.twist.linear.z = -0.125;
+			v.twist_linear_z = -0.125;
 
 			arm_vel.publish(v);
 			r.sleep();
@@ -238,7 +238,7 @@ public:
 				break;
 		}
 		
-		v.twist.linear.z = 0.0;
+		v.twist_linear_z = 0.0;
 		arm_vel.publish(v);
 	}
 	

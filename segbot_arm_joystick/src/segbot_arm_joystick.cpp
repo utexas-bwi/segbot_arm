@@ -7,7 +7,7 @@
 //ROS messages
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 
 //ROS action client used for calling actions
 #include <actionlib/client/simple_action_client.h>
@@ -235,22 +235,22 @@ void pressEnter(std::string message){
   }
 }
 
-bool allZeros(geometry_msgs::TwistStamped velocityMsg) {
-  return (velocityMsg.twist.linear.x == 0 && velocityMsg.twist.linear.y == 0 
-        && velocityMsg.twist.linear.z == 0
-      && velocityMsg.twist.angular.x == 0 && velocityMsg.twist.angular.y == 0 
-        && velocityMsg.twist.angular.z == 0);
+bool allZeros(kinova_msgs::PoseVelocity velocityMsg) {
+  return (velocityMsg.twist_linear_x == 0 && velocityMsg.twist_linear_y == 0 
+        && velocityMsg.twist_linear_z == 0
+      && velocityMsg.twist_angular_x == 0 && velocityMsg.twist_angular_y == 0 
+        && velocityMsg.twist_angular_z == 0);
 }
 
 void publishArm(ros::Publisher pub_arm) {
-  geometry_msgs::TwistStamped velocityMsg;
+  kinova_msgs::PoseVelocity velocityMsg;
   //construct message
-  velocityMsg.twist.linear.x = linear_x;
-  velocityMsg.twist.linear.y = linear_y;
-  velocityMsg.twist.linear.z = linear_z; 
-  velocityMsg.twist.angular.x = angular_x;
-  velocityMsg.twist.angular.y = angular_y;
-  velocityMsg.twist.angular.z = angular_z;
+  velocityMsg.twist_linear_x = linear_x;
+  velocityMsg.twist_linear_y = linear_y;
+  velocityMsg.twist_linear_z = linear_z; 
+  velocityMsg.twist_angular_x = angular_x;
+  velocityMsg.twist_angular_y = angular_y;
+  velocityMsg.twist_angular_z = angular_z;
 
   //ROS_INFO("Linear x: %f\n", linear_x);
   //ROS_INFO("Linear y: %f\n", linear_y);
@@ -414,7 +414,7 @@ int main(int argc, char * *argv) {
   // joy is the name of the topic the joystick publishes to
   joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, joy_cb);
   
-  pub_arm = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+  pub_arm = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
   pub_base = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
   ros::ServiceClient speak_message_client = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");
 
@@ -482,13 +482,13 @@ int main(int argc, char * *argv) {
   
   //publish 0 velocity command -- otherwise arm/base will continue moving with the last command for 0.25 seconds
   ROS_INFO("Ending");
-  geometry_msgs::TwistStamped arm_msg;
-  arm_msg.twist.linear.x = 0;
-  arm_msg.twist.linear.y = 0;
-  arm_msg.twist.linear.z = 0; 
-  arm_msg.twist.angular.x = 0;
-  arm_msg.twist.angular.y = 0;
-  arm_msg.twist.angular.z = 0;
+  kinova_msgs::PoseVelocity arm_msg;
+  arm_msg.twist_linear_x = 0;
+  arm_msg.twist_linear_y = 0;
+  arm_msg.twist_linear_z = 0; 
+  arm_msg.twist_angular_x = 0;
+  arm_msg.twist_angular_y = 0;
+  arm_msg.twist_angular_z = 0;
   pub_arm.publish(arm_msg);
 
   geometry_msgs::Twist base_msg;

@@ -13,13 +13,13 @@
 #define TRAVEL_VELOCITY .10
 //subscriber msgs
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Float32.h>
 
 //actions
 #include <actionlib/client/simple_action_client.h>
 #include "kinova_msgs/SetFingersPositionAction.h"
 #include "kinova_msgs/ArmPoseAction.h"
+#include <kinova_msgs/PoseVelocity.h>
 
 
 //file manipulation
@@ -289,21 +289,21 @@ void lift(){
 	ros::Rate r(100);
 	ros::spinOnce();
 	double initZ = cur_z;
-	geometry_msgs::TwistStamped T;
-		T.twist.linear.x= 0.0;
-		T.twist.linear.y= 0.0;
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=0.0;
+	kinova_msgs::PoseVelocity T;
+		T.twist_linear_x= 0.0;
+		T.twist_linear_y= 0.0;
+		T.twist_angular_x=0.0;
+		T.twist_angular_y=0.0;
+		T.twist_angular_z=0.0;
 	while(abs(cur_z - initZ) < .01){
 		ros::spinOnce();
 
-		T.twist.linear.z= 0.1;
+		T.twist_linear_z= 0.1;
 
 		c_vel_pub_.publish(T);
 		r.sleep();
 	}
-	T.twist.linear.z= 0.0;
+	T.twist_linear_z= 0.0;
 	c_vel_pub_.publish(T);
 
 }
@@ -447,14 +447,14 @@ void sendRawVelocity(double xin, double yin, double zin){
 	for (int i = 0; i < (int)duration*100; i++){
 		ros::spinOnce();
 		
-		geometry_msgs::TwistStamped T; 
-		T.twist.linear.x = xin;
-		T.twist.linear.y = yin;
-		T.twist.linear.z = zin;
+		kinova_msgs::PoseVelocity T; 
+		T.twist_linear_x = xin;
+		T.twist_linear_y = yin;
+		T.twist_linear_z = zin;
 		
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=0.0;
+		T.twist_angular_x=0.0;
+		T.twist_angular_y=0.0;
+		T.twist_angular_z=0.0;
 		
 		c_vel_pub_.publish(T);
 
@@ -494,24 +494,24 @@ void drawDistanceLine(double targetDistance){
 		ros::spinOnce();
 		
 		
-		geometry_msgs::TwistStamped T; 
-		T.twist.linear.x = vel_speed;
-		T.twist.linear.y = 0.0;
-		T.twist.linear.z = 0.0;
+		kinova_msgs::PoseVelocity T; 
+		T.twist_linear_x = vel_speed;
+		T.twist_linear_y = 0.0;
+		T.twist_linear_z = 0.0;
 		
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=0.0;
+		T.twist_angular_x=0.0;
+		T.twist_angular_y=0.0;
+		T.twist_angular_z=0.0;
 		
 		//compensates for overhead and movement to keep the line as accurate as possible.
 		if(vel_speed * targetDistance + drawDistance >= targetDistance){
-			T.twist.linear.x = 0.0;
-			T.twist.linear.y = 0.0;
-			T.twist.linear.z = 0.0;
+			T.twist_linear_x = 0.0;
+			T.twist_linear_y = 0.0;
+			T.twist_linear_z = 0.0;
 			
-			T.twist.angular.x=0.0;
-			T.twist.angular.y=0.0;
-			T.twist.angular.z=0.0;
+			T.twist_angular_x=0.0;
+			T.twist_angular_y=0.0;
+			T.twist_angular_z=0.0;
 		}
 		ROS_INFO("Target distance: %f. Calculated distance: %f", targetDistance, drawDistance);
 		c_vel_pub_.publish(T);
@@ -520,14 +520,14 @@ void drawDistanceLine(double targetDistance){
 	
 	}
 	//distance threshold hit. send zero vel cmd to cut it short.
-	geometry_msgs::TwistStamped T; 
-	T.twist.linear.x = 0;
-	T.twist.linear.y = 0;
-	T.twist.linear.z = 0;
+	kinova_msgs::PoseVelocity T; 
+	T.twist_linear_x = 0;
+	T.twist_linear_y = 0;
+	T.twist_linear_z = 0;
 	
-	T.twist.angular.x=0.0;
-	T.twist.angular.y=0.0;
-	T.twist.angular.z=0.0;
+	T.twist_angular_x=0.0;
+	T.twist_angular_y=0.0;
+	T.twist_angular_z=0.0;
 	
 	c_vel_pub_.publish(T);
 	ROS_INFO("Target distance: %f. Calculated distance: %f", targetDistance, drawDistance);
@@ -543,7 +543,7 @@ void establish_contact(string precision){
 	bool hitSurface = false;
 	
 	clearMsgs();
-	geometry_msgs::TwistStamped T; 
+	kinova_msgs::PoseVelocity T; 
 	
 	//"double" precision requires two surface touches. 
 	//Double precision should be used for an initial touch when the height of the end effector is unknown
@@ -559,13 +559,13 @@ void establish_contact(string precision){
 			
 			ros::spinOnce();
 			
-			T.twist.linear.x=0.0;
-			T.twist.linear.y=0.0;
-			T.twist.linear.z=-0.15;
+			T.twist_linear_x=0.0;
+			T.twist_linear_y=0.0;
+			T.twist_linear_z=-0.15;
 			
-			T.twist.angular.x=0.0;
-			T.twist.angular.y=0.0;
-			T.twist.angular.z=0.0;
+			T.twist_angular_x=0.0;
+			T.twist_angular_y=0.0;
+			T.twist_angular_z=0.0;
 			
 			c_vel_pub_.publish(T);
 
@@ -589,25 +589,25 @@ void establish_contact(string precision){
 		while(total_grav_free_effort < 1.9){ // <<------------------------hard coded force value
 			//ROS_INFO("Efforts: %f", total_delta);
 			ros::spinOnce();
-			T.twist.linear.x=0.0;
-			T.twist.linear.y=0.0;
-			T.twist.linear.z=-0.05;
+			T.twist_linear_x=0.0;
+			T.twist_linear_y=0.0;
+			T.twist_linear_z=-0.05;
 			
-			T.twist.angular.x=0.0;
-			T.twist.angular.y=0.0;
-			T.twist.angular.z=0.0;
+			T.twist_angular_x=0.0;
+			T.twist_angular_y=0.0;
+			T.twist_angular_z=0.0;
 			
 			c_vel_pub_.publish(T);
 
 			r2.sleep();
 		}
-			T.twist.linear.x=0.0;
-			T.twist.linear.y=0.0;
-			T.twist.linear.z=-0.00;
+			T.twist_linear_x=0.0;
+			T.twist_linear_y=0.0;
+			T.twist_linear_z=-0.00;
 			
-			T.twist.angular.x=0.0;
-			T.twist.angular.y=0.0;
-			T.twist.angular.z=0.0;
+			T.twist_angular_x=0.0;
+			T.twist_angular_y=0.0;
+			T.twist_angular_z=0.0;
 			
 			c_vel_pub_.publish(T);
 
@@ -616,7 +616,7 @@ void establish_contact(string precision){
 
 //caller function for the write-tofile debug function for the force efforts
 void output_static_efforts(){
-	geometry_msgs::TwistStamped T; 
+	kinova_msgs::PoseVelocity T; 
 	double timeout_duration = 5.0;
 	vector<double> grav_free;
 	vector<double> delta;
@@ -633,13 +633,13 @@ void output_static_efforts(){
 	for (int i = 0; i < (int)timeout_duration*100; i ++){
 		ros::spinOnce();
 		
-		T.twist.linear.x=0;//0.4f;
-		T.twist.linear.y=0;
-		T.twist.linear.z=0;//-40.0;
+		T.twist_linear_x=0;//0.4f;
+		T.twist_linear_y=0;
+		T.twist_linear_z=0;//-40.0;
 		
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=0.0;
+		T.twist_angular_x=0.0;
+		T.twist_angular_y=0.0;
+		T.twist_angular_z=0.0;
 		c_vel_pub_.publish(T);
 		grav_free.push_back(total_grav_free_effort);
 		delta.push_back(total_delta);
@@ -652,7 +652,7 @@ void output_static_efforts(){
 
 void establish_contact(double v_x, double v_y, double v_z){
 	
-	geometry_msgs::TwistStamped T; 
+	kinova_msgs::PoseVelocity T; 
 	double timeout_duration = 30.0;
 	vector<double> grav_free;
 	vector<double> delta;
@@ -669,13 +669,13 @@ void establish_contact(double v_x, double v_y, double v_z){
 	for (int i = 0; i < (int)timeout_duration*100; i ++){
 		ros::spinOnce();
 		
-		T.twist.linear.x=v_x;//0.4f;
-		T.twist.linear.y=v_y;
-		T.twist.linear.z=v_z;//-40.0;
+		T.twist_linear_x=v_x;//0.4f;
+		T.twist_linear_y=v_y;
+		T.twist_linear_z=v_z;//-40.0;
 		
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=0.0;
+		T.twist_angular_x=0.0;
+		T.twist_angular_y=0.0;
+		T.twist_angular_z=0.0;
 
 		c_vel_pub_.publish(T);
 
@@ -710,13 +710,13 @@ void establish_contact(double v_x, double v_y, double v_z){
 			}
 		}	
 	}
-		T.twist.linear.x= 0;
-		T.twist.linear.y=v_y;
-		T.twist.linear.z=v_z;//-40.0;
+		T.twist_linear_x= 0;
+		T.twist_linear_y=v_y;
+		T.twist_linear_z=v_z;//-40.0;
 		
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=0.0;
+		T.twist_angular_x=0.0;
+		T.twist_angular_y=0.0;
+		T.twist_angular_z=0.0;
 		
 }
 
@@ -765,7 +765,7 @@ void gotoPoint(double x_coord, double y_coord, bool staticForce){
 	}
 	ros::Rate r2(20);
 	
-	geometry_msgs::TwistStamped T; 
+	kinova_msgs::PoseVelocity T; 
 	double magnitude = 0;
 	double alpha = 0;
 	double vel = 0.0;
@@ -806,28 +806,28 @@ void gotoPoint(double x_coord, double y_coord, bool staticForce){
 		}
 		else
 			delta_z = -.06;
-		T.twist.linear.x= delta_x;
-		T.twist.linear.y= delta_y;
+		T.twist_linear_x= delta_x;
+		T.twist_linear_y= delta_y;
 		
 		if(traveling)
-			T.twist.linear.z = 0;
+			T.twist_linear_z = 0;
 		else
-			T.twist.linear.z = delta_z;
+			T.twist_linear_z = delta_z;
 		
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=0.0;
+		T.twist_angular_x=0.0;
+		T.twist_angular_y=0.0;
+		T.twist_angular_z=0.0;
 		c_vel_pub_.publish(T);
 
 		if(debug)
 			ROS_INFO("Target distance: %f. Calculated distance: %f", distance, drawDistance);
 	}
-	T.twist.linear.x = 0.0;
-	T.twist.linear.y = 0.0;
-	T.twist.linear.z = 0.0;
-	T.twist.angular.x=0.0;
-	T.twist.angular.y=0.0;
-	T.twist.angular.z=0.0;
+	T.twist_linear_x = 0.0;
+	T.twist_linear_y = 0.0;
+	T.twist_linear_z = 0.0;
+	T.twist_angular_x=0.0;
+	T.twist_angular_y=0.0;
+	T.twist_angular_z=0.0;
 	c_vel_pub_.publish(T);
 	
 	ros::spinOnce();
@@ -878,7 +878,7 @@ void gotoPoint(double x_coord, double y_coord){
 	}
 	ros::Rate r2(20);
 	
-	geometry_msgs::TwistStamped T; 
+	kinova_msgs::PoseVelocity T; 
 	double magnitude = 0;
 	double alpha = 0;
 	double vel = 0.0;
@@ -919,26 +919,26 @@ void gotoPoint(double x_coord, double y_coord){
 
 		if(delta_z < -.015)
 			delta_z = -.015;
-		T.twist.linear.x= delta_x;
-		T.twist.linear.y= delta_y;
+		T.twist_linear_x= delta_x;
+		T.twist_linear_y= delta_y;
 		
 		if(traveling)
-			T.twist.linear.z = 0;
+			T.twist_linear_z = 0;
 		else
-			T.twist.linear.z = delta_z;
+			T.twist_linear_z = delta_z;
 		
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=0.0;
+		T.twist_angular_x=0.0;
+		T.twist_angular_y=0.0;
+		T.twist_angular_z=0.0;
 		c_vel_pub_.publish(T);
 
 	}
-	T.twist.linear.x = 0.0;
-	T.twist.linear.y = 0.0;
-	T.twist.linear.z = 0.0;
-	T.twist.angular.x=0.0;
-	T.twist.angular.y=0.0;
-	T.twist.angular.z=0.0;
+	T.twist_linear_x = 0.0;
+	T.twist_linear_y = 0.0;
+	T.twist_linear_z = 0.0;
+	T.twist_angular_x=0.0;
+	T.twist_angular_y=0.0;
+	T.twist_angular_z=0.0;
 	c_vel_pub_.publish(T);
 	
 	ros::spinOnce();
@@ -1403,7 +1403,7 @@ int main(int argc, char **argv)
 	//ros::Subscriber distSub = n.subscribe("/poc_distance", 1, distance_cb);
 	
 	//publisher for cartesian velocity
-	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
+	c_vel_pub_ = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 2);
 
 	//create subscriber to joint angles
 	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);

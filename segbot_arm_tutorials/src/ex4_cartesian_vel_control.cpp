@@ -7,7 +7,6 @@
 //ROS messages
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/TwistStamped.h>
 
 //ROS action client used for calling actions
 #include <actionlib/client/simple_action_client.h>

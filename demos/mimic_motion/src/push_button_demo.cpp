@@ -7,7 +7,7 @@
 #include <std_msgs/String.h>
 
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 #include <std_msgs/Float32.h>
 
 #include "segbot_arm_perception/ButtonDetection.h"
@@ -145,19 +145,19 @@ void moveFinger(int finger_value) {
 void pushButton() {
 	double timeoutSeconds = 1.85;
 	int rateHertz = 100;
-	geometry_msgs::TwistStamped velocityMsg;
+	kinova_msgs::PoseVelocity velocityMsg;
 	
 	ros::Rate r(rateHertz);
 	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
 		
 		
-		velocityMsg.twist.linear.x = 0;
-		velocityMsg.twist.linear.y = 0.0;
-		velocityMsg.twist.linear.z = -0.125;
+		velocityMsg.twist_linear_x = 0;
+		velocityMsg.twist_linear_y = 0.0;
+		velocityMsg.twist_linear_z = -0.125;
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		velocityMsg.twist_angular_x = 0.0;
+		velocityMsg.twist_angular_y = 0.0;
+		velocityMsg.twist_angular_z = 0.0;
 		
 		
 		pub_velocity.publish(velocityMsg);
@@ -169,13 +169,13 @@ void pushButton() {
 	for(int i = 0; i < (int)3.0 * rateHertz; i++) {
 		
 		
-		velocityMsg.twist.linear.x = 0.0;
-		velocityMsg.twist.linear.y = -0.125;
-		velocityMsg.twist.linear.z = 0.2;
+		velocityMsg.twist_linear_x = 0.0;
+		velocityMsg.twist_linear_y = -0.125;
+		velocityMsg.twist_linear_z = 0.2;
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		velocityMsg.twist_angular_x = 0.0;
+		velocityMsg.twist_angular_y = 0.0;
+		velocityMsg.twist_angular_z = 0.0;
 		
 		
 		pub_velocity.publish(velocityMsg);
@@ -331,7 +331,7 @@ int main(int argc, char **argv) {
   
   
 	//publish velocities
-	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
 
 
 	//button position publisher

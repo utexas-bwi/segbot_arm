@@ -8,9 +8,10 @@
 #include <sensor_msgs/JointState.h>
 #include "kinova_msgs/JointAngles.h"
 #include "kinova_msgs/JointVelocity.h"
+#include "kinova_msgs/PoseVelocity.h"
 //subscriber msgs
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 #include <std_msgs/Float32.h>
 
 //actions
@@ -147,14 +148,14 @@ void sendCartVelocity(double xin, double yin, double zin){
 	for (int i = 0; i < (int)(duration*rate_hz); i++){
 		ros::spinOnce();
 		
-		geometry_msgs::TwistStamped T; 
-		T.twist.linear.x = xin;
-		T.twist.linear.y = yin;
-		T.twist.linear.z = zin;
+		kinova_msgs::PoseVelocity T; 
+		T.twist_linear_x = xin;
+		T.twist_linear_y = yin;
+		T.twist_linear_z = zin;
 		
-		T.twist.angular.x=0.0;
-		T.twist.angular.y=0.0;
-		T.twist.angular.z=0.0;
+		T.twist_angular_x=0.0;
+		T.twist_angular_y=0.0;
+		T.twist_angular_z=0.0;
 		
 		c_vel_pub_.publish(T);
 
@@ -193,7 +194,7 @@ int main(int argc, char **argv)
     j_vel_pub = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 1);
 
 	//publisher for cartesian velocity
-	c_vel_pub_ = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 2);
+	c_vel_pub_ = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 2);
 
 	//create subscriber to joint angles
 	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);

@@ -25,6 +25,7 @@
 #include "kinova_msgs/SetFingersPositionAction.h"
 #include "kinova_msgs/ArmPoseAction.h"
 #include "kinova_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/PoseVelocity.h"
 
 
 
@@ -334,19 +335,19 @@ void moveToJointStateMoveIt(ros::NodeHandle n, geometry_msgs::PoseStamped p_targ
 
 void cartesianVelocityMove(double dx, double dy, double dz, double duration){
 	int rateHertz = 40;
-	geometry_msgs::TwistStamped velocityMsg;
+	kinova_msgs::PoseVelocity velocityMsg;
 	
 	ros::Rate r(rateHertz);
 	for(int i = 0; i < (int)duration * rateHertz; i++) {
 		
 		
-		velocityMsg.twist.linear.x = dx;
-		velocityMsg.twist.linear.y = dy;
-		velocityMsg.twist.linear.z = dz;
+		velocityMsg.twist_linear_x = dx;
+		velocityMsg.twist_linear_y = dy;
+		velocityMsg.twist_linear_z = dz;
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		velocityMsg.twist_angular_x = 0.0;
+		velocityMsg.twist_angular_y = 0.0;
+		velocityMsg.twist_angular_z = 0.0;
 		
 		
 		pub_velocity.publish(velocityMsg);
@@ -361,7 +362,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, float effor
 	listenForArmData(30.0);
 	
 	int rateHertz = 40;
-	geometry_msgs::TwistStamped velocityMsg;
+	kinova_msgs::PoseVelocity velocityMsg;
 	
 	
 	ros::Rate r(rateHertz);
@@ -408,13 +409,13 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, float effor
 			break;
 		}
 		
-		velocityMsg.twist.linear.x = dx;
-		velocityMsg.twist.linear.y = dy;
-		velocityMsg.twist.linear.z = dz;
+		velocityMsg.twist_linear_x = dx;
+		velocityMsg.twist_linear_y = dy;
+		velocityMsg.twist_linear_z = dz;
 		
-		velocityMsg.twist.angular.x = 0.0;
-		velocityMsg.twist.angular.y = 0.0;
-		velocityMsg.twist.angular.z = 0.0;
+		velocityMsg.twist_angular_x = 0.0;
+		velocityMsg.twist_angular_y = 0.0;
+		velocityMsg.twist_angular_z = 0.0;
 		
 		
 		pub_velocity.publish(velocityMsg);
@@ -546,9 +547,9 @@ int main(int argc, char **argv) {
 
 	//subscriber for fingers
 	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
-	  
+	
 	//publish velocities
-	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
 	//publish pose 
 	pose_pub = n.advertise<geometry_msgs::PoseStamped>("/agile_grasp_demo/pose_out", 10);

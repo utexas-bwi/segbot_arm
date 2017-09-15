@@ -4,7 +4,7 @@
 
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
-#include <geometry_msgs/TwistStamped.h>
+#include <kinova_msgs/PoseVelocity.h>
 
 
 //srv for talking to table_object_detection_node.cpp
@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
 	ros::Publisher pub_base_velocity = n.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 	
 	//hand velocity publisher
-	ros::Publisher pub_hand_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 1);
+	ros::Publisher pub_hand_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 1);
 	
 
 
@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
 			
 			//if no force is applied, then move hand back to starting position
 			if (v_i.angular.z == 0 && v_i.linear.x == 0){
-				geometry_msgs::TwistStamped velocityMsg; //vel command to hand
+				kinova_msgs::PoseVelocity velocityMsg; //vel command to hand
 				float theta = 0.075;
 				float constant_m = 3.0;
 				
@@ -242,13 +242,13 @@ int main(int argc, char **argv) {
 				float dz = constant_m*(- current_pose.pose.position.z + default_pose.pose.position.z);
 				
 				if (dx > theta)
-					velocityMsg.twist.linear.x = dx;
+					velocityMsg.twist_linear_x = dx;
 				
 				if (dy > theta)
-					velocityMsg.twist.linear.y = dy;
+					velocityMsg.twist_linear_y = dy;
 				
 				if (dz > theta)
-					velocityMsg.twist.linear.z = dz;
+					velocityMsg.twist_linear_z = dz;
 					
 				ROS_INFO("Publishing c.vels: %f, %f, %f",dx,dy,dz);
 				
