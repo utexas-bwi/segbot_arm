@@ -1,0 +1,15 @@
+<launch>
+
+
+  <include file="$(find bwi_launch)/launch/includes/segbot.launch.xml">
+    <arg name="laser_max_range" value="20.0" />
+  </include>
+
+  <include file="$(find segbot_arm_launch)/launch/segbot_bringup_v2_fidget_experiment.arm.launch" />
+
+  <include file="$(find bwi_logging)/launch/record.launch" />
+
+  <!-- launch MoveIt! -->
+  <include file="$(find moveit_utils)/launch/mico_moveit.launch" />
+ 
+</launch>
