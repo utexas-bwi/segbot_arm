@@ -2,8 +2,9 @@
 
   <arg name="kinect_name" default="nav_kinect" /> 
   <arg name="tf_prefix" default="" /> 
+  <arg name="use_xtion" default="false" />
   <arg name="use_full_gazebo_model" default="false" />
-  <arg name="urdf_file" default="$(find segbot_description)/robots/segbot_v2.arm.urdf.xacro" />
+  <arg name="urdf_file" default="$(find segbot_arm_launch)/robots/segbot_v2.arm.urdf.xacro" />
   <arg name="urdf_file_baseonly" default="$(find segbot_description)/robots/segbot_v2.urdf.xacro" />
   <arg name="use_registered_topic" default="false" />
 
@@ -27,18 +28,20 @@
 
   <!-- launch the kinect laserscan converter -->
   
-  <include file="$(find segbot_sensors)/launch/kinect/kinect-laserscan.launch">
+ <include file="$(find segbot_sensors)/launch/kinect/kinect-laserscan.launch">
     <arg name="tf_prefix" value="$(arg tf_prefix)" />
     <arg name="camera" value="$(arg kinect_name)" />
     <arg name="use_registered" value="$(arg use_registered_topic)" />
     <arg name="out_topic" value="$(arg kinect_name)/scan_filtered" />
     <arg name="min_height" value ="-0.5" />
     <arg name="max_height" value ="10.0" />
-  </include>
+  </include> 
   
-  <include file="$(find openni2_launch)/launch/openni2.launch">
+  <!-- XTION -->
+  <include file="$(find openni2_launch)/launch/openni2.launch" if="$(arg use_xtion)">
     <arg name="depth_registration" value="True" />
     <arg name="camera" value="xtion_camera" />
+    <arg name="device_id" value="1407150149" />
   </include>
 
   <!-- set additional tf prefix parameter - required for gazebo -->
@@ -48,8 +51,10 @@
 
   <!-- HOKUYO specific stuff -->
   <!-- launch the laser filter to get rid of readings from the robot itself -->
+  <!-- Hokuyo specific: filter out readings from the robot itself -->
   <include file="$(find segbot_sensors)/launch/hokuyo/hokuyo-filters.launch">
-    <arg name="filters" value="$(find segbot_sensors)/config/hokuyo_filters_v2.yaml" />
+    <arg name="filters"
+         value="$(find segbot_sensors)/config/hokuyo_filters_v2.yaml" />
   </include>
 
 </launch>
