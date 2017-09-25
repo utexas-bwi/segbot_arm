@@ -81,7 +81,10 @@
     </link>
 
 
-  <xacro:mico_arm parent="arm_link"/>
+  <!-- The TF prefix that we're setting here must match the prefix to the 
+       the joint names on the /out/joint_states topic
+	-->
+  <xacro:m1n6s200 base_parent="arm_link" prefix="mico"/>
 
   <!-- add the xtion -->
   <xacro:kinect_camera name="xtion_camera" parent="arm">

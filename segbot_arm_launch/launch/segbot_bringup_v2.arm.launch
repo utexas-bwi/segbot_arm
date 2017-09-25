@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
 
   <!-- set the tf prefix as necessary -->
@@ -28,7 +29,7 @@
   </include>
  
   <!-- COMMON aux information -->
-  <include file="$(find segbot_arm_launch)/launch/auxiliary.segbot_v2.arm.launch.xml">
+  <include file="$(find segbot_arm_launch)/launch/includes/auxiliary.segbot_v2.arm.launch.xml">
     <arg name="tf_prefix" default="$(arg tf_prefix)" /> 
     <arg name="use_registered_topic" default="true" />
   </include>
