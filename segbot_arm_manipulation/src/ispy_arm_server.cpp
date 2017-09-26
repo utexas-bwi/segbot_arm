@@ -146,11 +146,9 @@ void sig_handler(int sig)
 
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
-	
 	if (input->position.size() == NUM_JOINTS){
 		//ROS_INFO("Heard arm joint states!");
-		current_state = *input;
-		
+		current_state = *input;	
 	}
     	//compute the change in efforts if we had already heard the last one
 	if (heardJoinstState){
@@ -177,16 +175,13 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
   //ROS_INFO_STREAM(current_state);
 }
 
-
-//Joint state cb
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
- // ROS_INFO("Heard arm tool pose!");
+  ROS_INFO("Heard arm tool pose!");
   current_pose = msg;
   heardPose = true;
   //  ROS_INFO_STREAM(current_pose);
 }
 
-//Joint state cb
 void fingers_cb (const kinova_msgs::FingerPosition msg) {
   current_finger = msg;
 }
@@ -198,7 +193,7 @@ void listenForArmData(float rate){
 	ros::Rate r(rate);
 	
 	while (ros::ok()){
-		ROS_INFO("Listening for arm data...");
+		ROS_INFO_THROTTLE(2, "Listening for arm data...");
 		
 		ros::spinOnce();
 		
@@ -752,7 +747,7 @@ int main (int argc, char** argv)
 	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
 
 	//subscriber for fingers
 	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);

@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 
 	//Subscriber for the arm pose. Coordinate frame is essentially base_frame
 	//Possibly will need to take pose movement into account, but likely not. Will really only be using this for rotating end effector for lift compensation
-	ros::Subscriber sub = n.subscribe("/mico_arm_driver/out/tool_position", 10, toolpos_cb);
+	ros::Subscriber sub = n.subscribe("/mico_arm_driver/out/tool_pose", 10, toolpos_cb);
 
 	ros::Publisher distance_pub = n.advertise<std_msgs::Float32>("poc_distance", 100);
 	std_msgs::Float32 msg;

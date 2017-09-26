@@ -57,7 +57,7 @@ int main(int argc, char **argv){
 	//make controller service
 	ros::ServiceClient client = node_handle.serviceClient<moveit_utils::MicoController>("mico_controller");
 
-	ros::Subscriber sub_tool = node_handle.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = node_handle.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
 	ros::Subscriber sub_angles = node_handle.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 
 	// Create a publisher for visualizing plans in Rviz.

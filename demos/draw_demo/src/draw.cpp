@@ -6,7 +6,7 @@
 #include <cstdlib>
 
 #define PI 3.14159265
-#define TOOL_POS_RATE .025	//Speed in which /mico_arm_driver/out/tool_position topic is updated. Used in calculating future distances
+#define TOOL_POS_RATE .025	//Speed in which /mico_arm_driver/out/tool_pose topic is updated. Used in calculating future distances
 							//NOTE: tool_position refresh rate set in paramaters of launch file. As that changes, this value should be updated.
 #define BASE_VELOCITY .05	//Base velocity. distance / time = 1 / 10 seconds = .1 meters a second.
 #define BASE_VELOCITY_SHORT .05	//slower velocity for smaller distances. higher accuracy
@@ -1409,7 +1409,7 @@ int main(int argc, char **argv)
 	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
   
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
 
 	//subscriber for fingers
   	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);

@@ -139,7 +139,7 @@ public:
 
 
 	//create subscriber to tool position topic
-	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_position", 1, &TabletopGraspActionServer::toolpos_cb, this);
+	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_pose", 1, &TabletopGraspActionServer::toolpos_cb, this);
 
 	//subscriber for fingers
 	sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &TabletopGraspActionServer::fingers_cb, this);

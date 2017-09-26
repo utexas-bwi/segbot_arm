@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
 	
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
 
 	//subscriber for wrench
 	ros::Subscriber sub_wrench = n.subscribe("/mico_arm_driver/out/tool_wrench", 1, wrench_cb);

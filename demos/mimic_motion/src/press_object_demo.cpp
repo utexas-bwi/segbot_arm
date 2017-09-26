@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
 
 
   //create subscriber to tool position topic
-  ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+  ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
 
   //subscriber for fingers
   ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);

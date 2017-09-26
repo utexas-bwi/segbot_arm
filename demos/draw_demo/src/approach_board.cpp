@@ -91,7 +91,7 @@ int main (int argc, char** argv)
 	//pose pub
 	ros::Publisher pose_pub = n.advertise<geometry_msgs::PoseStamped>("approach_board/pose", 10);
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
 	
 	client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose>("mico_cartesianpose_service");
 	

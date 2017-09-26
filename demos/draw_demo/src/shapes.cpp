@@ -264,7 +264,7 @@ int main(int argc, char** argv)
 	
 	
 	//subscribers	
-	ros::Subscriber sub = n.subscribe("/mico_arm_driver/out/tool_position", 10, callBack);
+	ros::Subscriber sub = n.subscribe("/mico_arm_driver/out/tool_pose", 10, callBack);
 	
 	//wait for first position
 	while (true){
