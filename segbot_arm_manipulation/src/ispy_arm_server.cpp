@@ -176,7 +176,7 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 }
 
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
-  ROS_INFO("Heard arm tool pose!");
+  // ROS_INFO("Heard arm tool pose!");
   current_pose = msg;
   heardPose = true;
   //  ROS_INFO_STREAM(current_pose);

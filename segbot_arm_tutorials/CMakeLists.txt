@@ -74,7 +74,8 @@ target_link_libraries(ex5_angular_vel_control ${catkin_LIBRARIES} )
 add_executable(ex6_detect_force src/ex6_detect_force.cpp)
 target_link_libraries(ex6_detect_force ${catkin_LIBRARIES} )
 
-
+add_executable(ex7_moveit src/ex7_moveit.cpp)
+target_link_libraries(ex7_moveit ${catkin_LIBRARIES} )
 
 ## example task 
 #add_executable(object_handover_delivery_task src/object_handover_delivery_task.cpp)
