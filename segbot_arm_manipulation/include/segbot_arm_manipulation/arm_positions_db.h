@@ -1,3 +1,5 @@
+#ifndef ARM_POSITION_DB_H
+#define ARM_POSITION_DB_H
 #include <ros/ros.h>
 #include <signal.h>
 #include <iostream>
@@ -166,3 +168,4 @@ class ArmPositionDB {
 		
 };
 
+#endif

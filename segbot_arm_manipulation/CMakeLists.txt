@@ -23,11 +23,19 @@ find_package(catkin REQUIRED COMPONENTS
   segbot_arm_perception
 )
 
+
 find_package(PCL 1.7 REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
+catkin_python_setup()
 
 add_action_files(
    FILES
@@ -37,14 +45,15 @@ add_action_files(
    Press.action
    Push.action
    Shake.action
+   ObjReplacement.action
 )
 
 add_service_files(
    FILES
    iSpyTouch.srv
    iSpyDetectTouch.srv
+   iSpyFaceTable.srv
 )
-
 
 generate_messages(
   DEPENDENCIES
@@ -59,10 +68,6 @@ catkin_package(
   DEPENDS message_runtime segbot_arm_perception actionlib_msgs geometry_msgs std_msgs
 )
 
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
 
 add_executable(segbot_tabletop_grasp_as src/segbot_tabletop_grasp_as.cpp)
 add_dependencies(segbot_tabletop_grasp_as kinova_msgs_gencpp agile_grasp_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
@@ -116,9 +121,31 @@ add_executable(demo_hand_lead src/demos/demo_hand_lead.cpp)
 target_link_libraries(demo_hand_lead ${catkin_LIBRARIES} )
 add_dependencies(demo_hand_lead segbot_arm_manipulation_gencpp)
 
+add_executable(test_grasp_replacement src/demos/test_grasp_replacement.cpp)
+target_link_libraries(test_grasp_replacement ${catkin_LIBRARIES} )
+add_dependencies(test_grasp_replacement segbot_arm_manipulation_gencpp)
+
+add_executable(segbot_obj_replacement_as src/segbot_obj_replacement_as.cpp)
+add_dependencies(segbot_obj_replacement_as segbot_arm_manipulation_gencpp)
+target_link_libraries(segbot_obj_replacement_as ${catkin_LIBRARIES} )
+
+add_executable(test_handover_replacement src/demos/test_handover_replacement.cpp)
+target_link_libraries(test_handover_replacement ${catkin_LIBRARIES} )
+add_dependencies(test_handover_replacement segbot_arm_manipulation_gencpp)
+
+install(PROGRAMS 
+	src/arm_actions.py
+DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+add_executable(test_ispy src/demos/test_ispy.cpp)
+target_link_libraries(test_ispy ${catkin_LIBRARIES} )
+add_dependencies(test_ispy segbot_arm_manipulation_gencpp)
+
+add_executable(demo_press_button src/demos/demo_press_button.cpp)
+target_link_libraries(demo_press_button ${catkin_LIBRARIES} )
+add_dependencies(demo_press_button jaco_msgs_gencpp segbot_arm_manipulation_gencpp)
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
-  PATTERN ".svn" EXCLUDE)
-
+PATTERN ".svn" EXCLUDE)

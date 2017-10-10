@@ -7,7 +7,7 @@ Currently this is just the Mico2.
 
 To run these packages, you must first install the utexas-bwi fork of the jaco ros drivers. You can do that by going into catkin_ws/src and then cloning the repository with
 
-	git clone https://github.com/utexas-bwi/jaco-ros.git
+    git clone https://github.com/utexas-bwi/jaco-ros.git
 
 and compile with catkin.
 
@@ -15,8 +15,8 @@ Before compiling, install the following dependencies:
 
 Install MoveIt! by typing, libsndfile, Lapack and libfftw with
 
-	sudo apt-get install ros-indigo-moveit-* libsndfile1-dev libfftw3-dev liblapack-dev
+    sudo apt-get install ros-indigo-moveit-* libsndfile1-dev libfftw3-dev liblapack-dev
 
 Install our fork of agile_grasp ROS indigo package by cloning from:
 
-	https://github.com/jsinapov/agile_grasp
+    git clone https://github.com/jsinapov/agile_grasp.git

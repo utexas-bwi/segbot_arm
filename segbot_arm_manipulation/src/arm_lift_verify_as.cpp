@@ -305,7 +305,7 @@ public:
 			return;
         }
 		
-		segbot_arm_manipulation::moveToJointState(nh_, goal -> arm_home);
+		segbot_arm_manipulation::arm_side_view(nh_);
 		
 		//expected downward force, must be changed for new arm locations
 		double goal_down_force = 0.9;

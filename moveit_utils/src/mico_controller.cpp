@@ -69,6 +69,8 @@ bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController
 	res.done = true;
 	return true;
 }
+
+
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "mico_playback_server");

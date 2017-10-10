@@ -29,9 +29,11 @@
 #include "kinova_msgs/ArmPoseAction.h"
 #include "kinova_msgs/ArmJointAnglesAction.h"
 
+
 //srv for talking to table_object_detection_node.cpp
 #include "segbot_arm_manipulation/iSpyTouch.h"
 #include "segbot_arm_manipulation/iSpyDetectTouch.h"
+#include "segbot_arm_manipulation/iSpyFaceTable.h"
 
 // PCL specific includes
 //#include <pcl/conversions.h>
@@ -72,7 +74,10 @@
 #include <moveit_utils/MicoMoveitJointPose.h>
 #include <moveit_utils/MicoMoveitCartesianPose.h>
 
+//some message used for publishing or in the callbacks
 #include <geometry_msgs/TwistStamped.h>
+#include <nav_msgs/Odometry.h>
+#include <jaco_msgs/JointVelocity.h>
 
 #define NUM_JOINTS 8 //6+2 for the arm
 #define FINGER_FULLY_OPENED 6
@@ -101,6 +106,10 @@ bool heardPose = false;
 bool heardJoinstState = false;
 geometry_msgs::PoseStamped home_pose;
 
+
+nav_msgs::Odometry current_odom;
+bool heard_odom;
+
 //global variables about the joint efforts
 double total_grav_free_effort = 0;
 double total_delta;
@@ -123,15 +132,38 @@ ros::ServiceClient client_joint_command;
 
 //publishers
 ros::Publisher pub_velocity;
+ros::Publisher pub_base_velocity;
 ros::Publisher change_cloud_debug_pub; //publishes the filtered change cloud 
 ros::Publisher detected_change_cloud_pub; //publishes the cluster detected to be close to the object
 sensor_msgs::PointCloud2 cloud_ros;
 pcl::PCLPointCloud2 pc_target;
-
+ros::Publisher pub_angular_velocity;
 
 //const float home_position [] = { -1.84799570991366, -0.9422852495301872, -0.23388692957209883, -1.690986384686938, 1.37682658669572, 3.2439323416434624};
-const float home_position [] = {-1.9461704803383473, -0.39558648095261406, -0.6342860089305954, -1.7290658598495474, 1.4053863262257316, 3.039252699220428};
+
+//original studey
+//const float home_position [] = {-1.9461704803383473, -0.39558648095261406, -0.6342860089305954, -1.7290658598495474, 1.4053863262257316, 3.039252699220428};
+
+//closer to laptop so robot can turn
+const float home_position [] = {-2.104982765623053, -0.45429879666061385, -0.04619985280042514, -1.5303365182500774, 1.1245469345291512, 2.8024433498261305};
+
 const float home_position_approach [] = {-1.9480954131742567, -0.9028227948134995, -0.6467984718381701, -1.4125267937404524, 0.8651278801122975, 3.73659131064558};
+const float safe_position [] = {-2.0905452367215145, -1.6631960323958503, 0.14437462322511263, -2.626324245881435, 1.3756366863206724, 4.141190461359241};
+
+//which table we currently face (from  1 to 3)
+int current_table = 2;
+
+//count how many times we have turned
+int num_turns_taken = 0;
+
+//some global variables related to "fidgeting" while the robot is listening for voice
+double theta_angle = 0.0;
+double z_vel_magnitude = 0.2;
+double cycle_length = 2.0;
+bool is_listening = false;
+
+//some global variables related to fidgeting when waiting for touch
+bool is_waiting_for_touch = false;
 
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig)
@@ -142,7 +174,24 @@ void sig_handler(int sig)
   exit(1);
 };
 
+double getYaw(geometry_msgs::Pose pose){
+	tf::Quaternion q(pose.orientation.x, 
+					pose.orientation.y, 
+					pose.orientation.z, 
+					pose.orientation.w);
+	tf::Matrix3x3 m(q);
+		
+	double r, p, y;
+	m.getRPY(r, p, y);
+	return y;
+}
 
+
+//odom state cb
+void odom_cb(const nav_msgs::OdometryConstPtr& input){
+	current_odom = *input;
+	heard_odom = true;
+}
 
 //Joint state cb
 void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
@@ -176,7 +225,7 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 }
 
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
-  // ROS_INFO("Heard arm tool pose!");
+  //ROS_INFO("Heard arm tool pose!");
   current_pose = msg;
   heardPose = true;
   //  ROS_INFO_STREAM(current_pose);
@@ -187,10 +236,12 @@ void fingers_cb (const kinova_msgs::FingerPosition msg) {
 }
 
 
-void listenForArmData(float rate){
+void listenForArmData(float rate, double timeout){
 	heardPose = false;
 	heardJoinstState = false;
 	ros::Rate r(rate);
+	
+	double elapsed_time = 0.0;
 	
 	while (ros::ok()){
 		ROS_INFO_THROTTLE(2, "Listening for arm data...");
@@ -201,6 +252,12 @@ void listenForArmData(float rate){
 			return;
 		
 		r.sleep();
+		elapsed_time += 1.0/rate;
+		
+		if (timeout > 0 && elapsed_time > timeout){
+			ROS_WARN("Listening for arm data failed...this shouldn't happen!");
+			return;
+		}
 	}
 }
 
@@ -275,6 +332,8 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob,
 	tf::TransformListener listener;
 	listener.waitForTransform(pose_st.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
 	listener.transformPose("mico_api_origin", pose_st, pose_st);
+		
+	pose_st.pose.position.x = pose_st.pose.position.x - 0.075;	
 			
 	//decide on orientation (horizontal palm)
 	pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(PI/2,0,PI/2);
@@ -328,8 +387,8 @@ void moveToJointState(const float* js){
  	}
 }
 
-void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts){
-	listenForArmData(30.0);
+void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_efforts, double timeout){
+	listenForArmData(30.0, 2.0);
 	
 	int rateHertz = 40;
 	kinova_msgs::PoseVelocity velocityMsg;
@@ -337,7 +396,7 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 	
 	ros::Rate r(rateHertz);
 	
-	float theta = 0.075;
+	float theta = 0.095;
 	
 	float constant_m = 3.0;
 	
@@ -348,6 +407,8 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 	float last_dz = -1;
 	
 	int timeout_counter = 0;
+	
+	double elapsed_time = 0;
 	
 	while (ros::ok()){
 		
@@ -391,6 +452,9 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 		//ROS_INFO("Published cartesian vel. command");
 		r.sleep();
 		
+		//crude approximation of how much time has passed
+		elapsed_time += 1.0/rateHertz;
+		
 		if (check_efforts){
 			if (heardJoinstState){
 				if (total_delta > 0.8){
@@ -399,6 +463,11 @@ void moveToPoseCarteseanVelocity(geometry_msgs::PoseStamped pose_st, bool check_
 					break;
 				}
 			}
+		}
+		ROS_INFO("Elapsed time: %f",elapsed_time);
+		if (timeout > 0 && elapsed_time > timeout){
+			ROS_WARN("Timeout when performing cart. vel. move...moving on.");
+			break;
 		}
 	}
 	
@@ -509,10 +578,32 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 	
 	double elapsed_time = 0.0;
 	
+	//msg for joint velocity command
+	jaco_msgs::JointVelocity jv_msg;
+	double turn_direction = 1.0;
+	jv_msg.joint1 = 0.0;
+	jv_msg.joint2 = 0.0;
+	jv_msg.joint3 = 0.0;
+	jv_msg.joint4 = 0.0;
+	jv_msg.joint5 = 0.0;
+	jv_msg.joint6 = turn_direction*45;
+	double turn_elapsed_time = 0.0;
+	double direction_switch_duration = 5.0;
+	
 	while (ros::ok()){
 		ros::spinOnce();
 		
 		elapsed_time += 1.0/rate;
+		
+		//move hand as indicator behavior
+		jv_msg.joint6 = turn_direction*45; 
+		pub_angular_velocity.publish(jv_msg);
+		turn_elapsed_time += 1.0/rate;
+		if (turn_elapsed_time > direction_switch_duration){ //switch directions every so often
+			turn_elapsed_time = 0;
+			turn_direction = turn_direction * (-1.0);
+		}
+		
 		
 		if (new_change_cloud_detected){
 			
@@ -637,11 +728,14 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 				return true;
 		}
 		
+		
+		
 		r.sleep();
 	}
 	
 	return true;
 }
+
 
 
 bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req, 
@@ -666,39 +760,30 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 	ROS_INFO("Received touch object request for object %i",req.touch_index);
 	
 	//for each object, compute the touch pose; also, extract the highest point from the table
-		std::vector<geometry_msgs::PoseStamped> touch_poses;
-		double highest_z = 0.0;
-		for (int i = 0; i < detected_objects.size(); i++){
-			//generate touch pose for the object
-			geometry_msgs::PoseStamped touch_pose_i = createTouchPose(detected_objects.at(i),plane_coef_vector,
-													req.objects.at(i).header.frame_id,true);
+	std::vector<geometry_msgs::PoseStamped> touch_poses;
+	double highest_z = 0.0;
+	
+	for (int i = 0; i < detected_objects.size(); i++){
+		//generate touch pose for the object
+		geometry_msgs::PoseStamped touch_pose_i = createTouchPose(detected_objects.at(i),plane_coef_vector,req.objects.at(i).header.frame_id,true);
 			
-			//if (touch_pose_i.pose.position.z > 0.05)
-			//	touch_poses.push_back(touch_pose_i);
-			
-			if (touch_pose_i.pose.position.z > highest_z){
-				highest_z = touch_pose_i.pose.position.z ;
-			}
-			
-			touch_poses.push_back(touch_pose_i);
+		if (touch_pose_i.pose.position.z > highest_z){
+			highest_z = touch_pose_i.pose.position.z ;
 		}
+			
+		touch_poses.push_back(touch_pose_i);
+	}
 	
 	if (req.touch_index != -1){
 		
 		ROS_INFO("Computing touch poses for all objects...");
-		
-		
-		
 		ROS_INFO("...done!");
-		
 		ROS_INFO("Waiting for arm data...");
 		
 		//store current pose
 		/*listenForArmData(10.0);
 		geometry_msgs::PoseStamped start_pose = current_pose;
 		ROS_INFO("...done");*/
-		
-		
 		
 		geometry_msgs::PoseStamped touch_pose_i = touch_poses.at(req.touch_index);
 			
@@ -710,21 +795,21 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 		
 		ROS_INFO("Moving to approach pose...");	
 		//first approach the object from the top
-		moveToPoseCarteseanVelocity(touch_approach,false);
+		moveToPoseCarteseanVelocity(touch_approach,false,7.0);
 			
 		//now touch it
 		ROS_INFO("Moving to touch pose...");	
-		moveToPoseCarteseanVelocity(touch_pose_i,true);
+		moveToPoseCarteseanVelocity(touch_pose_i,true,4.0);
 	}
 	else { //retract
 		//store current pose
-		listenForArmData(10.0);
+		listenForArmData(30.0,2.0);
 		
 		geometry_msgs::PoseStamped touch_approach = current_pose;
 		touch_approach.pose.position.z = highest_z+0.2;
 		//touch_approach.pose.position.x -= 0.2;
 		
-		moveToPoseCarteseanVelocity(touch_approach,false);
+		moveToPoseCarteseanVelocity(touch_approach,false,5.0);
 		//moveToPoseCarteseanVelocity(home_pose,false);
 		//finally call move it to get into the precise joint configuration as the start
 		moveToJointState(home_position_approach);
@@ -737,6 +822,165 @@ bool touch_object_cb(segbot_arm_manipulation::iSpyTouch::Request &req,
 	return true;
 }
 
+bool touch_wait_mode_cb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
+	ROS_INFO("[ispy_arm_server.cpp] Service callback for toggle waiting for touch mode.");
+	
+	if (is_waiting_for_touch){
+		is_waiting_for_touch = false;
+	}
+	else 
+		is_waiting_for_touch = true;
+		
+	return true;
+}
+
+bool listen_mode_cb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
+	ROS_INFO("[ispy_arm_server.cpp] Service callback for toggle listening mode.");
+	
+	if (is_listening){
+		ROS_INFO("Stopping movement...");
+		is_listening = false;
+	}
+	else {
+		ROS_INFO("Starting movement...");
+		is_listening = true;
+	}
+	
+	return true;
+}
+
+bool face_table_cb(segbot_arm_manipulation::iSpyFaceTable::Request &req,
+					segbot_arm_manipulation::iSpyFaceTable::Response &res){
+	
+	ROS_INFO("[ispy_arm_server.cpp] Service callback to turn towards table %i",req.table_index);
+	
+	//get target table and check if we're there anyway
+	int target_table = req.table_index;
+	if (target_table == current_table){
+		res.success = true;
+		return true;
+	}
+	
+	num_turns_taken ++;
+	
+	//else turn but first make arm safe
+	moveToJointState(home_position);
+	
+	//compute the target amount to turn: 90% to get to the neighboring table
+	int table_diff = (current_table - target_table);
+	double target_turn_angle = (PI / 2.0) * table_diff;
+	
+	ROS_INFO("[ispy_arm_server.cpp] Target turn angle: %f",target_turn_angle);
+	
+	//wait for odometry
+	double rate_hz = 100.0;
+	ros::Rate r(rate_hz);
+	heard_odom = false;
+	while (!heard_odom){
+		r.sleep();
+		ros::spinOnce();
+	}
+	
+	//compute the initial and target yaws according to odom
+	double initial_yaw = getYaw(current_odom.pose.pose);
+	double target_yaw = initial_yaw + target_turn_angle;
+	double current_yaw  = initial_yaw;
+	
+	ROS_INFO("[ispy_arm_server.cpp] Initial and target yaws: %f, %f",initial_yaw,target_yaw);
+	
+	//angular turn velocity
+	double max_turn_velocity = 0.25;
+	double min_turn_velocity = 0.05;
+	double velocity_threshold = PI/6;
+	
+	double turn_velocity = max_turn_velocity;
+	double turn_direction = -1.0; //-1 is right
+	if (current_table > target_table)
+		turn_direction = 1.0; //left
+	
+	ROS_INFO("Current: %i, Target %i, direction: %f",current_table,target_table,turn_direction);
+	
+	//message
+	geometry_msgs::Twist v_i;
+	v_i.linear.x = 0; v_i.linear.y = 0; v_i.linear.z = 0;
+	v_i.angular.x = 0; v_i.angular.y = 0;
+	
+
+	while (ros::ok()){
+		
+		//move
+		v_i.angular.z = turn_velocity*turn_direction;	
+		pub_base_velocity.publish(v_i);
+				
+		//check for odom messages
+		ros::spinOnce();	
+		r.sleep();
+		
+		//update current yaw
+		double current_yaw = getYaw(current_odom.pose.pose);
+				
+		//decide whether to stop turning
+		double error = fabs(current_yaw - target_yaw);
+		//ROS_INFO("current: %f, target: %f, ERROR: %f",current_yaw, target_yaw, error);
+		if ( error < 0.025)
+			break;
+			
+		//update turn velocity based on error
+		if (error > velocity_threshold){
+			turn_velocity = max_turn_velocity;
+		}
+		else {
+			turn_velocity = min_turn_velocity + (max_turn_velocity-min_turn_velocity)*error/velocity_threshold;
+		}
+	}
+	
+	v_i.angular.z = 0.0;	
+	pub_base_velocity.publish(v_i);
+	
+	//else turn but first make arm safe
+	moveToJointState(home_position);
+	
+	
+	current_table = target_table;
+	
+	//check if we need to move forward
+	if (num_turns_taken > 10 && current_table == 2){
+		double start_odom_x = current_odom.pose.pose.position.x;
+		double start_odom_y = current_odom.pose.pose.position.y;
+			
+		
+		v_i.linear.x = 0.1; v_i.linear.y = 0; v_i.linear.z = 0;
+		v_i.angular.x = 0; v_i.angular.y = 0; v_i.angular.z = 0;
+		
+		double elapsed_time = 0.0;
+		
+		while (ros::ok()){
+			
+			//move
+			pub_base_velocity.publish(v_i);
+					
+			//check for odom messages
+			ros::spinOnce();	
+			r.sleep();
+			
+			elapsed_time += rate_hz;
+			
+			double distance_traveled = sqrt(  pow(current_odom.pose.pose.position.x - start_odom_x,2) +
+												pow(current_odom.pose.pose.position.y - start_odom_y,2));
+			ROS_INFO("Distance traveled = %f",distance_traveled);
+			if (distance_traveled > 0.05 || elapsed_time > 1.0){
+					break;
+			}
+			
+		}
+		num_turns_taken = 0;
+	}
+	
+	
+	res.success = true;
+	return true;
+}
+
 int main (int argc, char** argv)
 {
 	// Initialize ROS
@@ -744,23 +988,36 @@ int main (int argc, char** argv)
 	ros::NodeHandle n;
 	
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 10, joint_state_cb);
 
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 10, toolpos_cb);
 
 	//subscriber for fingers
-	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 10, fingers_cb);
 	 
 	//subscriber for change cloud
-	ros::Subscriber sub_change_cloud = n.subscribe("/segbot_arm_table_change_detector/cloud",1,change_cloud_cb);  
+	ros::Subscriber sub_change_cloud = n.subscribe("/segbot_arm_table_change_detector/cloud",10,change_cloud_cb);  
+	 
+	//subscriber for odmetry
+	ros::Subscriber sub_odom = n.subscribe("/odom", 10,odom_cb);
+ 
+	 
 	 
 	//publish velocities
 	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
+	//publish angular velocities
+	pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+
+	
 	//cloud publisher
 	change_cloud_debug_pub = n.advertise<sensor_msgs::PointCloud2>("ispy_arm_server/change_cloud_filtered", 10);
 	detected_change_cloud_pub = n.advertise<sensor_msgs::PointCloud2>("ispy_arm_server/detected_touch_cloud", 10);
+	
+	
+	//velocity publisher
+	pub_base_velocity = n.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 	
 	
 	//declare service for touching objects
@@ -769,16 +1026,23 @@ int main (int argc, char** argv)
 	//service for detecting when a human touches an object
 	ros::ServiceServer service_detect = n.advertiseService("ispy/human_detect_touch_object_service", detect_touch_cb);
 	
+	//service for moving robot to different tables
+	ros::ServiceServer service_face_table_one = n.advertiseService("ispy/face_table", face_table_cb);
+	
+	//service to toggle listening mode
+	ros::ServiceServer service_listening = n.advertiseService("ispy/listening_mode_toggle", listen_mode_cb);
+	
+	//service to toggle waiting for touch mode
+	ros::ServiceServer service_wait_touch = n.advertiseService("ispy/touch_waiting_mode_toggle", touch_wait_mode_cb);
+	
+	
 	//clients
 	client_start_change = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/start");
 	client_stop_change = n.serviceClient<std_srvs::Empty> ("/segbot_arm_table_change_detector/stop");
 	client_joint_command = n.serviceClient<moveit_utils::MicoMoveitJointPose> ("/mico_jointpose_service");
 	
-	
-	
-	
 	//store the home arm pose
-	listenForArmData(10.0);
+	listenForArmData(40.0,2.0);
 	home_pose = current_pose;
 	
 	
@@ -788,19 +1052,38 @@ int main (int argc, char** argv)
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
 
+	//listen for messages, srvs, etc.
+	
 	//refresh rate
-	double ros_rate = 10.0;
+	double ros_rate = 40.0;
 	ros::Rate r(ros_rate);
 
-	ros::spin();
+	//msg for publishing velocity commands
+	geometry_msgs::TwistStamped v_msg;
+	
+	
 
 	// Main loop:
-	/*while (!g_caught_sigint && ros::ok())
+	while (!g_caught_sigint && ros::ok())
 	{
 		//collect messages
 		ros::spinOnce();
+		
+		//check if we're supposed to be moving as an indicator that the robot is listening
+		if (is_listening){
+			//update angle
+			theta_angle += (2*PI)/(cycle_length * ros_rate);
 
+			//compute z velocity and publish
+			v_msg.twist.linear.z = z_vel_magnitude * cos(theta_angle);
+			pub_velocity.publish(v_msg);
+			
+		}
+		
+		
+		//sleep to maintain framerate
 		r.sleep();
+	}
 
-	}*/
+	exit(1);
 };

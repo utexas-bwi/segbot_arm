@@ -62,3 +62,6 @@ target_link_libraries(object_to_office_task ${catkin_LIBRARIES} )
 ## example task 
 add_executable(object_handover_delivery_task src/object_handover_delivery_task.cpp)
 target_link_libraries(object_handover_delivery_task ${catkin_LIBRARIES} )
+
+add_executable(object_table_delivery_task src/object_table_delivery_task.cpp)
+target_link_libraries(object_table_delivery_task ${catkin_LIBRARIES} )
