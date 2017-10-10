@@ -4,6 +4,8 @@
   <!-- set the tf prefix as necessary -->
   <arg name="tf_prefix" default="" />
   <arg name="device_id" default="#1" />
+  <arg name="use_xtion" default="false" />
+  <arg name="gui" default="true" />
   <param name="tf_prefix" value="$(arg tf_prefix)" />
 
   <!-- launch the segway base -->
@@ -32,6 +34,7 @@
   <include file="$(find segbot_arm_launch)/launch/includes/auxiliary.segbot_v2.arm.launch.xml">
     <arg name="tf_prefix" default="$(arg tf_prefix)" /> 
     <arg name="use_registered_topic" default="true" />
+    <arg name="use_xtion" value="$(arg use_xtion)" />
   </include>
   
   <!-- Arduino -->
@@ -45,8 +48,12 @@
       <arg name="kinova_robotType" value="m1n6s200" />
       <arg name="kinova_robotName" value="mico_arm"/>
   </include>
+
+  <!-- launch MoveIt! -->
+  <include file="$(find moveit_utils)/launch/mico_moveit.launch" />
+ 
   
    <!-- Diagnostics and battery monitor -->
-  <include file="$(find segbot_sensors)/launch/diagnostic/diagnostics.launch"/>
+  <include file="$(find segbot_sensors)/launch/diagnostic/diagnostics.launch" if="$(arg gui)"/>
 
 </launch>
