@@ -1,3 +1,5 @@
+#ifndef ARM_UTILS_H
+#define ARM_UTILS_H
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <signal.h>
@@ -435,3 +437,4 @@ namespace segbot_arm_manipulation {
 		
 	}
 }
+#endif

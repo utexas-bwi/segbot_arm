@@ -24,7 +24,6 @@
 #include "kinova_msgs/ArmPoseAction.h"
 #include "kinova_msgs/ArmJointAnglesAction.h"
 #include <segbot_arm_manipulation/PushAction.h>
-#include <segbot_arm_manipulation/arm_utils.h>
 
 
 //srv for talking to table_object_detection_node.cpp
@@ -76,7 +75,7 @@ protected:
   
 	
 	sensor_msgs::JointState current_state;
-	jaco_msgs::FingerPosition current_finger;
+	kinova_msgs::FingerPosition current_finger;
 	geometry_msgs::PoseStamped current_pose;
 	bool heardPose;
 	bool heardJoinstState; 

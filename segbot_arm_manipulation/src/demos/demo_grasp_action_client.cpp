@@ -1,16 +1,10 @@
 #include <ros/ros.h>
-
 #include <signal.h>
-
 #include <sensor_msgs/JointState.h>
-
-//srv for talking to table_object_detection_node.cpp
+#include <geometry_msgs/PoseStamped.h>
+#include <actionlib/client/simple_action_client.h>
 #include "segbot_arm_perception/TabletopPerception.h"
-
-//action for grasping
 #include "segbot_arm_manipulation/TabletopGraspAction.h"
-
-
 #include <segbot_arm_manipulation/arm_utils.h>
 
 #define NUM_JOINTS 8 //6+2 for the arm

@@ -1,3 +1,5 @@
+#ifndef GRASP_UTILS_H
+#define GRASP_UTILS_H
 #include <ros/ros.h>
 #include <signal.h>
 #include <iostream>
@@ -196,3 +198,4 @@ namespace segbot_arm_manipulation {
 		}
 	}
 }
+#endif

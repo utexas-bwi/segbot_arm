@@ -77,7 +77,7 @@
 //some message used for publishing or in the callbacks
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
-#include <jaco_msgs/JointVelocity.h>
+#include <kinova_msgs/JointVelocity.h>
 
 #define NUM_JOINTS 8 //6+2 for the arm
 #define FINGER_FULLY_OPENED 6
@@ -282,7 +282,7 @@ std::vector<PointCloudT::Ptr > computeClusters(PointCloudT::Ptr in){
 	{
 		PointCloudT::Ptr cloud_cluster (new PointCloudT);
 		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
-			cloud_cluster->points.push_back (in->points[*pit]); //*
+			cloud_cluster->points.push_back (in->points[*pit]); 
 		cloud_cluster->width = cloud_cluster->points.size ();
 		cloud_cluster->height = 1;
 		cloud_cluster->is_dense = true;
@@ -579,7 +579,7 @@ bool detect_touch_cb(segbot_arm_manipulation::iSpyDetectTouch::Request &req,
 	double elapsed_time = 0.0;
 	
 	//msg for joint velocity command
-	jaco_msgs::JointVelocity jv_msg;
+	kinova_msgs::JointVelocity jv_msg;
 	double turn_direction = 1.0;
 	jv_msg.joint1 = 0.0;
 	jv_msg.joint2 = 0.0;
@@ -1008,7 +1008,7 @@ int main (int argc, char** argv)
 	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
 	
 	//publish angular velocities
-	pub_angular_velocity = n.advertise<jaco_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+	pub_angular_velocity = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
 
 	
 	//cloud publisher

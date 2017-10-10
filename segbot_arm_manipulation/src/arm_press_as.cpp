@@ -253,12 +253,6 @@ public:
 			velocityMsg.twist.angular.z = 0.0;
 		
 		
-		while(ros::ok() && !as_.isPreemptRequested()){			
-			v.twist_linear_z = -0.125;
-
-			arm_vel.publish(velocityMsg);
-
-			r.sleep();
 		}
 		
 	}
