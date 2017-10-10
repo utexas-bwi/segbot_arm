@@ -46,6 +46,14 @@
     <disable_collisions link1="arm_link" link2="mico_link_finger_1" reason="Never" />
     <disable_collisions link1="arm_link" link2="mico_link_finger_2" reason="Never" />
 
+
+   <disable_collisions link1="mico_link_finger_1" link2="mico_link_finger_tip_1" reason="Adjacent" />
+    <disable_collisions link1="mico_link_finger_2" link2="mico_link_finger_tip_2" reason="Adjacent" />
+    <disable_collisions link1="mico_link_finger_tip_1" link2="arm_link" reason="Never" />
+    <disable_collisions link1="mico_link_finger_tip_2" link2="arm_link" reason="Never" />
+
+
+
     <disable_collisions link1="arm_link" link2="nav_hokuyo_link" reason="Never" />
     <disable_collisions link1="arm_link" link2="nav_hokuyo_plate_link" reason="Never" />
     <disable_collisions link1="arm_link" link2="nav_kinect_base_plate_link" reason="Never" />
