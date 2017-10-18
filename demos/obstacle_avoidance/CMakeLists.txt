@@ -5,7 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   agile_grasp
   geometry_msgs
-  jaco_msgs
+  kinova_msgs
   message_generation
   moveit_msgs
   moveit_ros_planning_interface

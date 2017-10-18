@@ -8,9 +8,9 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
 
-#include "jaco_msgs/SetFingersPositionAction.h"
-#include "jaco_msgs/ArmPoseAction.h"
-#include "jaco_msgs/ArmJointAnglesAction.h"
+#include "kinova_msgs/SetFingersPositionAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
+#include "kinova_msgs/ArmJointAnglesAction.h"
 
 #include <moveit_msgs/DisplayRobotState.h>
 // Kinematics
@@ -71,7 +71,7 @@ protected:
 
 	sensor_msgs::JointState current_state;
 	sensor_msgs::JointState current_effort;
-	jaco_msgs::FingerPosition current_finger;
+	kinova_msgs::FingerPosition current_finger;
 	geometry_msgs::PoseStamped current_pose;
 	bool heardPose;
 	bool heardJoinstState; 
@@ -147,7 +147,7 @@ public:
 	}
 
 	//fingers state cb
-	void fingers_cb (const jaco_msgs::FingerPosition msg) {
+	void fingers_cb (const kinova_msgs::FingerPosition msg) {
 		current_finger = msg;
 	}
 		

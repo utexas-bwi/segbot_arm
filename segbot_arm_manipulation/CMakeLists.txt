@@ -143,7 +143,7 @@ add_dependencies(test_ispy segbot_arm_manipulation_gencpp)
 
 add_executable(demo_press_button src/demos/demo_press_button.cpp)
 target_link_libraries(demo_press_button ${catkin_LIBRARIES} )
-add_dependencies(demo_press_button jaco_msgs_gencpp segbot_arm_manipulation_gencpp)
+add_dependencies(demo_press_button kinova_msgs_gencpp segbot_arm_manipulation_gencpp)
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}

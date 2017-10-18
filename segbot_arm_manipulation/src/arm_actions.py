@@ -6,7 +6,7 @@ import actionlib_msgs.msg
 
 from geometry_msgs.msg import *
 import std_msgs.msg
-from jaco_msgs.msg import *
+from kinova_msgs.msg import *
 from sensor_msgs.msg import *
 from segbot_arm_manipulation.msg import *
 from segbot_arm_perception.srv import *
@@ -135,10 +135,10 @@ def arm_handover ():
 """Function to open the fingers of the robot"""
 def open_finger():
 	action_address = '/mico_arm_driver/fingers/finger_positions'
-	finger_client = actionlib.SimpleActionClient(action_address, jaco_msgs.msg.SetFingersPositionAction)
+	finger_client = actionlib.SimpleActionClient(action_address, kinova_msgs.msg.SetFingersPositionAction)
 	finger_client.wait_for_server()
 	
-	goal = jaco_msgs.msg.SetFingersPositionGoal()
+	goal = kinova_msgs.msg.SetFingersPositionGoal()
 	goal.fingers.finger1 = 100
 	goal.fingers.finger2 = 100
 	goal.fingers.finger3 = 0

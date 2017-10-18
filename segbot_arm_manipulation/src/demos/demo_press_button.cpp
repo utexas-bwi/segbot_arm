@@ -18,7 +18,7 @@
 
 //actions
 #include <actionlib/client/simple_action_client.h>
-#include "jaco_msgs/ArmPoseAction.h"
+#include "kinova_msgs/ArmPoseAction.h"
 
 #define NUM_JOINTS 8 //6+2 for the arm
 

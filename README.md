@@ -7,7 +7,7 @@ Currently this is just the Mico2.
 
 To run these packages, you must first install the utexas-bwi fork of the jaco ros drivers. You can do that by going into catkin_ws/src and then cloning the repository with
 
-    git clone https://github.com/utexas-bwi/jaco-ros.git
+    git clone https://github.com/utexas-bwi/kinova-ros.git
 
 and compile with catkin.
 
