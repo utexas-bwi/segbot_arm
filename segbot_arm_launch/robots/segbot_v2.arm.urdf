@@ -29,6 +29,47 @@
   </material>
   <!-- Included URDF Files -->
   <!-- Included URDF Files -->
+  <!-- links      		mesh_no
+   base           		0
+   shoulder       		1
+   arm            		2
+   forearm        		3
+   wrist          		4
+   arm_mico       		5
+   arm_half1 (7dof)		6
+   arm_half2 (7dof)		7
+   wrist_spherical_1  8
+   wrist_spherical_2  9
+
+   hand 3 finger  		55
+   hand_2finger   		56
+   finger_proximal		57
+   finger_distal      58 
+-->
+  <!-- links      		mesh_no
+   base           		0
+   shoulder       		1
+   arm            		2
+   forearm        		3
+   wrist          		4
+   arm_mico       		5
+   arm_half1 (7dof)		6
+   arm_half2 (7dof)		7
+   wrist_spherical_1  8
+   wrist_spherical_2  9
+
+   hand 3 finger  		55
+   hand_2finger   		56
+   finger_proximal		57
+   finger_distal      58 
+-->
+  <!-- Import all Gazebo-customization elements -->
+  <!--Used for conditional arguments for setting inertial parameters
+        base 0, shoulder 1, arm 2, forearm 3, wrist 4, arm_mico 5,
+        arm_half1 (7dof)	6, arm_half2 (7dof) 7, wrist_spherical_1  8, wrist_spherical_2  9
+        fore_arm_mico 10,
+        hand 3 finger 55, hand_2finger 56, finger_proximal 57, finger_distal 58 
+    -->
   <!-- Add the segbot base -->
   <!-- root link, on the ground just below the robot origin -->
   <link name="base_footprint">
@@ -1309,228 +1350,659 @@
       </geometry>
     </collision>
   </link>
-  <link name="mico_link_base">
+  <!-- The TF prefix that we're setting here must match the prefix to the 
+       the joint names on the /out/joint_states topic
+	-->
+  <!-- ros_control plugin -->
+  <gazebo>
+    <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_control">
+      <robotNamespace>m1n6s200</robotNamespace>
+      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+    </plugin>
+  </gazebo>
+  <link name="m1n6s200_link_base">
     <visual>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_base.dae"/>
+        <mesh filename="package://kinova_description/meshes/base.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
+    <!-- Adding ring to the model -->
     <collision>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_base.dae"/>
+        <mesh filename="package://kinova_description/meshes/base.dae"/>
       </geometry>
     </collision>
+    <!-- base = 0 -->
+    <inertial>
+      <mass value="0.46784"/>
+      <origin rpy="0 0 0" xyz="0 0 0.1255"/>
+      <!-- z Axis -->
+      <inertia ixx="0.000951270861568" ixy="0" ixz="0" iyy="0.000951270861568" iyz="0" izz="0.000374272"/>
+      <!-- y Axis -->
+      <!-- x Axis -->
+    </inertial>
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <!-- finger_distal = 58 -->
   </link>
-  <joint name="mico_joint_base" type="fixed">
+  <joint name="m1n6s200_joint_base" type="fixed">
     <parent link="arm_link"/>
-    <child link="mico_link_base"/>
+    <child link="m1n6s200_link_base"/>
     <axis xyz="0 0 0"/>
-    <limit effort="30" lower="0" upper="0" velocity="0.35"/>
+    <limit effort="2000" lower="0" upper="0" velocity="1"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
+    <dynamics damping="0.0" friction="0.0"/>
   </joint>
-  <link name="mico_link_1">
+  <link name="m1n6s200_link_1">
     <visual>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_1.dae"/>
+        <mesh filename="package://kinova_description/meshes/shoulder.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_1.dae"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="mico_joint_1" type="continuous">
-    <parent link="mico_link_base"/>
-    <child link="mico_link_1"/>
-    <axis xyz="0 0 -1"/>
-    <limit effort="30" lower="-6.28318530718" upper="6.28318530718" velocity="0.35"/>
-    <origin rpy="3.14159265359 0 3.14159265359" xyz="0 0 0.1535"/>
-  </joint>
-  <link name="mico_link_2">
+    <!-- Adding ring to the model -->
     <visual>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_2.dae"/>
+        <mesh filename="package://kinova_description/meshes/ring_big.STL"/>
       </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
-      </material>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_2.dae"/>
+        <mesh filename="package://kinova_description/meshes/shoulder.dae"/>
       </geometry>
     </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <inertial>
+      <mass value="0.7477"/>
+      <origin xyz="0 -0.002 -0.0605"/>
+      <!-- z Axis -->
+      <inertia ixx="0.00152031725204" ixy="0" ixz="0" iyy="0.00152031725204" iyz="0" izz="0.00059816"/>
+      <!-- y Axis -->
+      <!-- x Axis -->
+    </inertial>
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <!-- finger_distal = 58 -->
   </link>
-  <joint name="mico_joint_2" type="revolute">
-    <parent link="mico_link_1"/>
-    <child link="mico_link_2"/>
+  <joint name="m1n6s200_joint_1" type="continuous">
+    <parent link="m1n6s200_link_base"/>
+    <child link="m1n6s200_link_1"/>
     <axis xyz="0 0 1"/>
-    <limit effort="30" lower="-3.59159265359" upper="0.45" velocity="0.35"/>
-    <origin rpy="-1.57079632679 3.14159265359 0" xyz="0 0 -0.1185"/>
+    <limit effort="2000" lower="-6.28318530718" upper="6.28318530718" velocity="1"/>
+    <origin rpy="0 3.14159265359 0" xyz="0 0 0.15675"/>
+    <dynamics damping="0.0" friction="0.0"/>
   </joint>
-  <link name="mico_link_3">
+  <transmission name="m1n6s200_joint_1_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="m1n6s200_joint_1">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="m1n6s200_joint_1_actuator">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>160</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link name="m1n6s200_link_2">
     <visual>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_3.dae"/>
+        <mesh filename="package://kinova_description/meshes/arm_mico.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_3.dae"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="mico_joint_3" type="revolute">
-    <parent link="mico_link_2"/>
-    <child link="mico_link_3"/>
-    <axis xyz="0 0 -1"/>
-    <limit effort="30" lower="-3.92699081699" upper="0.785398163397" velocity="0.35"/>
-    <origin rpy="3.14159265359 0 1.57079632679" xyz="0.29 0 0"/>
-  </joint>
-  <link name="mico_link_4">
+    <!-- Adding ring to the model -->
     <visual>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_4.dae"/>
+        <mesh filename="package://kinova_description/meshes/ring_big.STL"/>
       </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
-      </material>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_4.dae"/>
+        <mesh filename="package://kinova_description/meshes/arm_mico.dae"/>
       </geometry>
     </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <!--arm_mico       		5 -->
+    <inertial>
+      <mass value="0.85968"/>
+      <origin xyz="0 -0.145  -0.0076"/>
+      <!-- z Axis -->
+      <!-- y Axis -->
+      <inertia ixx="0.00467090931629" ixy="0" ixz="0" iyy="0.000386856" iyz="0" izz="0.00467090931629"/>
+      <!-- x Axis -->
+    </inertial>
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <!-- finger_distal = 58 -->
   </link>
-  <joint name="mico_joint_4" type="continuous">
-    <parent link="mico_link_3"/>
-    <child link="mico_link_4"/>
-    <axis xyz="0 0 -1"/>
-    <limit effort="30" lower="-6.28318530718" upper="6.28318530718" velocity="0.35"/>
-    <origin rpy="3.14159265359 1.57079632679 0" xyz="0.123 0 -0.00845"/>
-  </joint>
-  <link name="mico_link_5">
-    <visual>
-      <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_5.dae"/>
-      </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_5.dae"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="mico_joint_5" type="continuous">
-    <parent link="mico_link_4"/>
-    <child link="mico_link_5"/>
-    <axis xyz="0 0 -1"/>
-    <limit effort="30" lower="-6.28318530718" upper="6.28318530718" velocity="0.35"/>
-    <origin rpy="0 -1.0471975512 0" xyz="0.03700 0 -0.06408"/>
-  </joint>
-  <link name="mico_link_hand">
-    <visual>
-      <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_hand.dae"/>
-      </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_hand.dae"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="mico_joint_6" type="continuous">
-    <parent link="mico_link_5"/>
-    <child link="mico_link_hand"/>
-    <axis xyz="0 0 -1"/>
-    <limit effort="30" lower="-6.28318530718" upper="6.28318530718" velocity="0.35"/>
-    <origin rpy="-1.0471975512 0 1.57079632679" xyz="0.03700 0 -0.06408"/>
-  </joint>
-  <joint name="mico_link_base_to_api_origin" type="fixed">
-    <parent link="mico_link_base"/>
-    <child link="mico_api_origin"/>
-    <origin rpy="0 0 0" xyz="0 0 0.028"/>
-  </joint>
-  <link name="mico_api_origin">
-    <!--
-         <visual>
-           <geometry>
-             <box xyz="0 0 0" size="0.1 0.1 0.1"/>
-           </geometry>
-         </visual>
-         <collision>
-           <geometry>
-             <box xyz="0 0 0" size="0.1 0.1 0.1"/>
-           </geometry>
-         </collision>
-         -->
-  </link>
-  <joint name="mico_link_hand_to_end_effector" type="fixed">
-    <parent link="mico_link_hand"/>
-    <child link="mico_end_effector"/>
-    <origin rpy="0 3.14159265359 0" xyz="0 0 -0.16"/>
-  </joint>
-  <link name="mico_end_effector"/>
-  <link name="mico_link_finger_1">
-    <visual>
-      <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_finger_1.dae"/>
-      </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_finger_1.dae"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="mico_joint_finger_1" type="revolute">
-    <parent link="mico_link_hand"/>
-    <child link="mico_link_finger_1"/>
+  <joint name="m1n6s200_joint_2" type="revolute">
+    <parent link="m1n6s200_link_1"/>
+    <child link="m1n6s200_link_2"/>
     <axis xyz="0 0 1"/>
-    <origin rpy="-1.57079632679 1.117 3.14159265359" xyz="-0.03978 0 -0.10071"/>
-    <limit effort="30" lower="0" upper="0.698131700798" velocity="5"/>
+    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="1"/>
+    <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.0016 -0.11875"/>
+    <dynamics damping="0.0" friction="0.0"/>
   </joint>
-  <link name="mico_link_finger_2">
+  <transmission name="m1n6s200_joint_2_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="m1n6s200_joint_2">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="m1n6s200_joint_2_actuator">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>160</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link name="m1n6s200_link_3">
     <visual>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_finger_2.dae"/>
+        <mesh filename="package://kinova_description/meshes/forearm_mico.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
+    <!-- Adding ring to the model -->
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/ring_big.STL"/>
+      </geometry>
+    </visual>
     <collision>
       <geometry>
-        <mesh filename="package://jaco_model/meshes/mico_link_finger_2.dae"/>
+        <mesh filename="package://kinova_description/meshes/forearm_mico.dae"/>
+      </geometry>
+    </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <inertial>
+      <mass value="0.606"/>
+      <origin xyz="0 0.0463 -0.0065"/>
+      <!-- z Axis -->
+      <!-- y Axis -->
+      <inertia ixx="0.0003837984648" ixy="0" ixz="0" iyy="0.0001212" iyz="0" izz="0.0003837984648"/>
+      <!-- x Axis -->
+    </inertial>
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <!-- finger_distal = 58 -->
+  </link>
+  <joint name="m1n6s200_joint_3" type="revolute">
+    <parent link="m1n6s200_link_2"/>
+    <child link="m1n6s200_link_3"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="1"/>
+    <origin rpy="0 3.14159265359 0" xyz="0 -0.290 0"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <transmission name="m1n6s200_joint_3_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="m1n6s200_joint_3">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="m1n6s200_joint_3_actuator">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>160</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link name="m1n6s200_link_4">
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/wrist.dae"/>
+      </geometry>
+      <material name="carbon_fiber">
+        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      </material>
+    </visual>
+    <!-- Adding ring to the model -->
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/ring_small.STL"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/wrist.dae"/>
+      </geometry>
+    </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <inertial>
+      <mass value="0.1785"/>
+      <origin xyz="0 -0.037 -0.0642"/>
+      <!-- z Axis -->
+      <inertia ixx="7.73496906e-05" ixy="0" ixz="0" iyy="7.73496906e-05" iyz="0" izz="0.0001428"/>
+      <!-- y Axis -->
+      <!-- x Axis -->
+    </inertial>
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <!-- finger_distal = 58 -->
+  </link>
+  <joint name="m1n6s200_joint_4" type="continuous">
+    <parent link="m1n6s200_link_3"/>
+    <child link="m1n6s200_link_4"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2000" lower="-6.28318530718" upper="6.28318530718" velocity="1"/>
+    <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.1231 -0.0086"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <transmission name="m1n6s200_joint_4_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="m1n6s200_joint_4">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="m1n6s200_joint_4_actuator">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>160</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link name="m1n6s200_link_5">
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/wrist.dae"/>
+      </geometry>
+      <material name="carbon_fiber">
+        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      </material>
+    </visual>
+    <!-- Adding ring to the model -->
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/ring_small.STL"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/wrist.dae"/>
+      </geometry>
+    </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <inertial>
+      <mass value="0.1785"/>
+      <origin xyz="0 -0.037 -0.0642"/>
+      <!-- z Axis -->
+      <inertia ixx="7.73496906e-05" ixy="0" ixz="0" iyy="7.73496906e-05" iyz="0" izz="0.0001428"/>
+      <!-- y Axis -->
+      <!-- x Axis -->
+    </inertial>
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <!-- finger_distal = 58 -->
+  </link>
+  <joint name="m1n6s200_joint_5" type="continuous">
+    <parent link="m1n6s200_link_4"/>
+    <child link="m1n6s200_link_5"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2000" lower="-6.28318530718" upper="6.28318530718" velocity="1"/>
+    <origin rpy="1.0471975512 0 3.14159265359" xyz="0 -0.03703 -0.06414"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <transmission name="m1n6s200_joint_5_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="m1n6s200_joint_5">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="m1n6s200_joint_5_actuator">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>160</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link name="m1n6s200_link_6">
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/hand_2finger.dae"/>
+      </geometry>
+      <material name="carbon_fiber">
+        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      </material>
+    </visual>
+    <!-- Adding ring to the model -->
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/ring_small.STL"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/hand_2finger.dae"/>
+      </geometry>
+    </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <inertial>
+      <mass value="0.78"/>
+      <origin xyz="0 0 -0.06"/>
+      <!-- z Axis -->
+      <inertia ixx="0.000370498518" ixy="0" ixz="0" iyy="0.000370498518" iyz="0" izz="0.000624"/>
+      <!-- y Axis -->
+      <!-- x Axis -->
+    </inertial>
+    <!-- finger_proximal = 57 -->
+    <!-- finger_distal = 58 -->
+  </link>
+  <joint name="m1n6s200_joint_6" type="continuous">
+    <parent link="m1n6s200_link_5"/>
+    <child link="m1n6s200_link_6"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2000" lower="-6.28318530718" upper="6.28318530718" velocity="1"/>
+    <origin rpy="1.0471975512 0 3.14159265359" xyz="0 -0.03703 -0.06414"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <transmission name="m1n6s200_joint_6_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="m1n6s200_joint_6">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="m1n6s200_joint_6_actuator">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>160</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link name="m1n6s200_end_effector">
+    <visual>
+      <geometry>
+        <box size="0 0 0"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0 0 0"/>
       </geometry>
     </collision>
   </link>
-  <joint name="mico_joint_finger_2" type="revolute">
-    <parent link="mico_link_hand"/>
-    <child link="mico_link_finger_2"/>
+  <joint name="m1n6s200_joint_end_effector" type="fixed">
+    <parent link="m1n6s200_link_6"/>
+    <child link="m1n6s200_end_effector"/>
+    <axis xyz="0 0 0"/>
+    <limit effort="2000" lower="0" upper="0" velocity="1"/>
+    <origin rpy="3.14159265359 0 0" xyz="0 0 -0.1600"/>
+  </joint>
+  <!-- finger1 Rot := Ry((1/2)*Pi) . Rx(Pi) . Rz(-52.8*((1/180)*Pi)) -->
+  <link name="m1n6s200_link_finger_1">
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+      </geometry>
+      <material name="carbon_fiber">
+        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      </material>
+    </visual>
+    <!-- Adding ring to the model -->
+    <collision>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+      </geometry>
+    </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0.022 0 0"/>
+      <!-- z Axis -->
+      <inertia ixx="7.8999684e-07" ixy="0" ixz="0" iyy="7.8999684e-07" iyz="0" izz="8e-08"/>
+      <!-- y Axis -->
+      <!-- x Axis -->
+    </inertial>
+    <!-- finger_distal = 58 -->
+  </link>
+  <joint name="m1n6s200_joint_finger_1" type="revolute">
+    <parent link="m1n6s200_link_6"/>
+    <child link="m1n6s200_link_finger_1"/>
     <axis xyz="0 0 1"/>
-    <origin rpy="1.57079632679 2.02459265359 3.14159265359" xyz="0.03569 0 -0.10071"/>
-    <limit effort="30" lower="0" upper="0.698131700798" velocity="5"/>
+    <origin rpy="-1.570796327 .649262481663582 1.57079632679490" xyz="-0.0025 0.03095 -0.11482"/>
+    <limit effort="2000" lower="0" upper="2" velocity="1"/>
+  </joint>
+  <transmission name="m1n6s200_joint_finger_1_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="m1n6s200_joint_finger_1">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="m1n6s200_joint_finger_1_actuator">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link name="m1n6s200_link_finger_tip_1">
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+      </geometry>
+      <material name="carbon_fiber">
+        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      </material>
+    </visual>
+    <!-- Adding ring to the model -->
+    <collision>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+      </geometry>
+    </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <!-- finger_distal = 58 -->
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0.022 0 0"/>
+      <!-- z Axis -->
+      <inertia ixx="7.8999684e-07" ixy="0" ixz="0" iyy="7.8999684e-07" iyz="0" izz="8e-08"/>
+      <!-- y Axis -->
+      <!-- x Axis -->
+    </inertial>
+  </link>
+  <joint name="m1n6s200_joint_finger_tip_1" type="fixed">
+    <parent link="m1n6s200_link_finger_1"/>
+    <child link="m1n6s200_link_finger_tip_1"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.044 -0.003 0"/>
+    <limit effort="2000" lower="0" upper="2" velocity="1"/>
+  </joint>
+  <!-- finger2 Rot := Ry((1/2)*Pi) . Rz(-52.8*((1/180)*Pi))  -->
+  <link name="m1n6s200_link_finger_2">
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+      </geometry>
+      <material name="carbon_fiber">
+        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      </material>
+    </visual>
+    <!-- Adding ring to the model -->
+    <collision>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+      </geometry>
+    </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0.022 0 0"/>
+      <!-- z Axis -->
+      <inertia ixx="7.8999684e-07" ixy="0" ixz="0" iyy="7.8999684e-07" iyz="0" izz="8e-08"/>
+      <!-- y Axis -->
+      <!-- x Axis -->
+    </inertial>
+    <!-- finger_distal = 58 -->
+  </link>
+  <joint name="m1n6s200_joint_finger_2" type="revolute">
+    <parent link="m1n6s200_link_6"/>
+    <child link="m1n6s200_link_finger_2"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="-1.570796327 .649262481663582 -1.57079632679490" xyz="-0.0025 -0.03095 -0.11482"/>
+    <limit effort="2000" lower="0" upper="2" velocity="1"/>
+  </joint>
+  <transmission name="m1n6s200_joint_finger_2_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="m1n6s200_joint_finger_2">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="m1n6s200_joint_finger_2_actuator">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link name="m1n6s200_link_finger_tip_2">
+    <visual>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+      </geometry>
+      <material name="carbon_fiber">
+        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      </material>
+    </visual>
+    <!-- Adding ring to the model -->
+    <collision>
+      <geometry>
+        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+      </geometry>
+    </collision>
+    <!-- base = 0 -->
+    <!-- shoulder = 1 -->
+    <!-- arm = 2-->
+    <!-- forearm = 3 -->
+    <!-- wrist = 4 -->
+    <!--arm_mico       		5 -->
+    <!--   arm_half1 (7dof)		6 -->
+    <!--   arm_half2 (7dof)		7 -->
+    <!--   wrist_spherical_1  8 -->
+    <!--   wrist_spherical_2  9 -->
+    <!--   forearm_mico  10 -->
+    <!-- hand 3 finger = 55 -->
+    <!-- hand 2 finger = 56 -->
+    <!-- finger_proximal = 57 -->
+    <!-- finger_distal = 58 -->
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0.022 0 0"/>
+      <!-- z Axis -->
+      <inertia ixx="7.8999684e-07" ixy="0" ixz="0" iyy="7.8999684e-07" iyz="0" izz="8e-08"/>
+      <!-- y Axis -->
+      <!-- x Axis -->
+    </inertial>
+  </link>
+  <joint name="m1n6s200_joint_finger_tip_2" type="fixed">
+    <parent link="m1n6s200_link_finger_2"/>
+    <child link="m1n6s200_link_finger_tip_2"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.044 -0.003 0"/>
+    <limit effort="2000" lower="0" upper="2" velocity="1"/>
   </joint>
   <!-- add the xtion -->
   <joint name="xtion_camera_joint" type="fixed">
