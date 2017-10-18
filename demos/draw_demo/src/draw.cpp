@@ -6,7 +6,7 @@
 #include <cstdlib>
 
 #define PI 3.14159265
-#define TOOL_POS_RATE .025	//Speed in which /mico_arm_driver/out/tool_pose topic is updated. Used in calculating future distances
+#define TOOL_POS_RATE .025	//Speed in which /m1n6s200_driver/out/tool_pose topic is updated. Used in calculating future distances
 							//NOTE: tool_position refresh rate set in paramaters of launch file. As that changes, this value should be updated.
 #define BASE_VELOCITY .05	//Base velocity. distance / time = 1 / 10 seconds = .1 meters a second.
 #define BASE_VELOCITY_SHORT .05	//slower velocity for smaller distances. higher accuracy
@@ -181,7 +181,7 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input)
 //Several predefined poses - "grab" for obtaining an object from human
 //"horizontal" to orient the joints in the horizontal writing position
 void getWriteReady(string position){
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 	
 	kinova_msgs::ArmPoseGoal goalPose;
 	
@@ -274,7 +274,7 @@ void writeToFile(vector<double> gravFree, vector<double> deltas){
 //helper function for openAndClose
 //opens fingers compeltely
 int openFull(){
-	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers/finger_positions/", true);
 	kinova_msgs::SetFingersPositionGoal goal;
 	goal.fingers.finger1 = 6;
 	goal.fingers.finger2 = 6;
@@ -310,7 +310,7 @@ void lift(){
 //helper function for openAndCloseFingers.
 //closes the fingers completely
 int closeComplt(){
-	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers/finger_positions/", true);
 	kinova_msgs::SetFingersPositionGoal goal;
  	goal.fingers.finger1 = 7000;
 	goal.fingers.finger2 = 7000;
@@ -327,7 +327,7 @@ int moveAndPause(){
 	ros::Time start = ros::Time::now();
 	ros::Duration timeout = ros::Duration(60.0);
 	ros::Rate r(20);
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 	
 	kinova_msgs::ArmPoseGoal goalPose;
 	
@@ -962,7 +962,7 @@ void gotoPoint(double x_coord, double y_coord){
 //Hardcoded for a demo in the lab with the arm attached to table.
 //Used in 'Final Demo'
 void establish_bounds(){
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 	
 	kinova_msgs::ArmPoseGoal goalPose;
 	ros::Rate r(30);
@@ -1403,16 +1403,16 @@ int main(int argc, char **argv)
 	//ros::Subscriber distSub = n.subscribe("/poc_distance", 1, distance_cb);
 	
 	//publisher for cartesian velocity
-	c_vel_pub_ = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 2);
+	c_vel_pub_ = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 2);
 
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
   
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
 	//subscriber for fingers
-  	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+  	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
 
 	string ansChoice;
 	displayIntro();

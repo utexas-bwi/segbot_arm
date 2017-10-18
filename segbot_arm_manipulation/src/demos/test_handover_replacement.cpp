@@ -94,7 +94,7 @@ int main(int argc, char** argv){
 	ros::Subscriber sub_angles = nh.subscribe ("/joint_states", 1, joint_state_cb);
 
 	//publishers
-	ros::Subscriber sub_tool = nh.subscribe("/mico_arm_driver/out/tool_position", 1, pose_stamped_cb);
+	ros::Subscriber sub_tool = nh.subscribe("/m1n6s200_driver/out/tool_position", 1, pose_stamped_cb);
 
 	listen_for_arm_data(10);
 	

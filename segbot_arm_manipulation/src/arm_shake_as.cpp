@@ -112,19 +112,19 @@ public:
 	heardWrench = false;
 	
 	//publisher to move arm down
-	arm_vel= nh_.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 2);
+	arm_vel= nh_.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 2);
 
 	//create subscriber to joint angles
-	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &ShakeActionServer::joint_state_cb, this);
+	sub_angles = nh_.subscribe ("/m1n6s200_driver/out/joint_state", 1, &ShakeActionServer::joint_state_cb, this);
 
 	//create subscriber to tool position topic
-	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_pose", 1, &ShakeActionServer::toolpos_cb, this);
+	sub_tool = nh_.subscribe("/m1n6s200_driver/out/tool_pose", 1, &ShakeActionServer::toolpos_cb, this);
 
 	//subscriber for fingers
-	sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &ShakeActionServer::fingers_cb, this);
+	sub_finger = nh_.subscribe("/m1n6s200_driver/out/finger_position", 1, &ShakeActionServer::fingers_cb, this);
 	  
 	//subscriber for wrench
-	sub_wrench = nh_.subscribe("/mico_arm_driver/out/tool_wrench", 1, &ShakeActionServer::wrench_cb, this);
+	sub_wrench = nh_.subscribe("/m1n6s200_driver/out/tool_wrench", 1, &ShakeActionServer::wrench_cb, this);
 	
 	ROS_INFO("Shake action has started");
 	

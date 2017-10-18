@@ -175,7 +175,7 @@ int main(int argc, char**argv){
 	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
 	
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_position", 1, toolpos_cb);
 	
 	//store out-of-view position here
 	sensor_msgs::JointState joint_state_outofview;
@@ -185,7 +185,7 @@ int main(int argc, char**argv){
 	tf::TransformListener tf_listener;
 	
 	//publisher for velocities
-	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/m1n6s200_driver/in/cartesian_velocity", 10);
 
 	//create publisher for pose
 	ros::Publisher button_pose_pub = n.advertise<geometry_msgs::PoseStamped>("/prep_button/pose", 10);;

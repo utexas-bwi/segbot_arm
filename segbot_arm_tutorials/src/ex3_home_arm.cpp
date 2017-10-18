@@ -111,13 +111,13 @@ int main(int argc, char **argv) {
 	//create subscribers for arm topics
 	
 	//joint positions
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 	
 	//cartesean tool position and orientation
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
 	//finger positions
-	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
 	 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 	segbot_arm_manipulation::closeHand();
 	
 	//home arm using service call to arm driver
-	ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
+	ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/m1n6s200_driver/in/home_arm");
 	
 	kinova_msgs::HomeArm srv;
 	if(home_client.call(srv))

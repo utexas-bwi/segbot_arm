@@ -988,13 +988,13 @@ int main (int argc, char** argv)
 	ros::NodeHandle n;
 	
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 10, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 10, joint_state_cb);
 
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 10, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 10, toolpos_cb);
 
 	//subscriber for fingers
-	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 10, fingers_cb);
+	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 10, fingers_cb);
 	 
 	//subscriber for change cloud
 	ros::Subscriber sub_change_cloud = n.subscribe("/segbot_arm_table_change_detector/cloud",10,change_cloud_cb);  
@@ -1005,10 +1005,10 @@ int main (int argc, char** argv)
 	 
 	 
 	//publish velocities
-	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 10);
 	
 	//publish angular velocities
-	pub_angular_velocity = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+	pub_angular_velocity = n.advertise<kinova_msgs::JointVelocity>("/m1n6s200_driver/in/joint_velocity", 10);
 
 	
 	//cloud publisher

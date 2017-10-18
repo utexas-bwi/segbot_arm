@@ -135,20 +135,20 @@ public:
 	heardGrasps = false;
 
 	//create subscriber to joint angles
-	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &TabletopGraspActionServer::joint_state_cb, this);
+	sub_angles = nh_.subscribe ("/m1n6s200_driver/out/joint_state", 1, &TabletopGraspActionServer::joint_state_cb, this);
 
 
 	//create subscriber to tool position topic
-	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_pose", 1, &TabletopGraspActionServer::toolpos_cb, this);
+	sub_tool = nh_.subscribe("/m1n6s200_driver/out/tool_pose", 1, &TabletopGraspActionServer::toolpos_cb, this);
 
 	//subscriber for fingers
-	sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &TabletopGraspActionServer::fingers_cb, this);
+	sub_finger = nh_.subscribe("/m1n6s200_driver/out/finger_position", 1, &TabletopGraspActionServer::fingers_cb, this);
 	  
 	//subscriber for grasps
 	sub_grasps = nh_.subscribe("/find_grasps/grasps_handles",1, &TabletopGraspActionServer::grasps_cb,this);  
 	  
 	//publish velocities
-	pub_velocity = nh_.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = nh_.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 10);
 	
 	//publish pose array
 	pose_array_pub = nh_.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo/pose_array", 10);
@@ -240,7 +240,7 @@ public:
 	
 	// Range = [6, 7300] ([open, close])
 	void moveFingers(int finger_value) {
-		actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers_action/finger_positions", true);
+		actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
 
 		kinova_msgs::SetFingersPositionGoal goalFinger;
 		goalFinger.fingers.finger1 = finger_value;

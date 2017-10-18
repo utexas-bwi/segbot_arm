@@ -706,23 +706,23 @@ int main(int argc, char **argv) {
 	ROS_INFO("making service clients......");
 
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 
 
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
 	//subscriber for fingers
-	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
 	  
 	//subscriber for grasps
 	ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps_handles",1, grasps_cb); 
 	
 	//subscriber for wrench tool
-	ros::Subscriber sub_wrench = n.subscribe("/mico_arm_driver/out/tool_wrench", 1, wrench_cb);  
+	ros::Subscriber sub_wrench = n.subscribe("/m1n6s200_driver/out/tool_wrench", 1, wrench_cb);  
 	  
 	//publish velocities
-	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 10);
 	
 	//publish pose array
 	pose_array_pub = n.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo/pose_array", 10);

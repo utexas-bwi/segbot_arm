@@ -56,7 +56,7 @@ void fingers_cb (const kinova_msgs::FingerPosition msg) {
 
 
 void movePose(float d_z) {
-  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 
   kinova_msgs::ArmPoseGoal goalPose;
 
@@ -88,7 +88,7 @@ void movePose(float d_z) {
 // Range = [6, 7300] ([open, close])
 void moveFinger(int finger_value) {
     ROS_INFO("In moveFinger: %d", finger_value);
-    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers_action/finger_positions", true);
+    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
 
     kinova_msgs::SetFingersPositionGoal goalFinger;
 
@@ -109,7 +109,7 @@ void moveFinger(int finger_value) {
 }
 
 /*void graspObject(){
-	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers_action/finger_positions", true);
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
 	kinova_msgs::SetFingersPositionGoal goalFinger;
 	float before_finger1 = 0;
 	float before_finger2 = 0;	
@@ -213,7 +213,7 @@ void goBackToRestPosition(){
 
 void moveToTopOfObject(){
 	// Specific object position: (0.263455903, -0.365234429, -0.043787225)
-	//actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+	//actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 	geometry_msgs::PoseStamped goalPose;
 	
 	// Set goal pose coordinates
@@ -274,20 +274,20 @@ int main(int argc, char **argv) {
   ros::NodeHandle n;
 
   //create subscriber to joint angles
-  ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+  ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 
 
   //create subscriber to tool position topic
-  ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+  ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
   //subscriber for fingers
-  ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+  ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
   
   //create subscriber for button position
   ros::Subscriber sub_button = n.subscribe("/top_grasp_node/pose", 1, button_pose_cb);
 
   //publish velocities
-  pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
+  pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 10);
 	
   moveit_client = n.serviceClient<moveit_utils::MicoMoveitCartesianPose>("mico_cartesianpose_service");
   //Step 1: listen to the button pose

@@ -35,7 +35,7 @@ void sig_handler(int sig)
 
 
 int openFull(){
-	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers/finger_positions/", true);
 	kinova_msgs::SetFingersPositionGoal goal;
 	goal.fingers.finger1 = 6;
 	goal.fingers.finger2 = 6;
@@ -47,7 +47,7 @@ int openFull(){
 }
 
 int closeComplt(){
-	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers/finger_positions/", true);
+	actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers/finger_positions/", true);
 	kinova_msgs::SetFingersPositionGoal goal;
  	goal.fingers.finger1 = 7000;
 	goal.fingers.finger2 = 7000;
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
 	char input;
 	
 	//create subscriber to joint torques
-	ros::Subscriber sub_torques = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_torques = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);	

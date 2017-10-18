@@ -134,7 +134,7 @@ def arm_handover ():
 	
 """Function to open the fingers of the robot"""
 def open_finger():
-	action_address = '/mico_arm_driver/fingers/finger_positions'
+	action_address = '/m1n6s200_driver/fingers/finger_positions'
 	finger_client = actionlib.SimpleActionClient(action_address, kinova_msgs.msg.SetFingersPositionAction)
 	finger_client.wait_for_server()
 	

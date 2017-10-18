@@ -414,7 +414,7 @@ int main(int argc, char * *argv) {
   // joy is the name of the topic the joystick publishes to
   joy_sub  = n.subscribe<sensor_msgs::Joy>("joy", 10, joy_cb);
   
-  pub_arm = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
+  pub_arm = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 10);
   pub_base = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
   ros::ServiceClient speak_message_client = n.serviceClient<bwi_services::SpeakMessage>("/speak_message_service/speak_message");
 

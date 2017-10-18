@@ -152,29 +152,31 @@ int main(int argc, char **argv) {
 	//create subscribers for arm topics
 	
 	//joint positions
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 	
 	//cartesean tool position and orientation
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
 	//finger positions
-	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
 	 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
-	
+        
+        listenForArmData();
 	//open the hand
 	int direction = 1;
 	while (ros::ok()){
 	
 		pressEnter("Press enter...");
 	
-	    geometry_msgs::PoseStamped p_target = current_pose;
+	    geometry_msgs::PoseStamped p_target;
+            p_target.pose = current_pose.pose;
 	
-	    p_target.pose.position.z += 0.1 * direction;
+	    p_target.pose.position.z += 0.01f * direction;
 	    direction *= -1;
 	    segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
-            ROS_INFO("Moving to target z=%f", p_target.pose.position.z);
+            ROS_INFO("Moving to target x=%f, y=%f, z=%f", p_target.pose.position.x, p_target.pose.position.y, p_target.pose.position.z);
 	}
 	
 	ros::shutdown();

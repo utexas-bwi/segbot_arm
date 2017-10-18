@@ -120,16 +120,16 @@ public:
 	heardGrasps = false;
 
 	//create subscriber to joint angles
-	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &PushActionServer::joint_state_cb, this);
+	sub_angles = nh_.subscribe ("/m1n6s200_driver/out/joint_state", 1, &PushActionServer::joint_state_cb, this);
 
 	//create subscriber to tool position topic
-	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_pose", 1, &PushActionServer::toolpos_cb, this);
+	sub_tool = nh_.subscribe("/m1n6s200_driver/out/tool_pose", 1, &PushActionServer::toolpos_cb, this);
 
 	//publisher for velocities
-	pub_velocity = nh_.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = nh_.advertise<geometry_msgs::TwistStamped>("/m1n6s200_driver/in/cartesian_velocity", 10);
 
 	//advertise the goal pose for debugging
-	debug_pub = nh_.advertise<geometry_msgs::PoseStamped>("/mico_arm_driver/in/debug_pose", 2);
+	debug_pub = nh_.advertise<geometry_msgs::PoseStamped>("/m1n6s200_driver/in/debug_pose", 2);
 
     ROS_INFO("Starting push action server...");
     

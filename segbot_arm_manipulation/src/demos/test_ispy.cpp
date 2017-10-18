@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
 	ros::Subscriber sub_angles = n.subscribe ("/joint_states", 1, joint_state_cb);
 	
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_position", 1, toolpos_cb);
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);

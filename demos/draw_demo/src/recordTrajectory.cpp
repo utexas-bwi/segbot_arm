@@ -76,7 +76,7 @@ void sig_handler(int sig)
 }*/
 
 void playback(){
-		actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/m1n6s200_driver/joint_angles/arm_joint_angles", true);
 		
 		kinova_msgs::ArmJointAnglesGoal goal;
 		std::vector<float> last = trajectory.at(0);
@@ -121,7 +121,7 @@ void threadCallback(){
 	ros::NodeHandle n;
 	
 	//subscribers	
-	//ros::Subscriber sub = n.subscribe("mico_arm_driver/out/joint_angles", 10, callBack);
+	//ros::Subscriber sub = n.subscribe("m1n6s200_driver/out/joint_angles", 10, callBack);
   		
 }
 void je_callBack(const sensor_msgs::JointStateConstPtr &msg){
@@ -151,7 +151,7 @@ void recordEfforts(){
 		std::ofstream ja(ja_path); //open in constructor
 
 
-		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 	
 		kinova_msgs::ArmPoseGoal goalPose;
 		ros::spinOnce();
@@ -190,9 +190,9 @@ int main(int argc, char** argv)
 	ros::NodeHandle n;
 	
 	//subscribers	
-	ros::Subscriber je_sub = n.subscribe("mico_arm_driver/out/joint_state", 10, je_callBack);
+	ros::Subscriber je_sub = n.subscribe("m1n6s200_driver/out/joint_state", 10, je_callBack);
 
-	ros::Subscriber ja_sub = n.subscribe("mico_arm_driver/out/joint_angles", 10, ja_callBack);
+	ros::Subscriber ja_sub = n.subscribe("m1n6s200_driver/out/joint_angles", 10, ja_callBack);
 	
 	/*cout << endl << "1 - Record Tracjectories" << endl;
 	cin >> input;*/

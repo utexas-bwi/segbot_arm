@@ -159,7 +159,7 @@ void playback(){
 }
 
 void drawFile(){
-		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 		
 
 		
@@ -198,7 +198,7 @@ void drawFile(){
 //draws a circle using cartesian action
 //maybe could specify the board size, and a scale factor
 void drawCircle(){
-		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+		actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 		
 
 		
@@ -264,7 +264,7 @@ int main(int argc, char** argv)
 	
 	
 	//subscribers	
-	ros::Subscriber sub = n.subscribe("/mico_arm_driver/out/tool_pose", 10, callBack);
+	ros::Subscriber sub = n.subscribe("/m1n6s200_driver/out/tool_pose", 10, callBack);
 	
 	//wait for first position
 	while (true){

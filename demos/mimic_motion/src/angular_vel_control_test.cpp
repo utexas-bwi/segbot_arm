@@ -118,10 +118,10 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 	
 	//publisher for velocity commands
-    j_vel_pub = n.advertise<kinova_msgs::JointVelocity>("/mico_arm_driver/in/joint_velocity", 10);
+    j_vel_pub = n.advertise<kinova_msgs::JointVelocity>("/m1n6s200_driver/in/joint_velocity", 10);
     
     //user input
     char in;

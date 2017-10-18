@@ -169,7 +169,7 @@ void listenForArmData(float rate){
 
 // Range = [6, 7300] ([open, close])
 void moveFinger(int finger_value) {
-    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers_action/finger_positions", true);
+    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
 
     kinova_msgs::SetFingersPositionGoal goalFinger;
 
@@ -372,19 +372,19 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
 	//subscriber for fingers
-	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
 	 
 	//subscriber for change cloud
 	ros::Subscriber sub_change_cloud = n.subscribe("/segbot_arm_table_change_detector/cloud",1,change_cloud_cb); 
 	
 	//publish velocities
-	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 10);
 	
 	//publish pose 
 	pose_pub = n.advertise<geometry_msgs::PoseStamped>("/agile_grasp_demo/pose_out", 10);

@@ -105,16 +105,16 @@ public:
 	heardEffort = false;
 
 	//create subscriber to joint angles
-	sub_angles = nh_.subscribe ("/mico_arm_driver/out/joint_state", 1, &LiftVerifyActionServer::joint_state_cb, this);
+	sub_angles = nh_.subscribe ("/m1n6s200_driver/out/joint_state", 1, &LiftVerifyActionServer::joint_state_cb, this);
 
 	//create subscriber to tool position topic
-	sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_pose", 1, &LiftVerifyActionServer::toolpos_cb, this);
+	sub_tool = nh_.subscribe("/m1n6s200_driver/out/tool_pose", 1, &LiftVerifyActionServer::toolpos_cb, this);
 
 	//subscriber for fingers
-	sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &LiftVerifyActionServer::fingers_cb, this);
+	sub_finger = nh_.subscribe("/m1n6s200_driver/out/finger_position", 1, &LiftVerifyActionServer::fingers_cb, this);
 	  
 	//subscriber for wrench
-	sub_wrench = nh_.subscribe("/mico_arm_driver/out/tool_wrench", 1, &LiftVerifyActionServer::wrench_cb, this);
+	sub_wrench = nh_.subscribe("/m1n6s200_driver/out/tool_wrench", 1, &LiftVerifyActionServer::wrench_cb, this);
 	
 	ROS_INFO("Lift and verify action has started");
 	

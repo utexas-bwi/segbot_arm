@@ -107,13 +107,13 @@ public:
 		sub_angles = nh_.subscribe ("/joint_states", 1, &ObjReplacementActionServer::joint_state_cb, this);
 
 		//create subscriber to joint torques
-		sub_torques = nh_.subscribe ("/mico_arm_driver/out/joint_efforts", 1, &ObjReplacementActionServer::joint_effort_cb,this);
+		sub_torques = nh_.subscribe ("/m1n6s200_driver/out/joint_efforts", 1, &ObjReplacementActionServer::joint_effort_cb,this);
 
 		//create subscriber to tool position topic
-		sub_tool = nh_.subscribe("/mico_arm_driver/out/tool_position", 1, &ObjReplacementActionServer::toolpos_cb, this);
+		sub_tool = nh_.subscribe("/m1n6s200_driver/out/tool_position", 1, &ObjReplacementActionServer::toolpos_cb, this);
 
 		//subscriber for fingers
-		sub_finger = nh_.subscribe("/mico_arm_driver/out/finger_position", 1, &ObjReplacementActionServer::fingers_cb, this);
+		sub_finger = nh_.subscribe("/m1n6s200_driver/out/finger_position", 1, &ObjReplacementActionServer::fingers_cb, this);
 
 		//publisher for downsampled point cloud (used for debugging purposes)
 		down_pub = nh_.advertise<sensor_msgs::PointCloud2>("segbot_obj_replacement_as/down_cloud", 1);

@@ -269,10 +269,10 @@ int main (int argc, char** argv){
 	heardJoinstState = false;
 	
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 	
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 	
 	//create a publisher for rviz text markers
 	vis_pub = n.advertise<visualization_msgs::Marker>( "/visualization_marker", 0 );	

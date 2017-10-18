@@ -37,8 +37,8 @@
 #include "segbot_arm_manipulation/arm_positions_db.h"
 
 
-const std::string finger_topic = "/mico_arm_driver/fingers_action/finger_positions";
-const std::string jaco_pose_topic = "/mico_arm_driver/pose_action/tool_pose";
+const std::string finger_topic = "/m1n6s200_driver/fingers_action/finger_positions";
+const std::string jaco_pose_topic = "/m1n6s200_driver/pose_action/tool_pose";
 
 #define OPEN_FINGER_VALUE 100
 #define CLOSED_FINGER_VALUE 7200
@@ -136,7 +136,7 @@ namespace segbot_arm_manipulation {
 	}
 	
 	void homeArm(ros::NodeHandle n){
-		ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/mico_arm_driver/in/home_arm");
+		ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/m1n6s200_driver/in/home_arm");
 	
 		kinova_msgs::HomeArm srv;
 		if(home_client.call(srv))

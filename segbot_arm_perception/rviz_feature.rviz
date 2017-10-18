@@ -229,7 +229,7 @@ Visualization Manager:
       Shaft Length: 1
       Shaft Radius: 0.05
       Shape: Axes
-      Topic: /mico_arm_driver/out/tool_pose
+      Topic: /m1n6s200_driver/out/tool_pose
       Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true

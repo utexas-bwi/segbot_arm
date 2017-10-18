@@ -110,20 +110,20 @@ int main(int argc, char **argv) {
 	//create subscribers for arm topics
 	
 	//joint positions
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 	
 	//cartesean tool position and orientation
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
 	//finger positions
-	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
 	 
 	/*
 	 * Publishers
 	 */  
 	 
 	//publish cartesian tool velocities
-	ros::Publisher pub_angular_velocity = n.advertise<kinova_msgs::JointAngles>("/mico_arm_driver/in/joint_velocity", 10);
+	ros::Publisher pub_angular_velocity = n.advertise<kinova_msgs::JointAngles>("/m1n6s200_driver/in/joint_velocity", 10);
 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);

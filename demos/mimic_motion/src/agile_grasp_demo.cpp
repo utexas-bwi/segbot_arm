@@ -220,7 +220,7 @@ void listenForGrasps(float rate){
 /*
 
 void movePose(float d_z) {
-  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 
   kinova_msgs::ArmPoseGoal goalPose;
 
@@ -250,7 +250,7 @@ void movePose(float d_z) {
 }
 
 void moveToCurrentAngles(){
-	actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/m1n6s200_driver/joint_angles/arm_joint_angles", true);
 	
 	kinova_msgs::ArmJointAnglesGoal goalJoints;
 	
@@ -272,7 +272,7 @@ void moveToCurrentAngles(){
 
 // Range = [6, 7300] ([open, close])
 void moveFinger(int finger_value) {
-    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/mico_arm_driver/fingers_action/finger_positions", true);
+    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
 
     kinova_msgs::SetFingersPositionGoal goalFinger;
 
@@ -448,7 +448,7 @@ bool acceptGrasp(GraspCartesianCommand gcc, PointCloudT::Ptr object, Eigen::Vect
 
 /*
 bool moveToPose(geometry_msgs::PoseStamped g){
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/mico_arm_driver/pose_action/tool_pose", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
 
 	kinova_msgs::ArmPoseGoal goalPose;
 	goalPose.pose = g;
@@ -677,19 +677,19 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
 	//subscriber for fingers
-	ros::Subscriber sub_finger = n.subscribe("/mico_arm_driver/out/finger_position", 1, fingers_cb);
+	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
 	  
 	//subscriber for grasps
 	ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps_handles",1, grasps_cb);  
 	  
 	//publish velocities
-	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 10);
+	pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 10);
 	
 	//publish pose array
 	pose_array_pub = n.advertise<geometry_msgs::PoseArray>("/agile_grasp_demo/pose_array", 10);

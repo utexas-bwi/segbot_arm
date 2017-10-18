@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 
     display_publisher = nh.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
 		
-    ros::Subscriber sub_tool = nh.subscribe("/mico_arm_driver/out/tool_position", 1, toolpos_cb);
+    ros::Subscriber sub_tool = nh.subscribe("/m1n6s200_driver/out/tool_position", 1, toolpos_cb);
     
 	//register Ctrl-C
     signal(SIGINT, sig_handler);

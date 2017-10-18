@@ -53,11 +53,11 @@ int main(int argc, char **argv)
 
 	//Most important to track. Will use this value directly and potentially exclusively to stay within the reference frame of the board
 	//subscriber for cart velocity
-	//ros::Subscriber vel_sub = n.subscribe("/mico_arm_driver/in/cartesian_velocity", 100, velocity_cb);
+	//ros::Subscriber vel_sub = n.subscribe("/m1n6s200_driver/in/cartesian_velocity", 100, velocity_cb);
 
 	//Subscriber for the arm pose. Coordinate frame is essentially base_frame
 	//Possibly will need to take pose movement into account, but likely not. Will really only be using this for rotating end effector for lift compensation
-	ros::Subscriber sub = n.subscribe("/mico_arm_driver/out/tool_pose", 10, toolpos_cb);
+	ros::Subscriber sub = n.subscribe("/m1n6s200_driver/out/tool_pose", 10, toolpos_cb);
 
 	ros::Publisher distance_pub = n.advertise<std_msgs::Float32>("poc_distance", 100);
 	std_msgs::Float32 msg;
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
 	//Used for joint positions. Likely won't be tracked. In fact, should probably use this to rotate the end effector to compensate for lift
 	//create subscriber to joint angles
-	//ros::Subscriber sub = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	//ros::Subscriber sub = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 	
 
     return 0;

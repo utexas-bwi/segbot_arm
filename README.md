@@ -13,9 +13,9 @@ and compile with catkin.
 
 Before compiling, install the following dependencies:
 
-Install MoveIt! by typing, libsndfile, Lapack and libfftw with
+Install MoveIt!, TRAC-IK, libsndfile, Lapack and libfftw with
 
-    sudo apt-get install ros-indigo-moveit-* libsndfile1-dev libfftw3-dev liblapack-dev
+    sudo apt-get install ros-indigo-moveit-* libsndfile1-dev libfftw3-dev liblapack-dev ros-indigo-trac-ik
 
 Install our fork of agile_grasp ROS indigo package by cloning from:
 

@@ -116,19 +116,19 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 
 	//create subscriber to joint angles
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 	
 	//create subscriber to tool position topic
-	ros::Subscriber sub_tool = n.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
 	//subscriber for wrench
-	ros::Subscriber sub_wrench = n.subscribe("/mico_arm_driver/out/tool_wrench", 1, wrench_cb);
+	ros::Subscriber sub_wrench = n.subscribe("/m1n6s200_driver/out/tool_wrench", 1, wrench_cb);
 	
 	//base velocity publisher
 	ros::Publisher pub_base_velocity = n.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 	
 	//hand velocity publisher
-	ros::Publisher pub_hand_velocity = n.advertise<kinova_msgs::PoseVelocity>("/mico_arm_driver/in/cartesian_velocity", 1);
+	ros::Publisher pub_hand_velocity = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 1);
 	
 
 
