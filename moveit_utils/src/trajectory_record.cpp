@@ -60,8 +60,8 @@ int main(int argc, char **argv){
 	ros::ServiceClient client = node_handle.serviceClient<moveit_utils::MicoController>("mico_controller");
 	std::cout << "Please ensure that demo.launch has been run!" << std::endl;
 	//subscribers
-	ros::Subscriber sub_tool = node_handle.subscribe("/mico_arm_driver/out/tool_pose", 1, toolpos_cb);
-	ros::Subscriber sub_angles = node_handle.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_tool = node_handle.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
+	ros::Subscriber sub_angles = node_handle.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 
 	
 	moveit::planning_interface::MoveGroup group("arm"); //this is the specific group name you'd like to move

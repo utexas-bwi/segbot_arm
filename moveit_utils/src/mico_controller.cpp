@@ -35,7 +35,7 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input)
 };
 bool cb(moveit_utils::MicoController::Request &req, moveit_utils::MicoController::Response &res){
 	
-	actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/mico_arm_driver/joint_angles/arm_joint_angles", true);
+	actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/m1n6s200_driver/joint_angles/arm_joint_angles", true);
 	trajectory_msgs::JointTrajectory trajectory = req.trajectory.joint_trajectory;
 	double q1,q2,q3,q4,q5,q6;
 	kinova_msgs::ArmJointAnglesGoal goal;
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 	char input;
 	ros::NodeHandle n;
 	//listen to joint position
-	ros::Subscriber sub_angles = n.subscribe ("/mico_arm_driver/out/joint_state", 1, joint_state_cb);
+	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 
 	
 	ros::ServiceServer srv = n.advertiseService("mico_controller", cb);

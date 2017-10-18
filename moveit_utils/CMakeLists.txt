@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.3)
 project(moveit_utils)
 
 find_package(catkin REQUIRED COMPONENTS
+  actionlib_msgs
+  control_msgs
   geometry_msgs
   roscpp
   rospy
@@ -12,8 +14,6 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_core
   pluginlib
   rosbag
-  control_msgs
-  actionlib_msgs
   moveit_ros_planning_interface
   kinova_msgs
   sensor_msgs
@@ -55,7 +55,6 @@ include_directories( ${catkin_INCLUDE_DIRS} )
 
 add_executable(mico_controller src/mico_controller.cpp)
 add_executable(mico_controller_action src/mico_controller_action.cpp)
-add_executable(mico_joint_velocity_controller src/mico_joint_velocity_controller.cpp)
 add_executable(mico_moveit_joint_pose_service src/mico_moveit_jointpose_service.cpp)
 add_executable(mico_nav_safety_service src/mico_nav_safety_service.cpp)
 add_executable(mico_moveit_cartesianpose_service src/mico_moveit_cartesianpose_service.cpp)
@@ -65,7 +64,6 @@ add_executable(angular_vel_control_srv src/angular_vel_control_srv.cpp)
 add_executable(mico_moveit_cartesianpose_obstacle_service src/mico_moveit_cartesianpose_obstacle_service.cpp)
 
 add_dependencies(mico_controller moveit_utils_gencpp)
-add_dependencies(mico_joint_velocity_controller moveit_utils_gencpp)
 add_dependencies(mico_controller_action moveit_utils_gencpp)
 add_dependencies(mico_moveit_joint_pose_service moveit_utils_gencpp)
 add_dependencies(mico_nav_safety_service moveit_utils_gencpp)
@@ -77,7 +75,6 @@ add_dependencies(mico_moveit_cartesianpose_obstacle_service moveit_utils_gencpp)
 
 target_link_libraries(mico_controller ${catkin_LIBRARIES})
 target_link_libraries(mico_controller_action ${catkin_LIBRARIES})
-target_link_libraries(mico_joint_velocity_controller ${catkin_LIBRARIES})
 target_link_libraries(mico_moveit_joint_pose_service ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(mico_nav_safety_service ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(mico_moveit_cartesianpose_service ${catkin_LIBRARIES})

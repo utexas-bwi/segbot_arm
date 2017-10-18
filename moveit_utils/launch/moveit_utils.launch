@@ -1,7 +1,4 @@
 <launch>
-	<!-- Max's trajectory controller -->
-	<node name="mico_joint_velocity_controller" pkg="moveit_utils" type="mico_joint_velocity_controller" />
-	
 	<!-- Mico services: These services interface with moveit and the controller -->
 	<node name="mico_moveit_joint_pose_service" pkg="moveit_utils" type="mico_moveit_joint_pose_service" />
 	<node name="mico_moveit_caresianpose_service" pkg="moveit_utils" type="mico_moveit_cartesianpose_service" />
@@ -13,7 +10,5 @@
 	<!-- Jivko's angular controler -->
 	<node name="angular_vel_control_srv" pkg="moveit_utils" type="angular_vel_control_srv" />
 	
-	 <!-- Launch moveit -->
-    <include file="$(find mico_moveit_fullsegbot_config)/launch/mico_moveit_bringup.launch" />
 
 </launch>
