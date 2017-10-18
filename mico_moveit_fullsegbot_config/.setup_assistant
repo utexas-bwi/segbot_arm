@@ -1,8 +1,0 @@
-moveit_setup_assistant_config:
-  URDF:
-    package: segbot_arm_launch
-    relative_path: robots/segbot_v2.arm.xacroout.urdf
-  SRDF:
-    relative_path: config/segbot.srdf
-  CONFIG:
-    generated_timestamp: 1435938827

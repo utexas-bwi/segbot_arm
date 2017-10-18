@@ -1,3 +1,0 @@
-<launch>
-	<rosparam command="load" file="$(find mico_moveit_config)/config/sensors_xtion.yaml" />
-</launch>
