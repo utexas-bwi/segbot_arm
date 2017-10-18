@@ -19,8 +19,10 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
+#include <control_msgs/FollowJointTrajectoryAction.h>
+#include <control_msgs/FollowJointTrajectoryGoal.h>
+#include <actionlib/client/simple_action_client.h>
 //services
-#include "moveit_utils/MicoController.h"
 #include "ros/ros.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "moveit_utils/MicoMoveitCartesianPose.h"
@@ -29,7 +31,7 @@
 bool g_caught_sigint = false;
 std::vector<double> q_vals;
 
-ros::ServiceClient controller_client;
+actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> *ac;
 
 ros::Publisher pose_pub;
 
@@ -42,15 +44,15 @@ void sig_handler(int sig){
 bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_utils::MicoMoveitCartesianPose::Response &res){
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] Request received!");
     
-    moveit_utils::MicoController srv_controller;
     moveit::planning_interface::MoveGroup group("arm");
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     group.setPlanningTime(5.0); //5 second maximum for collision computation
     moveit::planning_interface::MoveGroup::Plan my_plan;
+    {
     geometry_msgs::PoseStamped goal;
     goal.pose.orientation = req.target.pose.orientation;
     goal.pose.position = req.target.pose.position;
-   
+    }
 	//publish target pose
 	pose_pub.publish(req.target);
    
@@ -61,14 +63,15 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
     bool success = group.plan(my_plan);
     ROS_INFO("planning success: %c", success);
     //call service
-    moveit_utils::MicoController srv;
-    srv_controller.request.trajectory = my_plan.trajectory_;
-    if(controller_client.call(srv_controller)){
-       ROS_INFO("Service call sent. Prepare for movement.");
-       res.completed = srv_controller.response.done;
+    control_msgs::FollowJointTrajectoryGoal goal;
+    goal.trajectory = my_plan.trajectory_.joint_trajectory;
+    ac->sendGoal(goal);
+    if(ac->waitForResult(ros::Duration(30.0))){
+       ROS_INFO("Trajectory sent. Prepare for movement.");
+       res.completed = true;
     }
     else {
-       ROS_INFO("Service call failed. Is the service running?");
+       ROS_INFO("Action call failed.");
        res.completed = false;
     }
     ros::spinOnce();
@@ -80,10 +83,8 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
     ros::AsyncSpinner spinner(1);
     spinner.start();
-    //make controller service
-    //TODO: as a rosparam, option to use different controllers
-    //ros::ServiceClient client = nh.serviceClient<moveit_utils::MicoMoveitJointPose>("mico_moveit_joint_pose");
-    controller_client = nh.serviceClient<moveit_utils::MicoController>("mico_controller");
+
+    ac = new actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>("/m1n6s200/follow_joint_trajectory", true);
     ros::ServiceServer srv = nh.advertiseService("mico_cartesianpose_service", service_cb);
 
 	pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/mico_cartesianpose_service/target_pose", 10);
