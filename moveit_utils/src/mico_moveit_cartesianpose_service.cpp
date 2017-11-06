@@ -4,12 +4,6 @@
  * 
  * */
 
-/* Temporary note: The IK solver currently used is likely too slow.
- * Switch to IK Fast: 
- * 	http://moveit.ros.org/wiki/Kinematics/IKFast
- *  http://wiki.ros.org/Industrial/Tutorials/Create_a_Fast_IK_Solution
- * */
-
 #include <signal.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -26,14 +20,17 @@
 #include "ros/ros.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "moveit_utils/MicoMoveitCartesianPose.h"
-
-
+#include <moveit_visual_tools/moveit_visual_tools.h>
+#include <rviz_visual_tools/rviz_visual_tools.h>
+namespace rvt = rviz_visual_tools;
 bool g_caught_sigint = false;
 std::vector<double> q_vals;
 
-actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> *ac;
 
 ros::Publisher pose_pub;
+moveit_visual_tools::MoveItVisualTools *visual_tools;
+moveit::planning_interface::MoveGroup *group;
+robot_state::JointModelGroup *joint_model_group;
 
 void sig_handler(int sig){
     g_caught_sigint = true;
@@ -43,37 +40,31 @@ void sig_handler(int sig){
 };
 bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_utils::MicoMoveitCartesianPose::Response &res){
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] Request received!");
-    
-    moveit::planning_interface::MoveGroup group("arm");
-    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-    group.setPlanningTime(5.0); //5 second maximum for collision computation
-    moveit::planning_interface::MoveGroup::Plan my_plan;
-    {
-    geometry_msgs::PoseStamped goal;
-    goal.pose.orientation = req.target.pose.orientation;
-    goal.pose.position = req.target.pose.position;
-    }
-	//publish target pose
-	pose_pub.publish(req.target);
-   
-    group.setPoseTarget(req.target);
-    group.setStartState(*group.getCurrentState());
+  
+    //publish target pose
+    pose_pub.publish(req.target);
+    //visual_tools->deleteAllMarkers();
 
-	ROS_INFO("[mico_moveit_cartesianpose_service.cpp] starting to plan...");
-    bool success = group.plan(my_plan);
-    ROS_INFO("planning success: %c", success);
-    //call service
-    control_msgs::FollowJointTrajectoryGoal goal;
-    goal.trajectory = my_plan.trajectory_.joint_trajectory;
-    ac->sendGoal(goal);
-    if(ac->waitForResult(ros::Duration(30.0))){
-       ROS_INFO("Trajectory sent. Prepare for movement.");
-       res.completed = true;
+    group->setPoseReferenceFrame("m1n6s200_end_effector");
+    ROS_INFO_STREAM(group->getPlanningFrame());
+    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+    group->setPlanningTime(5.0); //5 second maximum for collision computation
+    moveit::planning_interface::MoveGroup::Plan my_plan;
+    group->setPoseTarget(req.target);
+    group->setStartState(*group->getCurrentState());
+
+    ROS_INFO("[mico_moveit_cartesianpose_service.cpp] starting to plan...");
+    bool success = group->plan(my_plan);
+    ROS_INFO("planning success: %d", success);
+    
+    if (!success) {
+        res.completed = false;
+        return true;
     }
-    else {
-       ROS_INFO("Action call failed.");
-       res.completed = false;
-    }
+    
+    //visual_tools->publishTrajectoryLine(my_plan.trajectory_, joint_model_group);
+    group->move();
+
     ros::spinOnce();
     return true;
 }
@@ -84,13 +75,15 @@ int main(int argc, char **argv)
     ros::AsyncSpinner spinner(1);
     spinner.start();
 
-    ac = new actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>("/m1n6s200/follow_joint_trajectory", true);
+    //visual_tools = new moveit_visual_tools::MoveItVisualTools("base_footprint", "moveit_viz");
+    
+    group = new moveit::planning_interface::MoveGroup("arm");
+    group->setGoalTolerance(0.01);
+
     ros::ServiceServer srv = nh.advertiseService("mico_cartesianpose_service", service_cb);
 
-	pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/mico_cartesianpose_service/target_pose", 10);
-	
-
-    //TODO: as a rosparam, option for planning time
+    pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/mico_cartesianpose_service/target_pose", 1, true);
+    
     ros::spin();
     return 0;
 }
