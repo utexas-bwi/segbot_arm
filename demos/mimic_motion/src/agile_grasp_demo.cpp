@@ -217,77 +217,7 @@ void listenForGrasps(float rate){
 	}
 }
 
-/*
 
-void movePose(float d_z) {
-  actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
-
-  kinova_msgs::ArmPoseGoal goalPose;
-
-  // Set goal pose coordinates
-
-  goalPose.pose.header.frame_id = "mico_api_origin";
-  
-  ROS_INFO_STREAM(current_pose);
-
-  goalPose.pose.pose.position.x = current_pose.pose.position.x;
-  goalPose.pose.pose.position.y = current_pose.pose.position.y;
-  goalPose.pose.pose.position.z = current_pose.pose.position.z + d_z;
-  goalPose.pose.pose.orientation.x = current_pose.pose.orientation.x;
-  goalPose.pose.pose.orientation.y = current_pose.pose.orientation.y;
-  goalPose.pose.pose.orientation.z = current_pose.pose.orientation.z;
-  goalPose.pose.pose.orientation.w = current_pose.pose.orientation.w;
-
-  ROS_INFO_STREAM(goalPose);
-
-  ac.waitForServer();
-  ROS_INFO("Waiting for server.");
-  //finally, send goal and wait
-  ROS_INFO("Sending goal.");
-  ac.sendGoal(goalPose);
-  ac.waitForResult();
-
-}
-
-void moveToCurrentAngles(){
-	actionlib::SimpleActionClient<kinova_msgs::ArmJointAnglesAction> ac("/m1n6s200_driver/joint_angles/arm_joint_angles", true);
-	
-	kinova_msgs::ArmJointAnglesGoal goalJoints;
-	
-	listenForArmData(30.0);
-	
-	goalJoints.angles.joint1 = current_state.position[0];
-	goalJoints.angles.joint2 = current_state.position[1];
-	goalJoints.angles.joint3 = current_state.position[2];
-	goalJoints.angles.joint4 = current_state.position[3];
-	goalJoints.angles.joint5 = current_state.position[4];
-	goalJoints.angles.joint6 = current_state.position[5];
-	
-	ac.waitForServer();
-
-    ac.sendGoal(goalJoints);
-
-    ac.waitForResult();
-}
-
-// Range = [6, 7300] ([open, close])
-void moveFinger(int finger_value) {
-    actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
-
-    kinova_msgs::SetFingersPositionGoal goalFinger;
-
-    goalFinger.fingers.finger1 = finger_value;
-    goalFinger.fingers.finger2 = finger_value;
-    // Not used for our arm
-    goalFinger.fingers.finger3 = 0;
-    
-    ac.waitForServer();
-
-    ac.sendGoal(goalFinger);
-
-    ac.waitForResult();
-}
-*/
 
 double angular_difference(geometry_msgs::Quaternion c,geometry_msgs::Quaternion d){
 	Eigen::Vector4f dv;
@@ -446,25 +376,6 @@ bool acceptGrasp(GraspCartesianCommand gcc, PointCloudT::Ptr object, Eigen::Vect
 }
 
 
-/*
-bool moveToPose(geometry_msgs::PoseStamped g){
-	actionlib::SimpleActionClient<kinova_msgs::ArmPoseAction> ac("/m1n6s200_driver/pose_action/tool_pose", true);
-
-	kinova_msgs::ArmPoseGoal goalPose;
-	goalPose.pose = g;
-
-
-	ROS_INFO_STREAM(goalPose);
-
-	  ac.waitForServer();
-	  ROS_DEBUG("Waiting for server.");
-	  //finally, send goal and wait
-	  ROS_INFO("Sending goal.");
-	  ac.sendGoal(goalPose);
-	  ac.waitForResult();
-		
-	return true;
-}*/
 
 moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs::PoseStamped p){
 	ros::ServiceClient ikine_client = n.serviceClient<moveit_msgs::GetPositionIK> ("/compute_ik");
@@ -478,7 +389,7 @@ moveit_msgs::GetPositionIK::Response computeIK(ros::NodeHandle n, geometry_msgs:
 	/* Call the service */
 	if(ikine_client.call(ikine_request, ikine_response)){
 		ROS_INFO("IK service call success:");
-		//ROS_INFO_STREAM(ikine_response);
+		ROS_INFO_STREAM(ikine_response);
 	} else {
 		ROS_INFO("IK service call FAILED. Exiting");
 	}
@@ -510,10 +421,10 @@ void updateFK(ros::NodeHandle n){
 	sensor_msgs::JointState q_true = current_state;
 	
 	//Load request with the desired link
-	fkine_request.fk_link_names.push_back("mico_end_effector");
+	fkine_request.fk_link_names.push_back("m1n6s200_end_effector");
 
 	//and the current frame
-	fkine_request.header.frame_id = "mico_link_base";
+	fkine_request.header.frame_id = "m1n6s200_link_base";
 
 	//finally we let moveit know what joint positions we want to compute
 	//in this case, the current state
@@ -543,71 +454,6 @@ void pressEnter(){
 		std::cout << "Please press ENTER\n";
 }
 
-/*
-void moveToJointState(const float* js){
-	
-	
-	moveit_utils::MicoMoveitJointPose::Request req;
-	moveit_utils::MicoMoveitJointPose::Response res;
-	
-	for(int i = 0; i < 6; i++){
-        switch(i) {
-            case 0  :    req.target.joint1 = js[i]; break;
-            case 1  :    req.target.joint2 =  js[i]; break;
-            case 2  :    req.target.joint3 =  js[i]; break;
-            case 3  :    req.target.joint4 =  js[i]; break;
-            case 4  :    req.target.joint5 =  js[i]; break;
-            case 5  :    req.target.joint6 =  js[i]; break;
-        }
-	//ROS_INFO("Requested angle: %f", q_vals.at(i));
-    }
-	
-	if(client_joint_command.call(req, res)){
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(res);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}
-}*/
-
-
-/*
-void moveToJointState(ros::NodeHandle n, sensor_msgs::JointState target){
-	//check if this is specified just for the arm
-	sensor_msgs::JointState q_target;
-	if (target.position.size() > NUM_JOINTS){
-		//in this case, the first four values are for the base joints
-		for (int i = 4; i < target.position.size(); i ++){
-			q_target.position.push_back(target.position.at(i));
-			q_target.name.push_back(target.name.at(i));
-		}
-		q_target.header = target.header;
-	}
-	else 
-		q_target = target;
-	
-	
-	
-	moveit_utils::AngularVelCtrl::Request	req;
-	moveit_utils::AngularVelCtrl::Response	resp;
-	
-	ros::ServiceClient ikine_client = n.serviceClient<moveit_utils::AngularVelCtrl> ("/angular_vel_control");
-	
-	req.state = q_target;
-	
-	
-	
-	if(ikine_client.call(req, resp)){
- 		ROS_INFO("Call successful. Response:");
- 		ROS_INFO_STREAM(resp);
- 	} else {
- 		ROS_ERROR("Call failed. Terminating.");
- 		//ros::shutdown();
- 	}
-	
-}
-* */
 
 
 void cartesianVelocityMove(double dx, double dy, double dz, double duration){
@@ -766,7 +612,7 @@ int main(int argc, char **argv) {
 	geometry_msgs::PoseArray poses_msg;
 	poses_msg.header.seq = 1;
 	poses_msg.header.stamp = cloud_ros.header.stamp;
-	poses_msg.header.frame_id = "mico_api_origin";
+	poses_msg.header.frame_id = "m1n6s200_link_base";
 	
 	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
@@ -776,7 +622,7 @@ int main(int argc, char **argv) {
 	
 	//wait for transform from visual space to arm space
 	ROS_INFO("Waiting for transform...");
-	listener.waitForTransform(cloud_ros.header.frame_id, "mico_link_base", ros::Time(0), ros::Duration(5.0));
+	listener.waitForTransform(cloud_ros.header.frame_id, "m1n6s200_link_base", ros::Time(0), ros::Duration(5.0));
 	
 	std::vector<GraspCartesianCommand> grasp_commands;
 	std::vector<geometry_msgs::PoseStamped> poses;
@@ -791,8 +637,8 @@ int main(int argc, char **argv) {
 		
 		if (acceptGrasp(gc_i,detected_objects.at(selected_object),plane_coef_vector)){
 			
-			listener.transformPose("mico_api_origin", gc_i.approach_pose, gc_i.approach_pose);
-			listener.transformPose("mico_api_origin", gc_i.grasp_pose, gc_i.grasp_pose);
+			listener.transformPose("m1n6s200_link_base", gc_i.approach_pose, gc_i.approach_pose);
+			listener.transformPose("m1n6s200_link_base", gc_i.grasp_pose, gc_i.grasp_pose);
 			
 			//filter two -- if IK fails
 			moveit_msgs::GetPositionIK::Response  ik_response_approach = computeIK(n,gc_i.approach_pose);

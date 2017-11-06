@@ -48,8 +48,8 @@ const std::string jaco_pose_topic = "/m1n6s200_driver/pose_action/tool_pose";
 #define PI 3.14159265
 
 
-std::string arm_joint_names [] = {"mico_joint_1","mico_joint_2", "mico_joint_3", "mico_joint_4", 
-	"mico_joint_5", "mico_joint_6", "mico_joint_finger_1", "mico_joint_finger_2"};
+std::string arm_joint_names [] = {"m1n6s200_joint_1","m1n6s200_joint_2", "m1n6s200_joint_3", "m1n6s200_joint_4", 
+	"m1n6s200_joint_5", "m1n6s200_joint_6", "m1n6s200_joint_finger_1", "m1n6s200_joint_finger_2"};
 
 
 namespace segbot_arm_manipulation {
@@ -81,7 +81,7 @@ namespace segbot_arm_manipulation {
 		std::vector<double> result;
 		
 		for (unsigned int i = 0; i < A.position.size(); i++){
-			//check if this is a mico arm joint or not
+			//check if this is a m1n6s200 arm joint or not
 			bool is_arm_joint = false;
 			for (int k = 0; k < NUM_JOINTS;k++){
 				if (A.name[i] == arm_joint_names[k]){
@@ -92,7 +92,7 @@ namespace segbot_arm_manipulation {
 			
 			if (is_arm_joint){
 				
-				if (A.name[i] == "mico_joint_2" || A.name[i] == "mico_joint_3")
+				if (A.name[i] == "m1n6s200_joint_2" || A.name[i] == "m1n6s200_joint_3")
 					result.push_back(fabs(A.position[i]-B.position[i]));
 				else {
 					if (B.position[i] > A.position[i]){
@@ -410,7 +410,7 @@ namespace segbot_arm_manipulation {
 		
 		if (positionDB->hasCarteseanPosition("side_view")){
 			ROS_INFO("Moving arm to side view...");
-			geometry_msgs::PoseStamped out_of_view_pose = positionDB->getToolPositionStamped("side_view","/mico_link_base");
+			geometry_msgs::PoseStamped out_of_view_pose = positionDB->getToolPositionStamped("side_view","/m1n6s200_link_base");
 			segbot_arm_manipulation::moveToPoseMoveIt(n,out_of_view_pose);
 		}else {
 			ROS_ERROR("[arm_utils] Cannot move arm to side view!");
@@ -426,7 +426,7 @@ namespace segbot_arm_manipulation {
 		positionDB->print();
 		
 		if (positionDB->hasCarteseanPosition("handover_front")){		
-			geometry_msgs::PoseStamped handover_pose = positionDB->getToolPositionStamped("handover_front","mico_link_base");
+			geometry_msgs::PoseStamped handover_pose = positionDB->getToolPositionStamped("handover_front","m1n6s200_link_base");
 			
 			ROS_INFO("Moving to handover position"); 
 			
