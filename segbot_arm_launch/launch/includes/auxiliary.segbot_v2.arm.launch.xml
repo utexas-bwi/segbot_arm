@@ -2,7 +2,6 @@
 
   <arg name="kinect_name" default="nav_kinect" /> 
   <arg name="tf_prefix" default="" /> 
-  <arg name="use_xtion" default="false" />
   <arg name="use_full_gazebo_model" default="false" />
   <arg name="urdf_file" default="$(find segbot_arm_launch)/robots/segbot_v2.arm.urdf.xacro" />
   <arg name="urdf_file_baseonly" default="$(find segbot_description)/robots/segbot_v2.urdf.xacro" />
@@ -36,13 +35,6 @@
     <arg name="min_height" value ="-0.5" />
     <arg name="max_height" value ="10.0" />
   </include> 
-  
-  <!-- XTION -->
-  <include file="$(find openni2_launch)/launch/openni2.launch" if="$(arg use_xtion)">
-    <arg name="depth_registration" value="True" />
-    <arg name="camera" value="xtion_camera" />
-    <arg name="device_id" value="1407150149" />
-  </include>
 
   <!-- set additional tf prefix parameter - required for gazebo -->
   <!--

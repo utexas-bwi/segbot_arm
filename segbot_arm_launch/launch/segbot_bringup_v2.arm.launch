@@ -4,7 +4,6 @@
   <!-- set the tf prefix as necessary -->
   <arg name="tf_prefix" default="" />
   <arg name="device_id" default="#1" />
-  <arg name="use_xtion" default="false" />
   <arg name="gui" default="true" />
   <arg name="rviz" default="true" />
   <param name="tf_prefix" value="$(arg tf_prefix)" />
@@ -35,7 +34,6 @@
   <include file="$(find segbot_arm_launch)/launch/includes/auxiliary.segbot_v2.arm.launch.xml">
     <arg name="tf_prefix" default="$(arg tf_prefix)" /> 
     <arg name="use_registered_topic" default="true" />
-    <arg name="use_xtion" value="$(arg use_xtion)" />
   </include>
   
   <!-- Arduino -->
