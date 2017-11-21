@@ -41,7 +41,7 @@ joint5: 99.8863830566
 joint6: 337.704528809
 
 
-name: ['mico_joint_1', 'mico_joint_2', 'mico_joint_3', 'mico_joint_4', 'mico_joint_5', 'mico_joint_6', 'mico_joint_finger_1', 'mico_joint_finger_2']
+name: ['m1n6s200_joint_1', 'm1n6s200_joint_2', 'm1n6s200_joint_3', 'm1n6s200_joint_4', 'm1n6s200_joint_5', 'm1n6s200_joint_6', 'm1n6s200_joint_finger_1', 'm1n6s200_joint_finger_2']
 position: [-1.4918714173616245, -1.8046833895251533, -0.12993722748162864, -2.1717450183580356, 0.5688181856434458, 2.6786835908090505, -0.0008399999999999999, 0.0]
 
 */
@@ -93,11 +93,11 @@ bool checkIfSafe(){
 		sensor_msgs::JointState q_true = js_cur;
 
 		//Load request with the desired link
-		fkine_request.fk_link_names.push_back("mico_link_1");
-		fkine_request.fk_link_names.push_back("mico_link_2");
-		fkine_request.fk_link_names.push_back("mico_link_3");
-		fkine_request.fk_link_names.push_back("mico_link_4");
-		fkine_request.fk_link_names.push_back("mico_link_5");
+		fkine_request.fk_link_names.push_back("m1n6s200_link_1");
+		fkine_request.fk_link_names.push_back("m1n6s200_link_2");
+		fkine_request.fk_link_names.push_back("m1n6s200_link_3");
+		fkine_request.fk_link_names.push_back("m1n6s200_link_4");
+		fkine_request.fk_link_names.push_back("m1n6s200_link_5");
 		fkine_request.fk_link_names.push_back("mico_link_hand");
 		fkine_request.fk_link_names.push_back("mico_link_finger_1");
 		fkine_request.fk_link_names.push_back("mico_link_finger_2");

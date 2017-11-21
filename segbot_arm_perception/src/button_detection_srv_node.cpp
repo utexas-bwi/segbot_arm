@@ -382,8 +382,8 @@ bool seg_cb(segbot_arm_perception::ButtonDetection::Request &req, segbot_arm_per
 		stampedPose.pose = pose_i;*/
 
 		//geometry_msgs::PoseStamped stampOut;
-		//listener.waitForTransform(cloud->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
-		//listener.transformPose("mico_api_origin", stampedPose, stampOut);
+		//listener.waitForTransform(cloud->header.frame_id, "m1n6s200_link_base", ros::Time(0), ros::Duration(3.0));
+		//listener.transformPose("m1n6s200_link_base", stampedPose, stampOut);
 
 		//stampOut.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,-3.14/2,0);
 		//pose_pub.publish(stampOut);

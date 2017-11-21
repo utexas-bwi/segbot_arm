@@ -20,15 +20,12 @@
 #include "ros/ros.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "moveit_utils/MicoMoveitCartesianPose.h"
-#include <moveit_visual_tools/moveit_visual_tools.h>
-#include <rviz_visual_tools/rviz_visual_tools.h>
-namespace rvt = rviz_visual_tools;
+
 bool g_caught_sigint = false;
 std::vector<double> q_vals;
 
 
 ros::Publisher pose_pub;
-moveit_visual_tools::MoveItVisualTools *visual_tools;
 moveit::planning_interface::MoveGroup *group;
 robot_state::JointModelGroup *joint_model_group;
 
@@ -40,10 +37,9 @@ void sig_handler(int sig){
 };
 bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_utils::MicoMoveitCartesianPose::Response &res){
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] Request received!");
-  
+
     //publish target pose
     pose_pub.publish(req.target);
-    //visual_tools->deleteAllMarkers();
 
     group->setPoseReferenceFrame("m1n6s200_end_effector");
     ROS_INFO_STREAM(group->getPlanningFrame());
@@ -56,13 +52,12 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] starting to plan...");
     bool success = group->plan(my_plan);
     ROS_INFO("planning success: %d", success);
-    
+
     if (!success) {
         res.completed = false;
         return true;
     }
-    
-    //visual_tools->publishTrajectoryLine(my_plan.trajectory_, joint_model_group);
+
     group->move();
 
     ros::spinOnce();
@@ -75,15 +70,13 @@ int main(int argc, char **argv)
     ros::AsyncSpinner spinner(1);
     spinner.start();
 
-    //visual_tools = new moveit_visual_tools::MoveItVisualTools("base_footprint", "moveit_viz");
-    
     group = new moveit::planning_interface::MoveGroup("arm");
     group->setGoalTolerance(0.01);
 
     ros::ServiceServer srv = nh.advertiseService("mico_cartesianpose_service", service_cb);
 
     pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/mico_cartesianpose_service/target_pose", 1, true);
-    
+
     ros::spin();
     return 0;
 }

@@ -116,7 +116,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        mico_link_base:
+        m1n6s200_link_base:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -176,7 +176,7 @@ Visualization Manager:
           Value: true
         mico_link_5:
           Value: true
-        mico_link_base:
+        m1n6s200_link_base:
           Value: true
         mico_link_finger_1:
           Value: true
@@ -200,7 +200,7 @@ Visualization Manager:
             camera_rgb_frame:
               camera_rgb_optical_frame:
                 {}
-          mico_link_base:
+          m1n6s200_link_base:
             mico_api_origin:
               {}
             mico_link_1:

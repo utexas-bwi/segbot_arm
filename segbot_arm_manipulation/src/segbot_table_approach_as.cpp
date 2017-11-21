@@ -184,7 +184,7 @@ public:
 			//first, we need to move the arm out of view so the camera can see the table
 			if (posDB->hasCarteseanPosition("side_view")){
 				ROS_INFO("Moving out of the way...");
-				geometry_msgs::PoseStamped out_of_view_pose = posDB->getToolPositionStamped("side_view","/mico_link_base");
+				geometry_msgs::PoseStamped out_of_view_pose = posDB->getToolPositionStamped("side_view","/m1n6s200_link_base");
 				
 				//now go to the pose
 				segbot_arm_manipulation::moveToPoseMoveIt(nh_,out_of_view_pose);

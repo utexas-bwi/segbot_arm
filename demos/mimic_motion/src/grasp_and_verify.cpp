@@ -626,7 +626,7 @@ bool not_on_table(ros::NodeHandle n, Eigen::Vector4f center_vector, std::vector<
 
 
 bool move_force_verify(ros::NodeHandle n){
-	//name: ['mico_joint_1', 'mico_joint_2', 'mico_joint_3', 'mico_joint_4', 'mico_joint_5', 'mico_joint_6', 'mico_joint_finger_1', 'mico_joint_finger_2']
+	//name: ['m1n6s200_joint_1', 'm1n6s200_joint_2', 'm1n6s200_joint_3', 'm1n6s200_joint_4', 'm1n6s200_joint_5', 'm1n6s200_joint_6', 'm1n6s200_joint_finger_1', 'm1n6s200_joint_finger_2']
 	//position: [-1.3417218624707292, -0.44756153173493096, -0.2887493796082798, -1.1031276625138604, 1.1542971070664283, 2.9511931472480804, -0.0008399999999999999, 0.0]
 	//velocity: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 	//effort: [259758363770880.0, 3.49771372889357e-13, -3.833363283595124e+26, 4.5914945482066956e-41, -3.833369186553227e+26, 4.5914945482066956e-41, 0.0, 0.0]
