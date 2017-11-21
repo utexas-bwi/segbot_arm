@@ -1,7 +1,7 @@
 sudo: required
 dist: trusty
 # Test rollback to before July 2017 Travis update
-group: deprecated-2017Q3
+#group: deprecated-2017Q3
 # Force travis to use its minimal image with default Python settings
 language: generic
 compiler:
@@ -13,18 +13,17 @@ env:
   matrix:
     - CI_ROS_DISTRO="indigo"
 before_install:
-  - git clone https://github.com/utexas-bwi/jaco-ros.git
+  - git clone https://github.com/utexas-bwi/kinova-ros.git
   - git clone https://github.com/jsinapov/agile_grasp
 install:
-  - sudo sh -c 'echo "deb http://packages.ros.org/ros-shadow-fixed/ubuntu trusty main" > /etc/apt/sources.list.d/ros-latest.list'
+  - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu trusty main" > /etc/apt/sources.list.d/ros-latest.list'
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
   - sudo apt-get install -qq -y python-rosdep
-  - sudo apt-get install ros-$CI_ROS_DISTRO-agile-grasp
   - sudo rosdep init
   - rosdep update
   # Use rosdep to install all dependencies (including ROS itself)
-  - rosdep install --from-paths ./ -i -y --rosdistro $CI_ROS_DISTRO
+  - rosdep install --from-paths ./ -i -y -r --rosdistro $CI_ROS_DISTRO
 script:
   - source /opt/ros/$CI_ROS_DISTRO/setup.bash
   - mkdir -p $CATKIN_WS_SRC
