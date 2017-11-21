@@ -1,0 +1,36 @@
+- git:
+    local-name: bwi
+    uri: https://github.com/utexas-bwi/bwi.git
+    version: master
+- git:
+    local-name: bwi_common
+    uri: https://github.com/utexas-bwi/bwi_common.git
+    version: master
+- git:
+    local-name: segbot
+    uri: https://github.com/utexas-bwi/segbot.git
+    version: master
+- git:
+    local-name: segway_rmp
+    uri: https://github.com/utexas-bwi/segway_rmp.git
+    version: piyushk/remove_zero_odom_values
+- git:
+    local-name: segway_v3
+    uri: https://github.com/utexas-bwi/segway_v3.git
+    version: master
+- git:
+    local-name: velodyne
+    uri: https://github.com/ros-drivers/velodyne.git
+    version: master
+- git:
+    local-name: segbot_arm
+    uri: https://github.com/utexas-bwi/segbot_arm.git
+    version: master
+- git:
+    local-name: kinova-ros
+    uri: https://github.com/utexas-bwi/kinova-ros.git
+    version: master
+- git:
+    local-name: agile_grasp
+    uri: https://github.com/jsinapov/agile_grasp.git
+    version: master
