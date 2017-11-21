@@ -250,9 +250,9 @@ public:
 		
 		//transform the table scene point cloud 
 		sensor_msgs::PointCloud scene_plane;
-		listener.waitForTransform(plane.header.frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
+		listener.waitForTransform(plane.header.frame_id, "m1n6s200_link_base", ros::Time(0), ros::Duration(3.0));
 		sensor_msgs::convertPointCloud2ToPointCloud(plane, scene_plane);
-		listener.transformPointCloud("mico_link_base", scene_plane ,scene_plane); 
+		listener.transformPointCloud("m1n6s200_link_base", scene_plane ,scene_plane); 
 		
 		//update the plane cloud to the transformed cloud
 		sensor_msgs::convertPointCloudToPointCloud2(scene_plane, plane);

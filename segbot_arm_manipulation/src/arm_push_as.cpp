@@ -379,11 +379,11 @@ public:
 		segbot_arm_manipulation::closeHand();
 		
 		//wait for transform and perform it
-		listener.waitForTransform(goal->tgt_cloud.header.frame_id,"mico_link_base",ros::Time::now(), ros::Duration(3.0)); 
+		listener.waitForTransform(goal->tgt_cloud.header.frame_id,"m1n6s200_link_base",ros::Time::now(), ros::Duration(3.0)); 
 
 		//transform to base link frame of reference
 		sensor_msgs::PointCloud2 obj_cloud = goal->tgt_cloud;
-		pcl_ros::transformPointCloud ("mico_link_base", obj_cloud, obj_cloud, listener);
+		pcl_ros::transformPointCloud ("m1n6s200_link_base", obj_cloud, obj_cloud, listener);
 		
 		//find possible start poses
 		std::vector<geometry_msgs::Pose> app_pos = generate_poses(obj_cloud);

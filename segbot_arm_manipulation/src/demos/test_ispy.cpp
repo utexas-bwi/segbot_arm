@@ -101,7 +101,7 @@ void lift(ros::NodeHandle n, double x){
 void goToSafePose(ros::NodeHandle n){
 	geometry_msgs::PoseStamped pose_st;
 	pose_st.header.stamp = ros::Time(0);
-	pose_st.header.frame_id = "mico_link_base";
+	pose_st.header.frame_id = "m1n6s200_link_base";
 	
 	
 }

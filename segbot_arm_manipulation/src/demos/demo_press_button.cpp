@@ -221,12 +221,12 @@ int main(int argc, char**argv){
 		}
 		
 		//wait for transform and perform it
-		tf_listener.waitForTransform(table_scene.cloud_clusters[button_pc_index].header.frame_id,"mico_link_base",ros::Time(0), ros::Duration(3.0)); 
+		tf_listener.waitForTransform(table_scene.cloud_clusters[button_pc_index].header.frame_id,"m1n6s200_link_base",ros::Time(0), ros::Duration(3.0)); 
 		
 	    sensor_msgs::PointCloud2 button_cloud = table_scene.cloud_clusters[button_pc_index];
 		
 		//transform to base link frame of reference
-		pcl_ros::transformPointCloud ("mico_link_base", button_cloud, button_cloud, tf_listener);
+		pcl_ros::transformPointCloud ("m1n6s200_link_base", button_cloud, button_cloud, tf_listener);
 		
 		//create and publish pose
 		geometry_msgs::PoseStamped stampedPose = pclToPoseStamped(button_cloud);

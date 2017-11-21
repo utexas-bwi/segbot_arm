@@ -281,7 +281,7 @@ public:
         //step 1: transform to mico link space
         std::string sensor_frame_id = goal -> tgt_cloud.header.frame_id;
 			
-		listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
+		listener.waitForTransform(sensor_frame_id, "m1n6s200_link_base", ros::Time(0), ros::Duration(3.0));
 		
 		PointCloudT pcl_cloud;
 		pcl::fromROSMsg(goal -> tgt_cloud, pcl_cloud);

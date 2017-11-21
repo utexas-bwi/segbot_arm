@@ -439,7 +439,7 @@ public:
 			
 			std::string sensor_frame_id = goal->cloud_clusters.at(goal->target_object_cluster_index).header.frame_id;
 			
-			listener.waitForTransform(sensor_frame_id, "mico_link_base", ros::Time(0), ros::Duration(3.0));
+			listener.waitForTransform(sensor_frame_id, "m1n6s200_link_base", ros::Time(0), ros::Duration(3.0));
 			
 			
 			//here, we'll store all grasp options that pass the filters
@@ -457,8 +457,8 @@ public:
 				bool ok_with_plane = segbot_arm_manipulation::grasp_utils::checkPlaneConflict(gc_i,plane_coef_vector,MIN_DISTANCE_TO_PLANE);
 				
 				//for filter 2, the grasps need to be in the arm's frame of reference
-				listener.transformPose("mico_link_base", gc_i.approach_pose, gc_i.approach_pose);
-				listener.transformPose("mico_link_base", gc_i.grasp_pose, gc_i.grasp_pose);
+				listener.transformPose("m1n6s200_link_base", gc_i.approach_pose, gc_i.approach_pose);
+				listener.transformPose("m1n6s200_link_base", gc_i.grasp_pose, gc_i.grasp_pose);
 
 				
 				//filter 2: apply grasp filter method in request

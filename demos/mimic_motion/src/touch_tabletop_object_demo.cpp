@@ -311,7 +311,7 @@ void updateFK(ros::NodeHandle n){
 	fkine_request.fk_link_names.push_back("mico_end_effector");
 
 	//and the current frame
-	fkine_request.header.frame_id = "mico_link_base";
+	fkine_request.header.frame_id = "m1n6s200_link_base";
 
 	//finally we let moveit know what joint positions we want to compute
 	//in this case, the current state

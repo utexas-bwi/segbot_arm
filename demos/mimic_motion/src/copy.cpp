@@ -57,7 +57,7 @@ void movePose(float d_z) {
 
   // Set goal pose coordinates
 
-  goalPose.pose.header.frame_id = "mico_link_base";
+  goalPose.pose.header.frame_id = "m1n6s200_link_base";
   
   ROS_INFO("Current pose:");
   ROS_INFO_STREAM(current_pose);

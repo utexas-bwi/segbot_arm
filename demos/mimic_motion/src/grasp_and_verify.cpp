@@ -431,7 +431,7 @@ void updateFK(ros::NodeHandle n){
 	fkine_request.fk_link_names.push_back("mico_end_effector");
 
 	//and the current frame
-	fkine_request.header.frame_id = "mico_link_base";
+	fkine_request.header.frame_id = "m1n6s200_link_base";
 
 	//finally we let moveit know what joint positions we want to compute
 	//in this case, the current state
@@ -821,7 +821,7 @@ int main(int argc, char **argv) {
 	
 	//wait for transform from visual space to arm space
 	ROS_INFO("Waiting for transform...");
-	listener.waitForTransform(cloud_ros.header.frame_id, "mico_link_base", ros::Time(0), ros::Duration(5.0));
+	listener.waitForTransform(cloud_ros.header.frame_id, "m1n6s200_link_base", ros::Time(0), ros::Duration(5.0));
 	
 	std::vector<GraspCartesianCommand> grasp_commands;
 	std::vector<geometry_msgs::PoseStamped> poses;

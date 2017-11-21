@@ -120,7 +120,7 @@ int main(int argc, char** argv){
 	
 	// Go to handover position 
 	if (positionDB.hasCarteseanPosition("handover_front")){		
-		geometry_msgs::PoseStamped handover_pose = positionDB.getToolPositionStamped("handover_front","mico_link_base");
+		geometry_msgs::PoseStamped handover_pose = positionDB.getToolPositionStamped("handover_front","m1n6s200_link_base");
 		
 		ROS_INFO("Moving to handover position"); 
 		
@@ -149,7 +149,7 @@ int main(int argc, char** argv){
 	
 	segbot_arm_manipulation::homeArm(nh);
 	if (positionDB.hasCarteseanPosition("side_view")){		
-		geometry_msgs::PoseStamped side_pose = positionDB.getToolPositionStamped("side_view","mico_link_base");
+		geometry_msgs::PoseStamped side_pose = positionDB.getToolPositionStamped("side_view","m1n6s200_link_base");
 		
 		ROS_INFO("Moving to side position"); 
 		
