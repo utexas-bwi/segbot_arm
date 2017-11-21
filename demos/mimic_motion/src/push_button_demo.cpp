@@ -101,7 +101,7 @@ void movePose(float d_z) {
 
   // Set goal pose coordinates
 
-  goalPose.pose.header.frame_id = "mico_api_origin";
+  goalPose.pose.header.frame_id = "m1n6s200_link_base";
   
   ROS_INFO_STREAM(current_pose);
 
@@ -198,7 +198,7 @@ void moveAboveButton(){
 
 	// Set goal pose coordinates
 
-	goalPose.pose.header.frame_id = "mico_api_origin";
+	goalPose.pose.header.frame_id = "m1n6s200_link_base";
   
  
 
@@ -259,8 +259,8 @@ void waitForButtonPose(ros::NodeHandle n){
 
 		//step 4. transform the pose into Mico API origin frame of reference
 		geometry_msgs::PoseStamped stampOut;
-		listener.waitForTransform(pcl_cloud.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
-		listener.transformPose("mico_api_origin", stampedPose, stampOut);
+		listener.waitForTransform(pcl_cloud.header.frame_id, "m1n6s200_link_base", ros::Time(0), ros::Duration(3.0));
+		listener.transformPose("m1n6s200_link_base", stampedPose, stampOut);
 
 		ROS_INFO("[push_button_demo] publishing pose...");
 

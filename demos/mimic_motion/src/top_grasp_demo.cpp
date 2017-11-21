@@ -62,7 +62,7 @@ void movePose(float d_z) {
 
   // Set goal pose coordinates
 
-  goalPose.pose.header.frame_id = "mico_api_origin";
+  goalPose.pose.header.frame_id = "m1n6s200_link_base";
   
   ROS_INFO_STREAM(current_pose);
 
@@ -190,7 +190,7 @@ void liftObject() {
 
 void goBackToRestPosition(){
 	geometry_msgs::PoseStamped goalPose;
-	goalPose.header.frame_id = "mico_api_origin";
+	goalPose.header.frame_id = "m1n6s200_link_base";
 	
 	goalPose.pose.position.x = 0.210980892181;
 	goalPose.pose.position.y = -0.262371391058;
@@ -218,7 +218,7 @@ void moveToTopOfObject(){
 	
 	// Set goal pose coordinates
 
-	goalPose.header.frame_id = "mico_api_origin";
+	goalPose.header.frame_id = "m1n6s200_link_base";
      
 	// points for the top grasp
 	/*goalPose.pose.position.x = 0.28510850668;

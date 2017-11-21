@@ -132,13 +132,13 @@ int main (int argc, char** argv)
 					
 					geometry_msgs::PoseStamped ef_mico;
 
-					ef_mico.header.frame_id = "mico_api_origin";
+					ef_mico.header.frame_id = "m1n6s200_link_base";
 					ef_mico.header.stamp = ros::Time(0);
 					ef_mico.pose = ef_pose;
 
 					geometry_msgs::PoseStamped ef_camera;
-					listener.waitForTransform("mico_api_origin", cloud_plane->header.frame_id, ros::Time(0), ros::Duration(3.0));
-					listener.transformPose("mico_api_origin", ef_mico, ef_camera);
+					listener.waitForTransform("m1n6s200_link_base", cloud_plane->header.frame_id, ros::Time(0), ros::Duration(3.0));
+					listener.transformPose("m1n6s200_link_base", ef_mico, ef_camera);
 					
 					
 					//Find closest point to EF
@@ -185,8 +185,8 @@ int main (int argc, char** argv)
 						pose_in.pose = target;
 
 						geometry_msgs::PoseStamped pose_out;
-						listener.waitForTransform(cloud_plane->header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
-						listener.transformPose("mico_api_origin", pose_in, pose_out);
+						listener.waitForTransform(cloud_plane->header.frame_id, "m1n6s200_link_base", ros::Time(0), ros::Duration(3.0));
+						listener.transformPose("m1n6s200_link_base", pose_in, pose_out);
 						
 						//pose_out.pose.position.x += .05;
 						pose_out.pose.position.y += .1;
@@ -197,7 +197,7 @@ int main (int argc, char** argv)
 						std::cout << pose_out.pose.orientation.x << " " << pose_out.pose.orientation.y   << " " << pose_out.pose.orientation.z << " " << pose_out.pose.orientation.w << std::endl;
 						
 						kinova_msgs::ArmPoseGoal goalPose;
-						goalPose.pose.header.frame_id = "mico_api_origin";
+						goalPose.pose.header.frame_id = "m1n6s200_link_base";
 						goalPose.pose.pose.position.x = pose_out.pose.position.x;	
 						goalPose.pose.pose.position.y = pose_out.pose.position.y;				
 						goalPose.pose.pose.position.z = pose_out.pose.position.z;			

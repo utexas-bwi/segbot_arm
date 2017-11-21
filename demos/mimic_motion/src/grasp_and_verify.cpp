@@ -811,7 +811,7 @@ int main(int argc, char **argv) {
 	geometry_msgs::PoseArray poses_msg;
 	poses_msg.header.seq = 1;
 	poses_msg.header.stamp = cloud_ros.header.stamp;
-	poses_msg.header.frame_id = "mico_api_origin";
+	poses_msg.header.frame_id = "m1n6s200_link_base";
 	
 	ROS_INFO("[agile_grasp_demo.cpp] Heard %i grasps",(int)current_grasps.grasps.size());
 	
@@ -836,8 +836,8 @@ int main(int argc, char **argv) {
 		
 		if (acceptGrasp(gc_i,detected_objects.at(selected_object),plane_coef_vector)){
 			
-			listener.transformPose("mico_api_origin", gc_i.approach_pose, gc_i.approach_pose);
-			listener.transformPose("mico_api_origin", gc_i.grasp_pose, gc_i.grasp_pose);
+			listener.transformPose("m1n6s200_link_base", gc_i.approach_pose, gc_i.approach_pose);
+			listener.transformPose("m1n6s200_link_base", gc_i.grasp_pose, gc_i.grasp_pose);
 			
 			//filter two -- if IK fails
 			moveit_msgs::GetPositionIK::Response  ik_response_approach = computeIK(n,gc_i.approach_pose);

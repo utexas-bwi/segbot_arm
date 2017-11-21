@@ -187,7 +187,7 @@ void getWriteReady(string position){
 	
 	if(position.compare("start") == 0){
 		//Only moving in 2d space, orientation stays
-		goalPose.pose.header.frame_id = "mico_api_origin";
+		goalPose.pose.header.frame_id = "m1n6s200_link_base";
 		goalPose.pose.pose.position.x = 0.151496844;	
 		goalPose.pose.pose.position.y = -0.3651103675;				
 		goalPose.pose.pose.position.z = 0.3085489869;			
@@ -198,7 +198,7 @@ void getWriteReady(string position){
 	}
 	else if (position.compare("grab") == 0){
 		//hand is tilted upwards to make inserting a pen easier.
-		goalPose.pose.header.frame_id = "mico_api_origin";
+		goalPose.pose.header.frame_id = "m1n6s200_link_base";
 		goalPose.pose.pose.position.x = 0.259099006653;	
 		goalPose.pose.pose.position.y = -0.401062101126;				
 		goalPose.pose.pose.position.z = 0.514227807522;			
@@ -208,7 +208,7 @@ void getWriteReady(string position){
 		goalPose.pose.pose.orientation.w = 0.767007079541;
 	}
 	else if (position.compare("horizontal") == 0){
-		goalPose.pose.header.frame_id = "mico_api_origin";
+		goalPose.pose.header.frame_id = "m1n6s200_link_base";
 		goalPose.pose.pose.position.x = -0.0159843936563;
 		goalPose.pose.pose.position.y =  -0.453825235367;
 		goalPose.pose.pose.position.z =  0.065297177672;
@@ -332,7 +332,7 @@ int moveAndPause(){
 	kinova_msgs::ArmPoseGoal goalPose;
 	
 	//Only moving in 2d space, orientation stays
-	goalPose.pose.header.frame_id = "mico_api_origin";
+	goalPose.pose.header.frame_id = "m1n6s200_link_base";
 	goalPose.pose.pose.position.x = -0.169210940599;	
 	goalPose.pose.pose.position.y = -0.135450258851;				
 	goalPose.pose.pose.position.z = 0.299253374338;			
@@ -361,7 +361,7 @@ int moveAndPause(){
 		r.sleep();
 	}
 	
-	goalPose.pose.header.frame_id = "mico_api_origin";
+	goalPose.pose.header.frame_id = "m1n6s200_link_base";
 	goalPose.pose.pose.position.x = -0.0159843936563;
 	goalPose.pose.pose.position.y =  -0.453825235367;
 	goalPose.pose.pose.position.z =  0.065297177672;
@@ -968,7 +968,7 @@ void establish_bounds(){
 	ros::Rate r(30);
 	//Only moving in 2d space, orientation stays
 	//first point should be the origin
-	goalPose.pose.header.frame_id = "mico_api_origin";
+	goalPose.pose.header.frame_id = "m1n6s200_link_base";
 	goalPose.pose.pose.position.x = -0.117668524384;	
 	goalPose.pose.pose.position.y = -0.412680387497;				
 	goalPose.pose.pose.position.z = 0.0538666550815;			

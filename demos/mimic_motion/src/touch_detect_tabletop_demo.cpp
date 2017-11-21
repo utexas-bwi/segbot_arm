@@ -255,8 +255,8 @@ geometry_msgs::PoseStamped createTouchPose(PointCloudT::Ptr blob, Eigen::Vector4
 	
 	//tranform pose into arm frame of reference
 	tf::TransformListener listener;
-	listener.waitForTransform(pose_st.header.frame_id, "mico_api_origin", ros::Time(0), ros::Duration(3.0));
-	listener.transformPose("mico_api_origin", pose_st, pose_st);
+	listener.waitForTransform(pose_st.header.frame_id, "m1n6s200_link_base", ros::Time(0), ros::Duration(3.0));
+	listener.transformPose("m1n6s200_link_base", pose_st, pose_st);
 			
 	//decide on orientation
 	pose_st.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(3.14/2,0,3.14/2);

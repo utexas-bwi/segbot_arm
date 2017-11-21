@@ -170,7 +170,7 @@ void drawFile(){
 							curPosition.pose.orientation.x, curPosition.pose.orientation.y, curPosition.pose.orientation.z, curPosition.pose.orientation.w);
 		
 		//Only moving in 2d space, orientation stays
-		goalPose.pose.header.frame_id = "mico_api_origin";	
+		goalPose.pose.header.frame_id = "m1n6s200_link_base";	
 		goalPose.pose.pose.position.x = curPosition.pose.position.x;
 		goalPose.pose.pose.position.y = curPosition.pose.position.y;		
 		goalPose.pose.pose.position.z = curPosition.pose.position.z;
@@ -209,7 +209,7 @@ void drawCircle(){
 							curPosition.pose.orientation.x, curPosition.pose.orientation.y, curPosition.pose.orientation.z, curPosition.pose.orientation.w);
 		
 		//Only moving in 2d space, orientation stays
-		goalPose.pose.header.frame_id = "mico_api_origin";			
+		goalPose.pose.header.frame_id = "m1n6s200_link_base";			
 		goalPose.pose.pose.position.z = curPosition.pose.position.z;
 		goalPose.pose.pose.orientation.x = curPosition.pose.orientation.x;
 		goalPose.pose.pose.orientation.y = curPosition.pose.orientation.y;

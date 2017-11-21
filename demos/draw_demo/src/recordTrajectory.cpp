@@ -156,7 +156,7 @@ void recordEfforts(){
 		kinova_msgs::ArmPoseGoal goalPose;
 		ros::spinOnce();
 		//Only moving in 2d space, orientation stays
-		goalPose.pose.header.frame_id = "mico_api_origin";
+		goalPose.pose.header.frame_id = "m1n6s200_link_base";
 		goalPose.pose.pose.position.x = 0.151496844;	
 		goalPose.pose.pose.position.y = -0.3651103675;				
 		goalPose.pose.pose.position.z = 0.3085489869;			

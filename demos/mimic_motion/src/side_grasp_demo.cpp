@@ -63,7 +63,7 @@ void movePose(float d_z) {
 
   // Set goal pose coordinates
 
-  goalPose.pose.header.frame_id = "mico_api_origin";
+  goalPose.pose.header.frame_id = "m1n6s200_link_base";
   
   ROS_INFO_STREAM(current_pose);
 
@@ -160,7 +160,7 @@ void moveToSideOfObject(){
 	
 	// Set goal pose coordinates
 
-	goalPose.header.frame_id = "mico_api_origin";
+	goalPose.header.frame_id = "m1n6s200_link_base";
      
      // Points for the side grasp
     goalPose.pose.position.x = 0.319440335035;
