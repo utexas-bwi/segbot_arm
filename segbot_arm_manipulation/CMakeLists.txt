@@ -2,26 +2,27 @@ cmake_minimum_required(VERSION 2.8.3)
 project(segbot_arm_manipulation)
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  std_msgs
-  sensor_msgs
-  geometry_msgs
-  message_generation
-  kinova_msgs
-  actionlib
-  pcl_ros
-  pcl_conversions
-  agile_grasp
-  tf_conversions
-  moveit_ros_planning_interface
-  moveit_utils
-  moveit_msgs
-  nav_msgs
-  sound_play
-  move_base_msgs
-  segbot_arm_perception
-)
+        actionlib
+        actionlib_msgs
+        agile_grasp
+        geometry_msgs
+        kinova_msgs
+        message_generation
+        move_base_msgs
+        moveit_ros_planning_interface
+        moveit_utils
+        moveit_msgs
+        nav_msgs
+        pcl_ros
+        pcl_conversions
+        roscpp
+        rospy
+        std_msgs
+        sensor_msgs
+        sound_play
+        segbot_arm_perception
+        tf_conversions
+        )
 
 
 find_package(PCL 1.7 REQUIRED)
@@ -31,41 +32,42 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
+        include
+        ${catkin_INCLUDE_DIRS}
 )
 
 catkin_python_setup()
 
 add_action_files(
-   FILES
-   TabletopGrasp.action
-   TabletopApproach.action
-   LiftVerify.action
-   Press.action
-   Push.action
-   Shake.action
-   ObjReplacement.action
+        FILES
+        TabletopGrasp.action
+        TabletopApproach.action
+        LiftVerify.action
+        Press.action
+        Push.action
+        Shake.action
+        ObjReplacement.action
 )
 
 add_service_files(
-   FILES
-   iSpyTouch.srv
-   iSpyDetectTouch.srv
-   iSpyFaceTable.srv
+        FILES
+        iSpyTouch.srv
+        iSpyDetectTouch.srv
+        iSpyFaceTable.srv
 )
 
 generate_messages(
-  DEPENDENCIES
-  sensor_msgs
-  actionlib_msgs
-  geometry_msgs
-  std_msgs
+        DEPENDENCIES
+        sensor_msgs
+        actionlib_msgs
+        geometry_msgs
+        std_msgs
 )
 
 catkin_package(
-  INCLUDE_DIRS include
-  DEPENDS message_runtime segbot_arm_perception actionlib_msgs geometry_msgs std_msgs
+        CATKIN_DEPENDS std_msgs geometry_msgs kinova_msgs actionlib roscpp rospy message_runtime actionlib_msgs
+        INCLUDE_DIRS include
+        LIBRARIES arm_utilities
 )
 
 
@@ -94,58 +96,61 @@ target_link_libraries(segbot_table_approach_as ${catkin_LIBRARIES})
 add_dependencies(segbot_table_approach_as segbot_arm_manipulation_gencpp)
 
 add_executable(ispy_arm_server src/ispy_arm_server.cpp)
-target_link_libraries(ispy_arm_server ${catkin_LIBRARIES} )
+target_link_libraries(ispy_arm_server ${catkin_LIBRARIES})
 add_dependencies(ispy_arm_server kinova_msgs_gencpp segbot_arm_manipulation_gencpp)
 
 add_executable(demo_obstacle_avoidance src/demos/demo_obstacle_avoidance.cpp)
-target_link_libraries(demo_obstacle_avoidance ${catkin_LIBRARIES} )
+target_link_libraries(demo_obstacle_avoidance ${catkin_LIBRARIES})
 add_dependencies(demo_obstacle_avoidance kinova_msgs_gencpp)
 
 add_executable(demo_grasp_action_client src/demos/demo_grasp_action_client.cpp)
-target_link_libraries(demo_grasp_action_client ${catkin_LIBRARIES} )
+target_link_libraries(demo_grasp_action_client ${catkin_LIBRARIES})
 add_dependencies(demo_grasp_action_client segbot_arm_manipulation_gencpp)
 
 add_executable(demo_grasp_verify src/demos/demo_grasp_verify.cpp)
-target_link_libraries(demo_grasp_verify ${catkin_LIBRARIES} )
+target_link_libraries(demo_grasp_verify ${catkin_LIBRARIES})
 add_dependencies(demo_grasp_verify segbot_arm_manipulation_gencpp)
 
 add_executable(demo_explore_object src/demos/demo_explore_object.cpp)
-target_link_libraries(demo_explore_object ${catkin_LIBRARIES} )
+target_link_libraries(demo_explore_object ${catkin_LIBRARIES})
 add_dependencies(demo_explore_object kinova_msgs_gencpp segbot_arm_manipulation_gencpp ${catkin_EXPORTED_TARGETS})
 
 add_executable(test_table_approach_actions src/demos/test_table_approach_actions.cpp)
-target_link_libraries(test_table_approach_actions ${catkin_LIBRARIES} )
+target_link_libraries(test_table_approach_actions ${catkin_LIBRARIES})
 add_dependencies(test_table_approach_actions segbot_arm_manipulation_gencpp)
 
 add_executable(demo_hand_lead src/demos/demo_hand_lead.cpp)
-target_link_libraries(demo_hand_lead ${catkin_LIBRARIES} )
+target_link_libraries(demo_hand_lead ${catkin_LIBRARIES})
 add_dependencies(demo_hand_lead segbot_arm_manipulation_gencpp)
 
 add_executable(test_grasp_replacement src/demos/test_grasp_replacement.cpp)
-target_link_libraries(test_grasp_replacement ${catkin_LIBRARIES} )
+target_link_libraries(test_grasp_replacement ${catkin_LIBRARIES})
 add_dependencies(test_grasp_replacement segbot_arm_manipulation_gencpp)
 
 add_executable(segbot_obj_replacement_as src/segbot_obj_replacement_as.cpp)
 add_dependencies(segbot_obj_replacement_as segbot_arm_manipulation_gencpp)
-target_link_libraries(segbot_obj_replacement_as ${catkin_LIBRARIES} )
+target_link_libraries(segbot_obj_replacement_as ${catkin_LIBRARIES})
 
 add_executable(test_handover_replacement src/demos/test_handover_replacement.cpp)
-target_link_libraries(test_handover_replacement ${catkin_LIBRARIES} )
+target_link_libraries(test_handover_replacement ${catkin_LIBRARIES})
 add_dependencies(test_handover_replacement segbot_arm_manipulation_gencpp)
 
-install(PROGRAMS 
-	src/arm_actions.py
-DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+install(PROGRAMS
+        scripts/arm_actions.py
+        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 add_executable(test_ispy src/demos/test_ispy.cpp)
-target_link_libraries(test_ispy ${catkin_LIBRARIES} )
+target_link_libraries(test_ispy ${catkin_LIBRARIES})
 add_dependencies(test_ispy segbot_arm_manipulation_gencpp)
 
 add_executable(demo_press_button src/demos/demo_press_button.cpp)
-target_link_libraries(demo_press_button ${catkin_LIBRARIES} )
+target_link_libraries(demo_press_button ${catkin_LIBRARIES})
 add_dependencies(demo_press_button kinova_msgs_gencpp segbot_arm_manipulation_gencpp)
 
 install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.h"
-PATTERN ".svn" EXCLUDE)
+        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+        FILES_MATCHING PATTERN "*.h"
+        PATTERN ".svn" EXCLUDE)
+
+add_library(arm_utilities src/MicoManager.cpp)
+target_link_libraries(arm_utilities ${catkin_LIBRARIES})
