@@ -1,9 +1,3 @@
-/* This service is the IK flavor of the movement interface to the MoveIt! move_group and planning_action interfaces.
- * 
- * Author: Maxwell Svetlik
- * 
- * */
-
 #include <signal.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -34,37 +28,35 @@ void sig_handler(int sig){
     ROS_INFO("caugt sigint, init shutdown seq...");
     ros::shutdown();
     exit(1);
-};
+}
+
 bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_utils::MicoMoveitCartesianPose::Response &res){
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] Request received!");
 
     //publish target pose
     pose_pub.publish(req.target);
-
-    group->setPoseReferenceFrame("m1n6s200_end_effector");
-    ROS_INFO_STREAM(group->getPlanningFrame());
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+    planning_scene_interface.addCollisionObjects(req.collision_objects);
     group->setPlanningTime(5.0); //5 second maximum for collision computation
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group->setPoseTarget(req.target);
     group->setStartState(*group->getCurrentState());
+    
 
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] starting to plan...");
     bool success = group->plan(my_plan);
-    ROS_INFO("planning success: %d", success);
+    ROS_INFO("Planning success: %s", success ? "true" : "false");
 
     if (!success) {
         res.completed = false;
         return true;
     }
-
     group->move();
-
     ros::spinOnce();
     return true;
 }
-int main(int argc, char **argv)
-{
+
+int main(int argc, char **argv){
     ros::init(argc, argv, "mico_moveit_cartesianpose_service");
     ros::NodeHandle nh;
     ros::AsyncSpinner spinner(1);
@@ -72,7 +64,7 @@ int main(int argc, char **argv)
 
     group = new moveit::planning_interface::MoveGroup("arm");
     group->setGoalTolerance(0.01);
-
+    group->setPoseReferenceFrame("m1n6s200_end_effector");
     ros::ServiceServer srv = nh.advertiseService("mico_cartesianpose_service", service_cb);
 
     pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/mico_cartesianpose_service/target_pose", 1, true);

@@ -33,7 +33,6 @@ add_service_files(
    MicoNavSafety.srv
    MicoMoveitCartesianPose.srv
    AngularVelCtrl.srv
-   MicoMoveitCartesianPoseObstacle.srv
 )
 
 add_action_files(
@@ -61,7 +60,7 @@ add_executable(mico_moveit_cartesianpose_service src/mico_moveit_cartesianpose_s
 add_executable(trajectory_record src/trajectory_record.cpp)
 add_executable(position_record src/position_record.cpp)
 add_executable(angular_vel_control_srv src/angular_vel_control_srv.cpp)
-add_executable(mico_moveit_cartesianpose_obstacle_service src/mico_moveit_cartesianpose_obstacle_service.cpp)
+
 
 add_dependencies(mico_controller moveit_utils_gencpp)
 add_dependencies(mico_controller_action moveit_utils_gencpp)
@@ -71,7 +70,7 @@ add_dependencies(mico_moveit_cartesianpose_service moveit_utils_gencpp)
 add_dependencies(trajectory_record moveit_utils_gencpp)
 add_dependencies(position_record moveit_utils_gencpp)
 add_dependencies(angular_vel_control_srv moveit_utils_gencpp)
-add_dependencies(mico_moveit_cartesianpose_obstacle_service moveit_utils_gencpp)
+
 
 target_link_libraries(mico_controller ${catkin_LIBRARIES})
 target_link_libraries(mico_controller_action ${catkin_LIBRARIES})
@@ -81,5 +80,3 @@ target_link_libraries(mico_moveit_cartesianpose_service ${catkin_LIBRARIES})
 target_link_libraries(trajectory_record ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(position_record ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(angular_vel_control_srv ${catkin_LIBRARIES})
-target_link_libraries(mico_moveit_cartesianpose_obstacle_service ${catkin_LIBRARIES})
-
