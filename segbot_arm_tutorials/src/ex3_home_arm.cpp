@@ -15,74 +15,20 @@
 #include <kinova_msgs/FingerPosition.h>
 #include <kinova_msgs/HomeArm.h>
 
-//our own arm library 
-#include <segbot_arm_manipulation/arm_utils.h>
+//our own arm library
+#include <segbot_arm_manipulation/MicoManager.h>
 
-
-
-#define NUM_JOINTS 8 //6+2 for the arm
-
-//global variables for storing sensory data
-sensor_msgs::JointState current_state;
-geometry_msgs::PoseStamped current_pose;
-kinova_msgs::FingerPosition current_finger;
-
-
-bool heardJoinstState;
-bool heardPose;
-bool heardFingers;
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
 
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig) {
-	g_caught_sigint = true;
-	ROS_INFO("caught sigint, init shutdown sequence...");
-	ros::shutdown();
-	exit(1);
+    g_caught_sigint = true;
+    ROS_INFO("caught sigint, init shutdown sequence...");
+    ros::shutdown();
+    exit(1);
 };
-
-//Joint positions cb
-void joint_state_cb (const sensor_msgs::JointStateConstPtr& msg) {
-	
-	if (msg->position.size() == NUM_JOINTS){
-		current_state = *msg;
-		heardJoinstState = true;
-	}
-}
-
-//tool pose cb
-void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
-	current_pose = msg;
-	heardPose = true;
-}
-
-//fingers state cb
-void fingers_cb (const kinova_msgs::FingerPositionConstPtr& msg) {
-	current_finger = *msg;
-	heardFingers = true;
-}
-
-//blocking call to listen for arm data (in this case, joint states)
-void listenForArmData(){
-	
-	heardJoinstState = false;
-	heardPose = false;
-	heardFingers = false;
-	
-	ros::Rate r(40.0);
-	
-	while (ros::ok()){
-		ros::spinOnce();	
-		
-		if (heardJoinstState && heardPose && heardFingers)
-			return;
-		
-		r.sleep();
-	}
-}
-
 
 // Blocking call for user input
 void pressEnter(std::string message){
@@ -109,27 +55,17 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 	
 	//create subscribers for arm topics
-	
-	//joint positions
-	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
-	
-	//cartesean tool position and orientation
-	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
-	//finger positions
-	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
-	 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
-	
-	//listen for arm data
-	listenForArmData();
+
+    MicoManager mico(n);
 
 	//close fingers and "home" the arm
 	pressEnter("Press [Enter] to close the gripper and home the arm");
 	
 	//close hand
-	segbot_arm_manipulation::closeHand();
+	mico.close_hand();
 	
 	//home arm using service call to arm driver
 	ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/m1n6s200_driver/in/home_arm");
@@ -140,10 +76,10 @@ int main(int argc, char **argv) {
 	else
 		ROS_INFO("Cannot contact homing service. Is it running?");
 	
-	pressEnter("Press [Enter] to home the arm using the API call from segbot_arm_manipyulation");
+	pressEnter("Press [Enter] to home the arm using the API call from segbot_arm_manipulation");
 	
 	//does the same thing but with less code
-	segbot_arm_manipulation::homeArm(n);
+	mico.move_home();
 
 	//the end
 	ros::shutdown();

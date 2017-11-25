@@ -65,7 +65,7 @@ generate_messages(
 )
 
 catkin_package(
-        CATKIN_DEPENDS std_msgs geometry_msgs kinova_msgs actionlib roscpp rospy message_runtime actionlib_msgs
+        CATKIN_DEPENDS std_msgs geometry_msgs kinova_msgs actionlib roscpp rospy message_runtime actionlib_msgs moveit_msgs
         INCLUDE_DIRS include
         LIBRARIES arm_utilities
 )

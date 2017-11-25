@@ -16,21 +16,7 @@
 #include <kinova_msgs/SetFingersPositionAction.h>
 
 //our own arm library
-#include <segbot_arm_manipulation/arm_utils.h>
-
-#define NUM_JOINTS 8 //6+2 for the arm
-
-//global variables for storing sensory data
-sensor_msgs::JointState current_state;
-geometry_msgs::PoseStamped current_pose;
-sensor_msgs::JointState current_efforts;
-kinova_msgs::FingerPosition current_finger;
-
-
-bool heardJoinstState;
-bool heardPose;
-bool heardEfforts;
-bool heardFingers;
+#include <segbot_arm_manipulation/MicoManager.h>
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -42,47 +28,6 @@ void sig_handler(int sig) {
 	ros::shutdown();
 	exit(1);
 };
-
-//Joint positions cb
-void joint_state_cb (const sensor_msgs::JointStateConstPtr& msg) {
-	
-	if (msg->position.size() == NUM_JOINTS){
-		current_state = *msg;
-		heardJoinstState = true;
-	}
-}
-
-//tool pose cb
-void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
-	current_pose = msg;
-	heardPose = true;
-}
-
-//fingers state cb
-void fingers_cb (const kinova_msgs::FingerPositionConstPtr& msg) {
-	current_finger = *msg;
-	heardFingers = true;
-}
-
-//blocking call to listen for arm data (in this case, joint states)
-void listenForArmData(){
-	
-	heardJoinstState = false;
-	heardPose = false;
-	heardFingers = false;
-	
-	ros::Rate r(40.0);
-	
-	while (ros::ok()){
-		ros::spinOnce();	
-		
-		if (heardJoinstState && heardPose && heardFingers)
-			return;
-		
-		r.sleep();
-	}
-}
-
 
 // Blocking call for user input
 void pressEnter(std::string message){
@@ -107,22 +52,9 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "ex1_subscribing_to_topics");
 	
 	ros::NodeHandle n;
-	
-	//create subscribers for arm topics
-	
-	//joint positions
-	ros::Subscriber sub_angles = n.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
-	
-	//cartesean tool position and orientation
-	ros::Subscriber sub_tool = n.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 
-	//finger positions
-	ros::Subscriber sub_finger = n.subscribe("/m1n6s200_driver/out/finger_position", 1, fingers_cb);
-	 
 	//register ctrl-c
 	signal(SIGINT, sig_handler);
-
-	listenForArmData();
 	
 	//open the hand using an action call
 	
@@ -138,22 +70,23 @@ int main(int argc, char **argv) {
 	pressEnter("Press [Enter] to open the hand.");
 	ac.sendGoal(goalFinger);
 	ac.waitForResult();
-	
+
+	MicoManager mico(n);
 	//now, close the hand using an API call from segbot_arm_manipulation
 	pressEnter("Press [Enter] to close the hand.");
-	segbot_arm_manipulation::closeHand();
+	mico.close_hand();
 	
 	//open again
 	pressEnter("Press [Enter] to open the hand again.");
-	segbot_arm_manipulation::openHand();
+	mico.open_hand();
 	
 	//close just one finger
 	pressEnter("Press [Enter] to close one finger.");
-	segbot_arm_manipulation::moveFingers(7500,100);
+	mico.move_fingers(7500,100);
 	
 	//close again
 	pressEnter("Press [Enter] to close the gripper and finish.");
-	segbot_arm_manipulation::closeHand();
+	mico.close_hand();
 	
 	ros::shutdown();
 }

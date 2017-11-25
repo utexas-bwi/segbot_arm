@@ -10,8 +10,10 @@
 #include <kinova_msgs/SetFingersPositionAction.h>
 #include <kinova_msgs/HomeArm.h>
 #include <moveit_utils/MicoNavSafety.h>
-#include <ros/package.h>
 #include <moveit_utils/MicoMoveitCartesianPose.h>
+#include <moveit_msgs/GetPositionIK.h>
+#include <ros/package.h>
+
 #include <sensor_msgs/PointCloud2.h>
 #include "MicoManager.h"
 
@@ -34,6 +36,7 @@ class MicoManager {
     ros::ServiceClient home_client;
     ros::ServiceClient safety_client;
     ros::ServiceClient pose_moveit_client;
+    ros::ServiceClient ik_client;
     ArmPositionDB *positionDB;
 
 public:
@@ -50,32 +53,36 @@ public:
 
     void joint_state_cb(const sensor_msgs::JointStateConstPtr &msg);
 
-    void toolpos_cb(const geometry_msgs::PoseStamped &msg);
+    void toolpose_cb(const geometry_msgs::PoseStampedConstPtr &msg);
 
     void fingers_cb(const kinova_msgs::FingerPositionConstPtr &msg);
 
     void wait_for_data();
 
-    void moveToPose(const geometry_msgs::PoseStamped &pose);
+    void move_to_pose(const geometry_msgs::PoseStamped &pose);
 
-    void moveFingers(const int finger_value1, const int finger_value2);
+    void move_fingers(int finger_value);
 
-    void openHand();
+    void move_fingers(const int finger_value1, const int finger_value2);
 
-    void closeHand();
+    void open_hand();
 
-    bool makeSafeForTravel();
+    void close_hand();
 
-    void homeArm();
+    bool make_safe_for_travel();
 
-    void moveFingers(int finger_value);
+    void move_home();
 
-    void moveToSideView();
+    void move_to_side_view();
 
-    bool moveToPoseMoveIt(const geometry_msgs::PoseStamped &target, const std::vector<sensor_msgs::PointCloud2> &obstacles = std::vector<sensor_msgs::PointCloud2>());
+    void move_to_handover();
 
-    void moveToHandover();
+    bool move_to_pose_moveit(const geometry_msgs::PoseStamped &target,
+                             const std::vector<sensor_msgs::PointCloud2> &obstacles = std::vector<sensor_msgs::PointCloud2>());
 
+
+
+    moveit_msgs::GetPositionIK::Response compute_ik(const geometry_msgs::PoseStamped &p);
 };
 
 #endif //SEGBOT_ARM_MANIPULATION_MICOMANAGER_H
