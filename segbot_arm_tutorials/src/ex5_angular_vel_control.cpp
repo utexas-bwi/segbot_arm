@@ -18,6 +18,7 @@
 
 //our own arm library 
 #include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/MicoManager.h>
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
@@ -51,9 +52,10 @@ void pressEnter(std::string message){
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
-	ros::init(argc, argv, "ex1_subscribing_to_topics");
+	ros::init(argc, argv, "ex5_angular_vel_control");
 	
 	ros::NodeHandle n;
+	MicoManager mico(n);
 	 
 	//publish cartesian tool velocities
 	ros::Publisher pub_angular_velocity = n.advertise<kinova_msgs::JointAngles>("/m1n6s200_driver/in/joint_velocity", 10);
@@ -63,13 +65,13 @@ int main(int argc, char **argv) {
 
 	pressEnter("Press [Enter] to rotate the wrist");
 	
-	kinova_msgs::JointAngles msg;
-	msg.joint1 = 0.0;
-	msg.joint2 = 0.0;
-	msg.joint3 = 0.0;
-	msg.joint4 = 0.0;
-	msg.joint5 = 0.0;
-	msg.joint6 = 45; 
+	kinova_msgs::JointAngles angular_vel;
+	angular_vel.joint1 = 0.0;
+	angular_vel.joint2 = 0.0;
+	angular_vel.joint3 = 0.0;
+	angular_vel.joint4 = 0.0;
+	angular_vel.joint5 = 0.0;
+	angular_vel.joint6 = 45;
 
 	double duration = 5.0; //5 seconds
 	double elapsed_time = 0.0;
@@ -82,7 +84,7 @@ int main(int argc, char **argv) {
 		ros::spinOnce();
 		
 		//publish velocity message
-		pub_angular_velocity.publish(msg);
+		pub_angular_velocity.publish(angular_vel);
 		
 		r.sleep();
 		
@@ -92,9 +94,12 @@ int main(int argc, char **argv) {
 	}
 	
 	//publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
-	msg.joint6 = 0; 
-	pub_angular_velocity.publish(msg);
+	angular_vel.joint6 = 0;
+	pub_angular_velocity.publish(angular_vel);
 
-	//the end
+	//With less code...
+	angular_vel.joint6 = -45;
+	mico.move_with_angular_velocities(angular_vel, 5);
+
 	ros::shutdown();
 }

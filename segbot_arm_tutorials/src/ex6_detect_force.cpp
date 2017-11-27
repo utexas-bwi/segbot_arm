@@ -86,7 +86,7 @@ bool waitForForce(MicoManager &mico, const double force_threshold, const double 
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
-	ros::init(argc, argv, "ex1_subscribing_to_topics");
+	ros::init(argc, argv, "ex6_detect_force");
 	
 	ros::NodeHandle n;
 

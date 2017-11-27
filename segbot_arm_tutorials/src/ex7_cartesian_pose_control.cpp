@@ -44,7 +44,7 @@ void pressEnter(std::string message){
 
 int main(int argc, char **argv) {
     // Intialize ROS with this node name
-    ros::init(argc, argv, "ex1_subscribing_to_topics");
+    ros::init(argc, argv, "ex7_cartesian_pose_control");
     
     ros::NodeHandle n;
 

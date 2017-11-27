@@ -49,7 +49,7 @@ void pressEnter(std::string message){
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
-	ros::init(argc, argv, "ex1_subscribing_to_topics");
+	ros::init(argc, argv, "ex2_gripper_control");
 	
 	ros::NodeHandle n;
 
@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
 	ac.sendGoal(goalFinger);
 	ac.waitForResult();
 
+	// MicoManager is a class that facilitates many common arm motion activities
 	MicoManager mico(n);
 	//now, close the hand using an API call from segbot_arm_manipulation
 	pressEnter("Press [Enter] to close the hand.");

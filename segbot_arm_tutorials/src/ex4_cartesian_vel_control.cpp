@@ -18,6 +18,7 @@
 
 //our own arm library 
 #include <segbot_arm_manipulation/arm_utils.h>
+#include <segbot_arm_manipulation/MicoManager.h>
 
 
 //true if Ctrl-C is pressed
@@ -53,12 +54,11 @@ void pressEnter(std::string message){
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name
-	ros::init(argc, argv, "ex1_subscribing_to_topics");
+	ros::init(argc, argv, "ex4_cartesian_vel_control");
 	
 	ros::NodeHandle n;
-	
-	//create subscribers for arm topics
-	 
+	MicoManager mico(n);
+
 	//publish cartesian tool velocities
 	ros::Publisher pub_velocity = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 10);
 	
@@ -68,18 +68,18 @@ int main(int argc, char **argv) {
 	pressEnter("Press [Enter] to move hand up and down");
 	
 	//construct message
-	kinova_msgs::PoseVelocity velocityMsg;
-	velocityMsg.twist_linear_x = 0.0;
-	velocityMsg.twist_linear_y = 0.0;
-	velocityMsg.twist_linear_z = 0.2; 
-	velocityMsg.twist_angular_x = 0.0;
-	velocityMsg.twist_angular_y = 0.0;
-	velocityMsg.twist_angular_z = 0.0;
+	kinova_msgs::PoseVelocity cartesian_vel;
+	cartesian_vel.twist_linear_x = 0.0;
+	cartesian_vel.twist_linear_y = 0.0;
+	cartesian_vel.twist_linear_z = 0.2;
+	cartesian_vel.twist_angular_x = 0.0;
+	cartesian_vel.twist_angular_y = 0.0;
+	cartesian_vel.twist_angular_z = 0.0;
 
-	double duration = 1.0; //2 seconds
+	double duration = 1.0;
 	double elapsed_time = 0.0;
 	
-	double pub_rate = 40.0; //we publish at 40 hz
+	double pub_rate = 100.0;
 	ros::Rate r(pub_rate);
 	
 	while (ros::ok()){
@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
 		ros::spinOnce();
 		
 		//publish velocity message
-		pub_velocity.publish(velocityMsg);
+		pub_velocity.publish(cartesian_vel);
 		
 		r.sleep();
 		
@@ -96,30 +96,15 @@ int main(int argc, char **argv) {
 		if (elapsed_time > duration)
 			break;
 	}
-	
-	
-	velocityMsg.twist_linear_z = -0.2;
-	
-	elapsed_time = 0.0;
-	while (ros::ok()){
-		//collect messages
-		ros::spinOnce();
-		
-		//publish velocity message
-		pub_velocity.publish(velocityMsg);
-		
-		r.sleep();
-		
-		elapsed_time += (1.0/pub_rate);
-		
-		if (elapsed_time > duration)
-			break;
-	}
-	
-	
-	//publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
-	velocityMsg.twist_linear_z = 0.0; 
-	pub_velocity.publish(velocityMsg);
+
+
+	// Be sure to manually stop or we'll overshoot
+	cartesian_vel.twist_linear_z = 0.0;
+	pub_velocity.publish(cartesian_vel);
+
+	// Now with much less code
+	cartesian_vel.twist_linear_z = -0.2;
+	mico.move_with_cartesian_velocities(cartesian_vel, 1);
 
 	
 
