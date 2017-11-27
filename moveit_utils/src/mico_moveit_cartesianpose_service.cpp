@@ -10,18 +10,15 @@
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <control_msgs/FollowJointTrajectoryGoal.h>
 #include <actionlib/client/simple_action_client.h>
-//services
 #include "ros/ros.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "moveit_utils/MicoMoveitCartesianPose.h"
 
 bool g_caught_sigint = false;
-std::vector<double> q_vals;
 
 
 ros::Publisher pose_pub;
 moveit::planning_interface::MoveGroup *group;
-robot_state::JointModelGroup *joint_model_group;
 
 void sig_handler(int sig){
     g_caught_sigint = true;
@@ -33,17 +30,18 @@ void sig_handler(int sig){
 bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_utils::MicoMoveitCartesianPose::Response &res){
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] Request received!");
 
-    //publish target pose
+    //publish target pose for visualization
     pose_pub.publish(req.target);
+
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     planning_scene_interface.addCollisionObjects(req.collision_objects);
-    group->setPlanningTime(5.0); //5 second maximum for collision computation
-    moveit::planning_interface::MoveGroup::Plan my_plan;
     group->setPoseTarget(req.target);
+    group->setPlanningTime(5.0); //5 second maximum for collision computation
     group->setStartState(*group->getCurrentState());
-    
+    group->setPathConstraints(req.constraints);
 
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] starting to plan...");
+    moveit::planning_interface::MoveGroup::Plan my_plan;
     bool success = group->plan(my_plan);
     ROS_INFO("Planning success: %s", success ? "true" : "false");
 
@@ -51,8 +49,8 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
         res.completed = false;
         return true;
     }
-    group->move();
-    ros::spinOnce();
+    moveit::planning_interface::MoveItErrorCode error = group->move();
+    res.completed = error;
     return true;
 }
 

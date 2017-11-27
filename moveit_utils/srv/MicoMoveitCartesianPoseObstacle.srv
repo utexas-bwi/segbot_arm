@@ -1,4 +1,0 @@
-moveit_msgs/CollisionObject[] collision_objects
-geometry_msgs/PoseStamped target
----
-bool completed
