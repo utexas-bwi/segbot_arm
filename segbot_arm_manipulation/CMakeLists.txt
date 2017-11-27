@@ -6,6 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
         actionlib_msgs
         agile_grasp
         geometry_msgs
+        kinova_driver
         kinova_msgs
         message_generation
         move_base_msgs
@@ -65,7 +66,7 @@ generate_messages(
 )
 
 catkin_package(
-        CATKIN_DEPENDS std_msgs geometry_msgs kinova_msgs actionlib roscpp rospy message_runtime actionlib_msgs moveit_msgs
+        CATKIN_DEPENDS actionlib actionlib_msgs geometry_msgs kinova_msgs kinova_driver message_runtime moveit_msgs roscpp rospy std_msgs
         INCLUDE_DIRS include
         LIBRARIES arm_utilities
 )
