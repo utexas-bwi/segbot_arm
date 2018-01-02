@@ -7,6 +7,7 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
+#include <moveit_msgs/MoveItErrorCodes.h>
 
 //services
 #include "moveit_utils/MicoController.h"
@@ -46,8 +47,8 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPoseObstacle::Request &req, mov
     group.setStartState(*group.getCurrentState());
 
     ROS_INFO("[mico_moveit_cartesianpose_obstacle_service.cpp] starting to plan...");
-    bool success = group.plan(my_plan);
-    ROS_INFO("planning success: %c", success);
+    moveit_msgs::MoveItErrorCodes result = group.plan(my_plan);
+    ROS_INFO("result: %d", result.val);
 
     //call service
     moveit_utils::MicoController srv;

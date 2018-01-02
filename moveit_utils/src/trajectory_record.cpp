@@ -106,11 +106,11 @@ int main(int argc, char **argv){
 				}
 				if(i == 1){
 					moveit::planning_interface::MoveGroup::Plan my_plan;
-					bool success = group.plan(my_plan);
+					moveit_msgs::MoveItErrorCodes result = group.plan(my_plan);
 					int count = 0;
-					if(success == moveit_msgs::MoveItErrorCodes::INVALID_MOTION_PLAN && count < 3){
+					if(result.val == moveit_msgs::MoveItErrorCodes::INVALID_MOTION_PLAN && count < 3){
 						ROS_INFO("Plan with collision detected. Replanning...");
-						success = group.plan(my_plan);
+						result = group.plan(my_plan);
 						count++;
 					}
 					bool cont = false;
@@ -118,10 +118,12 @@ int main(int argc, char **argv){
 						std::cout << "Replan? (y/n): ";
 						std::cin >> in;
 						if(in == 'y')
-							success = group.plan(my_plan);
+							result = group.plan(my_plan);
 						else if(in == 'n')
 							cont = true;
 					}while(!cont);
+
+                                        bool success = (result.val == moveit_msgs::MoveItErrorCodes::SUCCESS);
 					ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
 					if(success){
 						std::string filename;
