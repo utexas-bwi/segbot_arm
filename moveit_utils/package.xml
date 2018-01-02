@@ -13,7 +13,7 @@
   <build_depend>rospy</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>kinova_msgs</build_depend>
-  
+  <build_depend>bwi_msgs</build_depend>  
   <build_depend>moveit_ros_perception</build_depend>
   <build_depend>moveit_ros_planning</build_depend>
   <build_depend>moveit_ros_warehouse</build_depend>
