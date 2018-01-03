@@ -1,10 +1,11 @@
 #include <signal.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <moveit/move_group_interface/move_group.h>
+
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
@@ -18,7 +19,7 @@ bool g_caught_sigint = false;
 
 
 ros::Publisher pose_pub;
-moveit::planning_interface::MoveGroup *group;
+moveit::planning_interface::MoveGroupInterface *group;
 
 void sig_handler(int sig){
     g_caught_sigint = true;
@@ -41,8 +42,8 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
     group->setPathConstraints(req.constraints);
 
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] starting to plan...");
-    moveit::planning_interface::MoveGroup::Plan my_plan;
-    bool success = group->plan(my_plan);
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+    moveit::planning_interface::MoveItErrorCode success = group->plan(my_plan);
     ROS_INFO("Planning success: %s", success ? "true" : "false");
 
     if (!success) {
@@ -50,7 +51,7 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
         return true;
     }
     moveit::planning_interface::MoveItErrorCode error = group->move();
-    res.completed = error;
+    res.completed = error == moveit::planning_interface::MoveItErrorCode::SUCCESS;
     return true;
 }
 
@@ -60,7 +61,7 @@ int main(int argc, char **argv){
     ros::AsyncSpinner spinner(1);
     spinner.start();
 
-    group = new moveit::planning_interface::MoveGroup("arm");
+    group = new moveit::planning_interface::MoveGroupInterface("arm");
     group->setGoalTolerance(0.01);
     group->setPoseReferenceFrame("m1n6s200_end_effector");
     ros::ServiceServer srv = nh.advertiseService("mico_cartesianpose_service", service_cb);

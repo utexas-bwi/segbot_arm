@@ -6,6 +6,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
     actionlib
     actionlib_msgs
+        bwi_msgs
     control_msgs
     geometry_msgs
     kinova_msgs
