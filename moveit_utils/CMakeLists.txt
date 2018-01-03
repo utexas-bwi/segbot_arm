@@ -5,6 +5,7 @@ add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
+  bwi_msgs
   control_msgs
   geometry_msgs
   roscpp
@@ -25,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
   )
 find_package(Boost REQUIRED thread)
 
+add_compile_options(-std=c++11)
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -68,7 +70,7 @@ add_executable(mico_moveit_cartesianpose_obstacle_service src/mico_moveit_cartes
 add_dependencies(mico_controller moveit_utils_gencpp)
 add_dependencies(mico_controller_action moveit_utils_gencpp)
 add_dependencies(mico_moveit_joint_pose_service moveit_utils_gencpp)
-add_dependencies(mico_nav_safety_service moveit_utils_gencpp)
+add_dependencies(mico_nav_safety_service moveit_utils_gencpp ${catkin_EXPORTED_TARGETS})
 add_dependencies(mico_moveit_cartesianpose_service moveit_utils_gencpp)
 add_dependencies(trajectory_record moveit_utils_gencpp)
 add_dependencies(position_record moveit_utils_gencpp)

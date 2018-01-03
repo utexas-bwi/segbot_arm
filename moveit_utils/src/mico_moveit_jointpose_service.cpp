@@ -13,6 +13,7 @@
 #include "ros/ros.h"
 #include "geometry_msgs/Quaternion.h"
 #include "moveit_utils/MicoMoveitJointPose.h"
+#include <moveit_msgs/MoveItErrorCodes.h>
 using namespace boost::assign;
     
 #define NUM_JOINTS 6
@@ -50,8 +51,8 @@ bool service_cb(moveit_utils::MicoMoveitJointPose::Request &req, moveit_utils::M
     group.setJointValueTarget(q_vals);
     group.setStartState(*group.getCurrentState());
     moveit::planning_interface::MoveGroup::Plan my_plan;
-    bool success = group.plan(my_plan);
-    ROS_INFO("planning success: %c", success);
+    moveit_msgs::MoveItErrorCodes result = group.plan(my_plan);
+    ROS_INFO("result: %d", result.val);
     //call service
     moveit_utils::MicoController srv;
     srv_controller.request.trajectory = my_plan.trajectory_;

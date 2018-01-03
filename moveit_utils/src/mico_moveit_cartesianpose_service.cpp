@@ -13,6 +13,7 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
+#include <moveit_msgs/MoveItErrorCodes.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <control_msgs/FollowJointTrajectoryGoal.h>
 #include <actionlib/client/simple_action_client.h>
@@ -50,10 +51,10 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
     group->setStartState(*group->getCurrentState());
 
     ROS_INFO("[mico_moveit_cartesianpose_service.cpp] starting to plan...");
-    bool success = group->plan(my_plan);
-    ROS_INFO("planning success: %d", success);
+    moveit_msgs::MoveItErrorCodes result = group->plan(my_plan);
+    ROS_INFO("result: %d", result.val);
 
-    if (!success) {
+    if (result.val != moveit_msgs::MoveItErrorCodes::SUCCESS) {
         res.completed = false;
         return true;
     }

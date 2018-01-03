@@ -8,6 +8,8 @@
   <author email="maxsvetlik@utexas.edu">Maxwell Svetlik</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>bwi_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
@@ -32,6 +34,7 @@
  
   
   
+  <run_depend>bwi_msgs</run_depend>
   <run_depend>message_runtime</run_depend>
 
   <export>
