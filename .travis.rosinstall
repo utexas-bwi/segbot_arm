@@ -1,0 +1,4 @@
+- git:
+    local-name: kinova-ros
+    uri: https://github.com/utexas-bwi/kinova-ros.git
+    version: master
