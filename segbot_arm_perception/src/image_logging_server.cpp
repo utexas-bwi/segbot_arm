@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <iostream>
 #include <sstream>
-#include <signal.h> 
+#include <signal.h>
 #include "sensor_msgs/PointCloud2.h"
 #include <sensor_msgs/image_encodings.h>
 #include "segbot_arm_perception/ProcessVision.h"
@@ -15,6 +15,7 @@
 #endif
 #include <opencv/highgui.h>
 #include <cv_bridge/cv_bridge.h>
+#include <opencv2/imgcodecs.hpp>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/io.h>
@@ -24,6 +25,7 @@
 #include <pcl/compression/octree_pointcloud_compression.h>
 
 using namespace std;
+using namespace cv;
 
 bool g_caught_sigint = false;
 
@@ -136,7 +138,7 @@ void collect_vision_rgb_data(const sensor_msgs::ImageConstPtr& msg){
 			std::string filename = generalImageFileName+"/test"+convert.str()+"_"+startTime+".jpg";
 			//std::string filename = "./test"+convert.str()+"_"+startTime+".jpg";
 
-			cv::imwrite(filename.c_str(), cv_image->image);
+			imwrite(filename.c_str(), cv_image->image);
 			ROS_INFO("Saved image %s", filename.c_str());
 					
 			image_count++;

@@ -9,7 +9,6 @@
 #include <moveit_msgs/CollisionObject.h>
 //used for assignment of vector
 #include <boost/assign/std/vector.hpp>
-//services
 #include "moveit_utils/MicoController.h"
 #include "ros/ros.h"
 #include "geometry_msgs/Quaternion.h"

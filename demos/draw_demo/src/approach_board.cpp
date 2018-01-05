@@ -26,7 +26,7 @@
 #include "kinova_msgs/ArmPoseAction.h"
 
 //moveit interface service
-#include "moveit_utils/MicoMoveitCartesianPose.h"
+#include <moveit_utils/MicoMoveitCartesianPose.h>
 
 #define PI 3.14159265
 

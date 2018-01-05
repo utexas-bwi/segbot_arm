@@ -5,24 +5,25 @@ project(segbot_arm_tasks)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  kinova_msgs
-  moveit_msgs
-  roscpp
-  rospy
-  std_msgs
-  actionlib_msgs
-  actionlib
-  moveit_ros_planning_interface
-  moveit_utils
-  moveit_msgs
-  nav_msgs
-  move_base_msgs
-  segbot_arm_perception
-  segbot_arm_manipulation
-  pcl_ros
-  pcl_conversions
-  bwi_msgs
-  bwi_kr_execution
+    actionlib
+    actionlib_msgs
+    bwi_msgs
+    bwi_kr_execution
+    bwi_services
+    kinova_msgs
+    pcl_ros
+    pcl_conversions
+    roscpp
+    rospy
+    segbot_arm_perception
+    segbot_arm_manipulation
+    std_msgs
+    move_base_msgs
+    moveit_ros_planning_interface
+    moveit_utils
+    moveit_msgs
+    nav_msgs
+
 )
 
 
