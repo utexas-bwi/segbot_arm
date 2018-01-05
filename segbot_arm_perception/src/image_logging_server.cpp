@@ -7,7 +7,12 @@
 #include "sensor_msgs/PointCloud2.h"
 #include <sensor_msgs/image_encodings.h>
 #include "segbot_arm_perception/ProcessVision.h"
-#include <opencv/cv.h>
+#include "opencv2/core/version.hpp"
+#if CV_MAJOR_VERSION == 2
+  #include <opencv/cv.h>
+#elif CV_MAJOR_VERSION == 3
+  #include <opencv2/imgcodecs.hpp>      // for cv::imwrite()
+#endif
 #include <opencv/highgui.h>
 #include <cv_bridge/cv_bridge.h>
 #include <pcl_ros/point_cloud.h>
