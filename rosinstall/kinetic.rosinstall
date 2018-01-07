@@ -24,3 +24,11 @@
     local-name: agile_grasp
     uri: https://github.com/utexas-bwi/agile_grasp.git
     version: kinetic
+- git:
+    local-name: kinova-ros
+    uri: https://github.com/utexas-bwi/kinova-ros.git
+    version: kinetic
+- git:
+    local-name: segbot_arm
+    uri: https://github.com/utexas-bwi/segbot_arm.git
+    version: kinetic
