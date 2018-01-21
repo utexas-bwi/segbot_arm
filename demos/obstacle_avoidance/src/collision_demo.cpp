@@ -1,4 +1,4 @@
-#include <moveit/move_group_interface/move_group.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 #include "moveit_utils/MicoController.h"
@@ -71,7 +71,7 @@ void toPoint(const T &in, geometry_msgs::Point &out) {
 
 bool service_cb(geometry_msgs::PoseStamped p_target) {
     moveit_utils::MicoController srv_controller;
-    moveit::planning_interface::MoveGroup group("arm");
+    moveit::planning_interface::MoveGroupInterface group("arm");
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     
     ROS_INFO("Collision size:");
@@ -83,7 +83,7 @@ bool service_cb(geometry_msgs::PoseStamped p_target) {
 
     group.setPlanningTime(20.0); //5 second maximum for collision computation
 
-    moveit::planning_interface::MoveGroup::Plan my_plan;
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
     
     geometry_msgs::PoseStamped goal;
     goal.pose.orientation = p_target.pose.orientation;
@@ -93,9 +93,9 @@ bool service_cb(geometry_msgs::PoseStamped p_target) {
     group.setPoseTarget(p_target);
 
     ROS_INFO("Starting to plan...");
-    bool success = group.plan(my_plan);
+    moveit_msgs::MoveItErrorCodes success = group.plan(my_plan);
 	
-    if (success)
+    if (success.val == moveit_msgs::MoveItErrorCodes::SUCCESS)
         ROS_INFO("Planning successful.\n");
     else {
         ROS_WARN("Planning unsuccessful. Please rerun.\n");

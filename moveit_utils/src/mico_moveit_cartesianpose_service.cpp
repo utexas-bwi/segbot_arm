@@ -37,7 +37,6 @@ bool service_cb(moveit_utils::MicoMoveitCartesianPose::Request &req, moveit_util
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     planning_scene_interface.addCollisionObjects(req.collision_objects);
     group->setPoseTarget(req.target);
-    group->setPlanningTime(5.0); //5 second maximum for collision computation
     group->setStartState(*group->getCurrentState());
     group->setPathConstraints(req.constraints);
 
