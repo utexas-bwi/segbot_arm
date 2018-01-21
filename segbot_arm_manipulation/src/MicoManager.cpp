@@ -37,7 +37,7 @@ MicoManager::MicoManager(ros::NodeHandle n) : pose_action(pose_action_topic, tru
     angular_velocity_pub = n.advertise<kinova_msgs::JointAngles>("/m1n6s200_driver/in/joint_velocity", 10);
     cartesian_velocity_pub = n.advertise<kinova_msgs::PoseVelocity>("/m1n6s200_driver/in/cartesian_velocity", 10);
 
-    group = new moveit::planning_interface::MoveGroup("arm");
+    group = new moveit::planning_interface::MoveGroupInterface("arm");
     group->setGoalTolerance(0.01);
     group->setPoseReferenceFrame("m1n6s200_end_effector");
 
@@ -392,13 +392,13 @@ bool MicoManager::move_through_waypoints_moveit(const vector<geometry_msgs::Pose
     // Get RobotTrajectory_msg from RobotTrajectory
     rt.getRobotTrajectoryMsg(result);
 
-    moveit::planning_interface::MoveGroup::Plan my_plan;
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
 
     moveit_msgs::RobotState start_state;
     moveit::core::robotStateToRobotStateMsg(*group->getCurrentState(), start_state);
     my_plan.start_state_= start_state;
     my_plan.trajectory_= result;
     moveit::planning_interface::MoveItErrorCode error = group->execute(my_plan);
-    return error;
+    return error == moveit::planning_interface::MoveItErrorCode::SUCCESS;
 }
 

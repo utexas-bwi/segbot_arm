@@ -14,7 +14,7 @@
 #include <moveit_utils/MicoMoveitCartesianPose.h>
 #include <moveit_msgs/GetPositionIK.h>
 #include <moveit/planning_interface/planning_interface.h>
-#include <moveit/move_group_interface/move_group.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 #include <ros/package.h>
 
 #include <sensor_msgs/PointCloud2.h>
@@ -55,7 +55,7 @@ public:
     geometry_msgs::PoseStamped current_pose;
     kinova_msgs::FingerPosition current_finger;
 
-    moveit::planning_interface::MoveGroup *group;
+    moveit::planning_interface::MoveGroupInterface *group;
 
     bool heardJointState;
     bool heardTool;
