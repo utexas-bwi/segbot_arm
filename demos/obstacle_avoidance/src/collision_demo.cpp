@@ -1,7 +1,6 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/DisplayTrajectory.h>
-#include "moveit_utils/MicoController.h"
 
 #include <pcl_ros/impl/transforms.hpp>
 
@@ -22,7 +21,6 @@ geometry_msgs::PoseStamped end_pose;
 bool heardPose = false;
 
 ros::Publisher pub_velocity;
-ros::ServiceClient controller_client;
 ros::Publisher pub_rviz;
 ros::Publisher display_publisher;
 moveit_msgs::DisplayTrajectory display_trajectory;
@@ -70,7 +68,6 @@ void toPoint(const T &in, geometry_msgs::Point &out) {
 }
 
 bool service_cb(geometry_msgs::PoseStamped p_target) {
-    moveit_utils::MicoController srv_controller;
     moveit::planning_interface::MoveGroupInterface group("arm");
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     
@@ -111,13 +108,11 @@ bool service_cb(geometry_msgs::PoseStamped p_target) {
 		
     //sleep to give Rviz time to visualize the plan.
     sleep(5.0);
-    
-    moveit_utils::MicoController srv;
-    srv_controller.request.trajectory = my_plan.trajectory_;
+
 	
     ROS_INFO("Calling controller client");
-	
-    if (controller_client.call(srv_controller)) {
+    moveit::planning_interface::MoveItErrorCode result = group.execute(my_plan);
+    if (result == moveit::planning_interface::MoveItErrorCode::SUCCESS) {
         ROS_INFO("Service call sent. Prepare for movement.");
     }
     else {
@@ -133,7 +128,7 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "collision_demo");
     ros::NodeHandle nh;
 
-    controller_client = nh.serviceClient<moveit_utils::MicoController>("mico_controller");
+
     
     //publish pose 
     pub_rviz = nh.advertise<geometry_msgs::PoseStamped>("/point_rviz", 10);
