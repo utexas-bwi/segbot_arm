@@ -1,17 +1,14 @@
 #include <signal.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <moveit/move_group_interface/move_group.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
-#include <moveit_msgs/AttachedCollisionObject.h>
-#include <moveit_msgs/CollisionObject.h>
+
 #include <kinova_msgs/JointAngles.h>
 //used for assignment of vector
 #include <boost/assign/std/vector.hpp>
 //services
-#include "moveit_utils/MicoController.h"
 #include "ros/ros.h"
 #include "geometry_msgs/Pose.h"
 
@@ -20,6 +17,7 @@
 #include <rosbag/view.h>
 #include <boost/foreach.hpp>
 #include <sensor_msgs/JointState.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 
 #define foreach BOOST_FOREACH
 
@@ -56,17 +54,18 @@ int main(int argc, char **argv){
 
 	//button position publisher
 	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("target_trajectory/pose", 10);
-	//make controller service
-	ros::ServiceClient client = node_handle.serviceClient<moveit_utils::MicoController>("mico_controller");
+
 	std::cout << "Please ensure that demo.launch has been run!" << std::endl;
 	//subscribers
 	ros::Subscriber sub_tool = node_handle.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 	ros::Subscriber sub_angles = node_handle.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);
 
 	
-	moveit::planning_interface::MoveGroup group("arm"); //this is the specific group name you'd like to move
+	moveit::planning_interface::MoveGroupInterface group("arm"); //this is the specific group name you'd like to move
 
 	moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+
+
 	// Create a publisher for visualizing plans in Rviz.
 	ros::Publisher display_publisher = node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
 	moveit_msgs::DisplayTrajectory display_trajectory;
@@ -105,12 +104,12 @@ int main(int argc, char **argv){
 					//group.setOrientationTarget(pose_final.orientation.x, pose_final.orientation.y, pose_final.orientation.z, pose_final.orientation.w, "mico_end_effector");
 				}
 				if(i == 1){
-					moveit::planning_interface::MoveGroup::Plan my_plan;
-					moveit_msgs::MoveItErrorCodes result = group.plan(my_plan);
+					moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+					moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
 					int count = 0;
-					if(result.val == moveit_msgs::MoveItErrorCodes::INVALID_MOTION_PLAN && count < 3){
+					if(success == moveit_msgs::MoveItErrorCodes::INVALID_MOTION_PLAN && count < 3){
 						ROS_INFO("Plan with collision detected. Replanning...");
-						result = group.plan(my_plan);
+						success = group.plan(my_plan);
 						count++;
 					}
 					bool cont = false;
@@ -118,12 +117,10 @@ int main(int argc, char **argv){
 						std::cout << "Replan? (y/n): ";
 						std::cin >> in;
 						if(in == 'y')
-							result = group.plan(my_plan);
+							success = group.plan(my_plan);
 						else if(in == 'n')
 							cont = true;
 					}while(!cont);
-
-                                        bool success = (result.val == moveit_msgs::MoveItErrorCodes::SUCCESS);
 					ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
 					if(success){
 						std::string filename;
@@ -155,10 +152,13 @@ int main(int argc, char **argv){
 				if (traj != NULL){
 					fromFile = *traj;
 					ROS_INFO("Trajectory successfully loaded from bag");
-					
-					moveit_utils::MicoController srv;
-					srv.request.trajectory = fromFile;
-					if(client.call(srv)){
+
+                    ROS_INFO("[mico_moveit_cartesianpose_service.cpp] starting to plan...");
+                    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+                    my_plan.trajectory_ = fromFile;
+                    moveit::planning_interface::MoveItErrorCode error = group.execute(my_plan);
+
+					if(error == moveit::planning_interface::MoveItErrorCode::SUCCESS){
 						ROS_INFO("Service call sent. Expect arm movement");
 					}
 					else {

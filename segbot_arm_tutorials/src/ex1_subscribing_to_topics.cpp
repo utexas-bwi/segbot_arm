@@ -17,7 +17,7 @@ geometry_msgs::PoseStamped current_pose;
 kinova_msgs::FingerPosition current_finger;
 
 
-bool heardJoinstState;
+bool heardJointState;
 bool heardPose;
 bool heardFingers;
 
@@ -37,7 +37,8 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& msg) {
 	
 	if (msg->position.size() == NUM_JOINTS){
 		current_state = *msg;
-		heardJoinstState = true;
+		heardJointState = true;
+        ROS_INFO("Heard arm pose");
 	}
 }
 
@@ -45,20 +46,20 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& msg) {
 void toolpos_cb (const geometry_msgs::PoseStamped &msg) {
 	current_pose = msg;
 	heardPose = true;
-        ROS_INFO("current_pose");
+    ROS_INFO("Heard tool pose");
 }
 
 //fingers state cb
 void fingers_cb (const kinova_msgs::FingerPositionConstPtr& msg) {
 	current_finger = *msg;
 	heardFingers = true;
-	ROS_INFO("FINGER");
+	ROS_INFO("Heard finger state");
 }
 
 //blocking call to listen for arm data (in this case, joint states)
 void listenForArmData(){
 	
-	heardJoinstState = false;
+	heardJointState = false;
 	heardPose = false;
 	heardFingers = false;
 	
@@ -67,31 +68,12 @@ void listenForArmData(){
 	while (ros::ok()){
 		ros::spinOnce();	
 		
-		if (heardJoinstState && heardPose && heardFingers)
+		if (heardJointState && heardPose && heardFingers)
 			return;
 		
 		r.sleep();
 	}
 }
-
-
-// Blocking call for user input
-void pressEnter(std::string message){
-	std::cout << message;
-	while (true){
-		char c = std::cin.get();
-		if (c == '\n')
-			break;
-		else if (c == 'q'){
-			ros::shutdown();
-			exit(1);
-		}
-		else {
-			std::cout <<  message;
-		}
-	}
-}
-
 
 int main(int argc, char **argv) {
 	// Intialize ROS with this node name

@@ -1,7 +1,6 @@
 #include <signal.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <moveit/move_group_interface/move_group.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
@@ -11,7 +10,6 @@
 //used for assignment of vector
 #include <boost/assign/std/vector.hpp>
 //services
-#include "moveit_utils/MicoController.h"
 #include "ros/ros.h"
 #include "geometry_msgs/Pose.h"
 
@@ -54,8 +52,6 @@ int main(int argc, char **argv){
 
 	//button position publisher
 	ros::Publisher pose_pub = node_handle.advertise<geometry_msgs::PoseStamped>("target_trajectory/pose", 10);
-	//make controller service
-	ros::ServiceClient client = node_handle.serviceClient<moveit_utils::MicoController>("mico_controller");
 
 	ros::Subscriber sub_tool = node_handle.subscribe("/m1n6s200_driver/out/tool_pose", 1, toolpos_cb);
 	ros::Subscriber sub_angles = node_handle.subscribe ("/m1n6s200_driver/out/joint_state", 1, joint_state_cb);

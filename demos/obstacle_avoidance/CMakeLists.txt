@@ -5,7 +5,7 @@ add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
   actionlib
-  agile_grasp
+        agile_grasp
   geometry_msgs
   kinova_msgs
   message_generation

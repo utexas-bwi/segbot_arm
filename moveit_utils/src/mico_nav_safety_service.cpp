@@ -18,10 +18,6 @@
 #include <bwi_msgs/StopBase.h>
 
 
-#include "kinova_msgs/JointAngles.h"
-#include <sensor_msgs/JointState.h>
-
-
 #include <boost/assign/std/vector.hpp>
 #include <tf/transform_listener.h>
 
